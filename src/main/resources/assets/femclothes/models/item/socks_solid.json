@@ -1,6 +1,7 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "femclothes:item/socks_solid"
+    "layer0": "femclothes:item/socks_solid",
+    "layer1": "femclothes:item/socks_solid_pattern"
   }
 }

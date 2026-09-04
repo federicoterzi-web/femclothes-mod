@@ -14,5 +14,10 @@
   "trinkets.slot.socks.pair": "Socks",
   "femclothes.loom.target.both": "Both Legs",
   "femclothes.loom.target.left": "Left Leg",
-  "femclothes.loom.target.right": "Right Leg"
+  "femclothes.loom.target.right": "Right Leg",
+  "femclothes.pattern.none": "No pattern",
+  "femclothes.pattern.stripe_top": "Top Stripe",
+  "femclothes.pattern.stripe_alt": "Striped",
+  "femclothes.tooltip.left": "Left:",
+  "femclothes.tooltip.right": "Right:"
 }

@@ -14,5 +14,10 @@
   "trinkets.slot.socks.pair": "Medias",
   "femclothes.loom.target.both": "Ambas piernas",
   "femclothes.loom.target.left": "Pierna izquierda",
-  "femclothes.loom.target.right": "Pierna derecha"
+  "femclothes.loom.target.right": "Pierna derecha",
+  "femclothes.pattern.none": "Sin patrón",
+  "femclothes.pattern.stripe_top": "Raya superior",
+  "femclothes.pattern.stripe_alt": "Rayado",
+  "femclothes.tooltip.left": "Izquierda:",
+  "femclothes.tooltip.right": "Derecha:"
 }

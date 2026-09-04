@@ -13,6 +13,7 @@ import net.minecraft.client.util.SkinTextures;
 import net.minecraft.entity.LivingEntity;
 import com.femclothes.screen.FemclothesScreenHandlers;
 import dev.emi.trinkets.api.client.TrinketRendererRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
 import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.util.Identifier;
@@ -37,6 +38,17 @@ public class FemclothesClient implements ClientModInitializer {
         // runtime con ClothingTextureCache, igual que antes pero ya no
         // depende del "dyeable" automático de ArmorItem (eso solo existe
         // en el pipeline viejo).
+        // Icono del item: capa 0 = la media tenida con el color base,
+        // capa 1 = las rayas tenidas con el color del patron. Sin patron, la
+        // capa 1 se pinta del MISMO color que la base y las rayas desaparecen
+        // — un ItemColorProvider no puede ocultar una capa, pero si fundirla.
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
+            int base = ClothingStyle.baseColor(stack, ClothingStyle.Side.LEFT);
+            if (tintIndex != 1) return base;
+            Identifier pattern = ClothingStyle.patternId(stack, ClothingStyle.Side.LEFT);
+            return pattern == null ? base : ClothingStyle.patternColor(stack, ClothingStyle.Side.LEFT);
+        }, FemclothesItems.SOCKS_SOLID);
+
         Identifier socksSolidBase = Identifier.of("femclothes", "textures/models/armor/socks_solid_layer_1.png");
         TrinketRendererRegistry.registerRenderer(FemclothesItems.SOCKS_SOLID,
                 new BodyPartTrinketRenderer(BodyPartTrinketRenderer.Part.LEGS, (stack, side, entity) -> {
