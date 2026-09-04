@@ -273,11 +273,12 @@ public final class ClothingTextureCache {
      */
     public static Identifier composeGarment(Identifier baseTexture, int baseRgb,
                                             @Nullable Identifier mask, int patternRgb,
-                                            SkinToneSampler.Tones skin, Shading shading) {
+                                            @Nullable SkinToneSampler.Tones skin, Shading shading) {
         String key = baseTexture + "#" + Integer.toHexString(baseRgb)
                 + "@" + mask + "#" + Integer.toHexString(patternRgb)
-                + "~" + Integer.toHexString(skin.mid()) + "/" + Integer.toHexString(skin.light())
-                + "/" + Integer.toHexString(skin.dark()) + ":" + shading;
+                + "~" + (skin == null ? "sinpiel" : Integer.toHexString(skin.mid())
+                        + "/" + Integer.toHexString(skin.light())
+                        + "/" + Integer.toHexString(skin.dark())) + ":" + shading;
         Identifier cached = TINTED_CACHE.get(key);
         if (cached != null) return cached;
 
@@ -328,7 +329,11 @@ public final class ClothingTextureCache {
      * en el mismo tono: la piel se veia de un color plano aunque la media
      * ya tuviera degrade. Interpolando, la piel acompana a la tela.
      */
-    private static int fill(int x, int y, SkinToneSampler.Tones skin, Shading shading) {
+    private static int fill(int x, int y, @Nullable SkinToneSampler.Tones skin, Shading shading) {
+        // Sin tonos: la prenda deja transparente lo que no cubre y se ve el
+        // cuerpo. Es el caso normal desde que la skin se reconstruye una sola
+        // vez en ComposedSkin, en vez de que cada prenda rellene piel.
+        if (skin == null) return 0;
         float f = faceFactor(x, y, shading);
         float t = (f - FACE_DARK) / (FACE_LIGHT - FACE_DARK);
         t = Math.min(Math.max(t, 0.0F), 1.0F);

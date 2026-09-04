@@ -84,6 +84,18 @@ dependencies {
     // runtime — sin el mod, la clase puente nunca se carga.
     // Version 1.11.2 (Loom 1.13.469, por debajo de nuestro 1.15.3).
     modCompileOnly "maven.modrinth:3dskinlayers:IrL0IGkV"
+
+    // Y tambien en el cliente de desarrollo, para poder probar de verdad que
+    // 3DSL lee nuestra skin compuesta y le saca la geometria 3D donde va la
+    // prenda. No entra al jar publicado.
+//  modLocalRuntime "maven.modrinth:3dskinlayers:IrL0IGkV"   // PRUEBA: desactivado para aislar
+
+    // 3DSL trae sus dos librerias como jars ANIDADOS, y Loom no las extrae
+    // para modLocalRuntime: el cliente arrancaba y moria con
+    // NoClassDefFoundError dev/tr7zw/transition/loader/ModLoaderUtil.
+    // Se sacan a mano del jar y se cargan sueltas. Solo para desarrollo.
+//  modLocalRuntime files("libs/TRansition-1.0.21-1.21.1-fabric-SNAPSHOT.jar")   // PRUEBA: desactivado para aislar
+//  modLocalRuntime files("libs/TRender-1.0.15-1.21.1-fabric-SNAPSHOT.jar")   // PRUEBA: desactivado para aislar
 }
 
 processResources {

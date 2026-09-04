@@ -5,12 +5,6 @@ import com.femclothes.item.FemclothesItems;
 import com.femclothes.render.BodyPartTrinketRenderer;
 import com.femclothes.render.ClothingTextureCache;
 import com.femclothes.render.CroptopArmorRenderProvider;
-import com.femclothes.render.SkinTextureAccess;
-import com.femclothes.render.SkinToneSampler;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.util.SkinTextures;
-import net.minecraft.entity.LivingEntity;
 import com.femclothes.screen.FemclothesScreenHandlers;
 import dev.emi.trinkets.api.client.TrinketRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
@@ -65,8 +59,11 @@ public class FemclothesClient implements ClientModInitializer {
                     // Arriba de la media hay que reconstruir la pierna
                     // desnuda: dejarla transparente mostraria el pantalon
                     // pintado en la skin del jugador, no piel.
+                    // Sin relleno de piel: de eso se encarga ComposedSkin, una
+                    // vez sobre la skin. Ademas evita leer la skin desde la GPU
+                    // en pleno render, que es lo que hacia esta llamada.
                     return ClothingTextureCache.composeGarment(socksSolidBase, baseColor,
-                            mask, ClothingStyle.patternColor(stack, side), skinTones(entity),
+                            mask, ClothingStyle.patternColor(stack, side), null,
                             ClothingTextureCache.Shading.LEGS);
                 }));
 
@@ -75,15 +72,4 @@ public class FemclothesClient implements ClientModInitializer {
         // (ver README, sección "Buzo oversize y Armor Model API").
     }
 
-    /** Tonos de piel del jugador, para reconstruir con sombreado la piel que la prenda expone. */
-    private static SkinToneSampler.Tones skinTones(LivingEntity entity) {
-        if (entity instanceof AbstractClientPlayerEntity player) {
-            SkinTextures skin = player.getSkinTextures();
-            NativeImage img = SkinTextureAccess.tryGetImage(skin);
-            if (img != null) {
-                return SkinToneSampler.sampleTones(img, skin.model());
-            }
-        }
-        return SkinToneSampler.fallbackTones();
-    }
 }
