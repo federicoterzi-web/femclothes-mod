@@ -174,28 +174,43 @@ public final class ClothingTextureCache {
     }
 
     private static final float FACE_LIGHT = 1.10F;
-    private static final float FACE_DARK = 0.80F;
+    private static final float FACE_DARK = 0.74F;
 
-    /** Factor de luz de la cara del cuboide en la que cae este pixel. */
+    /**
+     * Factor de luz del pixel segun donde cae en el cuboide de la pierna.
+     *
+     * Las caras INTERIORES de las piernas no se ven con el jugador parado —
+     * quedan una contra la otra — asi que sombrearlas no separaba nada. Lo
+     * que si se ve es el BORDE interno de las caras frontal y trasera: una
+     * columna de 1px oscura ahi hace de sombra entre las dos piernas.
+     *
+     * Que columna es el borde interno sale del constructor de ModelPart.Cuboid:
+     * en cada Quad, vertices[0] toma u2 (columna derecha) y vertices[1] toma u1
+     * (izquierda). En la cara NORTH vertices[0] es el vertice de maxX, y en la
+     * SOUTH es el de minX — o sea la trasera esta espejada respecto de la
+     * frontal, como corresponde a mirarla desde atras.
+     *
+     * El jugador tiene su derecha en -X (right_arm pivota en x=-5), asi que
+     * para la pierna derecha el lado interno es +X y para la izquierda es -X.
+     */
     private static float faceFactor(int x, int y, Shading shading) {
         if (shading != Shading.LEGS) return 1.0F;
-        boolean rightLeg = y >= 16 && y <= 31 && x <= 15;
-        boolean leftLeg = y >= 48 && y <= 63 && x >= 16 && x <= 31;
-        if (!rightLeg && !leftLeg) return 1.0F;
 
-        int col = rightLeg ? x / 4 : (x - 16) / 4;
-        if (rightLeg) {
-            return switch (col) {
-                case 0 -> FACE_LIGHT;   // exterior
-                case 2 -> FACE_DARK;    // interior, mira a la otra pierna
-                default -> 1.0F;
-            };
+        // Pierna derecha, uv(0,16): caras laterales en y 20..31.
+        if (y >= 20 && y <= 31 && x >= 0 && x <= 15) {
+            if (x <= 3) return FACE_LIGHT;          // WEST, exterior
+            if (x <= 7) return x == 7 ? FACE_DARK : 1.0F;   // NORTH, borde interno
+            if (x <= 11) return FACE_DARK;          // EAST, interior
+            return x == 12 ? FACE_DARK : 1.0F;      // SOUTH, borde interno
         }
-        return switch (col) {           // espejado en la pierna izquierda
-            case 0 -> FACE_DARK;
-            case 2 -> FACE_LIGHT;
-            default -> 1.0F;
-        };
+        // Pierna izquierda, uv(16,48): caras laterales en y 52..63.
+        if (y >= 52 && y <= 63 && x >= 16 && x <= 31) {
+            if (x <= 19) return FACE_DARK;          // WEST, interior
+            if (x <= 23) return x == 20 ? FACE_DARK : 1.0F; // NORTH, borde interno
+            if (x <= 27) return FACE_LIGHT;         // EAST, exterior
+            return x == 31 ? FACE_DARK : 1.0F;      // SOUTH, borde interno
+        }
+        return 1.0F;
     }
 
     /** Aclara u oscurece un pixel ABGR sin tocarle el alpha. */
@@ -276,37 +291,12 @@ public final class ClothingTextureCache {
     /** Como sombrear la piel reconstruida segun a que parte del cuerpo va. */
     public enum Shading { NONE, LEGS }
 
-    /**
-     * Reparte los tres tonos de piel segun la cara del cuboide.
-     *
-     * En el layout de skin 64x64 cada pierna tiene 4 caras en columnas de 4px.
-     * Pierna derecha, uv(0,16): exterior 0-3, frente 4-7, interior 8-11,
-     * atras 12-15. Pierna izquierda, uv(16,48): interior 16-19, frente 20-23,
-     * exterior 24-27, atras 28-31. Las caras INTERIORES son las que se miran
-     * entre si, y oscurecerlas es lo que separa visualmente una pierna de la
-     * otra.
-     */
+    /** Elige el tono de piel segun el mismo factor por cara que usa la tela. */
     private static int fill(int x, int y, SkinToneSampler.Tones skin, Shading shading) {
-        if (shading != Shading.LEGS) return skin.mid();
-        boolean rightLeg = y >= 16 && y <= 31 && x <= 15;
-        boolean leftLeg = y >= 48 && y <= 63 && x >= 16 && x <= 31;
-        if (!rightLeg && !leftLeg) return skin.mid();
-
-        int col = rightLeg ? x / 4 : (x - 16) / 4;
-        if (rightLeg) {
-            // 0 exterior, 1 frente, 2 interior, 3 atras
-            return switch (col) {
-                case 0 -> skin.light();
-                case 2 -> skin.dark();
-                default -> skin.mid();
-            };
-        }
-        // Izquierda: el orden de las caras esta espejado.
-        return switch (col) {
-            case 0 -> skin.dark();
-            case 2 -> skin.light();
-            default -> skin.mid();
-        };
+        float f = faceFactor(x, y, shading);
+        if (f > 1.0F) return skin.light();
+        if (f < 1.0F) return skin.dark();
+        return skin.mid();
     }
 
     private static NativeImage getBaseImage(Identifier id) {
