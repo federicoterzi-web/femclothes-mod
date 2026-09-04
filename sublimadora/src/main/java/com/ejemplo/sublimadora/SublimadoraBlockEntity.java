@@ -44,7 +44,13 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private boolean ultimoEstado = false;
-    private boolean poseInicial = true;
+    /**
+     * Que animacion pedirle al controlador. Tiene que ser ESTABLE entre
+     * cambios de estado: si cada frame se pide la transicion, GeckoLib la
+     * reinicia y la tapa se queda reproduciendo "cerrar" para siempre, que
+     * arranca en -104 grados. O sea, abierta.
+     */
+    private RawAnimation actual = null;
 
     /** tinta restante 0..1 por canal (valor real, objetivo del suavizado) */
     private final float[] tinta = { 0.85f, 0.60f, 0.35f, 0.70f };
@@ -61,17 +67,18 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "tapa", 0, state -> {
             boolean abierta = getCachedState().get(SublimadoraBlock.OPEN);
-            if (poseInicial) {
-                // Primera evaluacion: ir DIRECTO a la pose que corresponde.
-                poseInicial = false;
+            if (actual == null) {
+                // Al cargar el chunk: la POSE, no la transicion.
                 ultimoEstado = abierta;
-                return state.setAndContinue(abierta ? ABIERTA : CERRADA);
-            }
-            if (abierta != ultimoEstado) {
+                actual = abierta ? ABIERTA : CERRADA;
+            } else if (abierta != ultimoEstado) {
+                // Cambio real: recien ahi la transicion, que ya termina
+                // encadenando la pose por su thenLoop.
                 ultimoEstado = abierta;
+                actual = abierta ? ABRIR : CERRAR;
                 state.getController().forceAnimationReset();
             }
-            return state.setAndContinue(abierta ? ABRIR : CERRAR);
+            return state.setAndContinue(actual);
         })
         .triggerableAnim("abrir", ABRIR)
         .triggerableAnim("cerrar", CERRAR));

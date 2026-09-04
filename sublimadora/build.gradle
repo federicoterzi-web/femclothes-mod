@@ -34,7 +34,16 @@ dependencies {
     // nuestro Loom 1.15.3 las rechaza de entrada — "Mod was built with a
     // newer version of Loom". 4.8.4 usa Loom 1.10.5, verificado en el
     // Fabric-Loom-Version de su MANIFEST.
-    modImplementation "maven.modrinth:geckolib:3GjkJptS"
+    // GeckoLib 4.7.7 (id de version de Modrinth, inequivoco).
+    //
+    // NO subir a 4.8.x: con 4.8.4 los cubos cuyo uv_size por cara NO cubre la
+    // tile entera simplemente no se dibujan. El bloque quedaba invisible salvo
+    // el display, sin un solo error en el log. Verificado con A/B: mismo
+    // modelo y misma textura, cambiando solo la version.
+    //
+    // Tampoco a 4.9+, por otro motivo: esas se compilaron con Loom 1.17.13 y
+    // nuestro Loom 1.15.3 las rechaza. 4.7.7 usa Loom 1.10.5.
+    modImplementation "maven.modrinth:geckolib:6UTA5nCc"
 }
 
 processResources {
