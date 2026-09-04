@@ -18,16 +18,11 @@ public final class FemclothesItems {
     public static final ClothingTrinketItem SOCKS_SOLID = register("socks_solid",
             new ClothingTrinketItem(new Item.Settings().maxCount(1), true));
 
-    // Rayas/alternado: se renderizan con TwoToneArmorRenderProvider, no con
-    // la capa dyeable automática — por eso reusan el material CLOTH (su
-    // textura de material no se usa para nada, el renderer custom pisa todo).
-    public static final ClothingArmorItem SOCKS_STRIPE_TOP = registerArmor("socks_stripe_top",
-            new ClothingArmorItem(FemclothesArmorMaterials.CLOTH, ArmorItem.Type.BOOTS,
-                    new Item.Settings().maxCount(1), true));
-
-    public static final ClothingArmorItem SOCKS_STRIPE_ALT = registerArmor("socks_stripe_alt",
-            new ClothingArmorItem(FemclothesArmorMaterials.CLOTH, ArmorItem.Type.BOOTS,
-                    new Item.Settings().maxCount(1), true));
+    // socks_stripe_top / socks_stripe_alt SE FUERON: eran un item por
+    // combinacion de colores. Ahora son patrones que se aplican sobre
+    // socks_solid en el telar (PATTERN_STRIPE_TOP / PATTERN_STRIPE_ALT
+    // mas abajo), asi que el aspecto lo definen los componentes del
+    // ItemStack y no un Item distinto.
 
     public static final ClothingArmorItem FISHNET_SOCKS = registerArmor("fishnet_socks",
             new ClothingArmorItem(FemclothesArmorMaterials.CLOTH, ArmorItem.Type.BOOTS,

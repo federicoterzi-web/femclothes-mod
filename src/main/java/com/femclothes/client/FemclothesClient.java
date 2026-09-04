@@ -6,7 +6,6 @@ import com.femclothes.item.FemclothesItems;
 import com.femclothes.render.BodyPartTrinketRenderer;
 import com.femclothes.render.ClothingTextureCache;
 import com.femclothes.render.CroptopArmorRenderProvider;
-import com.femclothes.render.TwoToneArmorRenderProvider;
 import com.femclothes.screen.FemclothesScreenHandlers;
 import dev.emi.trinkets.api.client.TrinketRendererRegistry;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
@@ -22,21 +21,10 @@ public class FemclothesClient implements ClientModInitializer {
         // que Loom aplica en tiempo de compilacion.
         HandledScreens.register(FemclothesScreenHandlers.CLOTHING_LOOM, ClothingLoomScreen::new);
 
-        // TODO (en migración): CroptopArmorRenderProvider y
-        // TwoToneArmorRenderProvider todavía usan la geometría de armadura
-        // vieja (más ancha) — quedan pendientes de pasar a
-        // BodyPartTrinketRenderer en la próxima tanda, junto con el resto
-        // de las prendas. Por ahora solo SOCKS_SOLID está migrada, como
-        // prueba del nuevo sistema.
+        // TODO (en migración): CroptopArmorRenderProvider todavía usa la
+        // geometría de armadura vieja (más ancha) — queda pendiente de
+        // pasar a BodyPartTrinketRenderer junto con shorts.
         CroptopArmorRenderProvider.register();
-
-        TwoToneArmorRenderProvider.register(FemclothesItems.SOCKS_STRIPE_TOP, "socks_stripe_top",
-                Identifier.of("femclothes", "textures/models/armor/socks_stripe_top_body.png"),
-                Identifier.of("femclothes", "textures/models/armor/socks_stripe_top_stripe.png"));
-
-        TwoToneArmorRenderProvider.register(FemclothesItems.SOCKS_STRIPE_ALT, "socks_stripe_alt",
-                Identifier.of("femclothes", "textures/models/armor/socks_stripe_alt_outer.png"),
-                Identifier.of("femclothes", "textures/models/armor/socks_stripe_alt_middle.png"));
 
         // --- SOCKS_SOLID: primera prenda migrada al sistema nuevo ---
         // Se dibuja pegada a la pierna real (BodyPartTrinketRenderer.Part.LEGS)

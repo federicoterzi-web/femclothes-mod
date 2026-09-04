@@ -126,10 +126,10 @@ public final class ClothingTextureCache {
     /**
      * Base teñida con el color base + máscara de patrón teñida con el
      * color de patrón dibujada encima. Donde la máscara es opaca gana el
-     * patrón; donde es transparente se ve la base — mismo criterio que
-     * usaba TwoToneArmorRenderProvider, pero acá el patrón viene de un
-     * componente del ItemStack (lo escribe el clothing_loom) en vez de
-     * estar fijo en el Item.
+     * patrón; donde es transparente se ve la base. El patrón viene de un
+     * componente del ItemStack (lo escribe el telar) en vez de estar fijo
+     * en el Item — por eso una sola prenda cubre todas las variantes que
+     * antes eran un Item por combinación de colores.
      *
      * Si la máscara todavía no tiene arte, cae de vuelta a la prenda lisa
      * en vez de mostrar el cuadrado de textura faltante.
