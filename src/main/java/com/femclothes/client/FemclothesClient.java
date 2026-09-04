@@ -48,7 +48,8 @@ public class FemclothesClient implements ClientModInitializer {
                     // desnuda: dejarla transparente mostraria el pantalon
                     // pintado en la skin del jugador, no piel.
                     return ClothingTextureCache.composeGarment(socksSolidBase, baseColor,
-                            mask, ClothingStyle.patternColor(stack, side), skinTone(entity));
+                            mask, ClothingStyle.patternColor(stack, side), skinTones(entity),
+                            ClothingTextureCache.Shading.LEGS);
                 }));
 
         // TODO: acá también va el registro de la geometría custom del
@@ -56,15 +57,15 @@ public class FemclothesClient implements ClientModInitializer {
         // (ver README, sección "Buzo oversize y Armor Model API").
     }
 
-    /** Tono de piel del jugador, para reconstruir la piel que la prenda deja expuesta. */
-    private static int skinTone(LivingEntity entity) {
+    /** Tonos de piel del jugador, para reconstruir con sombreado la piel que la prenda expone. */
+    private static SkinToneSampler.Tones skinTones(LivingEntity entity) {
         if (entity instanceof AbstractClientPlayerEntity player) {
             SkinTextures skin = player.getSkinTextures();
             NativeImage img = SkinTextureAccess.tryGetImage(skin);
             if (img != null) {
-                return SkinToneSampler.sampleSkinTone(img, skin.model());
+                return SkinToneSampler.sampleTones(img, skin.model());
             }
         }
-        return SkinToneSampler.fallbackTone();
+        return SkinToneSampler.fallbackTones();
     }
 }

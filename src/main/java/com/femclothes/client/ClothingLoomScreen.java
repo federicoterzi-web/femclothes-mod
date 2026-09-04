@@ -62,10 +62,16 @@ public class ClothingLoomScreen extends HandledScreen<ClothingLoomScreenHandler>
         ClothingLoomScreenHandler.Target[] all = ClothingLoomScreenHandler.Target.values();
         int next = (this.handler.getTarget().ordinal() + 1) % all.length;
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client != null && client.interactionManager != null) {
+        if (client == null || client.player == null || client.interactionManager == null) return;
+
+        // Primero el handler LOCAL, despues el paquete — es el orden que usa
+        // LoomScreen vanilla. onButtonClick corre en el servidor, asi que sin
+        // esta llamada el handler del cliente se queda en su valor inicial y
+        // el ciclo se traba en el segundo item para siempre.
+        if (this.handler.onButtonClick(client.player, next)) {
             client.interactionManager.clickButton(this.handler.syncId, next);
+            this.targetButton.setMessage(Text.translatable(TARGET_KEYS[next]));
         }
-        this.targetButton.setMessage(Text.translatable(TARGET_KEYS[next]));
     }
 
     private Text targetLabel() {

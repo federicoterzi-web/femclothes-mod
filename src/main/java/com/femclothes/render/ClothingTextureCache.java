@@ -190,14 +190,16 @@ public final class ClothingTextureCache {
      * mostraria la skin del jugador, que casi siempre tiene un pantalon
      * pintado. Pasar fillArgb = 0 deja esas zonas transparentes.
      *
-     * mask puede ser null (prenda lisa).
+     * mask puede ser null (prenda lisa). El relleno se sombrea segun
+     * Shading: con un solo tono plano las dos piernas se leen pegadas.
      */
     public static Identifier composeGarment(Identifier baseTexture, int baseRgb,
                                             @Nullable Identifier mask, int patternRgb,
-                                            int fillArgb) {
+                                            SkinToneSampler.Tones skin, Shading shading) {
         String key = baseTexture + "#" + Integer.toHexString(baseRgb)
                 + "@" + mask + "#" + Integer.toHexString(patternRgb)
-                + "~" + Integer.toHexString(fillArgb);
+                + "~" + Integer.toHexString(skin.mid()) + "/" + Integer.toHexString(skin.light())
+                + "/" + Integer.toHexString(skin.dark()) + ":" + shading;
         Identifier cached = TINTED_CACHE.get(key);
         if (cached != null) return cached;
 
@@ -220,7 +222,7 @@ public final class ClothingTextureCache {
                 if (((basePx >> 24) & 0xFF) != 0) {
                     composite.setColor(x, y, tintPixel(basePx, baseRgb));
                 } else {
-                    composite.setColor(x, y, fillArgb);
+                    composite.setColor(x, y, fill(x, y, skin, shading));
                 }
             }
         }
@@ -230,6 +232,42 @@ public final class ClothingTextureCache {
                 .registerTexture(id, new NativeImageBackedTexture(composite));
         TINTED_CACHE.put(key, id);
         return id;
+    }
+
+    /** Como sombrear la piel reconstruida segun a que parte del cuerpo va. */
+    public enum Shading { NONE, LEGS }
+
+    /**
+     * Reparte los tres tonos de piel segun la cara del cuboide.
+     *
+     * En el layout de skin 64x64 cada pierna tiene 4 caras en columnas de 4px.
+     * Pierna derecha, uv(0,16): exterior 0-3, frente 4-7, interior 8-11,
+     * atras 12-15. Pierna izquierda, uv(16,48): interior 16-19, frente 20-23,
+     * exterior 24-27, atras 28-31. Las caras INTERIORES son las que se miran
+     * entre si, y oscurecerlas es lo que separa visualmente una pierna de la
+     * otra.
+     */
+    private static int fill(int x, int y, SkinToneSampler.Tones skin, Shading shading) {
+        if (shading != Shading.LEGS) return skin.mid();
+        boolean rightLeg = y >= 16 && y <= 31 && x <= 15;
+        boolean leftLeg = y >= 48 && y <= 63 && x >= 16 && x <= 31;
+        if (!rightLeg && !leftLeg) return skin.mid();
+
+        int col = rightLeg ? x / 4 : (x - 16) / 4;
+        if (rightLeg) {
+            // 0 exterior, 1 frente, 2 interior, 3 atras
+            return switch (col) {
+                case 0 -> skin.light();
+                case 2 -> skin.dark();
+                default -> skin.mid();
+            };
+        }
+        // Izquierda: el orden de las caras esta espejado.
+        return switch (col) {
+            case 0 -> skin.dark();
+            case 2 -> skin.light();
+            default -> skin.mid();
+        };
     }
 
     private static NativeImage getBaseImage(Identifier id) {
