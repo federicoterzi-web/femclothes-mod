@@ -78,6 +78,12 @@ dependencies {
     // al jar publicado, solo la carga el runClient de este repo para poder
     // probar los dos mods juntos.
     modLocalRuntime project(":sublimadora")
+
+    // 3D Skin Layers SOLO para compilar: nuestra textura de skin implementa su
+    // interfaz HttpTextureAccessor para que pueda leerla. No es dependencia de
+    // runtime — sin el mod, la clase puente nunca se carga.
+    // Version 1.11.2 (Loom 1.13.469, por debajo de nuestro 1.15.3).
+    modCompileOnly "maven.modrinth:3dskinlayers:IrL0IGkV"
 }
 
 processResources {
