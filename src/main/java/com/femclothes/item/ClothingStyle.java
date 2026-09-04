@@ -100,6 +100,27 @@ public final class ClothingStyle {
         }
     }
 
+    /** Saca el patron de un lado y lo deja liso, sin tocarle el color base. */
+    public static void clearPattern(ItemStack stack, Side side) {
+        if (side == Side.RIGHT) {
+            stack.remove(FemclothesComponents.RIGHT_PATTERN_ID);
+            stack.remove(FemclothesComponents.RIGHT_PATTERN_COLOR);
+            // Necesita color propio, si no vuelve a heredar el patron de la
+            // izquierda por el fallback.
+            if (stack.get(FemclothesComponents.RIGHT_DYED_COLOR) == null) {
+                stack.set(FemclothesComponents.RIGHT_DYED_COLOR, baseColor(stack, Side.LEFT));
+            }
+        } else {
+            stack.remove(FemclothesComponents.PATTERN_ID);
+            stack.remove(FemclothesComponents.PATTERN_COLOR);
+        }
+    }
+
+    /** True si ese lado tiene algun patron puesto. */
+    public static boolean hasPattern(ItemStack stack, Side side) {
+        return patternId(stack, side) != null;
+    }
+
     /** Borra los overrides de la derecha: el par vuelve a ser parejo. */
     public static void clearRightOverrides(ItemStack stack) {
         stack.remove(FemclothesComponents.RIGHT_DYED_COLOR);

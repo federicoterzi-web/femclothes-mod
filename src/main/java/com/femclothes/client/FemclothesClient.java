@@ -44,9 +44,15 @@ public class FemclothesClient implements ClientModInitializer {
         // — un ItemColorProvider no puede ocultar una capa, pero si fundirla.
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
             int base = ClothingStyle.baseColor(stack, ClothingStyle.Side.LEFT);
-            if (tintIndex != 1) return base;
-            Identifier pattern = ClothingStyle.patternId(stack, ClothingStyle.Side.LEFT);
-            return pattern == null ? base : ClothingStyle.patternColor(stack, ClothingStyle.Side.LEFT);
+            int color = base;
+            if (tintIndex == 1) {
+                Identifier pattern = ClothingStyle.patternId(stack, ClothingStyle.Side.LEFT);
+                if (pattern != null) color = ClothingStyle.patternColor(stack, ClothingStyle.Side.LEFT);
+            }
+            // El tinte de item es ARGB y el alfa CUENTA: vanilla devuelve -1
+            // para "sin tinte". Nuestros colores son 0xRRGGBB, o sea alfa 0,
+            // y sin este OR el item se dibuja transparente — desaparecia.
+            return 0xFF000000 | color;
         }, FemclothesItems.SOCKS_SOLID);
 
         Identifier socksSolidBase = Identifier.of("femclothes", "textures/models/armor/socks_solid_layer_1.png");

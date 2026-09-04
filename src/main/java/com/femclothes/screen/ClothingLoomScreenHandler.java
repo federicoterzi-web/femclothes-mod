@@ -157,7 +157,23 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
         ItemStack dye = this.dyeSlot.getStack();
         ItemStack pattern = this.patternSlot.getStack();
 
-        if (garment.isEmpty() || dye.isEmpty() || !(dye.getItem() instanceof DyeItem dyeItem)) {
+        if (garment.isEmpty()) {
+            this.outputSlot.setStackNoCallbacks(ItemStack.EMPTY);
+            return;
+        }
+
+        // Prenda SOLA, sin tinte ni patron: saca el patron y la deja lisa.
+        // Sin esto no habia forma de volver atras — una vez aplicado un
+        // patron, el modo re-tenido solo cambia el color base y el patron
+        // quedaba puesto para siempre.
+        if (dye.isEmpty() && pattern.isEmpty()) {
+            ItemStack stripped = stripPattern(garment);
+            this.outputSlot.setStackNoCallbacks(stripped);
+            this.sendContentUpdates();
+            return;
+        }
+
+        if (dye.isEmpty() || !(dye.getItem() instanceof DyeItem dyeItem)) {
             this.outputSlot.setStackNoCallbacks(ItemStack.EMPTY);
             return;
         }
@@ -188,6 +204,34 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
 
         this.outputSlot.setStackNoCallbacks(result);
         this.sendContentUpdates();
+    }
+
+    /** Copia de la prenda sin patron en el lado elegido, o vacio si no tenia. */
+    private ItemStack stripPattern(ItemStack garment) {
+        boolean left = ClothingStyle.hasPattern(garment, ClothingStyle.Side.LEFT);
+        boolean right = ClothingStyle.hasPattern(garment, ClothingStyle.Side.RIGHT);
+
+        ItemStack result = garment.copyWithCount(1);
+        switch (this.target) {
+            case BOTH -> {
+                if (!left && !right) return ItemStack.EMPTY;
+                ClothingStyle.clearPattern(result, ClothingStyle.Side.LEFT);
+                ClothingStyle.clearPattern(result, ClothingStyle.Side.RIGHT);
+                // Sin patron en ninguna, los overrides de la derecha solo
+                // servirian para desparejar el color sin querer.
+                ClothingStyle.clearRightOverrides(result);
+            }
+            case LEFT -> {
+                if (!left) return ItemStack.EMPTY;
+                ClothingStyle.pinRight(result);
+                ClothingStyle.clearPattern(result, ClothingStyle.Side.LEFT);
+            }
+            case RIGHT -> {
+                if (!right) return ItemStack.EMPTY;
+                ClothingStyle.clearPattern(result, ClothingStyle.Side.RIGHT);
+            }
+        }
+        return result;
     }
 
     private static void apply(ItemStack result, ClothingStyle.Side side, ItemStack pattern,
