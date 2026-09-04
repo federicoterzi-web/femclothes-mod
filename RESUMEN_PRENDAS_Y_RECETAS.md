@@ -22,30 +22,68 @@ que se dibuja pegada al cuerpo del jugador (no como armadura ancha).
 
 ## Cómo funciona el sistema hoy
 
-**Craftear** define la prenda y su color BASE. **El telar** agrega patrón
-y color de patrón después.
+**Craftear** define la prenda y su color BASE. **El telar** agrega patrón,
+color de patrón, y permite configurar cada pierna por separado.
 
 ### Crafteo de medias
-6 lanas del MISMO color, columnas izquierda y central:
+6 lanas del MISMO color, columna izquierda y derecha, centro vacío:
 ```
-A A .
-A A .
-A A .
+A . A
+A . A
+A . A
 ```
-Una receta por cada uno de los 16 colores de lana (16 archivos). Cada una
-setea `minecraft:dyed_color` en el resultado vía el campo `"components"`.
-Los RGB usados son los `DyeColor.getFireworkColor()` de vanilla, los
-mismos que usa el telar — así craftear rojo y teñir de rojo dan el color
-idéntico.
+Una receta por cada uno de los 16 colores (16 archivos), todas con la misma
+clave de ingrediente en las dos columnas. Los RGB son los
+`DyeColor.getFireworkColor()` de vanilla, los mismos que usa el telar, así
+que craftear rojo y teñir de rojo dan el color idéntico.
 
 ### El telar
-**Se usa el Telar VANILLA, no hay bloque propio.** Click derecho sobre un
-Telar con una prenda o un patrón de FemClothes en la mano → abre la UI de
-ropa. Con cualquier otra cosa en la mano → Telar normal de banderas.
+**Se usa el Telar VANILLA, no hay bloque propio.** Click derecho con una
+prenda o un patrón de FemClothes en la mano abre la UI de ropa; con
+cualquier otra cosa, el Telar normal de banderas.
 
-- Prenda + tinte (sin patrón) → re-tiñe el color BASE, como el cuero.
-- Prenda + tinte + patrón → aplica el patrón con el tinte como color de
-  patrón, sin tocar el color base. El patrón NO se consume, el tinte sí.
+| Slots | Resultado |
+|---|---|
+| Prenda + tinte | Re-tiñe el color BASE, no toca el patrón |
+| Prenda + tinte + patrón | Aplica el patrón con ese color, no toca la base |
+| Prenda SOLA | Le saca el patrón y la deja lisa |
+
+Un botón debajo del panel cicla **Ambas / Izquierda / Derecha**, y todo lo
+de arriba respeta esa elección.
+
+### Piernas independientes, sin duplicar ítems
+Componentes `RIGHT_DYED_COLOR`, `RIGHT_PATTERN_ID` y `RIGHT_PATTERN_COLOR`,
+todos OPCIONALES: ausentes, la derecha usa lo de la izquierda. Así un par
+parejo no guarda nada extra y las 16 recetas siguen valiendo sin tocarlas.
+
+`ClothingStyle` centraliza la resolución por lado. Ojo con una trampa que ya
+costó un bug: para tocar SOLO la izquierda hay que llamar antes a
+`pinRight()`, porque si no la derecha sigue heredando y cambian las dos.
+
+### Reconocer el patrón sin ponerse la prenda
+- **Ícono**: modelo de dos capas + `ItemColorProvider`. Capa 0 la prenda con
+  el color base, capa 1 las rayas con el color del patrón. Sin patrón, la
+  capa 1 se pinta igual que la base y desaparece.
+- **Tooltip**: el nombre del patrón, escrito EN el color del patrón. Si las
+  piernas difieren, las lista por separado.
+
+⚠️ El tinte de ítem es **ARGB y el alfa cuenta**. Devolver `0xRRGGBB` deja el
+ítem invisible. Vanilla usa `-1` para "sin tinte".
+
+### Resolución x2
+Las prendas son **128x128**, el doble que la skin. Subir `textureWidth` solo
+no alcanza: en `ModelPart.Cuboid` el rectángulo UV se calcula con el TAMAÑO
+DEL CUBOIDE en unidades de modelo. El truco es armar el cuboide al doble y
+escalar la parte a la mitad. Todo sale de `BodyPartTrinketRenderer.SCALE`.
+
+La escala va DESPUÉS de `copyTransform`, que también copia `xScale/yScale/zScale`.
+
+### Sombreado
+`faceFactor` degrada a lo ancho de las caras frontal y trasera, de oscuro en
+el borde interno a claro en el externo. **Las caras interiores no se ven con
+el jugador parado**, así que sombrearlas solas no separaba nada: lo que
+funciona es el borde de las caras que sí se ven. Se aplica tanto a la tela
+como a la piel reconstruida.
 
 ## Componentes de datos
 
@@ -89,14 +127,38 @@ lisa en vez de mostrar el cuadrado de textura faltante.
 
 ## Lo que falta
 
-1. **TODAS las texturas.** No hay una sola en el proyecto — las prendas se
-   ven como cuadrado de textura faltante y los patrones caen a "lisa".
-   Este es el bloqueante real.
-2. **Color de piel expuesta** — ver sección abajo, sin resolver.
-3. Migrar croptop y shorts a `BodyPartTrinketRenderer`.
-4. Borrar `socks_stripe_top` / `socks_stripe_alt` / `TwoToneArmorRenderProvider`.
-5. Geometría Blockbench del buzo oversize (Armor Model API).
-6. Recetas de shorts, croptop, traje de maid, medias de red.
+1. **Arte de verdad.** Solo las medias tienen textura, y es de prueba
+   (generada por script, en el scratchpad). Las otras 7 prendas no tienen
+   nada.
+2. **Migrar croptop y shorts** a `BodyPartTrinketRenderer` — BLOQUEADO, ver
+   abajo.
+3. Geometría Blockbench del buzo oversize (Armor Model API).
+4. Recetas de shorts, croptop, traje de maid, medias de red.
+5. El Mixin de override de skin, para convivir con 3D Skin Layers.
+
+## ⚠️ Problema abierto: dos prendas en la misma parte del cuerpo
+
+`composeGarment` rellena con tono de piel TODO lo que la prenda deja
+transparente. Para una sola prenda por parte del cuerpo está perfecto: la
+media reconstruye el muslo desnudo de arriba.
+
+Pero medias y shorts van los dos en las piernas. Cada uno rellenaría la
+pierna entera con piel más su propia tela, y **el que se dibuje último tapa
+al otro por completo**. No es que se vea feo: desaparece una de las dos
+prendas.
+
+Esto BLOQUEA migrar shorts, y hay que resolverlo antes de tocar esa parte.
+Dos caminos:
+
+- **Capa de piel separada**: un solo renderer dibuja la piel reconstruida,
+  con dilatación un poco menor que las prendas, y cada prenda queda
+  transparente donde no tiene tela. Sin Mixins.
+- **Override de skin** (el Mixin de `getSkinTextures()`): la piel se
+  reconstruye una vez sobre la skin misma, y las prendas no saben nada de
+  piel. Además es lo que hace falta para 3D Skin Layers.
+
+El segundo resuelve las dos cosas de una, pero es el primer Mixin del
+proyecto.
 
 ## Color de la piel expuesta
 
