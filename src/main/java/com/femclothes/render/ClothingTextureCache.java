@@ -176,7 +176,7 @@ public final class ClothingTextureCache {
     private static final float FACE_LIGHT = 1.10F;
     private static final float FACE_DARK = 0.84F;
     /** Ancho en pixeles de las caras frontal y trasera de una pierna. */
-    private static final int FACE_COLUMNS = 4;
+    private static final int FACE_COLUMNS = 4 * BodyPartTrinketRenderer.SCALE;
 
     /**
      * Factor de luz del pixel segun donde cae en el cuboide de la pierna.
@@ -198,19 +198,29 @@ public final class ClothingTextureCache {
     private static float faceFactor(int x, int y, Shading shading) {
         if (shading != Shading.LEGS) return 1.0F;
 
-        // Pierna derecha, uv(0,16): caras laterales en y 20..31.
-        if (y >= 20 && y <= 31 && x >= 0 && x <= 15) {
-            if (x <= 3) return FACE_LIGHT;              // WEST, exterior
-            if (x <= 7) return ramp(7 - x);             // NORTH: interno en x=7
-            if (x <= 11) return FACE_DARK;              // EAST, interior
-            return ramp(x - 12);                        // SOUTH: interno en x=12
+        final int S = BodyPartTrinketRenderer.SCALE;
+        final int face = 4 * S;   // ancho de una cara del cuboide, en pixeles
+
+        // Pierna derecha, uv(0, 16S): caras laterales en y 20S..32S-1, x 0..16S-1
+        if (y >= 20 * S && y < 32 * S && x >= 0 && x < 16 * S) {
+            int col = x / face;
+            return switch (col) {
+                case 0 -> FACE_LIGHT;                       // WEST, exterior
+                case 1 -> ramp((2 * face - 1) - x);         // NORTH: interno en el borde derecho
+                case 2 -> FACE_DARK;                        // EAST, interior
+                default -> ramp(x - 3 * face);              // SOUTH: interno en el borde izquierdo
+            };
         }
-        // Pierna izquierda, uv(16,48): caras laterales en y 52..63.
-        if (y >= 52 && y <= 63 && x >= 16 && x <= 31) {
-            if (x <= 19) return FACE_DARK;              // WEST, interior
-            if (x <= 23) return ramp(x - 20);           // NORTH: interno en x=20
-            if (x <= 27) return FACE_LIGHT;             // EAST, exterior
-            return ramp(31 - x);                        // SOUTH: interno en x=31
+        // Pierna izquierda, uv(16S, 48S): caras laterales en y 52S..64S-1, x 16S..32S-1
+        if (y >= 52 * S && y < 64 * S && x >= 16 * S && x < 32 * S) {
+            int lx = x - 16 * S;
+            int col = lx / face;
+            return switch (col) {
+                case 0 -> FACE_DARK;                        // WEST, interior
+                case 1 -> ramp(lx - face);                  // NORTH: interno en el borde izquierdo
+                case 2 -> FACE_LIGHT;                       // EAST, exterior
+                default -> ramp((4 * face - 1) - lx);       // SOUTH: interno en el borde derecho
+            };
         }
         return 1.0F;
     }

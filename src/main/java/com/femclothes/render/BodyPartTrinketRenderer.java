@@ -48,6 +48,18 @@ public final class BodyPartTrinketRenderer implements TrinketRenderer {
      */
     private static final float DILATION = 0.3F;
 
+    /**
+     * Resolucion de textura respecto de la skin del jugador.
+     *
+     * El truco: en ModelPart.Cuboid el rectangulo UV se calcula con el TAMANO
+     * DEL CUBOIDE en unidades de modelo, no con el tamano de la textura. Subir
+     * textureWidth solo no da mas definicion — la cara sigue ocupando 4 texels.
+     * Asi que el cuboide se arma al DOBLE (8x24x8, dilatacion 0.6), lo que le
+     * da 8x24 texels, y despues se escala la parte a la mitad para que se vea
+     * del tamano correcto. Resultado: misma silueta, el doble de pixeles.
+     */
+    public static final int SCALE = 2;
+
     public enum Part { LEGS, BODY, ARMS }
 
     /**
@@ -66,23 +78,23 @@ public final class BodyPartTrinketRenderer implements TrinketRenderer {
         if (root != null) return root;
         ModelData data = new ModelData();
         ModelPartData p = data.getRoot();
-        Dilation d = new Dilation(DILATION);
+        Dilation d = new Dilation(DILATION * SCALE);
+        float w = 4 * SCALE, h = 12 * SCALE, dp = 4 * SCALE;
 
-        // Mismos uv/cuboid/pivot que PlayerEntityModel, solo cambia la
-        // dilatación. Layout de skin 64x64: las dos piernas y los dos brazos
-        // viven en regiones SEPARADAS.
-        p.addChild("right_leg", ModelPartBuilder.create().uv(0, 16)
-                .cuboid(-2.0F, 0.0F, -2.0F, 4.0F, 12.0F, 4.0F, d), ModelTransform.pivot(-1.9F, 12.0F, 0.0F));
-        p.addChild("left_leg", ModelPartBuilder.create().uv(16, 48)
-                .cuboid(-2.0F, 0.0F, -2.0F, 4.0F, 12.0F, 4.0F, d), ModelTransform.pivot(1.9F, 12.0F, 0.0F));
-        p.addChild("body", ModelPartBuilder.create().uv(16, 16)
-                .cuboid(-4.0F, 0.0F, -2.0F, 8.0F, 12.0F, 4.0F, d), ModelTransform.NONE);
-        p.addChild("right_arm", ModelPartBuilder.create().uv(40, 16)
-                .cuboid(-3.0F, -2.0F, -2.0F, 4.0F, 12.0F, 4.0F, d), ModelTransform.pivot(-5.0F, 2.0F, 0.0F));
-        p.addChild("left_arm", ModelPartBuilder.create().uv(32, 48)
-                .cuboid(-1.0F, -2.0F, -2.0F, 4.0F, 12.0F, 4.0F, d), ModelTransform.pivot(5.0F, 2.0F, 0.0F));
+        // Mismo layout que PlayerEntityModel, todo multiplicado por SCALE. Los
+        // pivotes no importan: copyTransform los pisa con los del jugador.
+        p.addChild("right_leg", ModelPartBuilder.create().uv(0, 16 * SCALE)
+                .cuboid(-2 * SCALE, 0, -2 * SCALE, w, h, dp, d), ModelTransform.NONE);
+        p.addChild("left_leg", ModelPartBuilder.create().uv(16 * SCALE, 48 * SCALE)
+                .cuboid(-2 * SCALE, 0, -2 * SCALE, w, h, dp, d), ModelTransform.NONE);
+        p.addChild("body", ModelPartBuilder.create().uv(16 * SCALE, 16 * SCALE)
+                .cuboid(-4 * SCALE, 0, -2 * SCALE, 8 * SCALE, h, dp, d), ModelTransform.NONE);
+        p.addChild("right_arm", ModelPartBuilder.create().uv(40 * SCALE, 16 * SCALE)
+                .cuboid(-3 * SCALE, -2 * SCALE, -2 * SCALE, w, h, dp, d), ModelTransform.NONE);
+        p.addChild("left_arm", ModelPartBuilder.create().uv(32 * SCALE, 48 * SCALE)
+                .cuboid(-1 * SCALE, -2 * SCALE, -2 * SCALE, w, h, dp, d), ModelTransform.NONE);
 
-        root = TexturedModelData.of(data, 64, 64).createModel();
+        root = TexturedModelData.of(data, 64 * SCALE, 64 * SCALE).createModel();
         return root;
     }
 
@@ -133,6 +145,8 @@ public final class BodyPartTrinketRenderer implements TrinketRenderer {
         Identifier texture = textureProvider.get(stack, side, entity);
         VertexConsumer vertexConsumer = vertexConsumers.getBuffer(RenderLayer.getArmorCutoutNoCull(texture));
         ours.copyTransform(players);
+        // copyTransform tambien copia la escala, asi que la nuestra va DESPUES.
+        ours.xScale = ours.yScale = ours.zScale = 1.0F / SCALE;
         ours.render(matrices, vertexConsumer, light, OverlayTexture.DEFAULT_UV);
     }
 }
