@@ -72,6 +72,12 @@ dependencies {
     // de femclothes — hay que instalarlo aparte en la carpeta mods/ del
     // juego (además de compilarlo acá para poder programar contra su API).
     modImplementation files("libs/armor-model-api-1.0.0-1.21.1.jar")
+
+    // Sublimadora en el cliente de desarrollo. Es modLocalRuntime a
+    // proposito: femclothes NO depende de ella para compilar ni la arrastra
+    // al jar publicado, solo la carga el runClient de este repo para poder
+    // probar los dos mods juntos.
+    modLocalRuntime project(":sublimadora")
 }
 
 processResources {
