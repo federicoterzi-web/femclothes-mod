@@ -12,3 +12,6 @@ out/
 # OS
 .DS_Store
 Thumbs.db
+
+# El subproyecto tiene su propio build/
+sublimadora/build/

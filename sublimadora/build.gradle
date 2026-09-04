@@ -1,0 +1,55 @@
+plugins {
+    id 'fabric-loom'
+}
+
+version = '0.1.0'
+group = 'com.ejemplo'
+
+base {
+    archivesName = 'sublimadora'
+}
+
+repositories {
+    maven {
+        name = "GeckoLib"
+        url = "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/"
+    }
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content { includeGroup "maven.modrinth" }
+    }
+}
+
+dependencies {
+    // Misma base que femclothes: si se separan, los dos mods dejan de poder
+    // convivir en el mismo runtime de desarrollo.
+    minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+    mappings "net.fabricmc:yarn:${rootProject.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${rootProject.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_version}"
+
+    // GeckoLib 4.8.4 para 1.21.1 (id de version de Modrinth, que es
+    // inequivoco). NO subir a 4.9+: esas se compilaron con Loom 1.17.13 y
+    // nuestro Loom 1.15.3 las rechaza de entrada — "Mod was built with a
+    // newer version of Loom". 4.8.4 usa Loom 1.10.5, verificado en el
+    // Fabric-Loom-Version de su MANIFEST.
+    modImplementation "maven.modrinth:geckolib:3GjkJptS"
+}
+
+processResources {
+    inputs.property "version", project.version
+    filteringCharset "UTF-8"
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}

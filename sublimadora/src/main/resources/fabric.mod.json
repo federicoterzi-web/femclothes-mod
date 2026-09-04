@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "sublimadora",
+  "version": "${version}",
+  "name": "Sublimadora",
+  "description": "Prensa termica de sublimacion con tapa abisagrada, para estampar remeras.",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.ejemplo.sublimadora.Sublimadora"],
+    "client": ["com.ejemplo.sublimadora.SublimadoraClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "~1.21",
+    "fabric-api": "*",
+    "geckolib": "*"
+  }
+}
