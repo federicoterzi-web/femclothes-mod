@@ -19,5 +19,7 @@
   "femclothes.pattern.stripe_top": "Raya superior",
   "femclothes.pattern.stripe_alt": "Rayado",
   "femclothes.tooltip.left": "Izquierda:",
-  "femclothes.tooltip.right": "Derecha:"
+  "femclothes.tooltip.right": "Derecha:",
+  "item.femclothes.pattern_triple_stripe": "Patrón: Tres Rayas",
+  "femclothes.pattern.triple_stripe": "Tres rayas"
 }

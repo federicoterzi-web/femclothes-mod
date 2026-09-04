@@ -57,6 +57,10 @@ public final class FemclothesItems {
             new ClothingPatternItem(new Item.Settings().maxCount(1),
                     Identifier.of("femclothes", "stripe_alt")));
 
+    public static final ClothingPatternItem PATTERN_TRIPLE_STRIPE = register("pattern_triple_stripe",
+            new ClothingPatternItem(new Item.Settings().maxCount(1),
+                    Identifier.of("femclothes", "triple_stripe")));
+
     private static ClothingArmorItem registerArmor(String path, ClothingArmorItem item) {
         return Registry.register(Registries.ITEM, Identifier.of("femclothes", path), item);
     }

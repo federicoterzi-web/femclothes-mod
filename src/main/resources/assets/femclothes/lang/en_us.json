@@ -19,5 +19,7 @@
   "femclothes.pattern.stripe_top": "Top Stripe",
   "femclothes.pattern.stripe_alt": "Striped",
   "femclothes.tooltip.left": "Left:",
-  "femclothes.tooltip.right": "Right:"
+  "femclothes.tooltip.right": "Right:",
+  "item.femclothes.pattern_triple_stripe": "Pattern: Triple Stripe",
+  "femclothes.pattern.triple_stripe": "Triple Stripe"
 }
