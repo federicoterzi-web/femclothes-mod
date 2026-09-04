@@ -33,8 +33,18 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
             .thenPlay("animation.sublimadora.cerrar")
             .thenLoop("animation.sublimadora.cerrada");
 
+    // Poses estaticas, sin transicion: son las que hay que usar al cargar el
+    // chunk. ABRIR y CERRAR arrancan desde la pose CONTRARIA, asi que usarlas
+    // al cargar hacia que un bloque cerrado apareciera abierto y se cerrara
+    // solo delante del jugador.
+    private static final RawAnimation ABIERTA = RawAnimation.begin()
+            .thenLoop("animation.sublimadora.abierta");
+    private static final RawAnimation CERRADA = RawAnimation.begin()
+            .thenLoop("animation.sublimadora.cerrada");
+
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private boolean ultimoEstado = false;
+    private boolean poseInicial = true;
 
     /** tinta restante 0..1 por canal (valor real, objetivo del suavizado) */
     private final float[] tinta = { 0.85f, 0.60f, 0.35f, 0.70f };
@@ -51,6 +61,12 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "tapa", 0, state -> {
             boolean abierta = getCachedState().get(SublimadoraBlock.OPEN);
+            if (poseInicial) {
+                // Primera evaluacion: ir DIRECTO a la pose que corresponde.
+                poseInicial = false;
+                ultimoEstado = abierta;
+                return state.setAndContinue(abierta ? ABIERTA : CERRADA);
+            }
             if (abierta != ultimoEstado) {
                 ultimoEstado = abierta;
                 state.getController().forceAnimationReset();
