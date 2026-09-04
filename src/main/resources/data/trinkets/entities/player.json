@@ -1,0 +1,4 @@
+{
+  "entities": ["player"],
+  "slots": ["arms/armwarmer", "socks/pair"]
+}

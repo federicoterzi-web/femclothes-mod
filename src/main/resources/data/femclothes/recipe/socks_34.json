@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "W W",
+    "W W",
+    "   "
+  ],
+  "key": { "W": { "item": "minecraft:white_wool" } },
+  "result": { "id": "femclothes:socks_34", "count": 1 }
+}

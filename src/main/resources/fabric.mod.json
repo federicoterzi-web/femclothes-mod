@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "femclothes",
+  "version": "${version}",
+  "name": "FemClothes",
+  "description": "Ropa craftable, tenible y compatible con cualquier tono de piel del skin del jugador.",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.femclothes.Femclothes"],
+    "client": ["com.femclothes.client.FemclothesClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "~1.21",
+    "fabric-api": "*",
+    "trinkets": "*"
+  }
+}
