@@ -11,5 +11,8 @@
   "item.femclothes.pattern_stripe_alt": "Patrón: Alternado",
   "container.femclothes.clothing_loom": "Telar de Ropa",
   "trinkets.slot.arms.armwarmer": "Calentadores",
-  "trinkets.slot.socks.pair": "Medias"
+  "trinkets.slot.socks.pair": "Medias",
+  "femclothes.loom.target.both": "Ambas piernas",
+  "femclothes.loom.target.left": "Pierna izquierda",
+  "femclothes.loom.target.right": "Pierna derecha"
 }

@@ -1,7 +1,7 @@
 package com.femclothes.screen;
 
 import com.femclothes.item.ClothingPatternItem;
-import com.femclothes.item.FemclothesComponents;
+import com.femclothes.item.ClothingStyle;
 import com.femclothes.item.FemclothesDye;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -38,7 +38,11 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
     private static final int HOTBAR_START = 31;
     private static final int HOTBAR_END = 40;
 
+    /** A que pierna se aplica lo que se arma: las dos, solo izquierda, solo derecha. */
+    public enum Target { BOTH, LEFT, RIGHT }
+
     private final ScreenHandlerContext context;
+    private Target target = Target.BOTH;
     Runnable inventoryChangeListener = () -> {};
 
     final Slot garmentSlot;
@@ -130,6 +134,23 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
         return canUse(this.context, player, net.minecraft.block.Blocks.LOOM);
     }
 
+    public Target getTarget() {
+        return this.target;
+    }
+
+    /**
+     * El cliente cicla el destino con un boton. Se usa onButtonClick, el mismo
+     * mecanismo con el que el Telar vanilla elige patron de bandera, asi no
+     * hace falta definir paquetes propios.
+     */
+    @Override
+    public boolean onButtonClick(PlayerEntity player, int id) {
+        if (id < 0 || id >= Target.values().length) return false;
+        this.target = Target.values()[id];
+        this.onContentChanged(this.input);
+        return true;
+    }
+
     @Override
     public void onContentChanged(Inventory inventory) {
         ItemStack garment = this.garmentSlot.getStack();
@@ -145,17 +166,33 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
         int rgb = dyeColor.getFireworkColor();
 
         ItemStack result = garment.copyWithCount(1);
-        if (!pattern.isEmpty() && pattern.getItem() instanceof ClothingPatternItem patternItem) {
-            // Modo patrón: no toca el color base, solo aplica patrón + color de patrón.
-            result.set(FemclothesComponents.PATTERN_ID, patternItem.patternId);
-            result.set(FemclothesComponents.PATTERN_COLOR, rgb);
+        boolean hasPattern = !pattern.isEmpty() && pattern.getItem() instanceof ClothingPatternItem;
+
+        if (this.target == Target.BOTH) {
+            // Par parejo: se escribe solo el lado base y se borran los
+            // overrides de la derecha, para no dejar datos colgados de una
+            // configuracion anterior.
+            apply(result, ClothingStyle.Side.LEFT, pattern, hasPattern, rgb);
+            ClothingStyle.clearRightOverrides(result);
         } else {
-            // Modo re-teñido: recolorea el color base, como el cuero.
-            FemclothesDye.setBaseColor(result, rgb);
+            ClothingStyle.Side side = this.target == Target.LEFT
+                    ? ClothingStyle.Side.LEFT : ClothingStyle.Side.RIGHT;
+            apply(result, side, pattern, hasPattern, rgb);
         }
 
         this.outputSlot.setStackNoCallbacks(result);
         this.sendContentUpdates();
+    }
+
+    private static void apply(ItemStack result, ClothingStyle.Side side, ItemStack pattern,
+                              boolean hasPattern, int rgb) {
+        if (hasPattern) {
+            // Modo patron: no toca el color base de ese lado.
+            ClothingStyle.setPattern(result, side, ((ClothingPatternItem) pattern.getItem()).patternId, rgb);
+        } else {
+            // Modo re-tenido: recolorea el color base de ese lado, como el cuero.
+            ClothingStyle.setBaseColor(result, side, rgb);
+        }
     }
 
     public void setInventoryChangeListener(Runnable inventoryChangeListener) {

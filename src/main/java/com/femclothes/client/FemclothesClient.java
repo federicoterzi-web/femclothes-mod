@@ -1,7 +1,6 @@
 package com.femclothes.client;
 
-import com.femclothes.item.ClothingTrinketItem;
-import com.femclothes.item.FemclothesComponents;
+import com.femclothes.item.ClothingStyle;
 import com.femclothes.item.FemclothesItems;
 import com.femclothes.render.BodyPartTrinketRenderer;
 import com.femclothes.render.ClothingTextureCache;
@@ -34,22 +33,17 @@ public class FemclothesClient implements ClientModInitializer {
         // en el pipeline viejo).
         Identifier socksSolidBase = Identifier.of("femclothes", "textures/models/armor/socks_solid_layer_1.png");
         TrinketRendererRegistry.registerRenderer(FemclothesItems.SOCKS_SOLID,
-                new BodyPartTrinketRenderer(BodyPartTrinketRenderer.Part.LEGS, stack -> {
-                    int baseColor = 0xFFFFFF;
-                    if (stack.getItem() instanceof ClothingTrinketItem clothing) {
-                        baseColor = clothing.getColor(stack);
-                    }
-                    // El patrón lo escribe el clothing_loom en el ItemStack.
-                    // Sin PATTERN_ID la prenda es lisa y alcanza con teñir
-                    // la base — el camino barato es el caso comun.
-                    Identifier patternId = stack.get(FemclothesComponents.PATTERN_ID);
+                new BodyPartTrinketRenderer(BodyPartTrinketRenderer.Part.LEGS, (stack, side) -> {
+                    int baseColor = ClothingStyle.baseColor(stack, side);
+                    // Sin patron en ESE lado, la pierna es lisa y alcanza con
+                    // tenir la base — el camino barato es el caso comun.
+                    Identifier patternId = ClothingStyle.patternId(stack, side);
                     if (patternId == null) {
                         return ClothingTextureCache.tinted(socksSolidBase, baseColor);
                     }
-                    Integer patternColor = stack.get(FemclothesComponents.PATTERN_COLOR);
                     return ClothingTextureCache.tintedWithPattern(socksSolidBase, baseColor,
                             ClothingTextureCache.patternMaskFor("socks", patternId),
-                            patternColor != null ? patternColor : 0xFFFFFF);
+                            ClothingStyle.patternColor(stack, side));
                 }));
 
         // TODO: acá también va el registro de la geometría custom del

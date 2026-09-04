@@ -1,0 +1,18 @@
+{
+  "item.femclothes.socks_34": "3/4 Socks",
+  "item.femclothes.socks_solid": "Socks",
+  "item.femclothes.fishnet_socks": "Fishnet Socks",
+  "item.femclothes.shorts": "Shorts",
+  "item.femclothes.croptop": "Crop Top",
+  "item.femclothes.maid_outfit": "Maid Outfit",
+  "item.femclothes.oversized_hoodie": "Oversized Hoodie",
+  "item.femclothes.armwarmers": "Arm Warmers",
+  "item.femclothes.pattern_stripe_top": "Pattern: Top Stripe",
+  "item.femclothes.pattern_stripe_alt": "Pattern: Banded",
+  "container.femclothes.clothing_loom": "Clothing Loom",
+  "trinkets.slot.arms.armwarmer": "Arm Warmers",
+  "trinkets.slot.socks.pair": "Socks",
+  "femclothes.loom.target.both": "Both Legs",
+  "femclothes.loom.target.left": "Left Leg",
+  "femclothes.loom.target.right": "Right Leg"
+}
