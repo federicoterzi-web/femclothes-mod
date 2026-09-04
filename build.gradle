@@ -12,6 +12,10 @@ repositories {
         url = "https://maven.terraformersmc.com/"
     }
     maven {
+        name = "Ladysnake"
+        url = "https://maven.ladysnake.org/releases"
+    }
+    maven {
         // Trinkets, Cardinal Components API, Cosmetic Armor Updated y
         // Armor Model API se distribuyen todos via Modrinth Maven.
         name = "Modrinth"
@@ -31,17 +35,23 @@ dependencies {
     // --- Trinkets (ORIGINAL, de emilyploszaj) v3.10.0 — CONFIRMADO para 1.21.1 ---
     modImplementation "maven.modrinth:trinkets:3.10.0"
 
-    // --- Cardinal Components API v6.1.3 — CONFIRMADO, soporta 1.21–1.21.1 ---
-    modImplementation "maven.modrinth:cardinal-components-api:6.1.3"
+    // --- Cardinal Components API v6.1.3 ---
+    // OJO: hay que declarar los MODULOS uno por uno, no el bundle de
+    // Modrinth. Con "maven.modrinth:cardinal-components-api" los modulos
+    // entran como dependencias Maven comunes, sin remapear ni registrar
+    // como mods, y en runtime Fabric Loader rechaza el arranque:
+    //   "Trinkets necesita cardinal-components-base, que no tienes".
+    // Trinkets 3.10.0 pide base + entity.
+    modImplementation "org.ladysnake.cardinal-components-api:cardinal-components-base:6.1.3"
+    modImplementation "org.ladysnake.cardinal-components-api:cardinal-components-entity:6.1.3"
 
     // --- Cosmetic Armor Updated ---
-    // Confirmaste que tenés instalada la versión 1.7.0. Ese número de versión
-    // se reutilizó para varias builds de MC en paralelo (vi 1.21.9, 1.21.10,
-    // 1.21.11 todas publicadas como "1.7.0"), así que lo más probable es que
-    // sea el mismo string para tu 1.21.1. Si el build falla acá, es la señal
-    // de que tu build puntual tiene otro número — mirá el nombre real del
-    // .jar en tu carpeta mods/ para confirmar.
-    modImplementation "maven.modrinth:cosmetic-armor-updated:1.7.0"
+    // La coordenada va por ID DE VERSION de Modrinth, no por numero: existen
+    // DOS versiones llamadas "1.7.0", una para 1.21.1 y otra para 1.21.6+, y
+    // el maven de Modrinth resolvia la de 1.21.6. Compilaba igual, pero el
+    // cliente no arrancaba: "cosmeticarmor necesita minecraft >=1.21.6".
+    // SEtadXzU = CosmeticArmor+1.21.1-1.7.0.jar
+    modImplementation "maven.modrinth:cosmetic-armor-updated:SEtadXzU"
 
     // ArmorRenderLib SACADA del proyecto: ni el original ni el fork "Directors
     // Cut" llegan a 1.21.x (se quedaron en 1.19.2 y 1.20.1 respectivamente,
