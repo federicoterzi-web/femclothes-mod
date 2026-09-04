@@ -44,6 +44,11 @@ public final class SkinToneSampler {
 
     private SkinToneSampler() {}
 
+    /** Tono neutro para cuando no se puede leer la skin. */
+    public static int fallbackTone() {
+        return FALLBACK_ARGB;
+    }
+
     public static int sampleSkinTone(NativeImage skinImage) {
         return sampleSkinTone(skinImage, SkinTextures.Model.WIDE);
     }

@@ -22,7 +22,7 @@ import net.minecraft.util.Identifier;
 
 import com.femclothes.item.ClothingStyle;
 
-import java.util.function.BiFunction;
+
 
 /**
  * Renderer genérico para prendas "pegadas al cuerpo". Dibuja cajas con la
@@ -49,6 +49,16 @@ public final class BodyPartTrinketRenderer implements TrinketRenderer {
     private static final float DILATION = 0.3F;
 
     public enum Part { LEGS, BODY, ARMS }
+
+    /**
+     * Devuelve la textura ya compuesta para un lado del cuerpo. Recibe la
+     * entidad porque algunas prendas necesitan el TONO DE PIEL del jugador
+     * (una media 3/4 tiene que reconstruir la pierna desnuda de arriba).
+     */
+    @FunctionalInterface
+    public interface TextureProvider {
+        Identifier get(ItemStack stack, ClothingStyle.Side side, LivingEntity entity);
+    }
 
     private static ModelPart root;
 
@@ -77,10 +87,9 @@ public final class BodyPartTrinketRenderer implements TrinketRenderer {
     }
 
     private final Part part;
-    private final BiFunction<ItemStack, ClothingStyle.Side, Identifier> textureProvider;
+    private final TextureProvider textureProvider;
 
-    public BodyPartTrinketRenderer(Part part,
-                                  BiFunction<ItemStack, ClothingStyle.Side, Identifier> textureProvider) {
+    public BodyPartTrinketRenderer(Part part, TextureProvider textureProvider) {
         this.part = part;
         this.textureProvider = textureProvider;
     }
@@ -102,25 +111,26 @@ public final class BodyPartTrinketRenderer implements TrinketRenderer {
         switch (part) {
             case LEGS -> {
                 draw(r.getChild("left_leg"), biped.leftLeg, stack, ClothingStyle.Side.LEFT,
-                        matrices, vertexConsumers, light);
+                        entity, matrices, vertexConsumers, light);
                 draw(r.getChild("right_leg"), biped.rightLeg, stack, ClothingStyle.Side.RIGHT,
-                        matrices, vertexConsumers, light);
+                        entity, matrices, vertexConsumers, light);
             }
             case BODY -> draw(r.getChild("body"), biped.body, stack, ClothingStyle.Side.LEFT,
-                    matrices, vertexConsumers, light);
+                    entity, matrices, vertexConsumers, light);
             case ARMS -> {
                 draw(r.getChild("left_arm"), biped.leftArm, stack, ClothingStyle.Side.LEFT,
-                        matrices, vertexConsumers, light);
+                        entity, matrices, vertexConsumers, light);
                 draw(r.getChild("right_arm"), biped.rightArm, stack, ClothingStyle.Side.RIGHT,
-                        matrices, vertexConsumers, light);
+                        entity, matrices, vertexConsumers, light);
             }
         }
     }
 
     /** Copia la pose ya calculada de la parte del jugador y dibuja la nuestra encima. */
     private void draw(ModelPart ours, ModelPart players, ItemStack stack, ClothingStyle.Side side,
-                      MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light) {
-        Identifier texture = textureProvider.apply(stack, side);
+                      LivingEntity entity, MatrixStack matrices,
+                      VertexConsumerProvider vertexConsumers, int light) {
+        Identifier texture = textureProvider.get(stack, side, entity);
         VertexConsumer vertexConsumer = vertexConsumers.getBuffer(RenderLayer.getArmorCutoutNoCull(texture));
         ours.copyTransform(players);
         ours.render(matrices, vertexConsumer, light, OverlayTexture.DEFAULT_UV);

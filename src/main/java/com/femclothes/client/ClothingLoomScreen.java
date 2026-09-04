@@ -48,8 +48,12 @@ public class ClothingLoomScreen extends HandledScreen<ClothingLoomScreenHandler>
         // Selector de pierna, en el panel donde el Telar vanilla pone su
         // listado de patrones (acá vacío, porque cada ClothingPatternItem ya
         // lleva un patrón fijo).
+        // Debajo del fondo, no encima: el panel hundido de la derecha del
+        // Telar vanilla es su listado de patrones y se lee como un preview,
+        // asi que un boton ahi adentro queda fuera de lugar.
         this.targetButton = ButtonWidget.builder(targetLabel(), b -> cycleTarget())
-                .dimensions(this.x + 60, this.y + 20, 76, 20)
+                .dimensions(this.x + (this.backgroundWidth - 100) / 2,
+                        this.y + this.backgroundHeight + 4, 100, 20)
                 .build();
         this.addDrawableChild(this.targetButton);
     }

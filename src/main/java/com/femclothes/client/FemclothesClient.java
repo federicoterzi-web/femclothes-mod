@@ -5,6 +5,12 @@ import com.femclothes.item.FemclothesItems;
 import com.femclothes.render.BodyPartTrinketRenderer;
 import com.femclothes.render.ClothingTextureCache;
 import com.femclothes.render.CroptopArmorRenderProvider;
+import com.femclothes.render.SkinTextureAccess;
+import com.femclothes.render.SkinToneSampler;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.texture.NativeImage;
+import net.minecraft.client.util.SkinTextures;
+import net.minecraft.entity.LivingEntity;
 import com.femclothes.screen.FemclothesScreenHandlers;
 import dev.emi.trinkets.api.client.TrinketRendererRegistry;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
@@ -33,21 +39,32 @@ public class FemclothesClient implements ClientModInitializer {
         // en el pipeline viejo).
         Identifier socksSolidBase = Identifier.of("femclothes", "textures/models/armor/socks_solid_layer_1.png");
         TrinketRendererRegistry.registerRenderer(FemclothesItems.SOCKS_SOLID,
-                new BodyPartTrinketRenderer(BodyPartTrinketRenderer.Part.LEGS, (stack, side) -> {
+                new BodyPartTrinketRenderer(BodyPartTrinketRenderer.Part.LEGS, (stack, side, entity) -> {
                     int baseColor = ClothingStyle.baseColor(stack, side);
-                    // Sin patron en ESE lado, la pierna es lisa y alcanza con
-                    // tenir la base — el camino barato es el caso comun.
                     Identifier patternId = ClothingStyle.patternId(stack, side);
-                    if (patternId == null) {
-                        return ClothingTextureCache.tinted(socksSolidBase, baseColor);
-                    }
-                    return ClothingTextureCache.tintedWithPattern(socksSolidBase, baseColor,
-                            ClothingTextureCache.patternMaskFor("socks", patternId),
-                            ClothingStyle.patternColor(stack, side));
+                    Identifier mask = patternId == null ? null
+                            : ClothingTextureCache.patternMaskFor("socks", patternId);
+                    // Arriba de la media hay que reconstruir la pierna
+                    // desnuda: dejarla transparente mostraria el pantalon
+                    // pintado en la skin del jugador, no piel.
+                    return ClothingTextureCache.composeGarment(socksSolidBase, baseColor,
+                            mask, ClothingStyle.patternColor(stack, side), skinTone(entity));
                 }));
 
         // TODO: acá también va el registro de la geometría custom del
         // buzo oversize y la falda del traje de maid vía Armor Model API
         // (ver README, sección "Buzo oversize y Armor Model API").
+    }
+
+    /** Tono de piel del jugador, para reconstruir la piel que la prenda deja expuesta. */
+    private static int skinTone(LivingEntity entity) {
+        if (entity instanceof AbstractClientPlayerEntity player) {
+            SkinTextures skin = player.getSkinTextures();
+            NativeImage img = SkinTextureAccess.tryGetImage(skin);
+            if (img != null) {
+                return SkinToneSampler.sampleSkinTone(img, skin.model());
+            }
+        }
+        return SkinToneSampler.fallbackTone();
     }
 }

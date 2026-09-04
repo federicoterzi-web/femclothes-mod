@@ -76,6 +76,30 @@ public final class ClothingStyle {
         }
     }
 
+    /**
+     * Fija en la derecha lo que hoy hereda de la izquierda, ANTES de tocar la
+     * izquierda.
+     *
+     * Sin esto, tenir "solo la pierna izquierda" tenia el bug de tenir las
+     * dos: escribir el color base cambia la izquierda, y la derecha lo estaba
+     * heredando por el fallback. Hay que clavarle su valor actual primero
+     * para que se quede como estaba.
+     */
+    public static void pinRight(ItemStack stack) {
+        if (stack.get(FemclothesComponents.RIGHT_PATTERN_ID) == null) {
+            Identifier leftPattern = stack.get(FemclothesComponents.PATTERN_ID);
+            if (leftPattern != null) {
+                stack.set(FemclothesComponents.RIGHT_PATTERN_ID, leftPattern);
+                stack.set(FemclothesComponents.RIGHT_PATTERN_COLOR, patternColor(stack, Side.LEFT));
+            }
+        }
+        // El color va ultimo: patternId(RIGHT) usa la ausencia de
+        // RIGHT_DYED_COLOR para decidir si hereda el patron de la izquierda.
+        if (stack.get(FemclothesComponents.RIGHT_DYED_COLOR) == null) {
+            stack.set(FemclothesComponents.RIGHT_DYED_COLOR, baseColor(stack, Side.LEFT));
+        }
+    }
+
     /** Borra los overrides de la derecha: el par vuelve a ser parejo. */
     public static void clearRightOverrides(ItemStack stack) {
         stack.remove(FemclothesComponents.RIGHT_DYED_COLOR);

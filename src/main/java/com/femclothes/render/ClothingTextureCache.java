@@ -5,6 +5,7 @@ import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.resource.Resource;
 import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -178,6 +179,57 @@ public final class ClothingTextureCache {
         int bChan = (px >> 16) & 0xFF, gChan = (px >> 8) & 0xFF, rChan = px & 0xFF;
         int dr = (rgb >> 16) & 0xFF, dg = (rgb >> 8) & 0xFF, db = rgb & 0xFF;
         return (a << 24) | (((bChan * db) / 255) << 16) | (((gChan * dg) / 255) << 8) | ((rChan * dr) / 255);
+    }
+
+    /**
+     * Todo junto: base tenida + patron encima + relleno de PIEL en lo que la
+     * prenda deja transparente.
+     *
+     * El relleno es lo que hace que una media 3/4 se vea bien: arriba de la
+     * media hay que reconstruir la pierna desnuda, porque dejar alpha 0 ahi
+     * mostraria la skin del jugador, que casi siempre tiene un pantalon
+     * pintado. Pasar fillArgb = 0 deja esas zonas transparentes.
+     *
+     * mask puede ser null (prenda lisa).
+     */
+    public static Identifier composeGarment(Identifier baseTexture, int baseRgb,
+                                            @Nullable Identifier mask, int patternRgb,
+                                            int fillArgb) {
+        String key = baseTexture + "#" + Integer.toHexString(baseRgb)
+                + "@" + mask + "#" + Integer.toHexString(patternRgb)
+                + "~" + Integer.toHexString(fillArgb);
+        Identifier cached = TINTED_CACHE.get(key);
+        if (cached != null) return cached;
+
+        NativeImage base = getBaseImage(baseTexture);
+        if (base == null) return baseTexture;
+
+        NativeImage maskImg = mask != null ? getBaseImage(mask) : null;
+
+        NativeImage composite = new NativeImage(base.getWidth(), base.getHeight(), true);
+        for (int y = 0; y < base.getHeight(); y++) {
+            for (int x = 0; x < base.getWidth(); x++) {
+                if (maskImg != null && x < maskImg.getWidth() && y < maskImg.getHeight()) {
+                    int maskPx = maskImg.getColor(x, y);
+                    if (((maskPx >> 24) & 0xFF) != 0) {
+                        composite.setColor(x, y, tintPixel(maskPx, patternRgb));
+                        continue;
+                    }
+                }
+                int basePx = base.getColor(x, y);
+                if (((basePx >> 24) & 0xFF) != 0) {
+                    composite.setColor(x, y, tintPixel(basePx, baseRgb));
+                } else {
+                    composite.setColor(x, y, fillArgb);
+                }
+            }
+        }
+
+        Identifier id = Identifier.of("femclothes", "dynamic/garment_" + Integer.toHexString(key.hashCode()));
+        MinecraftClient.getInstance().getTextureManager()
+                .registerTexture(id, new NativeImageBackedTexture(composite));
+        TINTED_CACHE.put(key, id);
+        return id;
     }
 
     private static NativeImage getBaseImage(Identifier id) {

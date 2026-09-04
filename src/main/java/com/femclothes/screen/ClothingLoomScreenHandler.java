@@ -177,6 +177,12 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
         } else {
             ClothingStyle.Side side = this.target == Target.LEFT
                     ? ClothingStyle.Side.LEFT : ClothingStyle.Side.RIGHT;
+            if (side == ClothingStyle.Side.LEFT) {
+                // La derecha hereda de la izquierda mientras no tenga valores
+                // propios, asi que hay que clavarle los actuales antes de
+                // tocar la izquierda: si no, cambian las dos.
+                ClothingStyle.pinRight(result);
+            }
             apply(result, side, pattern, hasPattern, rgb);
         }
 
