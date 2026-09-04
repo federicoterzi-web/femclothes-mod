@@ -175,6 +175,8 @@ public final class ClothingTextureCache {
 
     private static final float FACE_LIGHT = 1.10F;
     private static final float FACE_DARK = 0.74F;
+    /** Ancho en pixeles de las caras frontal y trasera de una pierna. */
+    private static final int FACE_COLUMNS = 4;
 
     /**
      * Factor de luz del pixel segun donde cae en el cuboide de la pierna.
@@ -198,19 +200,35 @@ public final class ClothingTextureCache {
 
         // Pierna derecha, uv(0,16): caras laterales en y 20..31.
         if (y >= 20 && y <= 31 && x >= 0 && x <= 15) {
-            if (x <= 3) return FACE_LIGHT;          // WEST, exterior
-            if (x <= 7) return x == 7 ? FACE_DARK : 1.0F;   // NORTH, borde interno
-            if (x <= 11) return FACE_DARK;          // EAST, interior
-            return x == 12 ? FACE_DARK : 1.0F;      // SOUTH, borde interno
+            if (x <= 3) return FACE_LIGHT;              // WEST, exterior
+            if (x <= 7) return ramp(7 - x);             // NORTH: interno en x=7
+            if (x <= 11) return FACE_DARK;              // EAST, interior
+            return ramp(x - 12);                        // SOUTH: interno en x=12
         }
         // Pierna izquierda, uv(16,48): caras laterales en y 52..63.
         if (y >= 52 && y <= 63 && x >= 16 && x <= 31) {
-            if (x <= 19) return FACE_DARK;          // WEST, interior
-            if (x <= 23) return x == 20 ? FACE_DARK : 1.0F; // NORTH, borde interno
-            if (x <= 27) return FACE_LIGHT;         // EAST, exterior
-            return x == 31 ? FACE_DARK : 1.0F;      // SOUTH, borde interno
+            if (x <= 19) return FACE_DARK;              // WEST, interior
+            if (x <= 23) return ramp(x - 20);           // NORTH: interno en x=20
+            if (x <= 27) return FACE_LIGHT;             // EAST, exterior
+            return ramp(31 - x);                        // SOUTH: interno en x=31
         }
         return 1.0F;
+    }
+
+    /**
+     * Degrade a lo ancho de una cara frontal o trasera, de oscuro en el borde
+     * interno a claro en el externo.
+     *
+     * Una sola columna oscura cortaba demasiado. Repartirlo en las 4 columnas
+     * ademas se parece a como cae la luz en una pierna redonda: sombra del
+     * lado que da a la otra pierna, luz del lado de afuera.
+     *
+     * @param fromInner 0 en el borde interno, 3 en el externo.
+     */
+    private static float ramp(int fromInner) {
+        int span = FACE_COLUMNS - 1;
+        float t = Math.min(Math.max(fromInner, 0), span) / (float) span;
+        return FACE_DARK + (FACE_LIGHT - FACE_DARK) * t;
     }
 
     /** Aclara u oscurece un pixel ABGR sin tocarle el alpha. */
