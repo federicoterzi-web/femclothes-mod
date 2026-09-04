@@ -173,6 +173,41 @@ public final class ClothingTextureCache {
         return id;
     }
 
+    private static final float FACE_LIGHT = 1.10F;
+    private static final float FACE_DARK = 0.80F;
+
+    /** Factor de luz de la cara del cuboide en la que cae este pixel. */
+    private static float faceFactor(int x, int y, Shading shading) {
+        if (shading != Shading.LEGS) return 1.0F;
+        boolean rightLeg = y >= 16 && y <= 31 && x <= 15;
+        boolean leftLeg = y >= 48 && y <= 63 && x >= 16 && x <= 31;
+        if (!rightLeg && !leftLeg) return 1.0F;
+
+        int col = rightLeg ? x / 4 : (x - 16) / 4;
+        if (rightLeg) {
+            return switch (col) {
+                case 0 -> FACE_LIGHT;   // exterior
+                case 2 -> FACE_DARK;    // interior, mira a la otra pierna
+                default -> 1.0F;
+            };
+        }
+        return switch (col) {           // espejado en la pierna izquierda
+            case 0 -> FACE_DARK;
+            case 2 -> FACE_LIGHT;
+            default -> 1.0F;
+        };
+    }
+
+    /** Aclara u oscurece un pixel ABGR sin tocarle el alpha. */
+    private static int shade(int abgr, float f) {
+        if (f == 1.0F) return abgr;
+        int a = abgr & 0xFF000000;
+        int r = Math.min(255, Math.round((abgr & 0xFF) * f));
+        int g = Math.min(255, Math.round(((abgr >> 8) & 0xFF) * f));
+        int b = Math.min(255, Math.round(((abgr >> 16) & 0xFF) * f));
+        return a | (b << 16) | (g << 8) | r;
+    }
+
     /** Multiplica un pixel ABGR por un color RGB (el tinte estilo cuero). */
     private static int tintPixel(int px, int rgb) {
         int a = (px >> 24) & 0xFF;
@@ -211,16 +246,20 @@ public final class ClothingTextureCache {
         NativeImage composite = new NativeImage(base.getWidth(), base.getHeight(), true);
         for (int y = 0; y < base.getHeight(); y++) {
             for (int x = 0; x < base.getWidth(); x++) {
+                // El mismo factor por cara se aplica a la TELA, no solo a la
+                // piel: si la prenda es un color plano, las dos piernas se
+                // siguen leyendo pegadas aunque la piel este sombreada.
+                float f = faceFactor(x, y, shading);
                 if (maskImg != null && x < maskImg.getWidth() && y < maskImg.getHeight()) {
                     int maskPx = maskImg.getColor(x, y);
                     if (((maskPx >> 24) & 0xFF) != 0) {
-                        composite.setColor(x, y, tintPixel(maskPx, patternRgb));
+                        composite.setColor(x, y, shade(tintPixel(maskPx, patternRgb), f));
                         continue;
                     }
                 }
                 int basePx = base.getColor(x, y);
                 if (((basePx >> 24) & 0xFF) != 0) {
-                    composite.setColor(x, y, tintPixel(basePx, baseRgb));
+                    composite.setColor(x, y, shade(tintPixel(basePx, baseRgb), f));
                 } else {
                     composite.setColor(x, y, fill(x, y, skin, shading));
                 }

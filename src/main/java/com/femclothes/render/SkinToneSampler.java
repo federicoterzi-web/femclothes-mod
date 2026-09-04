@@ -86,7 +86,7 @@ public final class SkinToneSampler {
     public record Tones(int mid, int light, int dark) {}
 
     public static Tones fallbackTones() {
-        return new Tones(FALLBACK_ABGR, scale(FALLBACK_ABGR, 1.14F), scale(FALLBACK_ABGR, 0.78F));
+        return new Tones(FALLBACK_ABGR, scale(FALLBACK_ABGR, 1.18F), scale(FALLBACK_ABGR, 0.72F));
     }
 
     /**
@@ -135,7 +135,7 @@ public final class SkinToneSampler {
                 return new Tones(mid, light, dark);
             }
         }
-        return new Tones(mid, scale(mid, 1.14F), scale(mid, 0.78F));
+        return new Tones(mid, scale(mid, 1.18F), scale(mid, 0.72F));
     }
 
     private static int luminance(int abgr) {
