@@ -1,5 +1,6 @@
 {
   "parent": "block/block",
+  "render_type": "minecraft:cutout",
   "textures": {
     "wood": "sublimadora:block/sublimadora_wood",
     "wood_top": "sublimadora:block/sublimadora_wood_top",
