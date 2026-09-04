@@ -174,7 +174,7 @@ public final class ClothingTextureCache {
     }
 
     private static final float FACE_LIGHT = 1.10F;
-    private static final float FACE_DARK = 0.74F;
+    private static final float FACE_DARK = 0.84F;
     /** Ancho en pixeles de las caras frontal y trasera de una pierna. */
     private static final int FACE_COLUMNS = 4;
 
@@ -309,12 +309,34 @@ public final class ClothingTextureCache {
     /** Como sombrear la piel reconstruida segun a que parte del cuerpo va. */
     public enum Shading { NONE, LEGS }
 
-    /** Elige el tono de piel segun el mismo factor por cara que usa la tela. */
+    /**
+     * Tono de piel para este pixel, INTERPOLADO con el mismo factor por cara
+     * que usa la tela.
+     *
+     * Antes elegia entre los tres tonos sueltos, y como el degrade de una
+     * cara da 0.84 / 0.93 / 1.01 / 1.10, tres de las cuatro columnas caian
+     * en el mismo tono: la piel se veia de un color plano aunque la media
+     * ya tuviera degrade. Interpolando, la piel acompana a la tela.
+     */
     private static int fill(int x, int y, SkinToneSampler.Tones skin, Shading shading) {
         float f = faceFactor(x, y, shading);
-        if (f > 1.0F) return skin.light();
-        if (f < 1.0F) return skin.dark();
-        return skin.mid();
+        float t = (f - FACE_DARK) / (FACE_LIGHT - FACE_DARK);
+        t = Math.min(Math.max(t, 0.0F), 1.0F);
+        // Dos tramos, para que el tono medio real de la skin siga siendo el
+        // neutro y no se pierda al interpolar de punta a punta.
+        return t < 0.5F
+                ? lerp(skin.dark(), skin.mid(), t * 2.0F)
+                : lerp(skin.mid(), skin.light(), (t - 0.5F) * 2.0F);
+    }
+
+    /** Mezcla dos colores ABGR. */
+    private static int lerp(int a, int b, float t) {
+        int ar = a & 0xFF, ag = (a >> 8) & 0xFF, ab = (a >> 16) & 0xFF;
+        int br = b & 0xFF, bg = (b >> 8) & 0xFF, bb = (b >> 16) & 0xFF;
+        int r = Math.round(ar + (br - ar) * t);
+        int g = Math.round(ag + (bg - ag) * t);
+        int bl = Math.round(ab + (bb - ab) * t);
+        return 0xFF000000 | (bl << 16) | (g << 8) | r;
     }
 
     private static NativeImage getBaseImage(Identifier id) {
