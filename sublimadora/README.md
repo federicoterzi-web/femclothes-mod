@@ -284,6 +284,74 @@ Se arregla no dependiendo del orden. El contador se **recarga** mientras
 haya foto en vez de arrancar en la transición, así en el momento en que la
 foto se va ya está lleno, llegue lo que llegue primero.
 
+### La remera puesta: el layout de skin y el lienzo
+
+La prenda del cuerpo es una textura en **layout de skin** a 4x
+(`RemeraTrinketRenderer.ESCALA`), donde cada región es una cara de una
+`ModelPart`. No tiene nada que ver con el sprite de 16x16 del ítem, y
+confundir los dos es el error más fácil de cometer.
+
+Hay una plantilla dibujada en `calibracion/plantilla_skin.png` con cada
+región etiquetada. Vocabulario acordado para hablar de una manga: **superior,
+delantera, trasera, interna, externa**, más el puño, que no se pinta.
+
+⚠️ **Interna y externa no están en la misma columna en las dos mangas.** El
+desdoblado ordena siempre derecha / frente / izquierda / atrás en coordenadas
+del MODELO, y como un brazo está en −X y el otro en +X, eso las invierte. En
+la manga derecha la externa es la primera columna del bloque; en la izquierda
+es la tercera. Es lo que hace que un cambio "simétrico" salga espejado en un
+solo brazo.
+
+El full print no le da a cada cara su propio recorte: eso dejaba las mangas
+con un pedazo suelto que no continuaba el torso. Hay un **lienzo virtual de
+24x14** que es la prenda desenrollada de frente, y cada cara toma su ventana:
+
+```
+        0    4        8              16      20    24
+  y 0   │    │ supD   │   hombros    │ supI  │     │   banda del hombro
+  y 2   │extD│ mangaD │    TORSO     │mangaI │extI │
+  y 14  └────┴────────┴──────────────┴───────┴─────┘
+```
+
+Los dos números salieron de bugs concretos. **24 de ancho** porque las caras
+que envuelven —las externas— necesitan columna propia: sin ellas pedían el
+mismo rectángulo que las delanteras y se veían idénticas. **14 de alto**
+porque las caras horizontales necesitan una banda propia arriba: sin ella la
+superior de una manga pedía el mismo rectángulo que su delantera y salía
+repetida, nada más que rotada por la orientación de la cara.
+
+Cada cara está partida en mitad delantera y trasera, así un estampado de un
+solo lado no se desborda al otro por arriba del hombro o por el costado. La
+única entera es el ruedo, que es la boca de abajo y no se ve.
+
+### Tres flags que parecen uno solo pero no lo son
+
+Cada vez que se parte una cara queda a la vista que son independientes, y
+tenerlos mezclados hacía que arreglar una cara rompiera otra:
+
+| flag | qué decide |
+|---|---|
+| `atras` | de qué estampa es la cara |
+| `espejar` | eje horizontal invertido — sólo las que se **miran** desde atrás |
+| `espejarV` | eje vertical invertido — sólo las caras **horizontales** traseras |
+
+Pertenecer a la espalda no implica verse desde atrás: la mitad trasera de un
+costado es de la estampa de atrás pero se mira de perfil. Y verse desde atrás
+no implica estar invertida en vertical: eso les pasa sólo a las tapas de
+arriba, donde la mitad trasera tiene que continuar hacia la espalda y su eje
+v corre al revés.
+
+### Herramientas de calibración
+
+`calibracion/patron_calibracion.png` es una imagen 16:12 para subir con
+Camerapture y estampar en full print. El tono dice la columna, el brillo la
+fila, una diagonal negra cruza de esquina a esquina —si el motivo continúa de
+una cara a la otra, la línea sigue derecha— y una F blanca gigante delata
+cualquier espejado porque es asimétrica en los dos ejes.
+
+`calibracion/simulacion_cuerpo.png` es la misma cuenta hecha fuera del juego:
+sirve para saber si lo que se ve mal está en el render o en la tabla de caras.
+
 ### El sello de build
 
 El mod loguea al arrancar la fecha del build, que `processResources`
@@ -327,9 +395,12 @@ Que el croptop y la remera compartan slot es a propósito: dos prendas
 dibujadas sobre el mismo pedazo de cuerpo se pisarían, así que en vez de
 resolver el solapamiento se vuelven mutuamente excluyentes.
 
-> **Pendiente**: la remera entra al slot pero no se dibuja en el cuerpo.
-> Le falta un renderer, igual que al croptop. La estampa tampoco se ve
-> todavía sobre la remera apoyada en la plancha; eso es una capa de GeckoLib.
+La remera **se dibuja puesta**, con su estampa. Trinkets es una dependencia
+opcional, igual que Camerapture: sin ella la remera sigue siendo un ítem que
+se craftea y se estampa, sólo que no se puede vestir.
+
+> **Pendiente**: la estampa no se ve todavía sobre la remera apoyada en la
+> plancha; eso es una capa de GeckoLib.
 
 ## Camerapture, sin depender de Camerapture
 

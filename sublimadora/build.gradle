@@ -56,6 +56,13 @@ dependencies {
     modCompileOnly "maven.modrinth:camerapture:RYOi2mzR"
     modLocalRuntime "maven.modrinth:camerapture:RYOi2mzR"
 
+    // Trinkets, solo para compilar el renderer de la remera puesta. Mismo
+    // trato que Camerapture: opcional en runtime, con el acceso aislado
+    // detras de isModLoaded. Sin Trinkets la remera sigue siendo un item
+    // normal que se craftea y se estampa, nada mas que no se puede vestir.
+    // En el cliente de desarrollo lo aporta femclothes, que si lo necesita.
+    modCompileOnly "maven.modrinth:trinkets:3.10.0"
+
 }
 
 processResources {

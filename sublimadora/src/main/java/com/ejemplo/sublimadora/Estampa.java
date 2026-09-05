@@ -44,9 +44,9 @@ public record Estampa(UUID foto, float escala, float x, float y, boolean cubrir)
      */
     public enum Modo {
         /** Chica y arriba a la derecha: el logo bordado del pecho. */
-        LOGO("logo", 0.28f, 0.22f, 0.20f, false),
+        LOGO("logo", 0.42f, 0.18f, 0.18f, false),
         /** La estampa clasica: centrada, del tamano de un dibujo al frente. */
-        CENTRADA("centrada", 0.55f, 0f, 0.02f, false),
+        CENTRADA("centrada", 0.90f, 0f, 0.02f, false),
         /** Full print: cubre el torso entero, recortando lo que sobre. */
         COMPLETO("completo", 1.0f, 0f, 0f, true);
 

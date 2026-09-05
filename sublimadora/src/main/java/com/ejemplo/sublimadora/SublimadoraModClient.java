@@ -24,5 +24,12 @@ public class SublimadoraModClient implements ClientModInitializer {
         // no lo encuentra y la remera se ve invisible.
         ModelLoadingPlugin.register(contexto -> contexto.addModels(RemeraItemRenderer.MODELO_BASE));
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.REMERA, new RemeraItemRenderer());
+
+        // La remera puesta sobre el cuerpo, solo si Trinkets esta. El puente
+        // vive en otra clase para que la JVM no tenga que resolver clases de
+        // Trinkets cuando no esta instalado.
+        if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("trinkets")) {
+            TrinketsClientCompat.registrarRenderer();
+        }
     }
 }
