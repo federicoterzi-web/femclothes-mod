@@ -102,6 +102,37 @@ El componente viejo `picture_id` sigue registrado para leer las remeras de
 mundos guardados, donde la estampa era un UUID pelado siempre centrado
 adelante. Nada lo escribe.
 
+## Conseguirla y levantarla
+
+Se craftea con hierro, un pistón y un horno: el bastidor, la prensa que baja
+y el calor.
+
+Se pica **con la mano** en unos 3.7 s, o con pico de hierro en menos de uno.
+No lleva `requiresTool()` a propósito: con esa bandera la mano no dropeaba
+nada, y para una máquina que puede tener una remera estampada adentro eso es
+cruel. Igual está en `mineable/pickaxe` para que el pico sea la herramienta
+rápida.
+
+Al romperla **devuelve lo que tenga adentro** —remera, foto, o la estampada
+sin retirar— como un cofre. Sin eso el block entity se iba y con él sus
+`ItemStack`, sin aviso.
+
+**La tinta cargada viaja adentro del ítem.** Es el mismo mecanismo con el que
+una caja de shulker se lleva su contenido: `collectImplicitComponents` al
+romper, `applyImplicitComponents` al colocar, y la loot table copia el
+componente sola con `minecraft:copy_components`. El ítem lo dice en el
+tooltip, porque si no dos sublimadoras idénticas —una llena y otra vacía— no
+se podrían distinguir hasta colocarlas.
+
+Detalle que hay que hacer a mano: `removeFromCopiedStackNbt` borra esas
+claves del NBT copiado. Si no, la tinta viajaría **dos veces** —en el
+componente y en el NBT del block entity— y dos máquinas con la misma tinta
+no apilarían entre sí.
+
+Lo que no vuelve es la tinta al romper: son cuatro tanques de hasta 16 dosis
+y no hay ítem que represente una dosis suelta, así que reintegrarla sería
+inventar tintes de la nada. Por eso viaja en el ítem en vez de devolverse.
+
 ## Editar el modelo en Blockbench
 
 ```
@@ -151,8 +182,14 @@ Zonas con dueño, para no pisarlas:
 | `(32,48)` | LED verde — idem |
 | `(48,48)`–`(58,48)` | caras laterales de la remera, **vacía a propósito** |
 | `(0,48)` | barra de tinta negra |
+| `(0,32)`–`(1,35)` | pista de las cuatro barras, **gris a propósito** |
 | `(48,16)`–`(58,26)` | la remera vista desde arriba |
 | `(16,19)` | el píxel más oscuro, lo usan los zócalos |
+
+La pista gris tampoco es decorativa. Era `(25,27,30)` y la barra negra es
+`(33,34,38)`: ocho puntos por canal, o sea la barra dibujándose sobre un
+fondo de su mismo color. Un gris medio y no claro, porque contra uno claro
+el amarillo perdía fuerza.
 
 Esa franja vacía en `y=48` no es un olvido: las cuatro caras laterales de
 la remera la muestrean, y con un texel opaco quedaba un marco blanco
@@ -226,6 +263,26 @@ Dos cosas que hay que saber si se toca:
 - **`item/remera_base` no lo referencia nadie**, así que Minecraft no lo
   hornea. Hay que pedirlo con `ModelLoadingPlugin.addModels` o el renderer no
   lo encuentra y la remera se ve invisible.
+
+### Dos superficies coplanares parpadean de lejos
+
+Pasó dos veces: la estampa sobre el ítem y la foto sobre la plancha. En los
+dos casos había puesto la capa de arriba **exactamente** sobre la de abajo
+—`0.0313` contra la cara del modelo en `0.03125`, cinco cienmilésimas— y de
+cerca el z-buffer todavía las distinguía, pero de lejos pierde precisión y
+se pelean. Hay que dejar al menos medio píxel de separación.
+
+### El orden de llegada de dos paquetes no está garantizado
+
+Al cerrar la tapa viajan por separado el cambio de estado del bloque y el
+NBT del block entity. El arrastre que mantiene la foto a la vista arrancaba
+al detectar la tapa cerrándose, así que si el NBT sin foto llegaba primero
+la foto desaparecía, y un tick después el arrastre la hacía volver: un
+parpadeo.
+
+Se arregla no dependiendo del orden. El contador se **recarga** mientras
+haya foto en vez de arrancar en la transición, así en el momento en que la
+foto se va ya está lleno, llegue lo que llegue primero.
 
 ### El sello de build
 

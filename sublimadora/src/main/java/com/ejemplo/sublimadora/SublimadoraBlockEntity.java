@@ -94,8 +94,7 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
 
     // Solo para dibujar, no se guardan: hacen que la foto siga a la vista
     // mientras la tapa baja, en vez de evaporarse antes de que la cubra.
-    private boolean tapaAbiertaVista = true;
-    private int cerrandose = 0;
+    private int arrastre = 0;
     private java.util.UUID ultimaFotoVista = null;
 
     public SublimadoraBlockEntity(BlockPos pos, BlockState state) {
@@ -139,16 +138,23 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
             if (Math.abs(be.tinta[i] - be.mostrado[i]) < 0.001f) be.mostrado[i] = be.tinta[i];
         }
 
-        // Arrastre de la tapa. Va antes del corte por lado porque es puro
+        // Arrastre de la foto. Va antes del corte por lado porque es puro
         // dibujo y lo necesita el cliente.
-        boolean abierta = state.get(SublimadoraBlock.OPEN);
-        if (abierta != be.tapaAbiertaVista) {
-            be.tapaAbiertaVista = abierta;
-            if (!abierta) be.cerrandose = TICKS_CIERRE;
-        }
-        if (be.cerrandose > 0) be.cerrandose--;
+        //
+        // El contador se RECARGA mientras haya foto, en vez de arrancar
+        // cuando se cierra la tapa. Al cerrar viajan dos cosas por separado
+        // -el cambio de estado del bloque y el NBT del block entity- y no
+        // llegan juntas: si el NBT sin foto llegaba primero, la foto
+        // desaparecia, y un tick despues el cambio de tapa arrancaba el
+        // arrastre y la hacia volver. Ese ida y vuelta era el parpadeo.
+        // Recargando, el arrastre ya esta lleno pase lo que pase.
         java.util.UUID cargadaAhora = be.getFotoCargada();
-        if (cargadaAhora != null) be.ultimaFotoVista = cargadaAhora;
+        if (cargadaAhora != null) {
+            be.ultimaFotoVista = cargadaAhora;
+            be.arrastre = TICKS_CIERRE;
+        } else if (be.arrastre > 0) {
+            be.arrastre--;
+        }
 
         // El avance del prensado lo lleva el SERVIDOR; el cliente solo dibuja
         // lo que le sincroniza el NBT.
@@ -338,10 +344,12 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
      */
     @org.jetbrains.annotations.Nullable
     public java.util.UUID getFotoVisible() {
-        if (getCachedState().get(SublimadoraBlock.OPEN)) return getFotoCargada();
-        if (cerrandose <= 0) return null;
-        java.util.UUID cargada = getFotoCargada();
-        return cargada != null ? cargada : ultimaFotoVista;
+        if (getCachedState().get(SublimadoraBlock.OPEN)) {
+            java.util.UUID cargada = getFotoCargada();
+            if (cargada != null) return cargada;
+        }
+        // Tapa cerrada, o abierta pero ya sin foto: los ticks de gracia.
+        return arrastre > 0 ? ultimaFotoVista : null;
     }
 
     public Estampa.Modo getModo() {
@@ -354,6 +362,21 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         modo = modo.siguiente();
         sincronizar();
         return true;
+    }
+
+    /**
+     * Todo lo que la maquina tiene adentro, para devolverlo al romperla.
+     *
+     * La tinta cargada no se devuelve: son cuatro tanques con hasta 16 dosis
+     * cada uno y no hay item que represente una dosis suelta, asi que
+     * reintegrarla seria inventar tintes de la nada.
+     */
+    public java.util.List<ItemStack> contenido() {
+        java.util.List<ItemStack> todo = new java.util.ArrayList<>();
+        if (!remera.isEmpty()) todo.add(remera);
+        if (!foto.isEmpty()) todo.add(foto);
+        if (!salida.isEmpty()) todo.add(salida);
+        return todo;
     }
 
     /** Saca lo que haya para retirar: la remera lista, o lo que este cargado. */
@@ -518,6 +541,44 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         modo = nbt.contains("Modo")
                 ? Estampa.Modo.valueOf(nbt.getString("Modo"))
                 : Estampa.Modo.COMPLETO;
+    }
+
+    // ── la tinta viaja adentro del item ──────────────────────────────
+    //
+    // collectImplicit/applyImplicit es el mismo mecanismo con el que una caja
+    // de shulker se lleva su contenido: la loot table copia el componente al
+    // item al romper, y al colocar el bloque vuelve al block entity.
+
+    @Override
+    protected void addComponents(net.minecraft.component.ComponentMap.Builder builder) {
+        super.addComponents(builder);
+        java.util.List<Integer> lista = new java.util.ArrayList<>(4);
+        for (int i = 0; i < 4; i++) lista.add(cargas[i]);
+        builder.add(ModItems.CARGAS, lista);
+    }
+
+    @Override
+    protected void readComponents(BlockEntity.ComponentsAccess componentes) {
+        super.readComponents(componentes);
+        java.util.List<Integer> lista = componentes.get(ModItems.CARGAS);
+        if (lista == null) return;
+        for (int i = 0; i < 4 && i < lista.size(); i++) {
+            cargas[i] = MathHelper.clamp(lista.get(i), 0, CARGA_MAXIMA);
+            tinta[i] = cargas[i] / (float) CARGA_MAXIMA;
+            mostrado[i] = tinta[i];
+            anterior[i] = tinta[i];
+        }
+    }
+
+    /**
+     * Sin esto el item quedaria con las cargas DOS veces -en el componente y
+     * en el NBT del block entity copiado- y dos maquinas con la misma tinta
+     * no apilarian entre si.
+     */
+    @Override
+    public void removeFromCopiedStackNbt(NbtCompound nbt) {
+        super.removeFromCopiedStackNbt(nbt);
+        for (String clave : CLAVES) nbt.remove(clave + "Cargas");
     }
 
     /** El cliente necesita los niveles para dibujar el display. */

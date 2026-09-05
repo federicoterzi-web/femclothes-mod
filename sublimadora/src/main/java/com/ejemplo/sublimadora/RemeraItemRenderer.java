@@ -52,11 +52,16 @@ public class RemeraItemRenderer implements BuiltinItemRendererRegistry.DynamicIt
     private static final float LLENO_ANCHO = 8f / 16f;
     private static final float LLENO_ALTO = 11f / 16f;
     /**
-     * Medio pixel de item: el modelo item/generated tiene 1/16 de espesor
-     * centrado en el origen, asi que sus caras estan en +-0.0313. Poner la
-     * estampa justo ahi la deja pegada a la tela sin pelearse en el z-buffer.
+     * Donde se apoya la estampa. El modelo item/generated tiene 1/16 de
+     * espesor centrado en el origen, asi que sus caras estan en 0.03125
+     * exacto.
+     *
+     * Los 0.0022 de mas NO son decorativos: con la estampa a 0.0313 quedaba
+     * a cinco cienmilesimas de la cara, o sea coplanar para cualquier efecto
+     * practico, y de lejos el z-buffer perdia precision y las dos superficies
+     * se peleaban. Eso era el parpadeo de la remera tirada en el piso.
      */
-    private static final float Z_TELA = 0.0313f;
+    private static final float Z_TELA = 0.03345f;
 
     @Override
     public void render(ItemStack stack, ModelTransformationMode modo, MatrixStack matrices,

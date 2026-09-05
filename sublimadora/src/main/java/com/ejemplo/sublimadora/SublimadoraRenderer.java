@@ -20,8 +20,12 @@ import java.util.UUID;
  */
 public class SublimadoraRenderer extends GeoBlockRenderer<SublimadoraBlockEntity> {
 
-    /** Altura de la foto apoyada: la remera va de 10.98 a 11.40. */
-    private static final float Y_FOTO = 11.55f / 16f;
+    /**
+     * Altura de la foto apoyada. La remera va de 10.98 a 11.40, y 11.55 la
+     * dejaba a 0.15 de pixel de su cara: suficiente para que el z-buffer las
+     * confundiera de lejos y parpadearan. Medio pixel entero las separa.
+     */
+    private static final float Y_FOTO = 11.9f / 16f;
     /** Lado del papel sobre la plancha, en bloques. */
     private static final float LADO = 7f / 16f;
 
