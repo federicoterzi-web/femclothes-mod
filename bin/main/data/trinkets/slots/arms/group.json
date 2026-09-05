@@ -1,4 +1,0 @@
-{
-  "_comment": "Config del grupo de slot 'arms' para los calentadores de brazo. Ver wiki de Trinkets Data Formats: data/trinkets/slots/[group]/group.json. Ajustar 'order' si se superpone con otro grupo en la UI.",
-  "order": 10
-}

@@ -15,3 +15,7 @@ Thumbs.db
 
 # El subproyecto tiene su propio build/
 sublimadora/build/
+
+# Salida del plugin de Java de VSCode: compila en paralelo a Gradle y no debe
+# versionarse ni quedar en el classpath.
+bin/

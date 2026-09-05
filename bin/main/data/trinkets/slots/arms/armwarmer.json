@@ -1,5 +1,0 @@
-{
-  "_comment": "Slot individual dentro del grupo 'arms'. Verificar el schema exacto contra la wiki de TU fork de Trinkets (original / Canary / Updated) antes de compilar, el formato de icon/order puede variar levemente entre forks.",
-  "icon": "femclothes:item/armwarmers",
-  "order": 0
-}
