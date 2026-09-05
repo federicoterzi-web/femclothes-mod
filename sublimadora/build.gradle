@@ -64,6 +64,21 @@ processResources {
     filesMatching("fabric.mod.json") {
         expand "version": project.version
     }
+
+    // Sello de build. El mod lo loguea al arrancar y asi se puede contestar
+    // "¿el cliente abierto tiene mis cambios?" comparando contra este archivo,
+    // sin discutir.
+    //
+    // Tiene que ser un RECURSO y no un hash de las clases: en el cliente de
+    // desarrollo Loom remapea el jar de intermediary a nombres yarn, con lo
+    // cual los .class cambian de bytes aunque el codigo sea identico y
+    // cualquier huella calculada sobre ellos da distinto siempre. Los
+    // recursos, en cambio, pasan tal cual por el remapeo.
+    def sello = new Date().format("yyyy-MM-dd HH:mm:ss")
+    inputs.property "sello", sello          // fuerza rearmado en cada build
+    doLast {
+        new File(destinationDir, "sublimadora_build.txt").text = sello
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
