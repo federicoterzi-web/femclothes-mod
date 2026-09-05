@@ -2,7 +2,7 @@
   "block.sublimadora.sublimadora": "Heat Press",
   "item.sublimadora.remera": "T-Shirt",
   "sublimadora.remera.en_blanco": "Blank",
-  "sublimadora.remera.estampada": "Printed",
+  "sublimadora.remera.estampada": "Printed: %s",
   "sublimadora.aviso.prensando": "Already pressing",
   "sublimadora.aviso.retirar": "Take the finished shirt out first",
   "sublimadora.aviso.cargar": "To print you need a blank T-shirt and a photo",
@@ -10,5 +10,8 @@
   "sublimadora.tinta.cian": "cyan",
   "sublimadora.tinta.magenta": "magenta",
   "sublimadora.tinta.amarillo": "yellow",
-  "sublimadora.tinta.negro": "black"
+  "sublimadora.tinta.negro": "black",
+  "sublimadora.cara.frente": "front",
+  "sublimadora.cara.espalda": "back",
+  "sublimadora.aviso.cara": "Will print on the %s"
 }

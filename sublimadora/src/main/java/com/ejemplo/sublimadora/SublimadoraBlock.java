@@ -91,7 +91,9 @@ public class SublimadoraBlock extends BlockWithEntity {
             }
             return ItemActionResult.CONSUME;
         }
-        if (stack.getItem() == ModItems.REMERA && !RemeraItem.estaEstampada(stack)) {
+        // Se acepta mientras le quede alguna cara sin estampar: una remera
+        // con el frente hecho vuelve a entrar para imprimirle la espalda.
+        if (stack.getItem() == ModItems.REMERA && !tieneLasDosCaras(stack)) {
             if (be.ponerRemera(stack)) {
                 if (!player.isCreative()) stack.decrement(1);
                 sonar(world, pos, SoundEvents.BLOCK_WOOL_PLACE, 1.0f);
@@ -99,9 +101,13 @@ public class SublimadoraBlock extends BlockWithEntity {
             return ItemActionResult.CONSUME;
         }
         if (esFoto(stack)) {
-            if (be.ponerFoto(stack, uuidDeFoto(stack))) {
+            Estampa.Cara cara = caraSegunDondeClickeaste(state, pos, hit);
+            if (be.ponerFoto(stack, uuidDeFoto(stack), cara)) {
                 if (!player.isCreative()) stack.decrement(1);
                 sonar(world, pos, SoundEvents.ITEM_BOOK_PAGE_TURN, 1.0f);
+                player.sendMessage(net.minecraft.text.Text.translatable(
+                        "sublimadora.aviso.cara",
+                        net.minecraft.text.Text.translatable("sublimadora.cara." + cara.clave)), true);
             }
             return ItemActionResult.CONSUME;
         }
@@ -148,6 +154,33 @@ public class SublimadoraBlock extends BlockWithEntity {
             }
         }
         return ActionResult.SUCCESS;
+    }
+
+    private static boolean tieneLasDosCaras(ItemStack stack) {
+        return RemeraItem.estampaDe(stack, Estampa.Cara.FRENTE) != null
+                && RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA) != null;
+    }
+
+    /**
+     * En que cara se estampa, segun en que mitad de la plancha soltaste la
+     * foto: la mitad del lado del panel es el frente de la remera, la de
+     * atras es la espalda.
+     *
+     * Se eligio esto y no un boton porque no necesita ni estado nuevo en el
+     * bloque ni un indicador en el modelo, y porque apoyar la foto sobre la
+     * mitad que queres imprimir es lo que harias con una sublimadora de
+     * verdad.
+     */
+    private static Estampa.Cara caraSegunDondeClickeaste(BlockState state, BlockPos pos, BlockHitResult hit) {
+        double lx = hit.getPos().x - pos.getX();
+        double lz = hit.getPos().z - pos.getZ();
+        double haciaElPanel = switch (state.get(FACING)) {
+            case NORTH -> 1.0 - lz;
+            case SOUTH -> lz;
+            case WEST -> 1.0 - lx;
+            default -> lx;          // EAST
+        };
+        return haciaElPanel > 0.5 ? Estampa.Cara.FRENTE : Estampa.Cara.ESPALDA;
     }
 
     private static void sonar(World world, BlockPos pos, net.minecraft.sound.SoundEvent ev, float tono) {

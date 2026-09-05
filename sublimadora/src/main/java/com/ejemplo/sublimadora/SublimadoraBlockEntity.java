@@ -85,6 +85,8 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
     private ItemStack foto = ItemStack.EMPTY;
     private ItemStack salida = ItemStack.EMPTY;
     private java.util.UUID fotoPendiente = null;
+    /** En que cara se va a estampar. La elige el jugador al poner la foto. */
+    private Estampa.Cara caraPendiente = Estampa.Cara.FRENTE;
 
     public SublimadoraBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlocks.SUBLIMADORA_ENTITY, pos, state);
@@ -169,7 +171,8 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         if (be.progreso >= TICKS_PRENSADO) {
             be.progreso = 0;
             be.estado = Estado.LISTO;
-            be.salida = RemeraItem.estampar(be.remera, be.fotoPendiente);
+            be.salida = RemeraItem.estampar(be.remera, be.caraPendiente,
+                    Estampa.centrada(be.fotoPendiente));
             be.remera = ItemStack.EMPTY;
             be.fotoPendiente = null;
             // Esto es exactamente el tick en que se prende el LED verde, que
@@ -281,15 +284,22 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         return true;
     }
 
-    public boolean ponerFoto(ItemStack stack, java.util.UUID id) {
+    public boolean ponerFoto(ItemStack stack, java.util.UUID id, Estampa.Cara cara) {
         if (!foto.isEmpty() || estado != Estado.REPOSO) return false;
         // Sin UUID no hay nada que estampar: se rechaza en vez de gastar
         // tinta para producir una remera en blanco.
         if (id == null) return false;
+        // Esa cara ya estampada: rechazar en vez de pisarla en silencio.
+        if (!remera.isEmpty() && RemeraItem.estampaDe(remera, cara) != null) return false;
         foto = stack.copyWithCount(1);
         fotoPendiente = id;
+        caraPendiente = cara;
         sincronizar();
         return true;
+    }
+
+    public Estampa.Cara getCaraPendiente() {
+        return caraPendiente;
     }
 
     /** Saca lo que haya para retirar: la remera lista, o lo que este cargado. */
@@ -423,6 +433,7 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         if (!foto.isEmpty()) nbt.put("Foto", foto.encode(registries));
         if (!salida.isEmpty()) nbt.put("Salida", salida.encode(registries));
         if (fotoPendiente != null) nbt.putUuid("FotoPendiente", fotoPendiente);
+        nbt.putString("CaraPendiente", caraPendiente.name());
     }
 
     @Override
@@ -446,6 +457,9 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         foto = nbt.contains("Foto") ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Foto")) : ItemStack.EMPTY;
         salida = nbt.contains("Salida") ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Salida")) : ItemStack.EMPTY;
         fotoPendiente = nbt.containsUuid("FotoPendiente") ? nbt.getUuid("FotoPendiente") : null;
+        caraPendiente = nbt.contains("CaraPendiente")
+                ? Estampa.Cara.valueOf(nbt.getString("CaraPendiente"))
+                : Estampa.Cara.FRENTE;
     }
 
     /** El cliente necesita los niveles para dibujar el display. */

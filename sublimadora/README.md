@@ -25,13 +25,37 @@ Si al cerrar la tapa no puede arrancar, lo dice en la barra de acción en
 vez de quedarse muda — el silencio era indistinguible de estar rota.
 Agachado, el click descarga lo que haya puesto, para poder corregir.
 
-La remera es **un solo ítem**. Lo que cambia es el componente
-`sublimadora:picture_id` con el UUID de la foto: ausente = en blanco. Se
-guarda el UUID y no la imagen, así el `ItemStack` pesa lo mismo con o sin
-estampa y la imagen sigue viviendo en el almacenamiento de Camerapture.
+La remera es **un solo ítem**. Lo que cambia son dos componentes,
+`estampa_frente` y `estampa_espalda`; sin ninguno está en blanco. Cada uno
+guarda el UUID de la foto y no la imagen, así el `ItemStack` pesa lo mismo
+con o sin estampa y la imagen sigue viviendo en el almacenamiento de
+Camerapture.
 
-> **Pendiente**: el UUID se guarda pero todavía no se dibuja. La remera
-> estampada se ve igual que la lisa.
+**Una cara por ciclo.** Estampar frente y espalda cuesta dos pasadas y dos
+juegos de tinta. No es una limitación técnica: la máquina prensa un lado a la
+vez, igual que una de verdad. Una remera con el frente hecho vuelve a entrar
+para imprimirle la espalda, y si intentás pisar una cara que ya tiene dibujo
+la rechaza en vez de sobreescribirla en silencio.
+
+```java
+record Estampa(UUID foto, float escala, float x, float y)
+```
+
+`escala` y la posición van **normalizadas al área imprimible**, no en
+píxeles: así el mismo número sirve para el ícono del inventario, para la
+remera en la plancha y para cuando se dibuje sobre el cuerpo, que son tres
+resoluciones distintas. El render ya las respeta; lo que falta es por dónde
+tocarlas — hoy todo sale centrado y en `0.42`.
+
+**Los PNG con transparencia funcionan**, verificado de punta a punta. El
+alfa sobrevive el viaje por Camerapture aunque comprima en WebP con pérdida.
+Del lado nuestro la estampa se dibuja con `getEntityTranslucent` y no con
+`getEntityCutout`: cutout hace alfa **binario** y se come cualquier degradé,
+que es justo lo que tiene un logo con bordes suavizados.
+
+El componente viejo `picture_id` sigue registrado para leer las remeras de
+mundos guardados, donde la estampa era un UUID pelado siempre centrado
+adelante. Nada lo escribe.
 
 ## Editar el modelo en Blockbench
 
@@ -140,6 +164,22 @@ con `translate(-0.5,-0.5,-0.5)` y GeckoLib suma `translate(0.5, 0.51,
 en el origen, no centrado en él— así que su centro queda medio bloque
 arriba. Adentro del `scale` eso son `0.51 * 0.625 * 16 = 5.1` píxeles.
 
+### La remera del inventario no la dibujamos nosotros
+
+`RemeraItemRenderer` no reimplementa el aspecto de la remera: le pide al
+`ItemRenderer` el modelo `item/remera_base` —un `item/generated` normal— y
+recién después le pega la foto adelante. Hacerla a mano habría costado el
+relieve y el sombreado que vanilla le da gratis a cualquier ítem plano.
+
+Dos cosas que hay que saber si se toca:
+
+- **`renderItem` vuelve a hacer `translate(-0.5,-0.5,-0.5)`** por su cuenta, y
+  vanilla ya lo hizo antes de llamar al renderer builtin. Sin compensarlo la
+  remera sale corrida un bloque entero.
+- **`item/remera_base` no lo referencia nadie**, así que Minecraft no lo
+  hornea. Hay que pedirlo con `ModelLoadingPlugin.addModels` o el renderer no
+  lo encuentra y la remera se ve invisible.
+
 ### El sello de build
 
 El mod loguea al arrancar la fecha del build, que `processResources`
@@ -184,7 +224,8 @@ dibujadas sobre el mismo pedazo de cuerpo se pisarían, así que en vez de
 resolver el solapamiento se vuelven mutuamente excluyentes.
 
 > **Pendiente**: la remera entra al slot pero no se dibuja en el cuerpo.
-> Le falta un renderer, igual que al croptop.
+> Le falta un renderer, igual que al croptop. La estampa tampoco se ve
+> todavía sobre la remera apoyada en la plancha; eso es una capa de GeckoLib.
 
 ## Camerapture, sin depender de Camerapture
 
