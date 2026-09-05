@@ -8,6 +8,16 @@ Mod completo usando Trinkets + Cosmetic Armor Updated + Armor Model API.
 Toda la sincronización e inventario extra la resuelven esas librerías —
 no hay `WardrobeComponent` propio.
 
+> **En este repo hay DOS mods.** `sublimadora/` es un mod aparte, con su
+> propio jar y su propio `build.gradle` — una prensa térmica que estampa
+> fotos de Camerapture sobre remeras. Lo único que comparten es el slot de
+> torso de Trinkets, y sin depender uno del otro. Su documentación está en
+> [`sublimadora/README.md`](sublimadora/README.md).
+>
+> Para correr el cliente: `gradlew.bat :runClient` **con los dos puntos**.
+> Sin ellos, Gradle corre la tarea en los dos subproyectos y te levanta dos
+> instancias con mundos distintos.
+
 ## Cómo queda mapeada cada prenda
 
 | Prenda | Mecanismo | Clase |
@@ -20,6 +30,18 @@ no hay `WardrobeComponent` propio.
 | Buzo oversize | Slot cosmético CHESTPLATE + geometría propia | `ClothingArmorItem` + Armor Model API |
 | Calentadores de brazo | Slot custom "arms" (Trinkets, no vanilla) | `ArmWarmerItem` (`TrinketItem`) |
 | **Medias color pleno** | Slot custom `socks/pair` (Trinkets), dibujada sobre la ModelPart real | `ClothingTrinketItem` + `BodyPartTrinketRenderer` |
+
+El croptop además entra en el slot custom `torso/prenda`, **compartido con
+la remera estampada de la sublimadora**. Que compartan slot es a propósito:
+dos prendas sobre el mismo pedazo de cuerpo se pisarían, así que en vez de
+resolver el solapamiento se vuelven mutuamente excluyentes. Cada mod declara
+su ítem en el tag y los tags se fusionan, así que ninguno depende del otro.
+Hoy entra al slot pero todavía no se dibuja en el cuerpo.
+
+Los iconos de los huecos vacíos van en `textures/gui/slot/`, en gris y al 45%
+de alpha. No apuntar a la textura del ítem: a todo color se lee como si ya
+hubiera algo equipado. Y el slot sin campo `icon` hace que Trinkets pida
+`minecraft:textures/.png` en cada frame.
 
 Las prendas marcadas con `ClothingArmorItem` siguen en el sistema viejo
 (geometria de armadura, mas ancha). Solo `socks_solid` esta migrada al
@@ -91,8 +113,6 @@ hace 2 pasadas de render por frame:
    jugador eligió al teñirlo — la franja de panza de esa textura tiene
    que tener alpha 0 para que se vea la pasada 1 por debajo.
 
-## Lo que falta completar
-
 ## Texturas: DOS layouts distintos segun el renderer
 
 Esta es la trampa mas facil de pisar del proyecto. El layout de la textura
@@ -127,24 +147,34 @@ resto. Si falta, la prenda cae a lisa en vez de romperse.
 Hay texturas de PRUEBA generadas para `socks_solid` (media + mascara
 `stripe_top`) y los iconos de item. Todo lo demas sigue sin arte.
 
-## Lo que falta completar
+## Lección que quedó escrita al revés
 
-1. ~~`SkinTextureAccess.tryGetImage(...)`~~ — RESUELTO, pero NO como decia
-   esta nota: las skins de Mojang son `PlayerSkinTexture`, que extiende
-   `ResourceTexture`, no `NativeImageBackedTexture` — ese cast falla para
-   toda skin real. Se resolvio leyendo los pixeles de vuelta desde la GPU
-   con `NativeImage.loadFromTextureImage()`, cacheado por Identifier.
-2. **Geometría del buzo oversize y falda del traje de maid** — vía
-   Armor Model API, formato `.geo.json` estilo Bedrock/GeckoLib,
-   hecho en Blockbench. Ver `FemclothesClient.java`, hay un TODO
-   marcando dónde va el registro.
-3. **Texturas de item y de armadura** — las 7 prendas necesitan su
-   arte. El croptop en particular necesita alpha 0 en la franja de
-   panza (ver corrección de arriba).
+La nota vieja decía que para leer los píxeles de la skin bastaba castear a
+`NativeImageBackedTexture`. Es falso: las skins de Mojang son
+`PlayerSkinTexture`, que extiende `ResourceTexture`, y ese cast falla para
+toda skin real. Lo que funciona es leer los píxeles de vuelta desde la GPU
+con `NativeImage.loadFromTextureImage()`, en el hilo de render y cacheado
+por Identifier. Está en `SkinTextureAccess`.
 
-## Proximo paso a probar en el juego
+## Estado al 2026-09-05
 
-1. Craftear medias con 6 lanas de un mismo color.
-2. Click derecho en un Telar **con las medias en la mano** — tiene que
-   abrir el Telar de Ropa, no el de banderas.
-3. Medias + tinte = recolorea. Medias + tinte + patron = aplica la raya.
+Andando: crafteo de medias, telar vanilla con patrones y por pierna,
+resolución x2, sombreado, reconstrucción de piel y el mixin de override de
+skin. La sublimadora hace el ciclo completo de sublimado.
+
+Lo próximo, por orden de valor:
+
+1. **Dibujar la foto estampada en la remera** — hoy se guarda el UUID y no
+   se dibuja nada, ni en el ítem ni sobre el cuerpo.
+2. **Migrar croptop y shorts a `BodyPartTrinketRenderer`** — ver el problema
+   abierto de dos prendas en la misma parte del cuerpo, en
+   `RESUMEN_PRENDAS_Y_RECETAS.md`.
+3. **Verificar la integración con 3D Skin Layers** — el puente
+   `HttpTextureAccessor` está escrito pero nunca se probó en el juego; sus
+   líneas de `modLocalRuntime` siguen comentadas en `build.gradle`.
+4. **Geometría del buzo oversize y la falda del traje de maid** — vía Armor
+   Model API, `.geo.json` estilo Bedrock hecho en Blockbench. Hay un TODO en
+   `FemclothesClient.java` marcando dónde va el registro.
+5. **Arte de verdad.** Solo las medias tienen textura, y es de prueba
+   generada por script. Las otras siete prendas no tienen nada. El croptop
+   necesita alpha 0 en la franja de panza.

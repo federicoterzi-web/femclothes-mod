@@ -1,0 +1,195 @@
+# Sublimadora — mod aparte, mismo repo
+
+Prensa térmica que estampa fotos de [Camerapture](https://modrinth.com/mod/camerapture)
+sobre remeras en blanco. Es un **mod independiente** (`sublimadora`), no
+parte de FemClothes: se construye como subproyecto de Gradle y sale como
+su propio jar.
+
+Lo único que comparten es el slot de torso de Trinkets, y lo comparten sin
+depender uno del otro — ver abajo.
+
+## El ciclo
+
+1. Tapa abierta. Click con un **tinte** carga ese tanque (hasta 16 de cada
+   uno de los cuatro CMYK). Click con una **remera en blanco** la apoya en
+   la plancha. Click con una **foto** la carga.
+2. Click con la mano vacía cierra la tapa. **Cerrar la tapa es lo que
+   dispara el prensado**, y ahí se consume la foto más una carga de cada
+   color.
+3. Veinte segundos (400 ticks) con el LED rojo parpadeando, un beep por
+   parpadeo y vapor saliendo por la junta.
+4. Poof de descarga, y ocho ticks después el LED verde con la campanita.
+5. Tapa abierta, click con la mano vacía y sale la remera estampada.
+
+Si al cerrar la tapa no puede arrancar, lo dice en la barra de acción en
+vez de quedarse muda — el silencio era indistinguible de estar rota.
+Agachado, el click descarga lo que haya puesto, para poder corregir.
+
+La remera es **un solo ítem**. Lo que cambia es el componente
+`sublimadora:picture_id` con el UUID de la foto: ausente = en blanco. Se
+guarda el UUID y no la imagen, así el `ItemStack` pesa lo mismo con o sin
+estampa y la imagen sigue viviendo en el almacenamiento de Camerapture.
+
+> **Pendiente**: el UUID se guarda pero todavía no se dibuja. La remera
+> estampada se ve igual que la lisa.
+
+## Editar el modelo en Blockbench
+
+```
+src/main/resources/assets/sublimadora/
+├── geo/sublimadora.geo.json               ← File > Open, modo Bedrock Block
+├── animations/sublimadora.animation.json  ← pestaña Animate > Load
+└── textures/block/sublimadora_atlas.png   ← panel Textures > +
+```
+
+**Sólo esa copia.** `build/resources/` y `bin/` tienen copias que se pisan
+solas en cada build; si editás ahí, perdés el trabajo. Las dos están en
+`.gitignore`: si dudás, la buena es la que git te muestra como modificada.
+
+El formato Bedrock **no tiene campo de textura**, por eso Blockbench abre
+el modelo en gris. Hay que cargar el atlas a mano. Para no repetirlo,
+*File > Save Project* como `.bbmodel` y después trabajar sobre ese —
+pero ojo: **el juego lee el `.geo.json`**, así que al terminar hay que
+*File > Export > Bedrock Geometry* encima del original. Guardar el
+proyecto no alcanza.
+
+Nombres que el código busca y **no** se pueden renombrar:
+
+| hueso | lo usa |
+|---|---|
+| `led_rojo`, `led_verde` | `SublimadoraGeoModel` los prende y apaga con `setHidden` |
+| `remera` | idem, según haya una cargada |
+| `ink_c`, `ink_m`, `ink_y`, `ink_k` | escala en Y según la tinta restante |
+| `tapa` | la animación de abrir y cerrar |
+
+Los zócalos negros (`led_zocalo_rojo`, `led_zocalo_verde`) son cubos
+comunes dentro de `tapa`: esos movelos libremente.
+
+## El atlas
+
+Un solo PNG de 64x64 para todo el modelo, más
+`sublimadora_atlas_glowmask.png` del mismo tamaño donde los píxeles
+marcados se dibujan a luz plena. GeckoLib resuelve el sufijo `_glowmask`
+solo, a partir del nombre de la textura.
+
+Zonas con dueño, para no pisarlas:
+
+| zona | quién |
+|---|---|
+| `(16,48)` | LED rojo — también marcada en el glowmask |
+| `(32,48)` | LED verde — idem |
+| `(48,48)`–`(58,48)` | caras laterales de la remera, **vacía a propósito** |
+| `(0,48)` | barra de tinta negra |
+| `(48,16)`–`(58,26)` | la remera vista desde arriba |
+| `(16,19)` | el píxel más oscuro, lo usan los zócalos |
+
+Esa franja vacía en `y=48` no es un olvido: las cuatro caras laterales de
+la remera la muestrean, y con un texel opaco quedaba un marco blanco
+cuadrado rodeando una remera con forma de T. La loza tiene 0.42 de alto
+—menos de medio píxel— pero el render igual le dibuja una línea. Se
+arregló en el atlas y no en la geometría **para que sobreviva al próximo
+export de Blockbench**.
+
+## Trampas que ya costaron tiempo
+
+### GeckoLib está fijado en 4.7.7 a propósito
+
+4.8.4 **no dibuja cubos con `uv_size` parcial por cara**, que es como está
+hecho todo el modelo. Confirmado con un A/B. Y no se puede subir a 4.9+:
+pide Loom 1.17.13 y el proyecto está en 1.15.3.
+
+### La tapa aparecía abierta al cargar el chunk
+
+El controlador pedía la *transición* en vez de la *pose*. `cerrar` arranca
+en −104 grados, o sea abierta, así que un bloque cerrado aparecía abierto
+y se cerraba solo delante del jugador. La animación pedida tiene que ser
+**estable entre cambios de estado**: si cada frame se pide la transición,
+GeckoLib la reinicia para siempre.
+
+### El vapor usa `WHITE_SMOKE`, no `CLOUD`
+
+`PlayerCloudParticle` busca al jugador más cercano dentro de 2 bloques y
+arrastra la partícula hacia la altura de sus **pies** un 20% por tick.
+Como para usar la máquina hay que estar al lado, el vapor se venía abajo
+por más velocidad hacia arriba que se le pusiera. `WhiteSmokeParticle`
+además tiene gravedad −0.1, o sea flotabilidad: sube sola.
+
+Otras dos cosas del sistema de partículas que no son obvias:
+
+- **`count = 0` no significa "ninguna"**. Con `count > 0` los tres deltas
+  son dispersión de posición y la velocidad es azar gaussiano por `speed`
+  en las tres direcciones. Con `count = 0` sale una sola partícula y los
+  deltas son su velocidad.
+- **Colisionan con bloques.** Nacían en un círculo de radio 0.48 que cae
+  entero adentro del cubo, y salían expulsadas para cualquier lado. Ahora
+  nacen sobre una de las cuatro caras, a 0.62 del centro.
+
+Y la fricción de 0.96 hace que una partícula recorra unas 13 veces su
+velocidad inicial antes de frenar: velocidades que parecen chiquitas la
+mandan a varios bloques.
+
+### El ícono del inventario
+
+Lo dibuja GeckoLib con el mismo `.geo.json` que el bloque. Antes era un
+modelo vanilla escrito a mano en paralelo, que nunca se enteraba de lo
+editado en Blockbench.
+
+El `-5` en el `display` del modelo de ítem no es tanteo: vanilla centra
+con `translate(-0.5,-0.5,-0.5)` y GeckoLib suma `translate(0.5, 0.51,
+0.5)`. En X y Z se cancelan, pero el modelo va de `y=0` a `y=16` —apoyado
+en el origen, no centrado en él— así que su centro queda medio bloque
+arriba. Adentro del `scale` eso son `0.51 * 0.625 * 16 = 5.1` píxeles.
+
+### El sello de build
+
+El mod loguea al arrancar la fecha del build, que `processResources`
+escribe en `sublimadora_build.txt`:
+
+```
+[sublimadora] Sublimadora cargada - build 2026-09-05 12:50:10
+```
+
+Comparada contra `build/resources/main/sublimadora_build.txt` contesta sin
+discusión si el cliente abierto trae los últimos cambios. Existe porque
+varias veces se probó durante minutos sobre un cliente desactualizado, y
+eso es indistinguible de un cambio que no funciona.
+
+Tiene que ser un **recurso** y no un hash de las clases: en el cliente de
+desarrollo Loom remapea el jar de intermediary a nombres yarn, así que los
+`.class` cambian de bytes aunque el código sea idéntico. Los recursos
+pasan tal cual.
+
+### Dependencias que Loom no desanida
+
+Camerapture trae **webp4j** como jar anidado, y Loom no extrae los
+anidados de `modLocalRuntime`: sacar una foto moría con
+`NoClassDefFoundError: dev/matrixlab/webp4j/WebPCodec`. Va suelto en
+`libs/`. Mismo caso que las librerías de 3D Skin Layers.
+
+### Correr el cliente
+
+`gradlew runClient` **sin los dos puntos** corre la tarea en todos los
+subproyectos y levanta dos instancias, cada una con su propio mundo. Usar
+siempre `gradlew.bat :runClient` desde la raíz.
+
+## El slot de torso, compartido con FemClothes
+
+El slot `torso/prenda` lo define FemClothes; la sublimadora sólo declara
+su remera en el tag. **Los tags se fusionan entre datapacks**, así que
+ninguno de los dos depende de que el otro esté instalado: sin FemClothes,
+el tag de la sublimadora simplemente no aplica.
+
+Que el croptop y la remera compartan slot es a propósito: dos prendas
+dibujadas sobre el mismo pedazo de cuerpo se pisarían, así que en vez de
+resolver el solapamiento se vuelven mutuamente excluyentes.
+
+> **Pendiente**: la remera entra al slot pero no se dibuja en el cuerpo.
+> Le falta un renderer, igual que al croptop.
+
+## Camerapture, sin depender de Camerapture
+
+La foto se reconoce comparando el id registrado (`camerapture:picture`),
+no importando la clase. El acceso al componente vive aislado en
+`CameraptureCompat`, detrás de un `FabricLoader.isModLoaded`, para que la
+JVM no lo resuelva si el mod no está. Compila y corre igual sin
+Camerapture; simplemente no hay fotos que poner.

@@ -3,7 +3,11 @@
 Mod de Minecraft Fabric 1.21.1, Loader 0.18.4. Ropa craftable, teñible,
 que se dibuja pegada al cuerpo del jugador (no como armadura ancha).
 
-> Última actualización: 2026-09-04.
+> Última actualización: 2026-09-05.
+>
+> En este repo hay un segundo mod: `sublimadora/`, una prensa térmica que
+> estampa fotos de Camerapture sobre remeras. Documentado aparte en
+> [`sublimadora/README.md`](sublimadora/README.md).
 
 ## Las prendas
 
@@ -15,7 +19,7 @@ que se dibuja pegada al cuerpo del jugador (no como armadura ancha).
 | Medias 3/4 (`socks_34`) | placeholder | Slot cosmético (Cosmetic Armor Updated) |
 | Medias de red (`fishnet_socks`) | placeholder, no dyeable | Pendiente: pasar a patrón "fishnet" |
 | Shorts | placeholder | Pendiente migrar a `BodyPartTrinketRenderer` |
-| Croptop | placeholder con relleno de piel | Pendiente migrar a `BodyPartTrinketRenderer` |
+| Croptop | placeholder con relleno de piel | Slot `torso/prenda`; entra pero **no se dibuja**. Pendiente migrar a `BodyPartTrinketRenderer` |
 | Traje de maid | placeholder, set completo en una textura | Sin definir |
 | Buzo oversize | placeholder | Se queda con geometría ANCHA a propósito |
 | Calentadores de brazo | ✅ funcional | Trinket, slot custom `arms/armwarmer` |
@@ -125,6 +129,24 @@ lisa en vez de mostrar el cuadrado de textura faltante.
    como el bloque propio (duplicaba un bloque que ya casi no se usa).
    `UseBlockCallback` es un hook público y estable de Fabric API.
 
+## El slot de torso es compartido entre los dos mods
+
+El croptop de FemClothes y la remera estampada de la sublimadora entran al
+MISMO slot `torso/prenda`, y son mutuamente excluyentes. No es una
+limitación: dos prendas dibujadas sobre el mismo pedazo de cuerpo se
+pisarían, así que en vez de resolver el solapamiento se eligió que no puedan
+coexistir.
+
+El slot lo define FemClothes y cada mod declara su ítem en el tag. Los tags
+se fusionan entre datapacks, así que ninguno depende de que el otro esté
+instalado.
+
+Los iconos de los huecos vacíos viven en `textures/gui/slot/`, en gris y al
+45% de alpha. Dos cosas aprendidas ahí: apuntar a la textura del ítem deja un
+ícono a todo color que se lee como si ya hubiera algo equipado, y un slot sin
+campo `icon` hace que Trinkets pida `minecraft:textures/.png` en cada frame
+con el inventario abierto.
+
 ## Lo que falta
 
 1. **Arte de verdad.** Solo las medias tienen textura, y es de prueba
@@ -134,7 +156,10 @@ lisa en vez de mostrar el cuadrado de textura faltante.
    abajo.
 3. Geometría Blockbench del buzo oversize (Armor Model API).
 4. Recetas de shorts, croptop, traje de maid, medias de red.
-5. El Mixin de override de skin, para convivir con 3D Skin Layers.
+5. ~~El Mixin de override de skin~~ — HECHO: `AbstractClientPlayerEntityMixin`
+   engancha en `getSkinTextures()` al RETURN. El puente `HttpTextureAccessor`
+   para 3D Skin Layers está escrito pero **nunca se probó en el juego**; sus
+   líneas de `modLocalRuntime` siguen comentadas en `build.gradle`.
 
 ## ⚠️ Problema abierto: dos prendas en la misma parte del cuerpo
 
