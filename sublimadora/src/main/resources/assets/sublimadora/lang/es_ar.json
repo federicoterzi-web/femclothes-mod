@@ -18,5 +18,6 @@
   "sublimadora.modo.completo": "full print (cubre la remera)",
   "sublimadora.modo.logo": "logo (chico, arriba a la derecha)",
   "sublimadora.modo.centrada": "estampa centrada",
-  "sublimadora.aviso.trabada": "La tapa está trabada mientras prensa"
+  "sublimadora.aviso.trabada": "La tapa está trabada mientras prensa",
+  "sublimadora.tooltip.cargas": "Tinta: C%s M%s Y%s K%s (de %s)"
 }

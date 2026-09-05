@@ -18,8 +18,11 @@ public final class ModBlocks {
 
     public static final Block SUBLIMADORA = new SublimadoraBlock(
             AbstractBlock.Settings.create()
+                    // Sin requiresTool: a mano tarda unos 3.7 s y devuelve el
+                    // bloque igual, con pico de hierro menos de uno. Con
+                    // requiresTool la mano no dropeaba nada, que para una
+                    // maquina que puede tener una remera adentro es cruel.
                     .strength(2.5f, 4.0f)
-                    .requiresTool()
                     .nonOpaque()                       // la tapa abierta sale del cubo
                     .sounds(BlockSoundGroup.METAL)
                     .pistonBehavior(PistonBehavior.BLOCK)

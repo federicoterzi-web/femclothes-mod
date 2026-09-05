@@ -18,5 +18,6 @@
   "sublimadora.modo.completo": "full print (covers the shirt)",
   "sublimadora.modo.logo": "logo (small, upper right)",
   "sublimadora.modo.centrada": "centred print",
-  "sublimadora.aviso.trabada": "The lid is locked while pressing"
+  "sublimadora.aviso.trabada": "The lid is locked while pressing",
+  "sublimadora.tooltip.cargas": "Ink: C%s M%s Y%s K%s (of %s)"
 }

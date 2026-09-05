@@ -8,6 +8,12 @@ import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -25,6 +31,24 @@ public class SublimadoraBlockItem extends BlockItem implements GeoItem {
 
     public SublimadoraBlockItem(Block block, Settings settings) {
         super(block, settings);
+    }
+
+    /**
+     * Que la maquina levantada dice cuanta tinta trae adentro.
+     *
+     * Sin esto la tinta viaja igual, pero de forma invisible: dos
+     * sublimadoras identicas en el inventario, una llena y otra vacia, y no
+     * habria manera de distinguirlas hasta colocarlas.
+     */
+    @Override
+    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+        super.appendTooltip(stack, context, tooltip, type);
+        List<Integer> cargas = stack.get(ModItems.CARGAS);
+        if (cargas == null || cargas.size() < 4) return;
+        if (cargas.get(0) + cargas.get(1) + cargas.get(2) + cargas.get(3) == 0) return;
+        tooltip.add(Text.translatable("sublimadora.tooltip.cargas",
+                cargas.get(0), cargas.get(1), cargas.get(2), cargas.get(3),
+                SublimadoraBlockEntity.CARGA_MAXIMA).formatted(Formatting.GRAY));
     }
 
     /** El icono es una pose fija, no hay nada que animar. */

@@ -40,6 +40,23 @@ public final class ModItems {
                     .packetCodec(Uuids.PACKET_CODEC)
                     .build());
 
+    /**
+     * Las cuatro cargas de tinta, para que viajen adentro del item cuando se
+     * levanta la maquina. Cuatro enteros en orden C, M, Y, K.
+     *
+     * Es un componente y no NBT crudo porque asi lo copia la loot table sola
+     * con minecraft:copy_components, sin codigo de por medio, y ademas se ve
+     * en el tooltip como cualquier otro dato del item.
+     */
+    public static final ComponentType<java.util.List<Integer>> CARGAS = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of(ModBlocks.MOD_ID, "cargas"),
+            ComponentType.<java.util.List<Integer>>builder()
+                    .codec(Codec.INT.listOf())
+                    .packetCodec(net.minecraft.network.codec.PacketCodecs.INTEGER
+                            .collect(net.minecraft.network.codec.PacketCodecs.toList()))
+                    .build());
+
     public static final RemeraItem REMERA = Registry.register(
             Registries.ITEM,
             Identifier.of(ModBlocks.MOD_ID, "remera"),

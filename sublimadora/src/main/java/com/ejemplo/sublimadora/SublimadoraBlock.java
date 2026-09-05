@@ -256,6 +256,25 @@ public class SublimadoraBlock extends BlockWithEntity {
             return null;   // cambio de version del mod: mejor sin estampa que crashear
         }
     }
+    /**
+     * Devuelve lo que la maquina tenga adentro al romperla.
+     *
+     * Sin esto, romper la sublimadora con una remera estampada adentro la
+     * borraba del mundo sin aviso: el block entity se va y con el sus
+     * ItemStack. Es el mismo comportamiento que un cofre o un horno.
+     */
+    @Override
+    protected void onStateReplaced(BlockState state, World world, BlockPos pos,
+                                   BlockState nuevo, boolean movido) {
+        if (!state.isOf(nuevo.getBlock())
+                && world.getBlockEntity(pos) instanceof SublimadoraBlockEntity be) {
+            for (ItemStack stack : be.contenido()) {
+                net.minecraft.util.ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), stack);
+            }
+        }
+        super.onStateReplaced(state, world, pos, nuevo, movido);
+    }
+
     /** GeckoLib dibuja el bloque completo desde el block entity renderer. */
     @Override
     protected BlockRenderType getRenderType(BlockState state) {
