@@ -2,5 +2,13 @@
   "block.sublimadora.sublimadora": "Sublimadora",
   "item.sublimadora.remera": "Remera",
   "sublimadora.remera.en_blanco": "En blanco",
-  "sublimadora.remera.estampada": "Estampada"
+  "sublimadora.remera.estampada": "Estampada",
+  "sublimadora.aviso.prensando": "Ya está prensando",
+  "sublimadora.aviso.retirar": "Sacá la remera lista antes de empezar otra",
+  "sublimadora.aviso.cargar": "Para sublimar tenés que poner una remera en blanco y una foto",
+  "sublimadora.aviso.tinta": "Falta tinta: %s",
+  "sublimadora.tinta.cian": "cian",
+  "sublimadora.tinta.magenta": "magenta",
+  "sublimadora.tinta.amarillo": "amarillo",
+  "sublimadora.tinta.negro": "negro"
 }

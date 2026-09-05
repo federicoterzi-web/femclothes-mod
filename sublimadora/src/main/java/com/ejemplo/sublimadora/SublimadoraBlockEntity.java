@@ -4,7 +4,14 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
@@ -72,6 +79,8 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
 
     private Estado estado = Estado.REPOSO;
     private int progreso = 0;
+    /** Cuantos ticks antes de terminar sale el poof de descarga. */
+    private static final int TICKS_DESCARGA = 8;
     private ItemStack remera = ItemStack.EMPTY;
     private ItemStack foto = ItemStack.EMPTY;
     private ItemStack salida = ItemStack.EMPTY;
@@ -121,21 +130,114 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         // El avance del prensado lo lleva el SERVIDOR; el cliente solo dibuja
         // lo que le sincroniza el NBT.
         if (world.isClient) return;
+
         if (be.estado != Estado.PRENSANDO) return;
 
         be.progreso++;
+
+        // Sonido y vapor salen del servidor con spawnParticles y
+        // playSound(null, ...): asi los ve y los oye cualquiera que este
+        // cerca, no solo el que cerro la tapa.
+        if (world instanceof ServerWorld servidor) {
+            if (be.progreso == 1) {
+                // El golpe de la plancha al apoyar.
+                be.sonar(SoundEvents.BLOCK_PISTON_CONTRACT, 0.9f, 0.7f);
+                vapor(servidor, pos, 14, 0.12);
+            }
+            if (be.progreso % 5 == 0) vapor(servidor, pos, 2, 0.12);
+
+            // El poof de descarga sale ANTES de terminar, no al terminar. Asi
+            // la secuencia queda: poof, y ocho ticks despues la luz verde y la
+            // campanita juntas, que es como se lee que la maquina termino.
+            if (be.progreso == TICKS_PRENSADO - TICKS_DESCARGA) {
+                vapor(servidor, pos, 22, 0.16);
+                be.sonar(SoundEvents.BLOCK_FIRE_EXTINGUISH, 0.5f, 1.3f);
+            }
+
+            // Siseo continuo. El fizz dura casi un segundo, asi que
+            // repitiendolo cada 14 ticks los coletazos se solapan y suena como
+            // una sola perdida de vapor sostenida en vez de golpes sueltos.
+            if (be.progreso % 14 == 0) be.sonar(SoundEvents.BLOCK_LAVA_EXTINGUISH, 0.3f, 1.6f);
+
+            // Un pitido por cada encendido del LED rojo. El LED lo prende
+            // SublimadoraGeoModel con (tiempo % 20) < 10 leyendo el reloj del
+            // mundo, que es el mismo de los dos lados: mirando ese mismo reloj
+            // aca, el pitido cae exactamente en el flanco de encendido.
+            if (world.getTime() % 20 == 0) be.sonar(SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), 0.25f, 2.0f);
+        }
+
         if (be.progreso >= TICKS_PRENSADO) {
             be.progreso = 0;
             be.estado = Estado.LISTO;
             be.salida = RemeraItem.estampar(be.remera, be.fotoPendiente);
             be.remera = ItemStack.EMPTY;
             be.fotoPendiente = null;
+            // Esto es exactamente el tick en que se prende el LED verde, que
+            // sale de estado == LISTO. La campanita va aca y no agendada
+            // aparte: atada al mismo cambio de estado no se pueden desfasar.
+            be.sonar(SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.0f, 1.5f);
+            be.sonar(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 1.4f);
             be.sincronizar();
         } else if (be.progreso % 20 == 0) {
             // Una sincronizacion por segundo alcanza para el parpadeo y la
             // barra; no hace falta mandar un paquete por tick.
             be.sincronizar();
         }
+    }
+
+    /**
+     * Vaporcito por la junta entre la base y la tapa.
+     *
+     * Usa WHITE_SMOKE y no CLOUD, por dos razones que solo se ven mirando el
+     * codigo de las particulas:
+     *
+     *   - PlayerCloudParticle busca al jugador mas cercano dentro de 2 bloques
+     *     y, si lo encuentra, arrastra la particula hacia la altura de sus
+     *     PIES un 20% por tick. Como para usar la maquina hay que estar al
+     *     lado, el vapor se venia para abajo por mas velocidad hacia arriba
+     *     que se le pusiera. Eso era lo que quedaba raro.
+     *   - WhiteSmokeParticle tiene gravedad -0.1, o sea flotabilidad: sube
+     *     sola, despacio y para siempre. Justo lo que queriamos, y gratis.
+     *
+     * Entonces la velocidad que le damos es casi toda lateral: sale disparada
+     * al costado, la friccion de 0.96 la frena en un bloque, y de ahi la
+     * flotabilidad la levanta sola.
+     *
+     * Las particulas colisionan (hasPhysics), asi que nacen APENAS AFUERA de
+     * la cara del bloque y no en un circulo: un circulo de radio 0.48 cae
+     * entero adentro del cubo, y las que nacian trabadas salian para
+     * cualquier lado al ser expulsadas.
+     */
+    private static void vapor(ServerWorld world, BlockPos pos, int cantidad, double lateral) {
+        double cy = pos.getY() + 11.0 / 16.0;
+        for (int i = 0; i < cantidad; i++) {
+            int lado = world.getRandom().nextInt(4);
+            double corrida = (world.getRandom().nextDouble() - 0.5) * 0.9;
+            double afuera = 0.62;
+            double dx, dz, vx, vz;
+            switch (lado) {
+                case 0  -> { dx = corrida; dz = -afuera; vx = 0;        vz = -lateral; }
+                case 1  -> { dx = corrida; dz =  afuera; vx = 0;        vz =  lateral; }
+                case 2  -> { dx = -afuera; dz = corrida; vx = -lateral; vz = 0; }
+                default -> { dx =  afuera; dz = corrida; vx =  lateral; vz = 0; }
+            }
+            // count = 0 NO significa "ninguna particula": cambia que son los
+            // tres deltas. Con count > 0 sale una por cada count, los deltas
+            // son dispersion de posicion y la velocidad es azar gaussiano por
+            // "speed" en las tres direcciones. Con count = 0 sale una sola y
+            // los deltas son su velocidad, que es lo que queremos.
+            world.spawnParticles(ParticleTypes.WHITE_SMOKE,
+                    pos.getX() + 0.5 + dx,
+                    cy + (world.getRandom().nextDouble() - 0.5) * 0.12,
+                    pos.getZ() + 0.5 + dz,
+                    0,
+                    vx, 0.015, vz,
+                    1.0);
+        }
+    }
+
+    private void sonar(SoundEvent evento, float volumen, float tono) {
+        if (world != null) world.playSound(null, pos, evento, SoundCategory.BLOCKS, volumen, tono);
     }
 
     // ── ciclo de prensado ────────────────────────────────────────────
@@ -232,6 +334,47 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         progreso = 0;
         sincronizar();
         return true;
+    }
+
+    /** Nombres de los cuatro tanques, para poder decir cual quedo vacio. */
+    private static final String[] NOMBRE_TINTA = { "cian", "magenta", "amarillo", "negro" };
+
+    /**
+     * Por que no puede prensar, o null si podria arrancar.
+     *
+     * Devuelve Text y no String para que el texto viva en los archivos de
+     * idioma: antes armaba la frase en castellano aca adentro y el jugador en
+     * ingles la recibia igual en castellano.
+     *
+     * Son dos avisos distintos y salen de a uno, en orden. Que falte la remera
+     * o la foto es no saber usar la maquina, y se contesta explicando el
+     * procedimiento entero; recien cuando eso esta resuelto tiene sentido
+     * hablar de insumos. Mostrar los dos juntos hacia un parrafo que se lee
+     * como una lista de reproches en vez de como el proximo paso.
+     *
+     * El de tinta nombra los colores en cero y no los cuatro tanques con sus
+     * numeros: lo unico accionable es cual hay que ir a buscar.
+     */
+    @org.jetbrains.annotations.Nullable
+    public Text queFalta() {
+        if (estado == Estado.PRENSANDO) return Text.translatable("sublimadora.aviso.prensando");
+        if (estado == Estado.LISTO) return Text.translatable("sublimadora.aviso.retirar");
+
+        if (remera.isEmpty() || foto.isEmpty()) {
+            return Text.translatable("sublimadora.aviso.cargar");
+        }
+        if (!hayTinta()) {
+            MutableText colores = Text.empty();
+            boolean primero = true;
+            for (int i = 0; i < 4; i++) {
+                if (cargas[i] > 0) continue;
+                if (!primero) colores.append(", ");
+                colores.append(Text.translatable("sublimadora.tinta." + NOMBRE_TINTA[i]));
+                primero = false;
+            }
+            return Text.translatable("sublimadora.aviso.tinta", colores);
+        }
+        return null;
     }
 
     private void sincronizar() {

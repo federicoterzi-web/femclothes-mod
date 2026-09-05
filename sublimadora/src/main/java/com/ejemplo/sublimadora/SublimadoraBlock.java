@@ -115,7 +115,14 @@ public class SublimadoraBlock extends BlockWithEntity {
         if (world.isClient) return ActionResult.SUCCESS;
         if (!(world.getBlockEntity(pos) instanceof SublimadoraBlockEntity be)) return ActionResult.PASS;
 
-        if (state.get(OPEN)) {
+        // Retirar NO puede tener prioridad sobre cerrar: si la tuviera, una vez
+        // cargada la remera el click te la sacaria en vez de arrancar el
+        // prensado, y no habria forma de empezar.
+        //
+        // - Remera lista (luz verde): el click la retira. Es lo que uno espera.
+        // - Agachado: descarga lo que haya, para poder corregir.
+        // - Si no: abre y cierra.
+        if (state.get(OPEN) && (!be.getSalida().isEmpty() || player.isSneaking())) {
             ItemStack sacado = be.retirar();
             if (!sacado.isEmpty()) {
                 player.getInventory().offerOrDrop(sacado);
@@ -128,8 +135,18 @@ public class SublimadoraBlock extends BlockWithEntity {
         world.setBlockState(pos, state.with(OPEN, abriendo), Block.NOTIFY_ALL);
         sonar(world, pos, abriendo ? SoundEvents.BLOCK_IRON_TRAPDOOR_OPEN
                                    : SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE, 1.2f);
-        // Cerrar la tapa es lo que dispara el prensado.
-        if (!abriendo) be.intentarPrensar();
+
+        // Cerrar la tapa es lo que dispara el prensado. Si no arranca, la
+        // maquina lo dice: antes cerrabas la tapa, no pasaba nada, y no habia
+        // forma de saber si faltaba tinta, la remera, la foto, o si estaba
+        // rota. El silencio era indistinguible de un bug.
+        if (!abriendo && !be.intentarPrensar()) {
+            net.minecraft.text.Text aviso = be.queFalta();
+            if (aviso != null) {
+                sonar(world, pos, SoundEvents.BLOCK_DISPENSER_FAIL, 1.0f);
+                player.sendMessage(aviso.copy().formatted(net.minecraft.util.Formatting.GOLD), true);
+            }
+        }
         return ActionResult.SUCCESS;
     }
 
