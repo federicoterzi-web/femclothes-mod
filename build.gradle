@@ -86,8 +86,14 @@ dependencies {
     // nunca registra su renderer, y el bloque queda invisible. Cargarlo como
     // archivo es ademas lo que hace un server de verdad.
     modLocalRuntime files(project(":sublimadora").tasks.named("remapJar"))
-    // Como archivo no arrastra sus dependencias: GeckoLib va explicito.
+    // Como archivo no arrastra sus dependencias: van explicitas.
     modLocalRuntime "maven.modrinth:geckolib:6UTA5nCc"
+    modLocalRuntime "maven.modrinth:camerapture:RYOi2mzR"
+    // Camerapture trae webp4j como jar ANIDADO y Loom no lo extrae para
+    // modLocalRuntime: sacar una foto moria con
+    // NoClassDefFoundError dev/matrixlab/webp4j/WebPCodec. Mismo caso que las
+    // librerias de 3D Skin Layers. Solo para desarrollo.
+    modLocalRuntime files("libs/webp4j-1.3.0.jar")
 
     // 3D Skin Layers SOLO para compilar: nuestra textura de skin implementa su
     // interfaz HttpTextureAccessor para que pueda leerla. No es dependencia de
