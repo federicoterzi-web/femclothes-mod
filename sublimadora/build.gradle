@@ -49,6 +49,13 @@ dependencies {
     // nuestro Loom 1.15.3 las rechaza. 4.7.7 usa Loom 1.10.5.
     modImplementation "maven.modrinth:geckolib:6UTA5nCc"
 
+    // Camerapture 1.10.12 (id de version, inequivoco): de aca sale el UUID de
+    // la foto, via su componente PICTURE_DATA. Es compileOnly y opcional en
+    // runtime — la sublimadora funciona sin el, solo que no vas a tener fotos.
+    // Compilada con Loom 1.7.435, por debajo de nuestro 1.15.3.
+    modCompileOnly "maven.modrinth:camerapture:RYOi2mzR"
+    modLocalRuntime "maven.modrinth:camerapture:RYOi2mzR"
+
 }
 
 processResources {

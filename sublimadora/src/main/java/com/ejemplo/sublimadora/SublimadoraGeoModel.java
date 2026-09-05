@@ -47,6 +47,13 @@ public class SublimadoraGeoModel extends GeoModel<SublimadoraBlockEntity> {
         GeoBone ledVerde = getAnimationProcessor().getBone("led_verde");
         if (ledVerde != null) ledVerde.setHidden(!verde);
 
+        // La remera sobre la plancha solo se ve si hay una cargada, o si la
+        // recien estampada todavia no se retiro.
+        GeoBone remera = getAnimationProcessor().getBone("remera");
+        if (remera != null) {
+            remera.setHidden(be.getRemera().isEmpty() && be.getSalida().isEmpty());
+        }
+
         float parcial = state == null ? 1f : (float) state.getPartialTick();
         for (int i = 0; i < HUESOS.length; i++) {
             GeoBone barra = getAnimationProcessor().getBone(HUESOS[i]);

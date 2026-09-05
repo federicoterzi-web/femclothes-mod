@@ -181,6 +181,9 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
 
     public boolean ponerFoto(ItemStack stack, java.util.UUID id) {
         if (!foto.isEmpty() || estado != Estado.REPOSO) return false;
+        // Sin UUID no hay nada que estampar: se rechaza en vez de gastar
+        // tinta para producir una remera en blanco.
+        if (id == null) return false;
         foto = stack.copyWithCount(1);
         fotoPendiente = id;
         sincronizar();

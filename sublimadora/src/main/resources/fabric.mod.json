@@ -23,5 +23,8 @@
     "java": ">=21",
     "fabric-api": "*",
     "geckolib": ">=4.5.0"
+  },
+  "suggests": {
+    "camerapture": "*"
   }
 }

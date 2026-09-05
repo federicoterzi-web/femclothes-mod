@@ -8,6 +8,8 @@ import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Hand;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
@@ -63,42 +65,57 @@ public class SublimadoraBlock extends BlockWithEntity {
         return SHAPE;
     }
 
+    /**
+     * Interaccion CON item en la mano. En 1.21.1 esto es lo que se llama
+     * primero; onUse solo corre despues, y solo si aca devolvemos PASS.
+     * Antes tenia esta logica dentro de onUse leyendo getActiveHand(), que es
+     * la mano de "usar" un item (comer, tensar el arco) y no la de la
+     * interaccion — por eso no matcheaba y terminaba cerrando la tapa.
+     */
     @Override
-    protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+    protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world,
+                                             BlockPos pos, PlayerEntity player, Hand hand,
+                                             BlockHitResult hit) {
+        if (world.isClient) return ItemActionResult.SUCCESS;
+        if (!(world.getBlockEntity(pos) instanceof SublimadoraBlockEntity be)) {
+            return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        // Solo se carga con la tapa abierta.
+        if (!state.get(OPEN)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+
+        int canal = canalDeTinte(stack);
+        if (canal >= 0) {
+            if (be.cargarTinta(canal, 1)) {
+                if (!player.isCreative()) stack.decrement(1);
+                sonar(world, pos, SoundEvents.ITEM_BUCKET_FILL, 0.8f);
+            }
+            return ItemActionResult.CONSUME;
+        }
+        if (stack.getItem() == ModItems.REMERA && !RemeraItem.estaEstampada(stack)) {
+            if (be.ponerRemera(stack)) {
+                if (!player.isCreative()) stack.decrement(1);
+                sonar(world, pos, SoundEvents.BLOCK_WOOL_PLACE, 1.0f);
+            }
+            return ItemActionResult.CONSUME;
+        }
+        if (esFoto(stack)) {
+            if (be.ponerFoto(stack, uuidDeFoto(stack))) {
+                if (!player.isCreative()) stack.decrement(1);
+                sonar(world, pos, SoundEvents.ITEM_BOOK_PAGE_TURN, 1.0f);
+            }
+            return ItemActionResult.CONSUME;
+        }
+        return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    }
+
+    /** Interaccion con la MANO VACIA: retirar, o abrir y cerrar la tapa. */
+    @Override
+    protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player,
+                                 BlockHitResult hit) {
         if (world.isClient) return ActionResult.SUCCESS;
         if (!(world.getBlockEntity(pos) instanceof SublimadoraBlockEntity be)) return ActionResult.PASS;
 
-        ItemStack enMano = player.getStackInHand(player.getActiveHand());
-
-        // Con la tapa abierta, el click derecho CARGA cosas. Con la mano vacia
-        // o la tapa cerrada, abre y cierra.
-        if (state.get(OPEN) && !enMano.isEmpty()) {
-            int canal = canalDeTinte(enMano);
-            if (canal >= 0) {
-                if (be.cargarTinta(canal, 1)) {
-                    if (!player.isCreative()) enMano.decrement(1);
-                    sonar(world, pos, SoundEvents.ITEM_BUCKET_FILL, 0.8f);
-                }
-                return ActionResult.CONSUME;
-            }
-            if (enMano.getItem() == ModItems.REMERA && !RemeraItem.estaEstampada(enMano)) {
-                if (be.ponerRemera(enMano)) {
-                    if (!player.isCreative()) enMano.decrement(1);
-                    sonar(world, pos, SoundEvents.BLOCK_WOOL_PLACE, 1.0f);
-                }
-                return ActionResult.CONSUME;
-            }
-            if (esFoto(enMano)) {
-                if (be.ponerFoto(enMano, uuidDeFoto(enMano))) {
-                    if (!player.isCreative()) enMano.decrement(1);
-                    sonar(world, pos, SoundEvents.ITEM_BOOK_PAGE_TURN, 1.0f);
-                }
-                return ActionResult.CONSUME;
-            }
-        }
-
-        // Mano vacia con la tapa abierta: retirar lo que haya.
-        if (state.get(OPEN) && enMano.isEmpty()) {
+        if (state.get(OPEN)) {
             ItemStack sacado = be.retirar();
             if (!sacado.isEmpty()) {
                 player.getInventory().offerOrDrop(sacado);
@@ -140,18 +157,24 @@ public class SublimadoraBlock extends BlockWithEntity {
     }
 
     /**
-     * UUID de la foto. TODO: leerlo del componente PICTURE_DATA de Camerapture
-     * cuando lo agreguemos como dependencia; por ahora se deriva del stack
-     * para poder probar el ciclo completo.
+     * UUID de la foto, leido del componente PICTURE_DATA de Camerapture.
+     *
+     * El acceso vive en una clase aparte para que la JVM no la resuelva si
+     * Camerapture no esta instalado — mismo patron que el puente con 3D Skin
+     * Layers en femclothes.
      */
     private static java.util.UUID uuidDeFoto(ItemStack stack) {
-        return java.util.UUID.nameUUIDFromBytes(stack.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        if (!net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("camerapture")) return null;
+        try {
+            return CameraptureCompat.uuidDe(stack);
+        } catch (Throwable ignorado) {
+            return null;   // cambio de version del mod: mejor sin estampa que crashear
+        }
     }
-
     /** GeckoLib dibuja el bloque completo desde el block entity renderer. */
     @Override
     protected BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.INVISIBLE;   // alternativa: ENTITYBLOCK_ANIMATED
+        return BlockRenderType.INVISIBLE;
     }
 
     @Override
