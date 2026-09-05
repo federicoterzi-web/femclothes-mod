@@ -12,7 +12,9 @@ depender uno del otro — ver abajo.
 
 1. Tapa abierta. Click con un **tinte** carga ese tanque (hasta 16 de cada
    uno de los cuatro CMYK). Click con una **remera en blanco** la apoya en
-   la plancha. Click con una **foto** la carga.
+   la plancha. Click con una **foto** la carga, y **la mitad de la plancha
+   donde la apoyás elige la cara**: la del lado del panel es el frente, la
+   de atrás la espalda. Te lo confirma en la barra de acción.
 2. Click con la mano vacía cierra la tapa. **Cerrar la tapa es lo que
    dispara el prensado**, y ahí se consume la foto más una carga de cada
    color.
