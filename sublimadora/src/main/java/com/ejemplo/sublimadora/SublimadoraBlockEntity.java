@@ -2,6 +2,7 @@ package com.ejemplo.sublimadora;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.util.math.BlockPos;
@@ -24,6 +25,14 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntity {
 
     public static final int C = 0, M = 1, Y = 2, K = 3;
+
+    /** Cuantas cargas entran por color. Una carga = un tinte. */
+    public static final int CARGA_MAXIMA = 16;
+    /** 20 segundos a 20 ticks. */
+    public static final int TICKS_PRENSADO = 400;
+
+    public enum Estado { REPOSO, PRENSANDO, LISTO }
+
     private static final String[] CLAVES = { "TintaC", "TintaM", "TintaY", "TintaK" };
 
     private static final RawAnimation ABRIR = RawAnimation.begin()
@@ -57,6 +66,16 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
     /** valor mostrado y valor del tick anterior, para interpolar el llenado */
     private final float[] mostrado = tinta.clone();
     private final float[] anterior = tinta.clone();
+
+    /** Cargas 0..16 por canal. El nivel de la barra sale de aca. */
+    private final int[] cargas = new int[4];
+
+    private Estado estado = Estado.REPOSO;
+    private int progreso = 0;
+    private ItemStack remera = ItemStack.EMPTY;
+    private ItemStack foto = ItemStack.EMPTY;
+    private ItemStack salida = ItemStack.EMPTY;
+    private java.util.UUID fotoPendiente = null;
 
     public SublimadoraBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlocks.SUBLIMADORA_ENTITY, pos, state);
@@ -98,6 +117,125 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
             be.mostrado[i] += (be.tinta[i] - be.mostrado[i]) * 0.15f;
             if (Math.abs(be.tinta[i] - be.mostrado[i]) < 0.001f) be.mostrado[i] = be.tinta[i];
         }
+
+        // El avance del prensado lo lleva el SERVIDOR; el cliente solo dibuja
+        // lo que le sincroniza el NBT.
+        if (world.isClient) return;
+        if (be.estado != Estado.PRENSANDO) return;
+
+        be.progreso++;
+        if (be.progreso >= TICKS_PRENSADO) {
+            be.progreso = 0;
+            be.estado = Estado.LISTO;
+            be.salida = RemeraItem.estampar(be.remera, be.fotoPendiente);
+            be.remera = ItemStack.EMPTY;
+            be.fotoPendiente = null;
+            be.sincronizar();
+        } else if (be.progreso % 20 == 0) {
+            // Una sincronizacion por segundo alcanza para el parpadeo y la
+            // barra; no hace falta mandar un paquete por tick.
+            be.sincronizar();
+        }
+    }
+
+    // ── ciclo de prensado ────────────────────────────────────────────
+
+    public Estado getEstado() {
+        return estado;
+    }
+
+    /** 0..1, para animar. */
+    public float getProgreso() {
+        return estado == Estado.PRENSANDO ? progreso / (float) TICKS_PRENSADO : 0f;
+    }
+
+    public ItemStack getRemera() {
+        return remera;
+    }
+
+    public ItemStack getSalida() {
+        return salida;
+    }
+
+    /** True si hay al menos una carga de cada color. */
+    public boolean hayTinta() {
+        for (int i = 0; i < 4; i++) if (cargas[i] <= 0) return false;
+        return true;
+    }
+
+    /** Carga un tinte. Devuelve false si ese tanque ya esta lleno. */
+    public boolean cargarTinta(int canal, int cantidad) {
+        if (cargas[canal] >= CARGA_MAXIMA) return false;
+        cargas[canal] = Math.min(CARGA_MAXIMA, cargas[canal] + cantidad);
+        tinta[canal] = cargas[canal] / (float) CARGA_MAXIMA;
+        sincronizar();
+        return true;
+    }
+
+    public boolean ponerRemera(ItemStack stack) {
+        if (!remera.isEmpty() || estado != Estado.REPOSO) return false;
+        remera = stack.copyWithCount(1);
+        sincronizar();
+        return true;
+    }
+
+    public boolean ponerFoto(ItemStack stack, java.util.UUID id) {
+        if (!foto.isEmpty() || estado != Estado.REPOSO) return false;
+        foto = stack.copyWithCount(1);
+        fotoPendiente = id;
+        sincronizar();
+        return true;
+    }
+
+    /** Saca lo que haya para retirar: la remera lista, o lo que este cargado. */
+    public ItemStack retirar() {
+        if (!salida.isEmpty()) {
+            ItemStack out = salida;
+            salida = ItemStack.EMPTY;
+            estado = Estado.REPOSO;
+            sincronizar();
+            return out;
+        }
+        if (!foto.isEmpty()) {
+            ItemStack out = foto;
+            foto = ItemStack.EMPTY;
+            fotoPendiente = null;
+            sincronizar();
+            return out;
+        }
+        if (!remera.isEmpty()) {
+            ItemStack out = remera;
+            remera = ItemStack.EMPTY;
+            sincronizar();
+            return out;
+        }
+        return ItemStack.EMPTY;
+    }
+
+    /**
+     * Se llama al CERRAR la tapa. Arranca el prensado si estan las tres
+     * condiciones, y ahi mismo se consume la foto y una carga de cada tinta.
+     */
+    public boolean intentarPrensar() {
+        if (estado != Estado.REPOSO) return false;
+        if (remera.isEmpty() || foto.isEmpty() || !hayTinta()) return false;
+
+        for (int i = 0; i < 4; i++) {
+            cargas[i]--;
+            tinta[i] = cargas[i] / (float) CARGA_MAXIMA;
+        }
+        foto = ItemStack.EMPTY;   // la foto se consume al cerrar la tapa
+        estado = Estado.PRENSANDO;
+        progreso = 0;
+        sincronizar();
+        return true;
+    }
+
+    private void sincronizar() {
+        markDirty();
+        if (world != null && !world.isClient) {
+            world.updateListeners(pos, getCachedState(), getCachedState(), 3);
+        }
     }
 
     /** Nivel a dibujar este frame, interpolado entre ticks. */
@@ -129,17 +267,39 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.writeNbt(nbt, registries);
-        for (int i = 0; i < 4; i++) nbt.putFloat(CLAVES[i], tinta[i]);
+        for (int i = 0; i < 4; i++) {
+            nbt.putFloat(CLAVES[i], tinta[i]);
+            nbt.putInt(CLAVES[i] + "Cargas", cargas[i]);
+        }
+        nbt.putString("Estado", estado.name());
+        nbt.putInt("Progreso", progreso);
+        if (!remera.isEmpty()) nbt.put("Remera", remera.encode(registries));
+        if (!foto.isEmpty()) nbt.put("Foto", foto.encode(registries));
+        if (!salida.isEmpty()) nbt.put("Salida", salida.encode(registries));
+        if (fotoPendiente != null) nbt.putUuid("FotoPendiente", fotoPendiente);
     }
 
     @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
         for (int i = 0; i < 4; i++) {
-            if (nbt.contains(CLAVES[i])) tinta[i] = nbt.getFloat(CLAVES[i]);
+            if (nbt.contains(CLAVES[i] + "Cargas")) {
+                cargas[i] = nbt.getInt(CLAVES[i] + "Cargas");
+                tinta[i] = cargas[i] / (float) CARGA_MAXIMA;
+            } else if (nbt.contains(CLAVES[i])) {
+                // Mundos de antes de que la tinta se contara por cargas.
+                tinta[i] = nbt.getFloat(CLAVES[i]);
+                cargas[i] = Math.round(tinta[i] * CARGA_MAXIMA);
+            }
             mostrado[i] = tinta[i];
             anterior[i] = tinta[i];
         }
+        estado = nbt.contains("Estado") ? Estado.valueOf(nbt.getString("Estado")) : Estado.REPOSO;
+        progreso = nbt.getInt("Progreso");
+        remera = nbt.contains("Remera") ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Remera")) : ItemStack.EMPTY;
+        foto = nbt.contains("Foto") ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Foto")) : ItemStack.EMPTY;
+        salida = nbt.contains("Salida") ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Salida")) : ItemStack.EMPTY;
+        fotoPendiente = nbt.containsUuid("FotoPendiente") ? nbt.getUuid("FotoPendiente") : null;
     }
 
     /** El cliente necesita los niveles para dibujar el display. */

@@ -7,6 +7,7 @@ import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
@@ -64,20 +65,87 @@ public class SublimadoraBlock extends BlockWithEntity {
 
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (!world.isClient) {
-            boolean abriendo = !state.get(OPEN);
-            world.setBlockState(pos, state.with(OPEN, abriendo), Block.NOTIFY_ALL);
-            world.playSound(null, pos,
-                abriendo ? SoundEvents.BLOCK_IRON_TRAPDOOR_OPEN : SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE,
-                SoundCategory.BLOCKS, 0.6f, 1.2f);
-            if (!abriendo && world.getBlockEntity(pos) instanceof SublimadoraBlockEntity be) {
-                be.consumir(0.02f);   // cerrar la tapa = prensar: gasta tinta
+        if (world.isClient) return ActionResult.SUCCESS;
+        if (!(world.getBlockEntity(pos) instanceof SublimadoraBlockEntity be)) return ActionResult.PASS;
+
+        ItemStack enMano = player.getStackInHand(player.getActiveHand());
+
+        // Con la tapa abierta, el click derecho CARGA cosas. Con la mano vacia
+        // o la tapa cerrada, abre y cierra.
+        if (state.get(OPEN) && !enMano.isEmpty()) {
+            int canal = canalDeTinte(enMano);
+            if (canal >= 0) {
+                if (be.cargarTinta(canal, 1)) {
+                    if (!player.isCreative()) enMano.decrement(1);
+                    sonar(world, pos, SoundEvents.ITEM_BUCKET_FILL, 0.8f);
+                }
+                return ActionResult.CONSUME;
             }
-            // Alternativa: disparar la animacion desde el server en vez de leerla del estado.
-            // if (world.getBlockEntity(pos) instanceof SublimadoraBlockEntity be)
-            //     be.triggerAnim("tapa", abriendo ? "abrir" : "cerrar");
+            if (enMano.getItem() == ModItems.REMERA && !RemeraItem.estaEstampada(enMano)) {
+                if (be.ponerRemera(enMano)) {
+                    if (!player.isCreative()) enMano.decrement(1);
+                    sonar(world, pos, SoundEvents.BLOCK_WOOL_PLACE, 1.0f);
+                }
+                return ActionResult.CONSUME;
+            }
+            if (esFoto(enMano)) {
+                if (be.ponerFoto(enMano, uuidDeFoto(enMano))) {
+                    if (!player.isCreative()) enMano.decrement(1);
+                    sonar(world, pos, SoundEvents.ITEM_BOOK_PAGE_TURN, 1.0f);
+                }
+                return ActionResult.CONSUME;
+            }
         }
+
+        // Mano vacia con la tapa abierta: retirar lo que haya.
+        if (state.get(OPEN) && enMano.isEmpty()) {
+            ItemStack sacado = be.retirar();
+            if (!sacado.isEmpty()) {
+                player.getInventory().offerOrDrop(sacado);
+                sonar(world, pos, SoundEvents.ENTITY_ITEM_PICKUP, 1.2f);
+                return ActionResult.CONSUME;
+            }
+        }
+
+        boolean abriendo = !state.get(OPEN);
+        world.setBlockState(pos, state.with(OPEN, abriendo), Block.NOTIFY_ALL);
+        sonar(world, pos, abriendo ? SoundEvents.BLOCK_IRON_TRAPDOOR_OPEN
+                                   : SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE, 1.2f);
+        // Cerrar la tapa es lo que dispara el prensado.
+        if (!abriendo) be.intentarPrensar();
         return ActionResult.SUCCESS;
+    }
+
+    private static void sonar(World world, BlockPos pos, net.minecraft.sound.SoundEvent ev, float tono) {
+        world.playSound(null, pos, ev, SoundCategory.BLOCKS, 0.6f, tono);
+    }
+
+    /** Canal CMYK del tinte que se tenga en la mano, o -1. */
+    private static int canalDeTinte(ItemStack stack) {
+        if (stack.getItem() == net.minecraft.item.Items.CYAN_DYE) return SublimadoraBlockEntity.C;
+        if (stack.getItem() == net.minecraft.item.Items.MAGENTA_DYE) return SublimadoraBlockEntity.M;
+        if (stack.getItem() == net.minecraft.item.Items.YELLOW_DYE) return SublimadoraBlockEntity.Y;
+        if (stack.getItem() == net.minecraft.item.Items.BLACK_DYE) return SublimadoraBlockEntity.K;
+        return -1;
+    }
+
+    /**
+     * Reconoce la foto de Camerapture SIN depender del mod: se compara el id
+     * registrado. Asi la sublimadora compila y corre igual si Camerapture no
+     * esta instalado — simplemente no vas a tener fotos que poner.
+     */
+    private static boolean esFoto(ItemStack stack) {
+        return net.minecraft.registry.Registries.ITEM.getId(stack.getItem())
+                .toString().equals("camerapture:picture");
+    }
+
+    /**
+     * UUID de la foto. TODO: leerlo del componente PICTURE_DATA de Camerapture
+     * cuando lo agreguemos como dependencia; por ahora se deriva del stack
+     * para poder probar el ciclo completo.
+     */
+    private static java.util.UUID uuidDeFoto(ItemStack stack) {
+        return java.util.UUID.nameUUIDFromBytes(stack.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     /** GeckoLib dibuja el bloque completo desde el block entity renderer. */

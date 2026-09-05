@@ -8,7 +8,11 @@ public class SublimadoraMod implements ModInitializer {
     @Override
     public void onInitialize() {
         ModBlocks.register();
+        ModItems.register();
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL)
-                .register(entries -> entries.add(ModBlocks.SUBLIMADORA_ITEM));
+                .register(entries -> {
+                    entries.add(ModBlocks.SUBLIMADORA_ITEM);
+                    entries.add(ModItems.REMERA);
+                });
     }
 }

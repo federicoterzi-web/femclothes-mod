@@ -1,3 +1,6 @@
 {
-  "block.sublimadora.sublimadora": "Heat Press"
+  "block.sublimadora.sublimadora": "Heat Press",
+  "item.sublimadora.remera": "T-Shirt",
+  "sublimadora.remera.en_blanco": "Blank",
+  "sublimadora.remera.estampada": "Printed"
 }

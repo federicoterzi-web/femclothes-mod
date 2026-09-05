@@ -1,3 +1,6 @@
 {
-  "block.sublimadora.sublimadora": "Sublimadora"
+  "block.sublimadora.sublimadora": "Sublimadora",
+  "item.sublimadora.remera": "Remera",
+  "sublimadora.remera.en_blanco": "En blanco",
+  "sublimadora.remera.estampada": "Estampada"
 }

@@ -30,6 +30,23 @@ public class SublimadoraGeoModel extends GeoModel<SublimadoraBlockEntity> {
     public void setCustomAnimations(SublimadoraBlockEntity be, long instanceId, AnimationState<SublimadoraBlockEntity> state) {
         super.setCustomAnimations(be, instanceId, state);
 
+        // LEDs del panel: rojo parpadeando mientras prensa, verde fijo cuando
+        // esta lista, los dos apagados en reposo. Se prenden y apagan con
+        // setHidden, igual que las barras de tinta.
+        SublimadoraBlockEntity.Estado estado = be.getEstado();
+        boolean rojo = false, verde = false;
+        if (estado == SublimadoraBlockEntity.Estado.PRENSANDO) {
+            // Medio segundo prendido, medio apagado.
+            long t = be.getWorld() == null ? 0 : be.getWorld().getTime();
+            rojo = (t % 20) < 10;
+        } else if (estado == SublimadoraBlockEntity.Estado.LISTO) {
+            verde = true;
+        }
+        GeoBone ledRojo = getAnimationProcessor().getBone("led_rojo");
+        if (ledRojo != null) ledRojo.setHidden(!rojo);
+        GeoBone ledVerde = getAnimationProcessor().getBone("led_verde");
+        if (ledVerde != null) ledVerde.setHidden(!verde);
+
         float parcial = state == null ? 1f : (float) state.getPartialTick();
         for (int i = 0; i < HUESOS.length; i++) {
             GeoBone barra = getAnimationProcessor().getBone(HUESOS[i]);
