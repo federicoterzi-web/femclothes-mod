@@ -1,34 +1,8 @@
 {
-  "variants": {
-    "open=false,facing=north": {
-      "model": "sublimadora:block/sublimadora"
-    },
-    "open=false,facing=east": {
-      "model": "sublimadora:block/sublimadora",
-      "y": 90
-    },
-    "open=false,facing=south": {
-      "model": "sublimadora:block/sublimadora",
-      "y": 180
-    },
-    "open=false,facing=west": {
-      "model": "sublimadora:block/sublimadora",
-      "y": 270
-    },
-    "open=true,facing=north": {
-      "model": "sublimadora:block/sublimadora_open"
-    },
-    "open=true,facing=east": {
-      "model": "sublimadora:block/sublimadora_open",
-      "y": 90
-    },
-    "open=true,facing=south": {
-      "model": "sublimadora:block/sublimadora_open",
-      "y": 180
-    },
-    "open=true,facing=west": {
-      "model": "sublimadora:block/sublimadora_open",
-      "y": 270
+  "_comment": "El bloque es INVISIBLE y lo dibuja GeckoLib entero desde el block entity, asi que este modelo no se ve nunca en el mundo. El blockstate igual tiene que existir y cubrir todos los estados o el cargador de modelos escupe warnings, y block/sublimadora sigue vivo porque es el padre del modelo de item (el icono del inventario). Un multipart sin 'when' aplica a cualquier combinacion de facing/open, asi no hay que enumerar las ocho.",
+  "multipart": [
+    {
+      "apply": { "model": "sublimadora:block/sublimadora" }
     }
-  }
+  ]
 }

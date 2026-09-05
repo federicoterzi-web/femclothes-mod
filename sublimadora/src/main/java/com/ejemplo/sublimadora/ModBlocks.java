@@ -4,7 +4,6 @@ import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.piston.PistonBehavior;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
@@ -26,8 +25,10 @@ public final class ModBlocks {
                     .pistonBehavior(PistonBehavior.BLOCK)
     );
 
-    public static final BlockItem SUBLIMADORA_ITEM =
-            new BlockItem(SUBLIMADORA, new Item.Settings());
+    // BlockItem propio para que el icono del inventario lo dibuje GeckoLib
+    // con la misma malla que el bloque, en vez de un modelo vanilla paralelo.
+    public static final SublimadoraBlockItem SUBLIMADORA_ITEM =
+            new SublimadoraBlockItem(SUBLIMADORA, new Item.Settings());
 
     public static final BlockEntityType<SublimadoraBlockEntity> SUBLIMADORA_ENTITY =
             BlockEntityType.Builder.create(SublimadoraBlockEntity::new, SUBLIMADORA).build();
