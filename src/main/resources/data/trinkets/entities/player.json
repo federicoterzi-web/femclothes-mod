@@ -1,4 +1,10 @@
 {
-  "entities": ["player"],
-  "slots": ["arms/armwarmer", "socks/pair"]
+  "entities": [
+    "player"
+  ],
+  "slots": [
+    "arms/armwarmer",
+    "socks/pair",
+    "torso/prenda"
+  ]
 }

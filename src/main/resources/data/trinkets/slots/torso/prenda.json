@@ -1,0 +1,5 @@
+{
+  "_comment": "Un solo slot de torso, compartido con la remera estampada de la sublimadora. Que compartan slot es a proposito: dos prendas dibujadas sobre el mismo pedazo de cuerpo se pisarian, asi que en vez de resolver el solapamiento se vuelven mutuamente excluyentes.",
+  "icon": "femclothes:gui/slot/torso",
+  "order": 0
+}

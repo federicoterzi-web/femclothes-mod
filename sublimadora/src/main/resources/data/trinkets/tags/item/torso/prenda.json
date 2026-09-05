@@ -1,0 +1,4 @@
+{
+  "_comment": "Los tags se fusionan entre datapacks, asi que cada mod declara lo suyo y ninguno depende de que el otro este instalado. El slot torso/prenda lo define femclothes; sin femclothes esto simplemente no aplica.",
+  "values": ["sublimadora:remera"]
+}
