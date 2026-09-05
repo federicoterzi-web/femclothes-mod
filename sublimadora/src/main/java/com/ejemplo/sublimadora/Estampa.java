@@ -26,12 +26,51 @@ import java.util.UUID;
  * @param x      corrimiento horizontal, -0.5 a 0.5, 0 es centrado
  * @param y      corrimiento vertical, -0.5 a 0.5, positivo es hacia arriba
  */
-public record Estampa(UUID foto, float escala, float x, float y) {
+public record Estampa(UUID foto, float escala, float x, float y, boolean cubrir) {
 
     /** Ni tan chica que no se lea, ni tan grande que se coma las mangas. */
     public static final float ESCALA_DEFECTO = 0.42f;
     public static final float ESCALA_MINIMA = 0.10f;
     public static final float ESCALA_MAXIMA = 1.0f;
+
+    /**
+     * Los dos presets de estampado, que es lo que elige la palanca.
+     *
+     * Son presets y no un slider a proposito: cubren los dos casos reales de
+     * una sublimadora -la remera entera, o un logo en el pecho- sin obligar a
+     * pelear con controles finos a ciegas, gastando tinta y veinte segundos
+     * por intento. El record igual guarda escala y posicion libres, asi que
+     * agregar control fino despues no rompe nada de esto.
+     */
+    public enum Modo {
+        /** Chica y arriba a la derecha: el logo bordado del pecho. */
+        LOGO("logo", 0.28f, 0.22f, 0.20f, false),
+        /** La estampa clasica: centrada, del tamano de un dibujo al frente. */
+        CENTRADA("centrada", 0.55f, 0f, 0.02f, false),
+        /** Full print: cubre el torso entero, recortando lo que sobre. */
+        COMPLETO("completo", 1.0f, 0f, 0f, true);
+
+        public final String clave;
+        public final float escala, x, y;
+        /** Recortar para llenar en vez de encoger para entrar. */
+        public final boolean cubrir;
+
+        Modo(String clave, float escala, float x, float y, boolean cubrir) {
+            this.clave = clave;
+            this.escala = escala;
+            this.x = x;
+            this.y = y;
+            this.cubrir = cubrir;
+        }
+
+        public Estampa aplicar(UUID foto) {
+            return new Estampa(foto, escala, x, y, cubrir);
+        }
+
+        public Modo siguiente() {
+            return values()[(ordinal() + 1) % values().length];
+        }
+    }
 
     /** En que cara de la remera va. Una prenda puede tener las dos. */
     public enum Cara {
@@ -51,9 +90,9 @@ public record Estampa(UUID foto, float escala, float x, float y) {
         y = MathHelper.clamp(y, -0.5f, 0.5f);
     }
 
-    /** Centrada y del tamano de siempre: lo que sale sin tocar nada. */
+    /** Centrada y del tamano de siempre: como salian las remeras viejas. */
     public static Estampa centrada(UUID foto) {
-        return new Estampa(foto, ESCALA_DEFECTO, 0f, 0f);
+        return new Estampa(foto, ESCALA_DEFECTO, 0f, 0f, false);
     }
 
     // Escala y posicion son opcionales a proposito: una estampa centrada y
@@ -62,7 +101,8 @@ public record Estampa(UUID foto, float escala, float x, float y) {
             Uuids.CODEC.fieldOf("foto").forGetter(Estampa::foto),
             Codec.FLOAT.optionalFieldOf("escala", ESCALA_DEFECTO).forGetter(Estampa::escala),
             Codec.FLOAT.optionalFieldOf("x", 0f).forGetter(Estampa::x),
-            Codec.FLOAT.optionalFieldOf("y", 0f).forGetter(Estampa::y)
+            Codec.FLOAT.optionalFieldOf("y", 0f).forGetter(Estampa::y),
+            Codec.BOOL.optionalFieldOf("cubrir", false).forGetter(Estampa::cubrir)
     ).apply(i, Estampa::new));
 
     public static final PacketCodec<ByteBuf, Estampa> PACKET_CODEC = PacketCodec.tuple(
@@ -70,5 +110,6 @@ public record Estampa(UUID foto, float escala, float x, float y) {
             PacketCodecs.FLOAT, Estampa::escala,
             PacketCodecs.FLOAT, Estampa::x,
             PacketCodecs.FLOAT, Estampa::y,
+            PacketCodecs.BOOL, Estampa::cubrir,
             Estampa::new);
 }

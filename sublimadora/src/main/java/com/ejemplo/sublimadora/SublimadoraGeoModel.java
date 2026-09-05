@@ -47,6 +47,21 @@ public class SublimadoraGeoModel extends GeoModel<SublimadoraBlockEntity> {
         GeoBone ledVerde = getAnimationProcessor().getBone("led_verde");
         if (ledVerde != null) ledVerde.setHidden(!verde);
 
+        // El slider del modo de estampado. No hay animacion de por medio:
+        // son tres posiciones fijas y basta con correr el hueso, que ademas
+        // deja libre el archivo de animacion para la tapa.
+        //
+        // El riel es otro hueso y no se toca. Cuanto mas arriba el pomo, mas
+        // superficie se estampa: abajo el logo, arriba el full print.
+        GeoBone palanca = getAnimationProcessor().getBone("palanca");
+        if (palanca != null) {
+            palanca.setPosY(switch (be.getModo()) {
+                case LOGO -> -1.5f;
+                case CENTRADA -> 0f;
+                case COMPLETO -> 1.5f;
+            });
+        }
+
         // La remera sobre la plancha solo se ve si hay una cargada, o si la
         // recien estampada todavia no se retiro.
         GeoBone remera = getAnimationProcessor().getBone("remera");

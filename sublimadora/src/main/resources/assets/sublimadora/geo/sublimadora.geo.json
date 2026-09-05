@@ -275,6 +275,44 @@
 					]
 				},
 				{
+					"name": "palanca_guia",
+					"parent": "base",
+					"pivot": [6, 6.4, -8.18],
+					"cubes": [
+						{
+							"origin": [4.7, 4.3, -8.18],
+							"size": [2.6, 4.2, 0.18],
+							"uv": {
+								"north": {"uv": [16, 19], "uv_size": [1, 1]},
+								"east": {"uv": [16, 19], "uv_size": [1, 1]},
+								"south": {"uv": [16, 19], "uv_size": [1, 1]},
+								"west": {"uv": [16, 19], "uv_size": [1, 1]},
+								"up": {"uv": [16, 19], "uv_size": [1, 1]},
+								"down": {"uv": [16, 19], "uv_size": [1, 1]}
+							}
+						}
+					]
+				},
+				{
+					"name": "palanca",
+					"parent": "base",
+					"pivot": [6, 6.4, -8.62],
+					"cubes": [
+						{
+							"origin": [5.4, 5.8, -8.62],
+							"size": [1.2, 1.2, 0.65],
+							"uv": {
+								"north": {"uv": [32, 0], "uv_size": [1, 1]},
+								"east": {"uv": [32, 0], "uv_size": [1, 1]},
+								"south": {"uv": [32, 0], "uv_size": [1, 1]},
+								"west": {"uv": [32, 0], "uv_size": [1, 1]},
+								"up": {"uv": [32, 0], "uv_size": [1, 1]},
+								"down": {"uv": [32, 0], "uv_size": [1, 1]}
+							}
+						}
+					]
+				},
+				{
 					"name": "remera",
 					"parent": "base",
 					"pivot": [0, 10.98, 0],

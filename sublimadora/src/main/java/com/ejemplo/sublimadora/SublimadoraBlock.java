@@ -121,6 +121,21 @@ public class SublimadoraBlock extends BlockWithEntity {
         if (world.isClient) return ActionResult.SUCCESS;
         if (!(world.getBlockEntity(pos) instanceof SublimadoraBlockEntity be)) return ActionResult.PASS;
 
+        // La palanca del frente, abajo de la linea de la tapa. Va primero
+        // que todo lo demas: es la unica interaccion anclada a una parte
+        // concreta del bloque, y esa parte es de la BASE, que no se mueve
+        // cuando la tapa se abre.
+        if (esLaPalanca(state, pos, hit)) {
+            if (be.cambiarModo()) {
+                sonar(world, pos, SoundEvents.BLOCK_LEVER_CLICK, 1.0f);
+                player.sendMessage(net.minecraft.text.Text.translatable(
+                        "sublimadora.aviso.modo",
+                        net.minecraft.text.Text.translatable(
+                                "sublimadora.modo." + be.getModo().clave)), true);
+            }
+            return ActionResult.CONSUME;
+        }
+
         // Retirar NO puede tener prioridad sobre cerrar: si la tuviera, una vez
         // cargada la remera el click te la sacaria en vez de arrancar el
         // prensado, y no habria forma de empezar.
@@ -138,6 +153,17 @@ public class SublimadoraBlock extends BlockWithEntity {
         }
 
         boolean abriendo = !state.get(OPEN);
+
+        // La prensa esta apoyada y caliente: la tapa queda trabada hasta que
+        // termine. Sin esto se podia abrir en medio del ciclo y ver la remera
+        // flotando con el prensado corriendo igual por debajo.
+        if (abriendo && be.getEstado() == SublimadoraBlockEntity.Estado.PRENSANDO) {
+            sonar(world, pos, SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE, 0.6f);
+            player.sendMessage(net.minecraft.text.Text.translatable("sublimadora.aviso.trabada")
+                    .formatted(net.minecraft.util.Formatting.GOLD), true);
+            return ActionResult.CONSUME;
+        }
+
         world.setBlockState(pos, state.with(OPEN, abriendo), Block.NOTIFY_ALL);
         sonar(world, pos, abriendo ? SoundEvents.BLOCK_IRON_TRAPDOOR_OPEN
                                    : SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE, 1.2f);
@@ -154,6 +180,15 @@ public class SublimadoraBlock extends BlockWithEntity {
             }
         }
         return ActionResult.SUCCESS;
+    }
+
+    /**
+     * Si el click cayo en la palanca: cara delantera del bloque y por debajo
+     * de la linea donde apoya la tapa (y=11 de 16).
+     */
+    private static boolean esLaPalanca(BlockState state, BlockPos pos, BlockHitResult hit) {
+        if (hit.getSide() != state.get(FACING)) return false;
+        return hit.getPos().y - pos.getY() < 11.0 / 16.0;
     }
 
     private static boolean tieneLasDosCaras(ItemStack stack) {

@@ -37,6 +37,8 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
     public static final int CARGA_MAXIMA = 16;
     /** 20 segundos a 20 ticks. */
     public static final int TICKS_PRENSADO = 400;
+    /** Lo que tarda la tapa en bajar: 0.3 s del archivo de animacion. */
+    private static final int TICKS_CIERRE = 6;
 
     public enum Estado { REPOSO, PRENSANDO, LISTO }
 
@@ -87,6 +89,14 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
     private java.util.UUID fotoPendiente = null;
     /** En que cara se va a estampar. La elige el jugador al poner la foto. */
     private Estampa.Cara caraPendiente = Estampa.Cara.FRENTE;
+    /** Full print o logo. Lo elige la palanca del frente de la maquina. */
+    private Estampa.Modo modo = Estampa.Modo.COMPLETO;
+
+    // Solo para dibujar, no se guardan: hacen que la foto siga a la vista
+    // mientras la tapa baja, en vez de evaporarse antes de que la cubra.
+    private boolean tapaAbiertaVista = true;
+    private int cerrandose = 0;
+    private java.util.UUID ultimaFotoVista = null;
 
     public SublimadoraBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlocks.SUBLIMADORA_ENTITY, pos, state);
@@ -128,6 +138,17 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
             be.mostrado[i] += (be.tinta[i] - be.mostrado[i]) * 0.15f;
             if (Math.abs(be.tinta[i] - be.mostrado[i]) < 0.001f) be.mostrado[i] = be.tinta[i];
         }
+
+        // Arrastre de la tapa. Va antes del corte por lado porque es puro
+        // dibujo y lo necesita el cliente.
+        boolean abierta = state.get(SublimadoraBlock.OPEN);
+        if (abierta != be.tapaAbiertaVista) {
+            be.tapaAbiertaVista = abierta;
+            if (!abierta) be.cerrandose = TICKS_CIERRE;
+        }
+        if (be.cerrandose > 0) be.cerrandose--;
+        java.util.UUID cargadaAhora = be.getFotoCargada();
+        if (cargadaAhora != null) be.ultimaFotoVista = cargadaAhora;
 
         // El avance del prensado lo lleva el SERVIDOR; el cliente solo dibuja
         // lo que le sincroniza el NBT.
@@ -172,7 +193,7 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
             be.progreso = 0;
             be.estado = Estado.LISTO;
             be.salida = RemeraItem.estampar(be.remera, be.caraPendiente,
-                    Estampa.centrada(be.fotoPendiente));
+                    be.modo.aplicar(be.fotoPendiente));
             be.remera = ItemStack.EMPTY;
             be.fotoPendiente = null;
             // Esto es exactamente el tick en que se prende el LED verde, que
@@ -300,6 +321,39 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
 
     public Estampa.Cara getCaraPendiente() {
         return caraPendiente;
+    }
+
+    /** UUID de la foto cargada esperando ser prensada, o null. */
+    @org.jetbrains.annotations.Nullable
+    public java.util.UUID getFotoCargada() {
+        return foto.isEmpty() ? null : fotoPendiente;
+    }
+
+    /**
+     * La foto que hay que DIBUJAR, que no es siempre la que esta cargada.
+     *
+     * Al cerrar la tapa el prensado consume la foto en el mismo tick, pero la
+     * animacion de la tapa tarda seis en bajar: sin este arrastre el papel
+     * desaparecia a la vista, con la plancha todavia abierta.
+     */
+    @org.jetbrains.annotations.Nullable
+    public java.util.UUID getFotoVisible() {
+        if (getCachedState().get(SublimadoraBlock.OPEN)) return getFotoCargada();
+        if (cerrandose <= 0) return null;
+        java.util.UUID cargada = getFotoCargada();
+        return cargada != null ? cargada : ultimaFotoVista;
+    }
+
+    public Estampa.Modo getModo() {
+        return modo;
+    }
+
+    /** Da vuelta la palanca. No se puede en medio de un prensado. */
+    public boolean cambiarModo() {
+        if (estado == Estado.PRENSANDO) return false;
+        modo = modo.siguiente();
+        sincronizar();
+        return true;
     }
 
     /** Saca lo que haya para retirar: la remera lista, o lo que este cargado. */
@@ -434,6 +488,7 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         if (!salida.isEmpty()) nbt.put("Salida", salida.encode(registries));
         if (fotoPendiente != null) nbt.putUuid("FotoPendiente", fotoPendiente);
         nbt.putString("CaraPendiente", caraPendiente.name());
+        nbt.putString("Modo", modo.name());
     }
 
     @Override
@@ -460,6 +515,9 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         caraPendiente = nbt.contains("CaraPendiente")
                 ? Estampa.Cara.valueOf(nbt.getString("CaraPendiente"))
                 : Estampa.Cara.FRENTE;
+        modo = nbt.contains("Modo")
+                ? Estampa.Modo.valueOf(nbt.getString("Modo"))
+                : Estampa.Modo.COMPLETO;
     }
 
     /** El cliente necesita los niveles para dibujar el display. */

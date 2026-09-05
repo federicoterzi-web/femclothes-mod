@@ -25,7 +25,20 @@ depender uno del otro — ver abajo.
 
 Si al cerrar la tapa no puede arrancar, lo dice en la barra de acción en
 vez de quedarse muda — el silencio era indistinguible de estar rota.
-Agachado, el click descarga lo que haya puesto, para poder corregir.
+Agachado, el click descarga lo que haya puesto, para poder corregir. Y
+mientras prensa **la tapa queda trabada**: sin eso se podía abrir en medio
+del ciclo y ver la remera flotando con el prensado corriendo por debajo.
+
+Con la tapa abierta, la foto cargada se dibuja **apoyada sobre la remera**.
+Es el único indicio de que hay una puesta, y muestra cuál. No es un hueso
+del modelo porque la textura cambia con cada foto y un hueso tiene una
+sola, la del atlas: va como quad después del modelo, con la misma rotación
+que GeckoLib le aplica al bloque.
+
+Ese dibujo usa `getFotoVisible()` y no `getFotoCargada()`: el prensado
+consume la foto en el mismo tick en que se cierra la tapa, pero la tapa
+tarda **seis ticks** en bajar, así que sin arrastre el papel se evaporaba
+con la plancha todavía abierta.
 
 La remera es **un solo ítem**. Lo que cambia son dos componentes,
 `estampa_frente` y `estampa_espalda`; sin ninguno está en blanco. Cada uno
@@ -46,8 +59,38 @@ record Estampa(UUID foto, float escala, float x, float y)
 `escala` y la posición van **normalizadas al área imprimible**, no en
 píxeles: así el mismo número sirve para el ícono del inventario, para la
 remera en la plancha y para cuando se dibuje sobre el cuerpo, que son tres
-resoluciones distintas. El render ya las respeta; lo que falta es por dónde
-tocarlas — hoy todo sale centrado y en `0.42`.
+resoluciones distintas.
+
+Los valores los elige un **slider vertical en el frente de la máquina** —
+click con la mano vacía en la parte baja del frente lo corre. Tres presets,
+que cubren los casos reales sin obligar a pelear con controles finos a
+ciegas gastando tinta y veinte segundos por intento:
+
+| posición | modo | qué hace |
+|---|---|---|
+| abajo | `LOGO` | chico, arriba a la derecha |
+| medio | `CENTRADA` | la estampa clásica |
+| arriba | `COMPLETO` | full print, cubre la prenda entera |
+
+**El full print va enmascarado contra la silueta.** No alcanza con dibujar
+un cuadrado sobre la remera: tiene forma de T, y cualquier rectángulo que
+llegue a las mangas se sale del contorno por las esquinas. `EstampaTextures`
+compone al vuelo una textura de 16x16 con `alfa = alfa_foto × alfa_prenda`,
+y la foto se recorta desde el centro para llenar en vez de encogerse para
+entrar — que es lo que uno quiere cuando la consigna es que no quede tela
+sin estampar.
+
+Dos cosas de esa composición que no son obvias:
+
+- **Los píxeles de la foto se le piden de vuelta a la GPU.** La foto no es
+  un recurso del resource pack, se registra en runtime, así que no hay de
+  dónde leerla en disco. El tamaño se le pregunta a OpenGL y no al mod: la
+  textura puede estar padeada y leer con el tamaño equivocado la corrompe.
+- **`NativeImage` empaqueta ABGR, no ARGB.** Por eso se copia el color
+  entero y sólo se rearma el byte de alfa.
+
+Si la composición falla —la textura todavía no subió, por ejemplo— cae a un
+rectángulo limitado al torso. Más chico, pero nunca fuera del contorno.
 
 **Los PNG con transparencia funcionan**, verificado de punta a punta. El
 alfa sobrevive el viaje por Camerapture aunque comprima en WebP con pérdida.
@@ -84,6 +127,8 @@ Nombres que el código busca y **no** se pueden renombrar:
 | hueso | lo usa |
 |---|---|
 | `led_rojo`, `led_verde` | `SublimadoraGeoModel` los prende y apaga con `setHidden` |
+| `palanca` | el pomo del slider; se corre en Y según el modo |
+| `palanca_guia` | el riel. Es un hueso aparte a propósito: adentro de `palanca` se desplazaría junto con el pomo |
 | `remera` | idem, según haya una cargada |
 | `ink_c`, `ink_m`, `ink_y`, `ink_k` | escala en Y según la tinta restante |
 | `tapa` | la animación de abrir y cerrar |

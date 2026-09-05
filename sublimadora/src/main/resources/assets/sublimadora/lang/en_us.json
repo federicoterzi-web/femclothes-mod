@@ -13,5 +13,10 @@
   "sublimadora.tinta.negro": "black",
   "sublimadora.cara.frente": "front",
   "sublimadora.cara.espalda": "back",
-  "sublimadora.aviso.cara": "Will print on the %s"
+  "sublimadora.aviso.cara": "Will print on the %s",
+  "sublimadora.aviso.modo": "Print mode: %s",
+  "sublimadora.modo.completo": "full print (covers the shirt)",
+  "sublimadora.modo.logo": "logo (small, upper right)",
+  "sublimadora.modo.centrada": "centred print",
+  "sublimadora.aviso.trabada": "The lid is locked while pressing"
 }
