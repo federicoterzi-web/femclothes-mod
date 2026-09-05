@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "PPP",
+    "SSS",
+    "PPP"
+  ],
+  "key": {
+    "S": { "item": "minecraft:string" },
+    "P": { "item": "minecraft:paper" }
+  },
+  "result": { "id": "femclothes:pattern_stripe_alt", "count": 1 }
+}

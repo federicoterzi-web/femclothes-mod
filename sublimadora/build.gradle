@@ -11,6 +11,10 @@ base {
 
 repositories {
     maven {
+        name = "Ladysnake"
+        url = "https://maven.ladysnake.org/releases"
+    }
+    maven {
         name = "GeckoLib"
         url = "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/"
     }
@@ -44,6 +48,7 @@ dependencies {
     // Tampoco a 4.9+, por otro motivo: esas se compilaron con Loom 1.17.13 y
     // nuestro Loom 1.15.3 las rechaza. 4.7.7 usa Loom 1.10.5.
     modImplementation "maven.modrinth:geckolib:6UTA5nCc"
+
 }
 
 processResources {

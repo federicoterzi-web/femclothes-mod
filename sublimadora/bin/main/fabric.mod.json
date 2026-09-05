@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "sublimadora",
+  "version": "1.0.0",
+  "name": "Sublimadora",
+  "description": "Prensa térmica de sublimación: bloque de 16³ con tapa abisagrada animada y display CMYK.",
+  "authors": [
+    "ejemplo"
+  ],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.ejemplo.sublimadora.SublimadoraMod"
+    ],
+    "client": [
+      "com.ejemplo.sublimadora.SublimadoraModClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.11",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*",
+    "geckolib": ">=4.5.0"
+  }
+}

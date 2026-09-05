@@ -3,6 +3,10 @@ plugins {
     id 'maven-publish'
 }
 
+// El subproyecto tiene que estar evaluado antes de que la raiz referencie su
+// tarea remapJar, si no Gradle dice "Task with name 'remapJar' not found".
+evaluationDependsOn(':sublimadora')
+
 version = project.mod_version
 group = project.maven_group
 
@@ -77,7 +81,13 @@ dependencies {
     // proposito: femclothes NO depende de ella para compilar ni la arrastra
     // al jar publicado, solo la carga el runClient de este repo para poder
     // probar los dos mods juntos.
-    modLocalRuntime project(":sublimadora")
+    // Como JAR y no como project(): con project(...) Loom lo mete de una forma
+    // en la que su entrypoint de cliente no corre — el mod aparece listado pero
+    // nunca registra su renderer, y el bloque queda invisible. Cargarlo como
+    // archivo es ademas lo que hace un server de verdad.
+    modLocalRuntime files(project(":sublimadora").tasks.named("remapJar"))
+    // Como archivo no arrastra sus dependencias: GeckoLib va explicito.
+    modLocalRuntime "maven.modrinth:geckolib:6UTA5nCc"
 
     // 3D Skin Layers SOLO para compilar: nuestra textura de skin implementa su
     // interfaz HttpTextureAccessor para que pueda leerla. No es dependencia de
