@@ -7,6 +7,12 @@ jugador y no como armadura ancha — más una sublimadora que le estampa fotos.
 Este es el mapa del proyecto. El detalle profundo de la máquina está aparte,
 en [docs/SUBLIMADORA.md](docs/SUBLIMADORA.md).
 
+> **Diseño en curso (no implementado)**: el rediseño del sistema de capas y
+> geometría de prendas (cortes, fit, polleras, pantalones acampanados) está en
+> [docs/PRENDAS.md](docs/PRENDAS.md), y las mesas de tinturas/sastrería con su
+> automatización en [docs/MAQUINAS.md](docs/MAQUINAS.md). Los dos resuelven el
+> "Problema abierto" de más abajo y reemplazan el hook del telar.
+
 > **Toolchain**: Fabric Loom **1.15.3** + Gradle **9.2.0**.
 > En Windows, `gradlew.bat` desde PowerShell — el `./gradlew` de Bash falla
 > por finales de línea CRLF.
