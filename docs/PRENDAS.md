@@ -85,7 +85,73 @@ migración de shorts, que ya toca esos archivos.
 
 ---
 
-## 3. Los cortes de remera — cómo construirlos de verdad
+## 3. Selector de región — normalizar izq/der y frente/espalda
+
+Hoy "qué lado toco" aparece distinto en cada lugar: el telar cicla
+"Ambas/Izq/Der", la sublimadora tiene un selector físico frente/espalda, los
+componentes se llaman `right_dyed_color` (inglés) y `estampa_frente`
+(español). Es **el mismo concepto**: selector de región objetivo.
+
+### Dos ejes de región
+
+- `Lado { IZQUIERDA, DERECHA, AMBAS }` — todo lo bilateral: piernas, brazos.
+- `Cara { FRENTE, ESPALDA, AMBAS }` — torso de remera para estampas.
+
+**IZQUIERDA = la del jugador** (anatómica), no la del que mira. La resolución
+textura/modelo ya está verificada (`PlayerEntityModel.getTexturedModelData`,
+ver FEMCLOTHES.md §Texturas). El widget y el enum coinciden con eso.
+
+### La prenda declara sus regiones por operación
+
+```java
+Set<Region> regionesDe(Operacion op)   // op ∈ TEÑIR, PATRON, CORTE, ESTAMPAR
+```
+
+| prenda | op | regiones |
+|---|---|---|
+| `socks_solid` | TEÑIR / PATRON | {IZQ, DER, AMBAS} |
+| `remera` | TEÑIR | {AMBAS} (una remera, un color base) |
+| `remera` | ESTAMPAR | {FRENTE, ESPALDA} |
+| `armwarmers` | cualquiera | {IZQ, DER, AMBAS} |
+
+### Un solo resolvedor
+
+`RegionResolver` — clase única, `(ItemStack, Region, componente) → valor`.
+**Absorbe `ClothingStyle`.** La regla en un solo lado:
+
+- **`Lado`**: la IZQUIERDA es primaria (guarda el valor). La DERECHA guarda
+  *overrides opcionales*; ausente = hereda. Es lo que hoy hace el mod con
+  `RIGHT_*` en medias, generalizado a toda prenda bilateral. El guard tipo
+  `pinRight()` queda como **el único** camino para tocar un lado sin
+  arrastrar el otro.
+- **`Cara`**: cada cara su componente (`estampa_frente` / `estampa_espalda`).
+
+### Un widget + el selector físico
+
+- Estaciones con GUI (tinturas, sastrería): `RegionPickerWidget` — toma el
+  `Set<Region>` válido y muestra exactamente esos botones.
+- Sublimadora (sin GUI): el selector físico del modelo maneja el **mismo**
+  valor de `Cara`.
+- El valor vive en el **config NBT de la estación** (default AMBAS).
+  Configurás una vez, metés prendas, se aplican a la región activa.
+
+### `AMBAS` NO es uniforme — trampa
+
+- **Teñir / patrón**: setea el valor primario y **borra el override** del
+  otro lado → quedan iguales sin guardar data extra (el caso "parejo").
+- **Estampar**: aplica a todas las caras pero **cuesta tinta por cara** (la
+  sublimadora ya es así — "una pasada, dos juegos de tinta").
+
+### Lo que habilita
+
+Cortes **asimétricos** salen gratis: manga 3/4 en un brazo y larga en el
+otro, flare distinto por pierna. `femclothes:variante` pasaría a tener split
+por `Lado` como ya lo tienen las medias (mismos componentes opcionales,
+mismo `RegionResolver`).
+
+---
+
+## 4. Los cortes de remera — cómo construirlos de verdad
 
 El data-model de los 3 ejes ya existe (36 combos, `femclothes:variante`).
 Falta que las variantes se **vean** bien; hoy son todas generadas por script.
@@ -158,7 +224,7 @@ los shorts). Es la generalización del punto 2. Requiere el sistema de capas
 
 ---
 
-## 4. Prendas nuevas
+## 5. Prendas nuevas
 
 ### Regla: dos excepciones explícitas a "pegada al cuerpo"
 
@@ -228,7 +294,7 @@ lápiz casi no se mueve, la circular se abre.
 
 ---
 
-## 5. Personalizable sin explotar en combos
+## 6. Personalizable sin explotar en combos
 
 Los ejes **NO son ítems**. Van en un componente estilo `variante`. Se cambian
 en la **mesa de sastrería** (ver MAQUINAS.md).
@@ -244,7 +310,7 @@ un solo ítem con datos encima.
 
 ---
 
-## 6. Roadmap (dos tracks paralelos después de la fase 1)
+## 7. Roadmap (dos tracks paralelos después de la fase 1)
 
 **Fase 1 — Sistema de capas.** Sustrato de piel + ordinal. Es el desbloqueo
 de todo lo demás. Sin dependencias.

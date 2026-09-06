@@ -1,4 +1,4 @@
-<!-- canal-version: 1 -->
+<!-- canal-version: 2 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,24 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v2 — 2026-09-06 — cuenta de H0p3san · Claude Code (app de escritorio, sesión patchouli)
+
+**Hecho:**
+- `PRENDAS.md` §3 nuevo: **Selector de región** — normaliza el
+  izq/der/frente/espalda que hoy está disperso (telar cicla, sublimadora
+  selector físico, componentes `right_*` vs `estampa_frente`). Enums `Lado`
+  y `Cara`, `regionesDe(op)` por prenda, un `RegionResolver` que absorbe
+  `ClothingStyle`, un `RegionPickerWidget`, la trampa de que `AMBAS` no es
+  uniforme (teñir borra override / estampar cuesta por cara). Secciones 3-7
+  renumeradas.
+
+**Próximo:** sin cambios respecto de v1 — fase 1 (sistema de capas) sigue
+siendo el arranque del track de prendas.
+
+**Para el otro Claude:** el `RegionResolver` y el `RegionPickerWidget` son
+transversales a las dos mesas nuevas y a la sublimadora. Si tocás cualquier
+UI de estación o el per-lado de medias, pasá por ahí, no dupliques.
 
 ## v1 — 2026-09-06 — cuenta de H0p3san · Claude Code (app de escritorio, sesión patchouli)
 
