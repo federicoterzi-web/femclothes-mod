@@ -464,10 +464,85 @@ las costuras del cubo. Las orientaciones se hacen como máscaras separadas
 
 ---
 
-## 7. Roadmap (dos tracks paralelos después de la fase 1)
+## 7. Cuerpo base — reemplaza la reconstrucción de piel
 
-**Fase 1 — Sistema de capas.** Sustrato de piel + ordinal. Es el desbloqueo
-de todo lo demás. Sin dependencias.
+Hoy `SkinToneSampler` / `ComposedSkin` / `SkinRegions` reconstruyen la piel
+desnuda leyendo la skin real, con toda la lista de "trampas que costaron
+tiempo" de FEMCLOTHES.md. Un **cuerpo base elegido a mano** borra eso.
+
+### Qué es
+
+- **Set curado** de texturas en layout de skin (a 8×): build plano, con
+  abdominales, con curvas, pecho aplanado (binder), etc. Set fijo, **no por
+  prenda**.
+- Trae **ropa interior básica** baked, o engancha con los slots
+  `torso/interior` + `piernas/interior` (§1) — viene un default, se cambia
+  (slip / boxer / bralette). El censurado es el fallback si no elegís nada.
+- **Tono paramétrico**: textura en tono neutro + recolor por rampa (sombras
+  / medios / luces). El default se **deriva sampleando la skin real UNA
+  vez** en el setup; después se edita a mano.
+
+### Reemplaza el sustrato de fase 1
+
+El sustrato de §1 deja de "reconstruir" y **ES** el cuerpo base elegido. UV
+conocido, regiones desnudas conocidas. `SkinRegions` pasa a ser "qué parte
+del cuerpo base asoma por esta prenda" — trivial. **Es parte de fase 1.**
+
+### Primera interacción
+
+La primera vez que crafteás/equipás una prenda del mod, se abre una GUI:
+elegís cuerpo base, tono, ropa interior, preview. Se guarda en componente
+persistente server-side del jugador.
+
+### No romper la filosofía
+
+**"Usar mi skin real"** queda como una de las opciones del cuerpo base. El
+set curado son alternativas, no un reemplazo. El default sigue siendo
+"derivado de tu skin".
+
+---
+
+## 8. 3D Skin Layers — las prendas también son 3D
+
+Con 3DSL prendido el jugador se ve voxelado y una prenda dibujada plana
+sobre la ModelPart queda como panqueque al lado. La respuesta **parte por
+fuente de geometría** (§2).
+
+### Ajustadas (`BODY_PART`) → que las extruda 3DSL
+
+En vez de dibujar la tela plana, se **compone la tela DENTRO de la capa
+externa de la skin** y 3DSL la extruye sola, en su estilo exacto.
+
+- **3DSL presente**: `ComposedSkin` extendido — pinta la tela de la prenda
+  (no solo piel desnuda) en la capa externa, en torso Y piernas Y brazos.
+  `SkinRegions` pasa de *borrar* la ropa pintada de la skin a *reemplazarla*
+  con la tela de la prenda.
+- **3DSL ausente**: el cuerpo base plano/dilatado como fallback (§7).
+
+### Flojas (`FLARE_MESH`, `OVERSIZE_MESH`) → ya son 3D
+
+Pollera, campana, buzo ya tienen volumen. Solo hay que **estilarlas blocky**
+(facetas duras) para que peguen con el look de 3DSL. No necesitan 3DSL.
+
+### Lo que esto implica
+
+- 3DSL deja de ser "puente de compat" y pasa a ser **camino de render de
+  primera clase**. `SkinLayersCompat` / `HttpTextureAccessor` (escrito,
+  sin probar) se vuelve **crítico**.
+- **Costo**: cada cambio de prenda/tinte/corte → recompone la skin
+  (NativeImage, por jugador) + 3DSL rehace su mesh. **Async / con debounce**,
+  sí o sí.
+- **Fase 1 tiene que anticiparlo**: el sustrato/cuerpo base debe diseñarse
+  de forma que la ruta "componer en la capa externa + 3DSL extruye" no
+  obligue a romperlo después.
+
+---
+
+## 9. Roadmap (dos tracks paralelos después de la fase 1)
+
+**Fase 1 — Sistema de capas + cuerpo base.** Sustrato = cuerpo base elegido
++ ordinal de capa + `SkinRegions` paramétrico por corte. Diseñado
+anticipando la ruta 3DSL (§8). Es el desbloqueo de todo lo demás.
 
 Después, dos tracks independientes:
 
@@ -476,19 +551,21 @@ Después, dos tracks independientes:
    socks_34 caen solos.
 3. Fusionar `RemeraTrinketRenderer` + `BodyPartTrinketRenderer` en
    `BodyPartGarmentRenderer`.
-4. Mangas con dobladillo (script). Cuello redondo/V como máscaras de
+4. Mangas (banda) con dobladillo. Cuello redondo/V/escote como máscaras de
    silueta.
 5. Polera como prenda de dos piezas (torso-sin-escote + banda-en-cabeza) —
    ensayo de multi-parte.
 6. Backend `FLARE_MESH` + generador paramétrico. Probar con **solo la
    pollera** hasta que swing y clipping estén bien.
 7. El resto de lo acampanado sale de los moldes (pantalón campana, babucha).
-   Maid como prenda multi-parte.
-8. Buzo oversize (geometría Blockbench, Armor Model API). Puente 3DSL.
+   Maid como prenda multi-parte. Calzado.
+8. Buzo oversize (geometría Blockbench, Armor Model API).
+9. Puente 3DSL de verdad (§8) — probar en juego con el mod del server.
 
 ### Track máquinas
 Ver [MAQUINAS.md](MAQUINAS.md). No depende de la fase 1 — una mesa solo
 setea componentes.
 
 ### Arte
-Paralelo a todo. Hoy es 100% generado por script.
+Paralelo a todo. Hoy es 100% generado por script. El **set de cuerpos base**
+(§7) es arte fijo, una vez, no por prenda.

@@ -1,4 +1,4 @@
-<!-- canal-version: 3 -->
+<!-- canal-version: 4 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,29 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v4 — 2026-09-06 — cuenta de H0p3san · Claude Code (app de escritorio, sesión patchouli)
+
+**Hecho:** `PRENDAS.md` §7 y §8 nuevas, roadmap renumerado a §9:
+- **§7 Cuerpo base**: reemplaza `SkinToneSampler`/`ComposedSkin`/`SkinRegions`
+  reconstruyendo piel. Set curado de cuerpos (plano/abs/curvy/binder), tono
+  paramétrico por rampa, ropa interior baked o via slots `*/interior`, GUI
+  de primera interacción, componente persistente. "Usar mi skin real" queda
+  como opción. **Es parte de fase 1** — el sustrato ES el cuerpo base.
+- **§8 3D Skin Layers**: las prendas ajustadas se **componen en la capa
+  externa de la skin** y 3DSL las extruye (mismo estilo voxel). Las flojas
+  ya son geometría, solo estilarlas blocky. 3DSL pasa de compat a camino de
+  render primario; `SkinLayersCompat`/`HttpTextureAccessor` se vuelve
+  crítico. Costo: recompón + remesh async/debounce. Fase 1 tiene que
+  anticiparlo.
+
+**Próximo:** **fase 1 = sistema de capas + cuerpo base**, diseñado
+anticipando la ruta 3DSL. El diseño de fase 1 ya está cerrado en el doc.
+
+**Para el otro Claude:** fase 1 ahora incluye el cuerpo base (§7), no solo
+el ordinal. No implementes el sustrato como "reconstrucción de piel" — es
+directamente el cuerpo base elegido. Y dejá la puerta abierta a componer la
+tela en la capa externa (§8) sin tener que rediseñarlo.
 
 ## v3 — 2026-09-06 — cuenta de H0p3san · Claude Code (app de escritorio, sesión patchouli)
 
