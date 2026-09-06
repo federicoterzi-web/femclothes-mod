@@ -83,32 +83,35 @@ public class SublimadoraBlock extends BlockWithEntity {
         // Solo se carga con la tapa abierta.
         if (!state.get(OPEN)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
 
+        // Si lo que tenes en la mano NO entra -el tanque lleno, una remera
+        // cuando ya hay una- el click NO se consume y pasa a onUse, que abre
+        // o cierra la tapa. Antes se lo tragaba y con un tinte en la mano no
+        // habia forma de cerrar la maquina.
         int canal = canalDeTinte(stack);
         if (canal >= 0) {
-            if (be.cargarTinta(canal, 1)) {
-                if (!player.isCreative()) stack.decrement(1);
-                sonar(world, pos, SoundEvents.ITEM_BUCKET_FILL, 0.8f);
-            }
+            if (!be.cargarTinta(canal, 1)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            if (!player.isCreative()) stack.decrement(1);
+            sonar(world, pos, SoundEvents.ITEM_BUCKET_FILL, 0.8f);
             return ItemActionResult.CONSUME;
         }
         // Se acepta mientras le quede alguna cara sin estampar: una remera
         // con el frente hecho vuelve a entrar para imprimirle la espalda.
         if (stack.getItem() == ModItems.REMERA && !tieneLasDosCaras(stack)) {
-            if (be.ponerRemera(stack)) {
-                if (!player.isCreative()) stack.decrement(1);
-                sonar(world, pos, SoundEvents.BLOCK_WOOL_PLACE, 1.0f);
-            }
+            if (!be.ponerRemera(stack)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            if (!player.isCreative()) stack.decrement(1);
+            sonar(world, pos, SoundEvents.BLOCK_WOOL_PLACE, 1.0f);
             return ItemActionResult.CONSUME;
         }
         if (esFoto(stack)) {
-            Estampa.Cara cara = caraSegunDondeClickeaste(state, pos, hit);
-            if (be.ponerFoto(stack, uuidDeFoto(stack), cara)) {
-                if (!player.isCreative()) stack.decrement(1);
-                sonar(world, pos, SoundEvents.ITEM_BOOK_PAGE_TURN, 1.0f);
-                player.sendMessage(net.minecraft.text.Text.translatable(
-                        "sublimadora.aviso.cara",
-                        net.minecraft.text.Text.translatable("sublimadora.cara." + cara.clave)), true);
+            if (!be.ponerFoto(stack, uuidDeFoto(stack))) {
+                return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
             }
+            if (!player.isCreative()) stack.decrement(1);
+            sonar(world, pos, SoundEvents.ITEM_BOOK_PAGE_TURN, 1.0f);
+            player.sendMessage(net.minecraft.text.Text.translatable(
+                    "sublimadora.aviso.cara",
+                    net.minecraft.text.Text.translatable(
+                            "sublimadora.cara." + be.getSeleccion().clave)), true);
             return ItemActionResult.CONSUME;
         }
         return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
@@ -125,11 +128,18 @@ public class SublimadoraBlock extends BlockWithEntity {
         // que todo lo demas: es la unica interaccion anclada a una parte
         // concreta del bloque, y esa parte es de la BASE, que no se mueve
         // cuando la tapa se abre.
-        if (esLaPalanca(state, pos, hit)) {
-            if (be.cambiarModo()) {
-                sonar(world, pos, SoundEvents.BLOCK_LEVER_CLICK, 1.0f);
+        int control = queControl(state, pos, hit);
+        if (control != 0) {
+            boolean cambio = control > 0 ? be.cambiarModo() : be.cambiarSeleccion();
+            if (cambio) {
+                sonar(world, pos, SoundEvents.BLOCK_LEVER_CLICK, control > 0 ? 1.0f : 0.8f);
+                // Los dos avisos nombran SIEMPRE la cara y el modo juntos: con
+                // dos caras configurables por separado, saber que se movio sin
+                // saber de cual es inutil.
                 player.sendMessage(net.minecraft.text.Text.translatable(
-                        "sublimadora.aviso.modo",
+                        "sublimadora.aviso.control",
+                        net.minecraft.text.Text.translatable(
+                                "sublimadora.cara." + be.getSeleccion().clave),
                         net.minecraft.text.Text.translatable(
                                 "sublimadora.modo." + be.getModo().clave)), true);
             }
@@ -183,12 +193,30 @@ public class SublimadoraBlock extends BlockWithEntity {
     }
 
     /**
-     * Si el click cayo en la palanca: cara delantera del bloque y por debajo
-     * de la linea donde apoya la tapa (y=11 de 16).
+     * Cual de los dos controles del frente recibio el click: 1 el slider de
+     * modo, -1 el selector de cara, 0 ninguno.
+     *
+     * Los dos viven en la mitad de abajo del frente de la BASE, que no se
+     * mueve cuando la tapa se abre. El de modo esta a un lado y el selector
+     * al otro, asi que alcanza con mirar de que lado del frente cayo el
+     * click.
      */
-    private static boolean esLaPalanca(BlockState state, BlockPos pos, BlockHitResult hit) {
-        if (hit.getSide() != state.get(FACING)) return false;
-        return hit.getPos().y - pos.getY() < 11.0 / 16.0;
+    private static int queControl(BlockState state, BlockPos pos, BlockHitResult hit) {
+        if (hit.getSide() != state.get(FACING)) return 0;
+        if (hit.getPos().y - pos.getY() >= 11.0 / 16.0) return 0;
+        double lx = hit.getPos().x - pos.getX();
+        double lz = hit.getPos().z - pos.getZ();
+        double lateral = switch (state.get(FACING)) {
+            case NORTH -> lx;
+            case SOUTH -> 1.0 - lx;
+            case WEST -> 1.0 - lz;
+            default -> lz;          // EAST
+        };
+        // Invertido a proposito: GeckoLib dibuja el modelo ESPEJADO EN X, asi
+        // que la palanca de modo, que en el modelo esta en x=+6, termina
+        // cayendo del lado -x del bloque. Sin esta vuelta los dos controles
+        // responden al reves de donde se ven.
+        return lateral > 0.5 ? -1 : 1;
     }
 
     private static boolean tieneLasDosCaras(ItemStack stack) {

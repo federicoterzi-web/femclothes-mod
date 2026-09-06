@@ -25,6 +25,16 @@ public class SublimadoraModClient implements ClientModInitializer {
         ModelLoadingPlugin.register(contexto -> contexto.addModels(RemeraItemRenderer.MODELO_BASE));
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.REMERA, new RemeraItemRenderer());
 
+        // El icono lo tine vanilla con el proveedor de color: item/generated
+        // le pone tintIndex 0 a layer0, igual que a una armadura de cuero.
+        //
+        // El 0xFF de adelante NO es decorativo: el tinte de item es ARGB y el
+        // alfa cuenta. Devolver un RGB pelado deja el item INVISIBLE, que ya
+        // costo un rato en este repo. Vanilla usa -1 para "sin tinte".
+        net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry.ITEM.register(
+                (stack, capa) -> capa == 0 ? 0xFF000000 | RemeraItem.color(stack) : -1,
+                ModItems.REMERA);
+
         // La remera puesta sobre el cuerpo, solo si Trinkets esta. El puente
         // vive en otra clase para que la JVM no tenga que resolver clases de
         // Trinkets cuando no esta instalado.

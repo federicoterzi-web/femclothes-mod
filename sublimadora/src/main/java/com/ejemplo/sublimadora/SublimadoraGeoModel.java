@@ -62,6 +62,14 @@ public class SublimadoraGeoModel extends GeoModel<SublimadoraBlockEntity> {
             });
         }
 
+        // El selector de cara, del otro lado del frente. Arriba el frente,
+        // abajo la espalda: el slider de modo muestra el modo de la cara que
+        // este eligiendo este.
+        GeoBone selector = getAnimationProcessor().getBone("selector");
+        if (selector != null) {
+            selector.setPosY(be.getSeleccion() == Estampa.Cara.FRENTE ? 1.5f : -1.5f);
+        }
+
         // La remera sobre la plancha solo se ve si hay una cargada, o si la
         // recien estampada todavia no se retiro.
         GeoBone remera = getAnimationProcessor().getBone("remera");

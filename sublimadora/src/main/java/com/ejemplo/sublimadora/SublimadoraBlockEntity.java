@@ -84,18 +84,20 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
     /** Cuantos ticks antes de terminar sale el poof de descarga. */
     private static final int TICKS_DESCARGA = 8;
     private ItemStack remera = ItemStack.EMPTY;
-    private ItemStack foto = ItemStack.EMPTY;
     private ItemStack salida = ItemStack.EMPTY;
-    private java.util.UUID fotoPendiente = null;
-    /** En que cara se va a estampar. La elige el jugador al poner la foto. */
-    private Estampa.Cara caraPendiente = Estampa.Cara.FRENTE;
-    /** Full print o logo. Lo elige la palanca del frente de la maquina. */
-    private Estampa.Modo modo = Estampa.Modo.COMPLETO;
+
+    // Una foto y un modo POR CARA: la maquina estampa el frente y la espalda
+    // en la misma pasada. Todo esto va indexado por Cara.ordinal().
+    private final ItemStack[] fotos = { ItemStack.EMPTY, ItemStack.EMPTY };
+    private final java.util.UUID[] pendientes = new java.util.UUID[2];
+    private final Estampa.Modo[] modos = { Estampa.Modo.COMPLETO, Estampa.Modo.COMPLETO };
+    /** Que cara estan configurando los controles del frente de la maquina. */
+    private Estampa.Cara seleccion = Estampa.Cara.FRENTE;
 
     // Solo para dibujar, no se guardan: hacen que la foto siga a la vista
     // mientras la tapa baja, en vez de evaporarse antes de que la cubra.
     private int arrastre = 0;
-    private java.util.UUID ultimaFotoVista = null;
+    private final java.util.UUID[] ultimasVistas = new java.util.UUID[2];
 
     public SublimadoraBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlocks.SUBLIMADORA_ENTITY, pos, state);
@@ -148,13 +150,16 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         // desaparecia, y un tick despues el cambio de tapa arrancaba el
         // arrastre y la hacia volver. Ese ida y vuelta era el parpadeo.
         // Recargando, el arrastre ya esta lleno pase lo que pase.
-        java.util.UUID cargadaAhora = be.getFotoCargada();
-        if (cargadaAhora != null) {
-            be.ultimaFotoVista = cargadaAhora;
-            be.arrastre = TICKS_CIERRE;
-        } else if (be.arrastre > 0) {
-            be.arrastre--;
+        boolean hayAlguna = false;
+        for (Estampa.Cara cara : Estampa.Cara.values()) {
+            java.util.UUID id = be.getFotoCargada(cara);
+            if (id != null) {
+                be.ultimasVistas[cara.ordinal()] = id;
+                hayAlguna = true;
+            }
         }
+        if (hayAlguna) be.arrastre = TICKS_CIERRE;
+        else if (be.arrastre > 0) be.arrastre--;
 
         // El avance del prensado lo lleva el SERVIDOR; el cliente solo dibuja
         // lo que le sincroniza el NBT.
@@ -198,10 +203,15 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         if (be.progreso >= TICKS_PRENSADO) {
             be.progreso = 0;
             be.estado = Estado.LISTO;
-            be.salida = RemeraItem.estampar(be.remera, be.caraPendiente,
-                    be.modo.aplicar(be.fotoPendiente));
+            ItemStack hecha = be.remera;
+            for (Estampa.Cara cara : Estampa.Cara.values()) {
+                java.util.UUID id = be.pendientes[cara.ordinal()];
+                if (id == null) continue;
+                hecha = RemeraItem.estampar(hecha, cara, be.modos[cara.ordinal()].aplicar(id));
+                be.pendientes[cara.ordinal()] = null;
+            }
+            be.salida = hecha;
             be.remera = ItemStack.EMPTY;
-            be.fotoPendiente = null;
             // Esto es exactamente el tick en que se prende el LED verde, que
             // sale de estado == LISTO. La campanita va aca y no agendada
             // aparte: atada al mismo cambio de estado no se pueden desfasar.
@@ -311,55 +321,72 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         return true;
     }
 
-    public boolean ponerFoto(ItemStack stack, java.util.UUID id, Estampa.Cara cara) {
-        if (!foto.isEmpty() || estado != Estado.REPOSO) return false;
+    /** Carga una foto en la cara que tenga elegida el selector. */
+    public boolean ponerFoto(ItemStack stack, java.util.UUID id) {
+        int i = seleccion.ordinal();
+        if (!fotos[i].isEmpty() || estado != Estado.REPOSO) return false;
         // Sin UUID no hay nada que estampar: se rechaza en vez de gastar
         // tinta para producir una remera en blanco.
         if (id == null) return false;
         // Esa cara ya estampada: rechazar en vez de pisarla en silencio.
-        if (!remera.isEmpty() && RemeraItem.estampaDe(remera, cara) != null) return false;
-        foto = stack.copyWithCount(1);
-        fotoPendiente = id;
-        caraPendiente = cara;
+        if (!remera.isEmpty() && RemeraItem.estampaDe(remera, seleccion) != null) return false;
+        fotos[i] = stack.copyWithCount(1);
+        pendientes[i] = id;
         sincronizar();
         return true;
     }
 
-    public Estampa.Cara getCaraPendiente() {
-        return caraPendiente;
+    public Estampa.Cara getSeleccion() {
+        return seleccion;
     }
 
-    /** UUID de la foto cargada esperando ser prensada, o null. */
+    /** Da vuelta el selector de cara. No se puede en medio de un prensado. */
+    public boolean cambiarSeleccion() {
+        if (estado == Estado.PRENSANDO) return false;
+        seleccion = seleccion == Estampa.Cara.FRENTE ? Estampa.Cara.ESPALDA : Estampa.Cara.FRENTE;
+        sincronizar();
+        return true;
+    }
+
+    /** La foto cargada para esa cara, o null. */
     @org.jetbrains.annotations.Nullable
-    public java.util.UUID getFotoCargada() {
-        return foto.isEmpty() ? null : fotoPendiente;
+    public java.util.UUID getFotoCargada(Estampa.Cara cara) {
+        return fotos[cara.ordinal()].isEmpty() ? null : pendientes[cara.ordinal()];
     }
 
     /**
-     * La foto que hay que DIBUJAR, que no es siempre la que esta cargada.
-     *
-     * Al cerrar la tapa el prensado consume la foto en el mismo tick, pero la
-     * animacion de la tapa tarda seis en bajar: sin este arrastre el papel
-     * desaparecia a la vista, con la plancha todavia abierta.
+     * La foto que hay que DIBUJAR para esa cara, que no es siempre la que
+     * esta cargada: el prensado la consume en el mismo tick en que se cierra
+     * la tapa, pero la tapa tarda seis en bajar.
      */
     @org.jetbrains.annotations.Nullable
-    public java.util.UUID getFotoVisible() {
+    public java.util.UUID getFotoVisible(Estampa.Cara cara) {
         if (getCachedState().get(SublimadoraBlock.OPEN)) {
-            java.util.UUID cargada = getFotoCargada();
+            java.util.UUID cargada = getFotoCargada(cara);
             if (cargada != null) return cargada;
         }
-        // Tapa cerrada, o abierta pero ya sin foto: los ticks de gracia.
-        return arrastre > 0 ? ultimaFotoVista : null;
+        return arrastre > 0 ? ultimasVistas[cara.ordinal()] : null;
     }
 
+    /** El modo de una cara concreta. */
+    public Estampa.Modo getModo(Estampa.Cara cara) {
+        return modos[cara.ordinal()];
+    }
+
+    /** El modo de la cara elegida, que es el que muestra el slider. */
     public Estampa.Modo getModo() {
-        return modo;
+        return modos[seleccion.ordinal()];
     }
 
-    /** Da vuelta la palanca. No se puede en medio de un prensado. */
+    /**
+     * Corre el slider de modo. Cambia SOLO la cara elegida, que es todo el
+     * sentido de tener dos controles: uno dice de que cara hablamos y el otro
+     * que se le hace.
+     */
     public boolean cambiarModo() {
         if (estado == Estado.PRENSANDO) return false;
-        modo = modo.siguiente();
+        int i = seleccion.ordinal();
+        modos[i] = modos[i].siguiente();
         sincronizar();
         return true;
     }
@@ -374,7 +401,7 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
     public java.util.List<ItemStack> contenido() {
         java.util.List<ItemStack> todo = new java.util.ArrayList<>();
         if (!remera.isEmpty()) todo.add(remera);
-        if (!foto.isEmpty()) todo.add(foto);
+        for (ItemStack f : fotos) if (!f.isEmpty()) todo.add(f);
         if (!salida.isEmpty()) todo.add(salida);
         return todo;
     }
@@ -388,10 +415,11 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
             sincronizar();
             return out;
         }
-        if (!foto.isEmpty()) {
-            ItemStack out = foto;
-            foto = ItemStack.EMPTY;
-            fotoPendiente = null;
+        for (int i = 0; i < 2; i++) {
+            if (fotos[i].isEmpty()) continue;
+            ItemStack out = fotos[i];
+            fotos[i] = ItemStack.EMPTY;
+            pendientes[i] = null;
             sincronizar();
             return out;
         }
@@ -410,13 +438,19 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
      */
     public boolean intentarPrensar() {
         if (estado != Estado.REPOSO) return false;
-        if (remera.isEmpty() || foto.isEmpty() || !hayTinta()) return false;
+        if (remera.isEmpty()) return false;
+        int caras = (fotos[0].isEmpty() ? 0 : 1) + (fotos[1].isEmpty() ? 0 : 1);
+        if (caras == 0) return false;
+        // Una dosis de cada color POR CARA: hacer las dos en una pasada
+        // ahorra el ciclo, no la tinta.
+        for (int i = 0; i < 4; i++) if (cargas[i] < caras) return false;
 
         for (int i = 0; i < 4; i++) {
-            cargas[i]--;
+            cargas[i] -= caras;
             tinta[i] = cargas[i] / (float) CARGA_MAXIMA;
         }
-        foto = ItemStack.EMPTY;   // la foto se consume al cerrar la tapa
+        fotos[0] = ItemStack.EMPTY;   // las fotos se consumen al cerrar la tapa
+        fotos[1] = ItemStack.EMPTY;
         estado = Estado.PRENSANDO;
         progreso = 0;
         sincronizar();
@@ -447,7 +481,7 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         if (estado == Estado.PRENSANDO) return Text.translatable("sublimadora.aviso.prensando");
         if (estado == Estado.LISTO) return Text.translatable("sublimadora.aviso.retirar");
 
-        if (remera.isEmpty() || foto.isEmpty()) {
+        if (remera.isEmpty() || (fotos[0].isEmpty() && fotos[1].isEmpty())) {
             return Text.translatable("sublimadora.aviso.cargar");
         }
         if (!hayTinta()) {
@@ -507,11 +541,13 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         nbt.putString("Estado", estado.name());
         nbt.putInt("Progreso", progreso);
         if (!remera.isEmpty()) nbt.put("Remera", remera.encode(registries));
-        if (!foto.isEmpty()) nbt.put("Foto", foto.encode(registries));
+        for (int i = 0; i < 2; i++) {
+            if (!fotos[i].isEmpty()) nbt.put("Foto" + i, fotos[i].encode(registries));
+            if (pendientes[i] != null) nbt.putUuid("Pendiente" + i, pendientes[i]);
+            nbt.putString("Modo" + i, modos[i].name());
+        }
+        nbt.putString("Seleccion", seleccion.name());
         if (!salida.isEmpty()) nbt.put("Salida", salida.encode(registries));
-        if (fotoPendiente != null) nbt.putUuid("FotoPendiente", fotoPendiente);
-        nbt.putString("CaraPendiente", caraPendiente.name());
-        nbt.putString("Modo", modo.name());
     }
 
     @Override
@@ -532,15 +568,15 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         estado = nbt.contains("Estado") ? Estado.valueOf(nbt.getString("Estado")) : Estado.REPOSO;
         progreso = nbt.getInt("Progreso");
         remera = nbt.contains("Remera") ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Remera")) : ItemStack.EMPTY;
-        foto = nbt.contains("Foto") ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Foto")) : ItemStack.EMPTY;
+        for (int i = 0; i < 2; i++) {
+            fotos[i] = nbt.contains("Foto" + i)
+                    ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Foto" + i))
+                    : ItemStack.EMPTY;
+            pendientes[i] = nbt.containsUuid("Pendiente" + i) ? nbt.getUuid("Pendiente" + i) : null;
+            if (nbt.contains("Modo" + i)) modos[i] = Estampa.Modo.valueOf(nbt.getString("Modo" + i));
+        }
+        if (nbt.contains("Seleccion")) seleccion = Estampa.Cara.valueOf(nbt.getString("Seleccion"));
         salida = nbt.contains("Salida") ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Salida")) : ItemStack.EMPTY;
-        fotoPendiente = nbt.containsUuid("FotoPendiente") ? nbt.getUuid("FotoPendiente") : null;
-        caraPendiente = nbt.contains("CaraPendiente")
-                ? Estampa.Cara.valueOf(nbt.getString("CaraPendiente"))
-                : Estampa.Cara.FRENTE;
-        modo = nbt.contains("Modo")
-                ? Estampa.Modo.valueOf(nbt.getString("Modo"))
-                : Estampa.Modo.COMPLETO;
     }
 
     // ── la tinta viaja adentro del item ──────────────────────────────

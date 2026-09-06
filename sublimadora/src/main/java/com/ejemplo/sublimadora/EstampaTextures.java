@@ -91,6 +91,9 @@ final class EstampaTextures {
 
     private static final int LIENZO_ANCHO = 24;
     private static final int LIENZO_ALTO = 14;
+    /** Las filas de arriba del lienzo son el hombro, no el cuerpo. */
+    private static final int BANDA_HOMBRO = 2;
+    private static final int CUERPO_ALTO = LIENZO_ALTO - BANDA_HOMBRO;
 
     private static final int[] TORSO_FRENTE = { 20, 20, 8, 12 };
     private static final int[] TORSO_ESPALDA = { 32, 20, 8, 12 };
@@ -144,6 +147,17 @@ final class EstampaTextures {
             new Cara(new int[] { 36, 50, 4, 2 }, new int[] { 16, 0, 4, 2 }, false), // superior delantera
             new Cara(new int[] { 36, 48, 4, 2 }, new int[] { 16, 0, 4, 2 }, true).volteada(), // superior trasera
     };
+
+    /**
+     * Si la cara es el pecho o la espalda.
+     *
+     * Compara por identidad de array a proposito: las dos entradas de la
+     * tabla usan literalmente esas constantes, asi que alcanza y no hace
+     * falta otro campo en el record.
+     */
+    private static boolean esElTorso(Cara cara) {
+        return cara.rect() == TORSO_FRENTE || cara.rect() == TORSO_ESPALDA;
+    }
 
     private static int[] escalar(int[] r) {
         int e = RemeraTrinketRenderer.ESCALA;
@@ -245,9 +259,11 @@ final class EstampaTextures {
      * paso queda recortada a la tela sola.
      */
     @Nullable
-    static Identifier cuerpoEstampado(@Nullable Estampa frente, @Nullable Estampa espalda) {
-        if (frente == null && espalda == null) return null;
-        String clave = frente + "|" + espalda;
+    static Identifier cuerpoEstampado(@Nullable Estampa frente, @Nullable Estampa espalda, int color) {
+        // Sin estampas y sin tenir no hay nada que componer: se usa la
+        // textura del pack tal cual.
+        if (frente == null && espalda == null && color == RemeraItem.BLANCO) return null;
+        String clave = frente + "|" + espalda + "|" + color;
         Identifier hecha = CACHE_CUERPO.get(clave);
         if (hecha != null) return hecha;
         if (FALLADAS.containsKey(clave)) return null;
@@ -260,6 +276,7 @@ final class EstampaTextures {
         NativeImage salida = new NativeImage(NativeImage.Format.RGBA,
                 base.getWidth(), base.getHeight(), false);
         salida.copyFrom(base);
+        if (color != RemeraItem.BLANCO) tenir(salida, color);
 
         // Si alguna foto todavia no esta lista se abandona SIN cachear: en el
         // proximo frame puede estar, y cachear a medias dejaria una remera con
@@ -280,8 +297,13 @@ final class EstampaTextures {
 
             if (suya.cubrir()) {
                 listo &= pintarDelLienzo(salida, suya, cara);
-            } else if (!cara.compartida()) {
-                // Logo y centrada solo van en el torso, no en los costados.
+            } else if (esElTorso(cara)) {
+                // El logo y la centrada van SOLO en el pecho y la espalda.
+                // Antes la condicion era "cualquier cara no compartida", que
+                // funcionaba de casualidad mientras los costados y las mangas
+                // estaban marcados como compartidos. Al partirlos en mitades
+                // dejaron de estarlo y una estampa centrada empezo a
+                // repetirse en cada manga.
                 listo &= pintar(salida, suya, escalar(cara.rect()));
             }
         }
@@ -299,10 +321,41 @@ final class EstampaTextures {
     }
 
     /**
+     * Cuanto se achica un diseno con transparencia dentro del lienzo, para
+     * que no quede pegado al borde de la prenda.
+     */
+    private static final float MARGEN_DISENO = 0.88f;
+
+    /**
+     * Tine la tela multiplicando por el color, que es como tine vanilla.
+     *
+     * Va ANTES de las estampas a proposito: la foto se imprime sobre la
+     * prenda ya tenida y no se tine con ella, igual que en una sublimadora de
+     * verdad.
+     */
+    private static void tenir(NativeImage tela, int color) {
+        // El color viene en RGB pero NativeImage empaqueta ABGR: el rojo del
+        // color es el byte bajo de la imagen y el azul el alto.
+        int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
+        for (int y = 0; y < tela.getHeight(); y++) {
+            for (int x = 0; x < tela.getWidth(); x++) {
+                int px = tela.getColor(x, y);
+                int alfa = (px >>> 24) & 0xFF;
+                if (alfa == 0) continue;
+                int pr = px & 0xFF, pg = (px >>> 8) & 0xFF, pb = (px >>> 16) & 0xFF;
+                tela.setColor(x, y, (alfa << 24)
+                        | ((pb * b / 255) << 16)
+                        | ((pg * g / 255) << 8)
+                        | (pr * r / 255));
+            }
+        }
+    }
+
+    /**
      * Pinta el pedazo de foto que le toca a una cara segun el lienzo.
      *
-     * La foto se recorta una sola vez para cubrir el lienzo de 16x12 -no cara
-     * por cara- y de ese recorte cada cara toma su ventana. Es lo que hace
+     * La foto se coloca UNA sola vez sobre el lienzo entero -no cara por
+     * cara- y de esa colocacion cada cara toma su ventana. Es lo que hace
      * que el dibujo continue de una cara a la otra en vez de repetirse.
      */
     private static boolean pintarDelLienzo(NativeImage salida, Estampa estampa, Cara cara) {
@@ -312,61 +365,94 @@ final class EstampaTextures {
         if (foto == null) return false;
 
         try {
-            // Recorte que hace entrar el lienzo entero adentro de la foto.
-            float pu0 = 0f, pv0 = 0f, pu1 = 1f, pv1 = 1f;
-            float relFoto = (float) info.ancho() / info.alto();
+            float relFoto = (float) foto.getWidth() / foto.getHeight();
             float relLienzo = (float) LIENZO_ANCHO / LIENZO_ALTO;
-            if (relFoto > relLienzo) {
-                float visible = relLienzo / relFoto;
-                pu0 = (1f - visible) / 2f;
-                pu1 = pu0 + visible;
-            } else if (relFoto < relLienzo) {
-                float visible = relFoto / relLienzo;
-                pv0 = (1f - visible) / 2f;
-                pv1 = pv0 + visible;
-            }
+            float ancho, alto;
 
-            int[] l = cara.lienzo();
-            float u0 = pu0 + (pu1 - pu0) * l[0] / LIENZO_ANCHO;
-            float u1 = pu0 + (pu1 - pu0) * (l[0] + l[2]) / LIENZO_ANCHO;
-            float v0 = pv0 + (pv1 - pv0) * l[1] / LIENZO_ALTO;
-            float v1 = pv0 + (pv1 - pv0) * (l[1] + l[3]) / LIENZO_ALTO;
-            // Solo las caras que se MIRAN desde atras van espejadas, no todas
-            // las que pertenecen a la estampa de atras.
-            if (cara.espejar()) {
-                float t = u0;
-                u0 = u1;
-                u1 = t;
+            float y0;
+            if (tieneTransparencia(foto)) {
+                // Un diseno con fondo transparente se pone ENTERO y un poco
+                // mas chico que la prenda. Recortarlo como a una foto le
+                // comeria justo los bordes, que en un logo es donde vive la
+                // forma; y como el fondo no pinta nada, lo que sobra queda de
+                // tela lisa en vez de quedar vacio.
+                //
+                // Se centra sobre el CUERPO y no sobre el lienzo entero: las
+                // dos filas de arriba son la banda del hombro, y centrar
+                // sobre ellas subia el diseno un renglon.
+                float caben = Math.min(LIENZO_ANCHO / relFoto, (float) CUERPO_ALTO);
+                alto = caben * MARGEN_DISENO;
+                ancho = alto * relFoto;
+                y0 = BANDA_HOMBRO + (CUERPO_ALTO - alto) / 2f;
+            } else {
+                // Una foto opaca se recorta para llenar, y llena el lienzo
+                // ENTERO: si solo cubriera el cuerpo, los hombros quedarian
+                // sin estampar.
+                float necesario = Math.max(LIENZO_ANCHO / relFoto, (float) LIENZO_ALTO);
+                alto = necesario;
+                ancho = alto * relFoto;
+                y0 = (LIENZO_ALTO - alto) / 2f;
             }
-            if (cara.espejarV()) {
-                float t = v0;
-                v0 = v1;
-                v1 = t;
-            }
+            float x0 = (LIENZO_ANCHO - ancho) / 2f;
 
-            int[] r = escalar(cara.rect());
-            volcar(salida, foto, r[0], r[1], r[2], r[3], u0, v0, u1, v1);
+            volcar(salida, foto, escalar(cara.rect()), cara, x0, y0, ancho, alto);
             return true;
         } finally {
             foto.close();
         }
     }
 
-    /** Vuelca una ventana de la foto sobre un rectangulo de la textura. */
-    private static void volcar(NativeImage salida, NativeImage foto,
-                               int rx, int ry, int rw, int rh,
-                               float u0, float v0, float u1, float v1) {
+    /**
+     * Si la imagen trae algun pixel no opaco.
+     *
+     * Es lo que distingue un diseno de una foto sin tener que preguntarselo
+     * al jugador: una foto de Camerapture es opaca de punta a punta, y un PNG
+     * que alguien subio para estampar casi siempre tiene fondo transparente.
+     */
+    private static boolean tieneTransparencia(NativeImage foto) {
+        // De a saltos: con mirar una grilla alcanza para distinguir un fondo
+        // transparente, y recorrer millones de pixeles por frame no.
+        int paso = Math.max(1, Math.min(foto.getWidth(), foto.getHeight()) / 64);
+        for (int y = 0; y < foto.getHeight(); y += paso) {
+            for (int x = 0; x < foto.getWidth(); x += paso) {
+                if (((foto.getColor(x, y) >>> 24) & 0xFF) < 250) return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Vuelca sobre una cara el pedazo de foto que le toca.
+     *
+     * Trabaja en coordenadas de LIENZO y no de foto: para cada pixel de la
+     * cara calcula donde cae en el lienzo, y de ahi donde cae en la foto. Los
+     * que caen fuera de la foto se dejan como estan, que es lo que permite
+     * que un diseno mas chico que la prenda deje tela lisa alrededor.
+     */
+    private static void volcar(NativeImage salida, NativeImage foto, int[] r, Cara cara,
+                               float fx0, float fy0, float fAncho, float fAlto) {
+        int rx = r[0], ry = r[1], rw = r[2], rh = r[3];
+        int[] l = cara.lienzo();
+
         for (int y = 0; y < rh; y++) {
             for (int x = 0; x < rw; x++) {
                 int fondo = salida.getColor(rx + x, ry + y);
                 int alfaPrenda = (fondo >>> 24) & 0xFF;
                 if (alfaPrenda == 0) continue;   // fuera de la tela
 
-                int fx = (int) ((u0 + (u1 - u0) * (x + 0.5f) / rw) * foto.getWidth());
-                int fy = (int) ((v0 + (v1 - v0) * (y + 0.5f) / rh) * foto.getHeight());
-                fx = Math.clamp(fx, 0, foto.getWidth() - 1);
-                fy = Math.clamp(fy, 0, foto.getHeight() - 1);
-                int pixel = foto.getColor(fx, fy);
+                float px = (x + 0.5f) / rw;
+                float py = (y + 0.5f) / rh;
+                if (cara.espejar()) px = 1f - px;
+                if (cara.espejarV()) py = 1f - py;
+
+                // Donde cae este pixel en el lienzo, y de ahi en la foto.
+                float u = (l[0] + l[2] * px - fx0) / fAncho;
+                float v = (l[1] + l[3] * py - fy0) / fAlto;
+                if (u < 0f || u >= 1f || v < 0f || v >= 1f) continue;
+
+                int sx = Math.min((int) (u * foto.getWidth()), foto.getWidth() - 1);
+                int sy = Math.min((int) (v * foto.getHeight()), foto.getHeight() - 1);
+                int pixel = foto.getColor(sx, sy);
                 int alfaFoto = (pixel >>> 24) & 0xFF;
                 if (alfaFoto == 0) continue;
                 salida.setColor(rx + x, ry + y, (alfaPrenda << 24) | sobre(fondo, pixel, alfaFoto));
@@ -394,7 +480,7 @@ final class EstampaTextures {
                 // pedazo de foto que se muestra, recortado desde el centro.
                 cajaW = rw;
                 cajaH = rh;
-                float relFoto = (float) info.ancho() / info.alto();
+                float relFoto = (float) foto.getWidth() / foto.getHeight();
                 float relCaja = (float) rw / rh;
                 if (relFoto > relCaja) {
                     float visible = relCaja / relFoto;
@@ -410,7 +496,11 @@ final class EstampaTextures {
                 // aspecto. Antes la caja era cuadrada y la foto se deformaba
                 // para llenarla, que es lo que se veia mal en la centrada.
                 float lado = rw * estampa.escala();
-                float relFoto = (float) info.ancho() / info.alto();
+                // Las medidas salen de la TEXTURA y no de las que reporta
+                // Camerapture: se muestrea sobre la textura, y si alguna vez
+                // difieren -por padding, por ejemplo- mezclar las dos fuentes
+                // descuadra la imagen.
+                float relFoto = (float) foto.getWidth() / foto.getHeight();
                 cajaW = Math.max(1, Math.round(relFoto >= 1f ? lado : lado * relFoto));
                 cajaH = Math.max(1, Math.round(relFoto >= 1f ? lado / relFoto : lado));
             }

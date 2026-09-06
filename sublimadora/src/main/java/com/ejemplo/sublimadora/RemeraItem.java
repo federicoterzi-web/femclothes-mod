@@ -38,6 +38,20 @@ public class RemeraItem extends Item {
         return null;
     }
 
+    /** Blanco por defecto: es el color de la tela sin tenir. */
+    public static final int BLANCO = 0xF2F2F6;
+
+    /**
+     * El color base de la prenda, en RGB sin alfa.
+     *
+     * Usa el componente dyed_color de vanilla, que es el mismo que usan el
+     * cuero y las prendas de FemClothes: lo pone la receta segun el color de
+     * lana, sin codigo de por medio y sin un item por color.
+     */
+    public static int color(ItemStack stack) {
+        return net.minecraft.component.type.DyedColorComponent.getColor(stack, BLANCO);
+    }
+
     public static boolean estaEstampada(ItemStack stack) {
         return estampaDe(stack, Estampa.Cara.FRENTE) != null
                 || estampaDe(stack, Estampa.Cara.ESPALDA) != null;

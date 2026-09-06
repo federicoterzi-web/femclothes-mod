@@ -11,10 +11,20 @@ depender uno del otro — ver abajo.
 ## El ciclo
 
 1. Tapa abierta. Click con un **tinte** carga ese tanque (hasta 16 de cada
-   uno de los cuatro CMYK). Click con una **remera en blanco** la apoya en
-   la plancha. Click con una **foto** la carga, y **la mitad de la plancha
-   donde la apoyás elige la cara**: la del lado del panel es el frente, la
-   de atrás la espalda. Te lo confirma en la barra de acción.
+   uno de los cuatro CMYK). Click con una **remera** la apoya en la plancha.
+   Click con una **foto** la carga en la cara que tenga elegida el selector.
+
+   Dos controles en el frente de la base: el **selector** de cara (arriba
+   frente, abajo espalda) y el **slider de modo**. El selector dice de qué
+   cara hablamos y el slider qué se le hace, así se puede dejar full print
+   adelante y logo atrás y estampar las dos en una sola pasada. Cuesta una
+   dosis de cada color **por cara**: hacer las dos juntas ahorra el ciclo,
+   no la tinta.
+
+   Si lo que tenés en la mano no entra —el tanque lleno, una remera cuando
+   ya hay una— el click **no se consume** y pasa a abrir o cerrar la tapa.
+   Al revés se la tragaba y con un tinte en la mano no había forma de
+   cerrar la máquina.
 2. Click con la mano vacía cierra la tapa. **Cerrar la tapa es lo que
    dispara el prensado**, y ahí se consume la foto más una carga de cada
    color.
@@ -107,6 +117,30 @@ adelante. Nada lo escribe.
 Se craftea con hierro, un pistón y un horno: el bastidor, la prensa que baja
 y el calor.
 
+```
+I I I          L · L
+I P I          L L L     8 lanas del mismo color
+I F I          L L L     → remera de ese color
+```
+
+La remera sale en los **16 colores**, uno por color de lana. El color viaja
+en el componente `dyed_color` de vanilla, puesto desde la receta: no hace
+falta código ni un ítem por color. Los RGB son los `DyeColor.getFireworkColor()`,
+los mismos que usa el telar de FemClothes, así que craftear rojo y teñir de
+rojo dan el color idéntico.
+
+El teñido pasa por tres caminos distintos: el **ícono** lo tiñe vanilla con
+un proveedor de color, el **cuerpo** se multiplica al componer la textura, y
+la **remera de la plancha** queda blanca porque sale del atlas de GeckoLib.
+
+⚠️ El tinte de ítem es **ARGB y el alfa cuenta**. Devolver un RGB pelado deja
+el ítem invisible; vanilla usa `-1` para "sin tinte". Ya costó un rato en
+este repo.
+
+Al teñir el cuerpo, la tela se multiplica **antes** de pintar las estampas:
+la foto se imprime sobre la prenda ya teñida y no se tiñe con ella, igual
+que en una sublimadora de verdad.
+
 Se pica **con la mano** en unos 3.7 s, o con pico de hierro en menos de uno.
 No lleva `requiresTool()` a propósito: con esa bandera la mano no dropeaba
 nada, y para una máquina que puede tener una remera estampada adentro eso es
@@ -158,8 +192,10 @@ Nombres que el código busca y **no** se pueden renombrar:
 | hueso | lo usa |
 |---|---|
 | `led_rojo`, `led_verde` | `SublimadoraGeoModel` los prende y apaga con `setHidden` |
-| `palanca` | el pomo del slider; se corre en Y según el modo |
-| `palanca_guia` | el riel. Es un hueso aparte a propósito: adentro de `palanca` se desplazaría junto con el pomo |
+| `palanca` | el pomo del slider de modo; se corre en Y |
+| `palanca_guia` | su riel. Es un hueso aparte a propósito: adentro de `palanca` se desplazaría junto con el pomo |
+| `selector` | el pomo del selector de cara |
+| `selector_guia` | su riel |
 | `remera` | idem, según haya una cargada |
 | `ink_c`, `ink_m`, `ink_y`, `ink_k` | escala en Y según la tinta restante |
 | `tapa` | la animación de abrir y cerrar |
@@ -351,6 +387,13 @@ cualquier espejado porque es asimétrica en los dos ejes.
 
 `calibracion/simulacion_cuerpo.png` es la misma cuenta hecha fuera del juego:
 sirve para saber si lo que se ve mal está en el render o en la tabla de caras.
+
+### El modelo se dibuja espejado en X
+
+GeckoLib dibuja el modelo con el eje X invertido. Cualquier control que se
+ubique **por posición del click** necesita esa vuelta: la palanca de modo
+está en `x = +6` del modelo pero cae del lado `-x` del bloque, así que los
+dos controles del frente respondían al revés de donde se ven.
 
 ### El sello de build
 

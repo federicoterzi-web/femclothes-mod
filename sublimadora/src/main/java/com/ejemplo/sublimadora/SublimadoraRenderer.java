@@ -27,7 +27,9 @@ public class SublimadoraRenderer extends GeoBlockRenderer<SublimadoraBlockEntity
      */
     private static final float Y_FOTO = 11.9f / 16f;
     /** Lado del papel sobre la plancha, en bloques. */
-    private static final float LADO = 7f / 16f;
+    private static final float LADO = 5.5f / 16f;
+    /** Cuanto se corre cada foto de su lado de la plancha. */
+    private static final float SEPARACION = 2.9f / 16f;
 
     public SublimadoraRenderer() {
         super(new SublimadoraGeoModel());
@@ -57,11 +59,15 @@ public class SublimadoraRenderer extends GeoBlockRenderer<SublimadoraBlockEntity
                                     VertexConsumerProvider vertexConsumers, int luz, int overlay) {
         // getFotoVisible y no getFotoCargada: la de dibujar sigue un rato
         // mas mientras la tapa baja, y ya devuelve null con la tapa cerrada.
-        UUID id = be.getFotoVisible();
-        if (id == null) return;
-
-        Identifier textura = texturaDe(id);
-        if (textura == null) return;
+        java.util.EnumMap<Estampa.Cara, Identifier> aDibujar =
+                new java.util.EnumMap<>(Estampa.Cara.class);
+        for (Estampa.Cara cara : Estampa.Cara.values()) {
+            UUID id = be.getFotoVisible(cara);
+            if (id == null) continue;
+            Identifier textura = texturaDe(id);
+            if (textura != null) aDibujar.put(cara, textura);
+        }
+        if (aDibujar.isEmpty()) return;
 
         matrices.push();
         // Mismo centrado y misma rotacion que le aplica GeckoLib al modelo,
@@ -69,15 +75,18 @@ public class SublimadoraRenderer extends GeoBlockRenderer<SublimadoraBlockEntity
         matrices.translate(0.5f, 0f, 0.5f);
         rotateBlock(getFacing(be), matrices);
 
-        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(textura));
         MatrixStack.Entry entrada = matrices.peek();
         float m = LADO / 2f;
-
-        // Boca arriba, mirando al cielo.
-        vertice(buffer, entrada, -m, Y_FOTO, m, 0f, 1f, luz, overlay);
-        vertice(buffer, entrada, m, Y_FOTO, m, 1f, 1f, luz, overlay);
-        vertice(buffer, entrada, m, Y_FOTO, -m, 1f, 0f, luz, overlay);
-        vertice(buffer, entrada, -m, Y_FOTO, -m, 0f, 0f, luz, overlay);
+        for (var e : aDibujar.entrySet()) {
+            // La del frente hacia el lado del panel, que en el modelo es -Z.
+            float cz = e.getKey() == Estampa.Cara.FRENTE ? -SEPARACION : SEPARACION;
+            VertexConsumer buffer = vertexConsumers.getBuffer(
+                    RenderLayer.getEntityTranslucent(e.getValue()));
+            vertice(buffer, entrada, -m, Y_FOTO, cz + m, 0f, 1f, luz, overlay);
+            vertice(buffer, entrada, m, Y_FOTO, cz + m, 1f, 1f, luz, overlay);
+            vertice(buffer, entrada, m, Y_FOTO, cz - m, 1f, 0f, luz, overlay);
+            vertice(buffer, entrada, -m, Y_FOTO, cz - m, 0f, 0f, luz, overlay);
+        }
 
         matrices.pop();
     }

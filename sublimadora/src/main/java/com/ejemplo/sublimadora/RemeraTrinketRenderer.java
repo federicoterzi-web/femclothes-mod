@@ -54,10 +54,12 @@ public class RemeraTrinketRenderer implements TrinketRenderer {
      * Subir el tamano de la textura solo no da mas definicion: en
      * ModelPart.Cuboid el rectangulo UV sale del TAMANO DEL CUBOIDE en
      * unidades de modelo, asi que la cara seguiria ocupando los mismos
-     * texels. El truco es armar el cuboide a 4x y escalar la parte a la
-     * cuarta parte: misma silueta, cuatro veces los pixeles para la estampa.
+     * texels. El truco es armar el cuboide a 8x y escalar la parte a un
+     * octavo: misma silueta, ocho veces los pixeles para la estampa. Es
+     * donde mas se nota, porque el logo y la centrada ocupan una fraccion
+     * chica del torso y a 4x salian gruesos.
      */
-    static final int ESCALA = 4;
+    static final int ESCALA = 8;
 
     private static ModelPart raiz;
 
@@ -106,7 +108,8 @@ public class RemeraTrinketRenderer implements TrinketRenderer {
         // usa la lisa, que es lo correcto mientras tanto.
         Identifier textura = EstampaTextures.cuerpoEstampado(
                 RemeraItem.estampaDe(stack, Estampa.Cara.FRENTE),
-                RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA));
+                RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA),
+                RemeraItem.color(stack));
         if (textura == null) textura = TELA;
 
         VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getArmorCutoutNoCull(textura));

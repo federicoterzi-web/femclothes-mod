@@ -13,11 +13,12 @@
   "sublimadora.tinta.negro": "black",
   "sublimadora.cara.frente": "front",
   "sublimadora.cara.espalda": "back",
-  "sublimadora.aviso.cara": "Will print on the %s",
+  "sublimadora.aviso.cara": "Photo loaded on the %s",
   "sublimadora.aviso.modo": "Print mode: %s",
   "sublimadora.modo.completo": "full print (covers the shirt)",
   "sublimadora.modo.logo": "logo (small, upper right)",
   "sublimadora.modo.centrada": "centred print",
   "sublimadora.aviso.trabada": "The lid is locked while pressing",
-  "sublimadora.tooltip.cargas": "Ink: C%s M%s Y%s K%s (of %s)"
+  "sublimadora.tooltip.cargas": "Ink: C%s M%s Y%s K%s (of %s)",
+  "sublimadora.aviso.control": "Face: %s — mode: %s"
 }
