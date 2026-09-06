@@ -32,9 +32,10 @@ public final class FemclothesItems {
             new ClothingArmorItem(FemclothesArmorMaterials.CLOTH, ArmorItem.Type.LEGGINGS,
                     new Item.Settings().maxCount(1), true));
 
-    public static final ClothingArmorItem CROPTOP = registerArmor("croptop",
-            new ClothingArmorItem(FemclothesArmorMaterials.CLOTH, ArmorItem.Type.CHESTPLATE,
-                    new Item.Settings().maxCount(1), true, /* skinFillTorso */ true));
+    // El croptop de FemClothes se retiro: era un chestplate del pipeline
+    // viejo, nunca se le dibujo el arte -salia en damero- y desde que la
+    // remera tiene el eje de largo, el corte crop hace lo mismo pero teñible,
+    // estampable y sobre la geometria del cuerpo y no la de armadura.
 
     public static final ClothingArmorItem MAID_OUTFIT = registerArmor("maid_outfit",
             new ClothingArmorItem(FemclothesArmorMaterials.CLOTH, ArmorItem.Type.CHESTPLATE,

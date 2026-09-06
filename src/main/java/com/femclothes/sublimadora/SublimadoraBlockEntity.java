@@ -314,6 +314,7 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         return true;
     }
 
+    /** La prenda a estampar: la remera de cualquier corte, o las medias. */
     public boolean ponerRemera(ItemStack stack) {
         if (!remera.isEmpty() || estado != Estado.REPOSO) return false;
         remera = stack.copyWithCount(1);

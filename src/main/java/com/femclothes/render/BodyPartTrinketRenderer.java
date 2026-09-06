@@ -54,11 +54,17 @@ public final class BodyPartTrinketRenderer implements TrinketRenderer {
      * El truco: en ModelPart.Cuboid el rectangulo UV se calcula con el TAMANO
      * DEL CUBOIDE en unidades de modelo, no con el tamano de la textura. Subir
      * textureWidth solo no da mas definicion — la cara sigue ocupando 4 texels.
-     * Asi que el cuboide se arma al DOBLE (8x24x8, dilatacion 0.6), lo que le
-     * da 8x24 texels, y despues se escala la parte a la mitad para que se vea
-     * del tamano correcto. Resultado: misma silueta, el doble de pixeles.
+     * Asi que el cuboide se arma a ESCALA veces el tamano real y despues la
+     * parte se escala por 1/ESCALA para que se vea del tamano correcto.
+     * Resultado: misma silueta, ESCALA veces mas pixeles.
+     *
+     * Son 8 y no 2 desde que las medias se pueden estampar: con 2 la cara de
+     * una pierna eran 8x24 texels y una foto ahi no se lee. Es la misma
+     * resolucion a la que trabaja la remera. Las texturas de media son
+     * siluetas planas que se tinen en runtime, asi que subirlas fue reescalar
+     * sin perder nada.
      */
-    public static final int SCALE = 2;
+    public static final int SCALE = 8;
 
     public enum Part { LEGS, BODY, ARMS }
 

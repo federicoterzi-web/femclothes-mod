@@ -72,6 +72,18 @@ public final class ModItems {
             Identifier.of(Femclothes.MOD_ID, "remera"),
             new RemeraItem(new Item.Settings().maxCount(16)));
 
+    /**
+     * Si la sublimadora puede imprimir sobre esto.
+     *
+     * Vive aca y no en EstampaTextures porque el bloque lo pregunta en el
+     * servidor, y EstampaTextures es codigo de cliente: tocarlo del lado del
+     * servidor cargaria NativeImage y MinecraftClient en un dedicado.
+     */
+    public static boolean esEstampable(net.minecraft.item.ItemStack stack) {
+        return stack.getItem() == REMERA
+                || stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID;
+    }
+
     private static ComponentType<Estampa> registrarEstampa(String nombre) {
         return Registry.register(
                 Registries.DATA_COMPONENT_TYPE,

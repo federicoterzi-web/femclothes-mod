@@ -3,6 +3,9 @@
 Prensa térmica que estampa fotos de [Camerapture](https://modrinth.com/mod/camerapture)
 sobre remeras en blanco.
 
+El mapa general del proyecto está en [FEMCLOTHES.md](../FEMCLOTHES.md);
+esto es el detalle de la máquina.
+
 Empezó como un mod aparte y hoy es parte de FemClothes: un solo jar, un solo
 namespace. La máquina es `femclothes:sublimadora` y la prenda
 `femclothes:remera`. El código sigue viviendo en el paquete

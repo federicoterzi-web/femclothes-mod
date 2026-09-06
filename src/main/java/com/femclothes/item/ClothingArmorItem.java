@@ -14,6 +14,18 @@ import net.minecraft.registry.entry.RegistryEntry;
  */
 public class ClothingArmorItem extends ArmorItem {
 
+    /** Las prendas que pasan por la sublimadora avisan si estan impresas. */
+    @Override
+    public void appendTooltip(net.minecraft.item.ItemStack stack, TooltipContext context,
+                              java.util.List<net.minecraft.text.Text> tooltip,
+                              net.minecraft.item.tooltip.TooltipType type) {
+        super.appendTooltip(stack, context, tooltip, type);
+        if (com.femclothes.sublimadora.ModItems.esEstampable(stack)) {
+            com.femclothes.sublimadora.RemeraItem.tooltipEstampa(stack, tooltip);
+        }
+    }
+
+
     public final boolean dyeable;
     public final boolean skinFillTorso;
 

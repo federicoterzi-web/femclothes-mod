@@ -271,14 +271,36 @@ public final class ClothingTextureCache {
      * mask puede ser null (prenda lisa). El relleno se sombrea segun
      * Shading: con un solo tono plano las dos piernas se leen pegadas.
      */
+    /**
+     * Algo que se pinta ENCIMA de la prenda ya compuesta.
+     *
+     * Existe para que la sublimadora pueda meter la foto sin que este cache
+     * sepa nada de estampas: recibe la imagen terminada y la firma con la que
+     * distinguirla de otra. Asi la dependencia va en un solo sentido.
+     */
+    public interface Encima {
+        /** Parte de la clave: dos estampas distintas no comparten textura. */
+        String clave();
+        /** false si todavia no se pudo -foto sin bajar-, y entonces no se cachea. */
+        boolean aplicar(NativeImage destino);
+    }
+
     public static Identifier composeGarment(Identifier baseTexture, int baseRgb,
                                             @Nullable Identifier mask, int patternRgb,
                                             @Nullable SkinToneSampler.Tones skin, Shading shading) {
+        return composeGarment(baseTexture, baseRgb, mask, patternRgb, skin, shading, null);
+    }
+
+    public static Identifier composeGarment(Identifier baseTexture, int baseRgb,
+                                            @Nullable Identifier mask, int patternRgb,
+                                            @Nullable SkinToneSampler.Tones skin, Shading shading,
+                                            @Nullable Encima encima) {
         String key = baseTexture + "#" + Integer.toHexString(baseRgb)
                 + "@" + mask + "#" + Integer.toHexString(patternRgb)
                 + "~" + (skin == null ? "sinpiel" : Integer.toHexString(skin.mid())
                         + "/" + Integer.toHexString(skin.light())
-                        + "/" + Integer.toHexString(skin.dark())) + ":" + shading;
+                        + "/" + Integer.toHexString(skin.dark())) + ":" + shading
+                + (encima == null ? "" : "+" + encima.clave());
         Identifier cached = TINTED_CACHE.get(key);
         if (cached != null) return cached;
 
@@ -308,6 +330,14 @@ public final class ClothingTextureCache {
                     composite.setColor(x, y, fill(x, y, skin, shading));
                 }
             }
+        }
+
+        // La estampa va DESPUES del tenido y del patron, igual que en una
+        // sublimadora de verdad: la foto se imprime sobre la prenda terminada
+        // y no se tine con ella.
+        if (encima != null && !encima.aplicar(composite)) {
+            composite.close();
+            return baseTexture;
         }
 
         Identifier id = Identifier.of("femclothes", "dynamic/garment_" + Integer.toHexString(key.hashCode()));

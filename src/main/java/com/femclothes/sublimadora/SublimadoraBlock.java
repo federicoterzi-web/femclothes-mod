@@ -96,7 +96,7 @@ public class SublimadoraBlock extends BlockWithEntity {
         }
         // Se acepta mientras le quede alguna cara sin estampar: una remera
         // con el frente hecho vuelve a entrar para imprimirle la espalda.
-        if (stack.getItem() == ModItems.REMERA && !tieneLasDosCaras(stack)) {
+        if (ModItems.esEstampable(stack) && !tieneLasDosCaras(stack)) {
             if (!be.ponerRemera(stack)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
             if (!player.isCreative()) stack.decrement(1);
             sonar(world, pos, SoundEvents.BLOCK_WOOL_PLACE, 1.0f);

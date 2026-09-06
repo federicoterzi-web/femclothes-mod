@@ -1,7 +1,6 @@
 {
-  "_comment": "El croptop y la remera comparten slot a proposito: dos prendas dibujadas sobre el mismo pedazo de cuerpo se pisarian. Antes cada mod declaraba lo suyo y los tags se fusionaban solos; con un solo mod van juntos aca.",
+  "_comment": "Que entra al slot de torso. La remera de la sublimadora es la unica por ahora: dos prendas dibujadas sobre el mismo pedazo de cuerpo se pisarian, asi que el slot es de a una.",
   "values": [
-    "femclothes:croptop",
     "femclothes:remera"
   ]
 }

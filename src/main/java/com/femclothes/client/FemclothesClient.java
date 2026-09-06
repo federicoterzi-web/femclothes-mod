@@ -4,7 +4,6 @@ import com.femclothes.item.ClothingStyle;
 import com.femclothes.item.FemclothesItems;
 import com.femclothes.render.BodyPartTrinketRenderer;
 import com.femclothes.render.ClothingTextureCache;
-import com.femclothes.render.CroptopArmorRenderProvider;
 import com.femclothes.screen.FemclothesScreenHandlers;
 import dev.emi.trinkets.api.client.TrinketRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
@@ -20,11 +19,6 @@ public class FemclothesClient implements ClientModInitializer {
         // vanilla; lo abre el accesswidener de fabric-screen-handler-api-v1,
         // que Loom aplica en tiempo de compilacion.
         HandledScreens.register(FemclothesScreenHandlers.CLOTHING_LOOM, ClothingLoomScreen::new);
-
-        // TODO (en migración): CroptopArmorRenderProvider todavía usa la
-        // geometría de armadura vieja (más ancha) — queda pendiente de
-        // pasar a BodyPartTrinketRenderer junto con shorts.
-        CroptopArmorRenderProvider.register();
 
         // --- SOCKS_SOLID: primera prenda migrada al sistema nuevo ---
         // Se dibuja pegada a la pierna real (BodyPartTrinketRenderer.Part.LEGS)
@@ -62,9 +56,28 @@ public class FemclothesClient implements ClientModInitializer {
                     // Sin relleno de piel: de eso se encarga ComposedSkin, una
                     // vez sobre la skin. Ademas evita leer la skin desde la GPU
                     // en pleno render, que es lo que hacia esta llamada.
+                    // Las medias tambien se sublimant: la foto se pinta
+                    // sobre la media ya tenida y con su patron, que es el
+                    // orden de una sublimadora de verdad. Sin estampa el
+                    // gancho no hace nada y la textura sale igual que antes.
+                    ClothingTextureCache.Encima estampa =
+                            com.femclothes.sublimadora.EstampaTextures.tieneEstampa(stack)
+                                    ? new ClothingTextureCache.Encima() {
+                                        @Override
+                                        public String clave() {
+                                            return com.femclothes.sublimadora.EstampaTextures
+                                                    .claveEstampas(stack);
+                                        }
+                                        @Override
+                                        public boolean aplicar(net.minecraft.client.texture.NativeImage destino) {
+                                            return com.femclothes.sublimadora.EstampaTextures
+                                                    .estampar(destino, stack);
+                                        }
+                                    }
+                                    : null;
                     return ClothingTextureCache.composeGarment(socksSolidBase, baseColor,
                             mask, ClothingStyle.patternColor(stack, side), null,
-                            ClothingTextureCache.Shading.LEGS);
+                            ClothingTextureCache.Shading.LEGS, estampa);
                 }));
 
         // TODO: acá también va el registro de la geometría custom del

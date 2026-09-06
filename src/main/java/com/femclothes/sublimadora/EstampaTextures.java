@@ -7,6 +7,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.AbstractTexture;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
+import net.minecraft.item.ItemStack;
 import net.minecraft.resource.Resource;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
@@ -32,7 +33,7 @@ import java.util.UUID;
  * asi el borde de la silueta queda pixel a pixel igual al de la remera lisa
  * en vez de ser mas fino que ella.
  */
-final class EstampaTextures {
+public final class EstampaTextures {
 
     private EstampaTextures() {}
 
@@ -61,14 +62,22 @@ final class EstampaTextures {
      * @param compartida caras sin lado propio, que pinta el full print que
      *                   haya. Despues de partir todo lo demas queda solo el
      *                   ruedo, que es la boca de abajo de la remera.
+     * @param principal  el panel grande y plano de ese lado -el pecho, la
+     *                   espalda, el frente de una pierna-. Es donde van el
+     *                   logo y la estampa centrada, que a diferencia del full
+     *                   print no se reparten por toda la prenda.
      */
     private record Cara(int[] rect, int[] lienzo, boolean atras,
-                        boolean espejar, boolean espejarV, boolean compartida) {
+                        boolean espejar, boolean espejarV, boolean compartida,
+                        boolean principal) {
         Cara(int[] rect, int[] lienzo, boolean atras) {
-            this(rect, lienzo, atras, false, false, false);
+            this(rect, lienzo, atras, false, false, false, false);
         }
         Cara espejada() {
-            return new Cara(rect, lienzo, atras, true, espejarV, compartida);
+            return new Cara(rect, lienzo, atras, true, espejarV, compartida, principal);
+        }
+        Cara principal_() {
+            return new Cara(rect, lienzo, atras, espejar, espejarV, compartida, true);
         }
         /**
          * Para las caras HORIZONTALES de atras: los hombros y las tapas de las
@@ -79,10 +88,32 @@ final class EstampaTextures {
          * vez de continuar, y las dos mitades se ven iguales.
          */
         Cara volteada() {
-            return new Cara(rect, lienzo, atras, espejar, true, compartida);
+            return new Cara(rect, lienzo, atras, espejar, true, compartida, principal);
         }
         Cara compartida_() {
-            return new Cara(rect, lienzo, atras, espejar, espejarV, true);
+            return new Cara(rect, lienzo, atras, espejar, espejarV, true, principal);
+        }
+    }
+
+    /**
+     * La geometria de estampado de una prenda.
+     *
+     * Existe porque ya no hay una sola prenda estampable. La remera desdobla
+     * torso y mangas sobre un lienzo de 24 de ancho; las medias desdoblan una
+     * pierna sobre uno de 12. Lo que comparten -que la foto se coloca UNA vez
+     * sobre el lienzo y cada cara toma su ventana- es todo lo demas.
+     *
+     * @param cuerpoY    donde empieza el cuerpo dentro del lienzo. Un diseno
+     *                   con transparencia se centra sobre el CUERPO y no
+     *                   sobre el lienzo entero, que arriba puede tener la
+     *                   banda del hombro.
+     * @param cuerpoAlto cuanto mide ese cuerpo.
+     */
+    private record Prenda(int escala, int lienzoAncho, int lienzoAlto,
+                          int cuerpoY, int cuerpoAlto, Cara[] caras) {
+        /** El rect de una cara, de unidades de skin a pixeles de la textura. */
+        int[] escalar(int[] r) {
+            return new int[] { r[0] * escala, r[1] * escala, r[2] * escala, r[3] * escala };
         }
     }
 
@@ -123,8 +154,9 @@ final class EstampaTextures {
         java.util.List<Cara> lista = new java.util.ArrayList<>();
 
         // ── torso ────────────────────────────────────────────────────
-        lista.add(new Cara(new int[] { 20, 20, 8, largo }, new int[] { 8, 2, 8, largo }, false));
-        lista.add(new Cara(new int[] { 32, 20, 8, largo }, new int[] { 8, 2, 8, largo }, true).espejada());
+        lista.add(new Cara(new int[] { 20, 20, 8, largo }, new int[] { 8, 2, 8, largo }, false).principal_());
+        lista.add(new Cara(new int[] { 32, 20, 8, largo }, new int[] { 8, 2, 8, largo }, true)
+                .espejada().principal_());
         lista.add(new Cara(new int[] { 20, 18, 8, 2 }, new int[] { 8, 0, 8, 2 }, false));            // hombro delantero
         lista.add(new Cara(new int[] { 20, 16, 8, 2 }, new int[] { 8, 0, 8, 2 }, true).volteada());  // hombro trasero
         lista.add(new Cara(new int[] { 18, 20, 2, largo }, new int[] { 2, 2, 2, largo }, false));    // costado der delantero
@@ -163,16 +195,68 @@ final class EstampaTextures {
 
     private static final Map<Variante, Cara[]> CARAS = new HashMap<>();
 
-    /** El pecho y la espalda del corte, que es donde van logo y centrada. */
-    private static boolean esElTorso(Cara cara) {
-        return cara.rect()[0] == 20 && cara.rect()[2] == 8 && cara.rect()[1] == 20
-                || cara.rect()[0] == 32;
+    /** La remera del corte que sea. */
+    private static Prenda deLaRemera(Variante v) {
+        return new Prenda(RemeraTrinketRenderer.ESCALA, LIENZO_ANCHO, lienzoAlto(v),
+                BANDA_HOMBRO, v.largo().filas, caras(v));
     }
 
-    private static int[] escalar(int[] r) {
-        int e = RemeraTrinketRenderer.ESCALA;
-        return new int[] { r[0] * e, r[1] * e, r[2] * e, r[3] * e };
+    // --- medias -----------------------------------------------------------
+    // La media arranca en la fila 22 de las 12 del cuboide de la pierna: las
+    // dos primeras filas del muslo quedan al aire. Igual que con la remera,
+    // estos numeros TIENEN que ser los mismos que los de la textura, que es
+    // una silueta plana en socks_solid_layer_1.png.
+    private static final int MEDIA_Y = 22;
+    private static final int MEDIA_ALTO = 10;
+    /** 2 de un costado + 2 + el frente de 4 + 2 + 2 del otro costado. */
+    private static final int LIENZO_PIERNA = 12;
+
+    /**
+     * Las caras de una pierna, dando la vuelta.
+     *
+     * Las dos piernas comparten lienzo: las medias son un par y un solo item,
+     * y darle a cada pierna su mitad de la foto obligaria a juntar los
+     * tobillos para ver el dibujo. Van iguales, como un par de verdad.
+     */
+    private static Cara[] deUnaPierna(int u, int v) {
+        int y = v + MEDIA_Y - 16;   // el cuboide de la pierna empieza en v
+        int h = MEDIA_ALTO;
+        return new Cara[] {
+                // El costado va partido: la mitad de adelante es del frente y
+                // la de atras de la espalda, igual que en el torso.
+                new Cara(new int[] { u,      y, 2, h }, new int[] { 0,  0, 2, h }, true),
+                new Cara(new int[] { u + 2,  y, 2, h }, new int[] { 2,  0, 2, h }, false),
+                new Cara(new int[] { u + 4,  y, 4, h }, new int[] { 4,  0, 4, h }, false).principal_(),
+                new Cara(new int[] { u + 8,  y, 2, h }, new int[] { 8,  0, 2, h }, false),
+                new Cara(new int[] { u + 10, y, 2, h }, new int[] { 10, 0, 2, h }, true),
+                new Cara(new int[] { u + 12, y, 4, h }, new int[] { 4,  0, 4, h }, true)
+                        .espejada().principal_(),
+                // La planta del pie. No tiene lado propio -no se ve ni de
+                // frente ni de atras- asi que la pinta el full print que haya.
+                new Cara(new int[] { u + 8, v, 4, 4 }, new int[] { 4, h - 4, 4, 4 }, false)
+                        .compartida_(),
+        };
     }
+
+    /** Las medias: pierna derecha en uv(0,16), izquierda en uv(16,48). */
+    private static final Prenda MEDIAS;
+    static {
+        java.util.List<Cara> todas = new java.util.ArrayList<>();
+        todas.addAll(java.util.Arrays.asList(deUnaPierna(0, 16)));
+        todas.addAll(java.util.Arrays.asList(deUnaPierna(16, 48)));
+        MEDIAS = new Prenda(com.femclothes.render.BodyPartTrinketRenderer.SCALE,
+                LIENZO_PIERNA, MEDIA_ALTO, 0, MEDIA_ALTO, todas.toArray(new Cara[0]));
+    }
+
+    /** Que prenda estampable es este stack, o null si no lo es. */
+    @Nullable
+    private static Prenda prendaDe(ItemStack stack) {
+        if (stack.getItem() == ModItems.REMERA) return deLaRemera(RemeraItem.variante(stack));
+        if (stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID) return MEDIAS;
+        return null;   // ModItems.esEstampable tiene que decir lo mismo
+    }
+
+
 
     private static final Map<String, Identifier> CACHE = new HashMap<>();
     private static final Map<String, Identifier> CACHE_CUERPO = new HashMap<>();
@@ -290,36 +374,7 @@ final class EstampaTextures {
         salida.copyFrom(base);
         if (color != RemeraItem.BLANCO) tenir(salida, color);
 
-        // Si alguna foto todavia no esta lista se abandona SIN cachear: en el
-        // proximo frame puede estar, y cachear a medias dejaria una remera con
-        // una sola de sus dos estampas para siempre.
-        // El full print que se lleva las caras sin lado propio. Se prefiere el
-        // de adelante nada mas que por desempatar.
-        Estampa cubreCompartidas = frente != null && frente.cubrir() ? frente
-                : (espalda != null && espalda.cubrir() ? espalda : null);
-
-        boolean listo = true;
-        for (Cara cara : caras(variante)) {
-            // Cada cara la pinta la estampa de SU lado. Antes un full print
-            // en el frente pintaba tambien la espalda, porque el bucle usaba
-            // la misma estampa para todas.
-            Estampa suya = cara.compartida() ? cubreCompartidas
-                    : (cara.atras() ? espalda : frente);
-            if (suya == null) continue;
-
-            if (suya.cubrir()) {
-                listo &= pintarDelLienzo(salida, suya, cara, variante);
-            } else if (esElTorso(cara)) {
-                // El logo y la centrada van SOLO en el pecho y la espalda.
-                // Antes la condicion era "cualquier cara no compartida", que
-                // funcionaba de casualidad mientras los costados y las mangas
-                // estaban marcados como compartidos. Al partirlos en mitades
-                // dejaron de estarlo y una estampa centrada empezo a
-                // repetirse en cada manga.
-                listo &= pintar(salida, suya, escalar(cara.rect()));
-            }
-        }
-        if (!listo) {
+        if (!estampar(salida, deLaRemera(variante), frente, espalda)) {
             salida.close();
             return null;
         }
@@ -330,6 +385,71 @@ final class EstampaTextures {
                 .registerTexture(destino, new NativeImageBackedTexture(salida));
         CACHE_CUERPO.put(clave, destino);
         return destino;
+    }
+
+    /**
+     * Pinta las estampas de un stack sobre una textura ya armada.
+     *
+     * Es el punto de entrada de las prendas que NO se leen del pack tal cual:
+     * las medias llegan aca ya tenidas, con su patron y con la piel de la
+     * pierna reconstruida, y lo unico que falta es la foto.
+     *
+     * Devuelve false si alguna foto todavia no se pudo leer, para que quien
+     * llama no cachee: en el proximo frame puede estar.
+     */
+    public static boolean estampar(NativeImage destino, ItemStack stack) {
+        Prenda prenda = prendaDe(stack);
+        if (prenda == null) return true;
+        return estampar(destino, prenda,
+                RemeraItem.estampaDe(stack, Estampa.Cara.FRENTE),
+                RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA));
+    }
+
+    /** Si el stack tiene alguna cara impresa. */
+    public static boolean tieneEstampa(ItemStack stack) {
+        return RemeraItem.estaEstampada(stack);
+    }
+
+    /** Con que identificar las estampas de un stack en una clave de cache. */
+    public static String claveEstampas(ItemStack stack) {
+        return RemeraItem.estampaDe(stack, Estampa.Cara.FRENTE)
+                + "|" + RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA);
+    }
+
+    private static boolean estampar(NativeImage salida, Prenda prenda,
+                                    @Nullable Estampa frente, @Nullable Estampa espalda) {
+        // El full print se lleva ademas las caras sin lado propio -el ruedo de
+        // la remera, la planta del pie-. Se prefiere el de adelante nada mas
+        // que por desempatar.
+        Estampa cubreCompartidas = frente != null && frente.cubrir() ? frente
+                : (espalda != null && espalda.cubrir() ? espalda : null);
+
+        // Si alguna foto todavia no esta lista se abandona SIN cachear: en el
+        // proximo frame puede estar, y cachear a medias dejaria una prenda con
+        // una sola de sus dos estampas para siempre.
+        boolean listo = true;
+        for (Cara cara : prenda.caras()) {
+            // Cada cara la pinta la estampa de SU lado. Antes un full print
+            // en el frente pintaba tambien la espalda, porque el bucle usaba
+            // la misma estampa para todas.
+            Estampa suya = cara.compartida() ? cubreCompartidas
+                    : (cara.atras() ? espalda : frente);
+            if (suya == null) continue;
+
+            if (suya.cubrir()) {
+                listo &= pintarDelLienzo(salida, suya, cara, prenda);
+            } else if (cara.principal()) {
+                // El logo y la centrada van SOLO en el panel grande de cada
+                // lado. Antes la condicion era "cualquier cara no
+                // compartida", que funcionaba de casualidad mientras los
+                // costados y las mangas estaban marcados como compartidos; al
+                // partirlos en mitades dejaron de estarlo y una centrada
+                // empezo a repetirse en cada manga. Ahora lo dice la cara y
+                // no sus coordenadas.
+                listo &= pintar(salida, suya, prenda.escalar(cara.rect()));
+            }
+        }
+        return listo;
     }
 
     /**
@@ -371,7 +491,7 @@ final class EstampaTextures {
      * que el dibujo continue de una cara a la otra en vez de repetirse.
      */
     private static boolean pintarDelLienzo(NativeImage salida, Estampa estampa, Cara cara,
-                                           Variante variante) {
+                                           Prenda prenda) {
         CameraptureClientCompat.Foto info = fotoDe(estampa.foto());
         if (info == null) return false;
         NativeImage foto = leerDeLaGpu(info.textura(), info.ancho(), info.alto());
@@ -379,7 +499,7 @@ final class EstampaTextures {
 
         try {
             float relFoto = (float) foto.getWidth() / foto.getHeight();
-            float relLienzo = (float) LIENZO_ANCHO / lienzoAlto(variante);
+            float relLienzo = (float) prenda.lienzoAncho() / prenda.lienzoAlto();
             float ancho, alto;
 
             float y0;
@@ -393,22 +513,22 @@ final class EstampaTextures {
                 // Se centra sobre el CUERPO y no sobre el lienzo entero: las
                 // dos filas de arriba son la banda del hombro, y centrar
                 // sobre ellas subia el diseno un renglon.
-                float caben = Math.min(LIENZO_ANCHO / relFoto, (float) variante.largo().filas);
+                float caben = Math.min(prenda.lienzoAncho() / relFoto, (float) prenda.cuerpoAlto());
                 alto = caben * MARGEN_DISENO;
                 ancho = alto * relFoto;
-                y0 = BANDA_HOMBRO + (variante.largo().filas - alto) / 2f;
+                y0 = prenda.cuerpoY() + (prenda.cuerpoAlto() - alto) / 2f;
             } else {
                 // Una foto opaca se recorta para llenar, y llena el lienzo
                 // ENTERO: si solo cubriera el cuerpo, los hombros quedarian
                 // sin estampar.
-                float necesario = Math.max(LIENZO_ANCHO / relFoto, (float) lienzoAlto(variante));
+                float necesario = Math.max(prenda.lienzoAncho() / relFoto, (float) prenda.lienzoAlto());
                 alto = necesario;
                 ancho = alto * relFoto;
-                y0 = (lienzoAlto(variante) - alto) / 2f;
+                y0 = (prenda.lienzoAlto() - alto) / 2f;
             }
-            float x0 = (LIENZO_ANCHO - ancho) / 2f;
+            float x0 = (prenda.lienzoAncho() - ancho) / 2f;
 
-            volcar(salida, foto, escalar(cara.rect()), cara, x0, y0, ancho, alto);
+            volcar(salida, foto, prenda.escalar(cara.rect()), cara, x0, y0, ancho, alto);
             return true;
         } finally {
             foto.close();

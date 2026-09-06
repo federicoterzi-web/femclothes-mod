@@ -83,6 +83,32 @@ public class RemeraItem extends Item {
         return out;
     }
 
+    /**
+     * Las lineas de estampa, que sirven para cualquier prenda estampable.
+     *
+     * Estan aca sueltas y no dentro de appendTooltip porque las medias no son
+     * un RemeraItem -son una prenda de FemClothes- y necesitan las mismas.
+     */
+    public static void tooltipEstampa(ItemStack stack, List<Text> tooltip) {
+        Estampa frente = estampaDe(stack, Estampa.Cara.FRENTE);
+        Estampa espalda = estampaDe(stack, Estampa.Cara.ESPALDA);
+        if (frente == null && espalda == null) {
+            tooltip.add(Text.translatable("femclothes.sublimadora.remera.en_blanco")
+                    .formatted(Formatting.DARK_GRAY));
+            return;
+        }
+        // Nombra las caras estampadas y no un "estampada" generico: con las
+        // dos caras posibles, saber cual tiene dibujo es lo unico util.
+        if (frente != null) {
+            tooltip.add(Text.translatable("femclothes.sublimadora.remera.estampada",
+                    Text.translatable("femclothes.sublimadora.cara.frente")).formatted(Formatting.AQUA));
+        }
+        if (espalda != null) {
+            tooltip.add(Text.translatable("femclothes.sublimadora.remera.estampada",
+                    Text.translatable("femclothes.sublimadora.cara.espalda")).formatted(Formatting.AQUA));
+        }
+    }
+
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
@@ -97,21 +123,6 @@ public class RemeraItem extends Item {
                 Text.translatable("femclothes.sublimadora.cuello." + v.cuello().clave))
                 .formatted(Formatting.GRAY));
 
-        Estampa frente = estampaDe(stack, Estampa.Cara.FRENTE);
-        Estampa espalda = estampaDe(stack, Estampa.Cara.ESPALDA);
-        if (frente == null && espalda == null) {
-            tooltip.add(Text.translatable("femclothes.sublimadora.remera.en_blanco").formatted(Formatting.DARK_GRAY));
-            return;
-        }
-        // Nombra las caras estampadas y no un "estampada" generico: con las
-        // dos caras posibles, saber cual tiene dibujo es lo unico util.
-        if (frente != null) {
-            tooltip.add(Text.translatable("femclothes.sublimadora.remera.estampada",
-                    Text.translatable("femclothes.sublimadora.cara.frente")).formatted(Formatting.AQUA));
-        }
-        if (espalda != null) {
-            tooltip.add(Text.translatable("femclothes.sublimadora.remera.estampada",
-                    Text.translatable("femclothes.sublimadora.cara.espalda")).formatted(Formatting.AQUA));
-        }
+        tooltipEstampa(stack, tooltip);
     }
 }
