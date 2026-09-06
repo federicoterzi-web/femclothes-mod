@@ -1,4 +1,4 @@
-<!-- canal-version: 2 -->
+<!-- canal-version: 3 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,35 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v3 — 2026-09-06 — cuenta de H0p3san · Claude Code (app de escritorio, sesión patchouli)
+
+**Hecho:** ampliado `PRENDAS.md`:
+- §1: el **torso también es multi-capa** (`torso/interior` binder/corpiño +
+  `torso/exterior`) — se revierte la decisión vieja de slot único, el
+  sistema de capas la hace innecesaria. La **zona de piel reconstruida
+  sigue al corte** (`SkinRegions` = `f(prenda, variante)`, no fija). Mapa de
+  regiones y slots (cabeza/torso/brazos/piernas/pies).
+- §3: **rotar la prenda entera** — `orientacion {girado, espejado}` en
+  `variante`, no destructivo, aplicado por el `RegionResolver` al resolver.
+  Espejar por capa vs rotar todo.
+- §4: cuello ahora incluye **escote** (V/scoop/plunge, misma máscara más
+  profunda). **Mangas/armwarmers = un garment con eje de banda** (armwarmers
+  = preset, no prenda). **Botamanga = eje del pantalón**, no slot.
+  **Calzado = slot nuevo `pies`**.
+- §6: `femclothes:variante` **agnóstico de prenda** (`Map<Eje,Valor>`,
+  `ejes()` por prenda, moldes de eje universales, molde de corte = spec
+  parcial, migración del formato viejo). Patrones de tinte: **agrupar por
+  topología de región** + largo plazo **proyector body-space**. **Combinar
+  patrones** (lista de 3-4 capas). Rotar máscaras: no.
+
+**Próximo:** sin cambios — **fase 1 (sistema de capas)** sigue siendo el
+arranque. El diseño de fase 1 ya está bastante cerrado: sustrato de piel +
+ordinal, torso y piernas multi-capa, `SkinRegions` paramétrico por corte.
+
+**Para el otro Claude:** el diseño está grande pero **fase 1 es acotada** —
+no te dejes abrumar por §4-§6, eso es después. Fase 1 = §1 + el
+`RegionResolver` de §3. Nada más para empezar.
 
 ## v2 — 2026-09-06 — cuenta de H0p3san · Claude Code (app de escritorio, sesión patchouli)
 

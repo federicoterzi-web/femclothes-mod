@@ -53,6 +53,39 @@ Skin Layers (ver FEMCLOTHES.md). Piernas y brazos usan el sustrato separado.
 Si algún día 3DSL tiene que respetar las piernas, ahí se unifica todo en
 ComposedSkin.
 
+### El torso también es multi-capa
+
+La decisión vieja "`El slot de torso es de a una prenda`" es **anterior** al
+sistema de capas — que es justo lo que la hace innecesaria. Con el ordinal,
+el torso gana una segunda capa igual que las piernas:
+
+- `torso/interior` → binder (faja), corpiño, musculosa de abajo. Teñible.
+- `torso/exterior` → remera, top.
+
+El **binder** hoy es solo una textura (banda compresora / top deportivo)
+sobre el torso plano del modelo. Si algún día se agrega geometría de pecho,
+gana un flag que la suprime — **eso NO es fase 1**.
+
+### La zona de piel reconstruida sigue al corte, no es fija
+
+`SkinRegions` (ver FEMCLOTHES.md) hoy dice qué parte de la skin toca cada
+**tipo** de prenda. Pasa a ser `f(prenda, variante)` — se calcula **desde la
+máscara del corte**. Así cualquier escote (V, redondo, plunge, corazón) o
+largo de manga expone la piel correcta **sin código nuevo por variante**.
+
+### Mapa de regiones y slots
+
+| región | slots (capas) | prendas |
+|---|---|---|
+| cabeza | — (sin slot, es una pieza de la polera) | banda de polera |
+| torso | `torso/interior`, `torso/exterior` | binder/corpiño · remera/top |
+| brazos | `brazos` | mangas (incl. armwarmers, ver §5) |
+| piernas | `piernas/media`, `piernas/exterior` | medias/fishnet/leggings · shorts/pollera/pantalón |
+| pies | `pies` | calzado |
+
+Dentro y entre slots de una región, el **ordinal `layer`** decide el orden
+de dibujo.
+
 ---
 
 ## 2. El modelo: prenda = conjunto de piezas `(región, fuente, capa)`
@@ -142,6 +175,33 @@ Set<Region> regionesDe(Operacion op)   // op ∈ TEÑIR, PATRON, CORTE, ESTAMPAR
 - **Estampar**: aplica a todas las caras pero **cuesta tinta por cara** (la
   sublimadora ya es así — "una pasada, dos juegos de tinta").
 
+### Alternar la lateralidad
+
+- **Espejar (swap izq↔der) de una capa**: acción de la estación. Intercambia
+  el valor primario y el override de esa capa. Si la derecha heredaba,
+  después hereda la izquierda. Un click.
+- **Auto-espejo al aplicar**: un patrón asimétrico aplicado al otro lado se
+  espeja para que "externo siga siendo externo". El proyector body-space
+  (§6) lo hace solo; con PNGs por prenda, cada patrón lleva flag
+  `simétrico` / `con lateralidad`.
+
+### Rotar la prenda entera — `orientacion` en `variante`
+
+Campo chico: `{ girado: bool, espejado: bool }`. **No destructivo.**
+
+- `girado` → frente↔espalda (remera al revés: estampa y escote pasan atrás)
+- `espejado` → izq↔der para **toda** la prenda de una
+
+El `RegionResolver` lo aplica **al resolver**, no permuta datos guardados: si
+`girado`, cuando el render pide `FRENTE` devuelve `espalda`; si `espejado`,
+pide `IZQUIERDA` y da `der` + espeja la máscara. Vale para render, ícono y
+tooltip. Se saca el flag y vuelve a la normalidad.
+
+La **geometría no rota** — una remera es casi simétrica frente/espalda, así
+que "al revés" es remapear la superficie, no la malla. Prendas asimétricas
+de forma (buzo con capucha, vestido con cola) declaran
+`puedeGirarse() = false`.
+
 ### Lo que habilita
 
 Cortes **asimétricos** salen gratis: manga 3/4 en un brazo y larga en el
@@ -168,18 +228,24 @@ de las 12). Layout de skin.
 - Candidato a resolver primero. Se puede dejar generado por script si el
   script pinta el dobladillo.
 
-### Cuello redondo vs en V
+### Cuello — `redondo / V / escote / polera`
 
-Textura, pero es una **forma** en las ~3-4 filas de arriba del torso
-frontal, no un conteo.
+Textura, pero es una **forma** (máscara de silueta) en las filas de arriba
+del torso frontal, no un conteo. Una textura base "torso con tela hasta el
+cuello" + la variante como máscara de recorte. Mismo mecanismo que los
+patrones (`textures/models/armor/patterns/`), pero recorta en vez de teñir.
 
-- **Redondo**: un arco cerca de la base del cuello.
-- **En V**: dos diagonales al centro. Cuánto baja es decisión de diseño.
-- Comparten todo menos esas filas → una textura base "torso con tela hasta
-  el cuello" + las variantes de cuello como **máscara de silueta**. Mismo
-  mecanismo que los patrones (`textures/models/armor/patterns/`), pero de
-  recorte en vez de color.
-- La espalda del cuello es igual en las dos (redonda). La V es solo adelante.
+| valor | forma | filas que recorta |
+|---|---|---|
+| redondo | arco cerca de la base del cuello | ~2 |
+| V | dos diagonales al centro | ~4 |
+| escote | scoop / corazón / plunge — más profundo | 5–8, decisión de diseño |
+| polera | sin escote + banda en la cabeza (ver abajo) | 0 |
+
+- La espalda es siempre redonda. Todo lo demás es solo adelante.
+- La piel que queda a la vista abajo del recorte la resuelve **el sustrato
+  de piel / `SkinRegions` calculado desde esta máscara** (§1) — no hay
+  código nuevo por cada profundidad de escote.
 
 ### Polera (turtleneck) — la excepción de geometría
 
@@ -281,6 +347,39 @@ El jugador nunca ve la costura, solo mueve el molde.
 
 Dos piezas.
 
+### Botamanga = eje de corte del pantalón, NO un slot
+
+El puño del pantalón (doblado / elástico / abierto / caído) es un **eje** de
+la familia pantalón, guardado en `variante`. No es una prenda ni un slot
+aparte.
+
+### Mangas / armwarmers — un garment, un eje de banda
+
+`arms/armwarmer` pasa a ser el slot `brazos`. El garment **`mangas`** cubre
+una **banda** del brazo definida por dos filas (0 = muñeca … 12 = hombro):
+
+| preset | banda |
+|---|---|
+| manga larga | 12→0 |
+| manga 3/4 | 12→4 |
+| manga corta | 12→8 |
+| armwarmer | 8→0 |
+| armwarmer largo | 11→0 |
+
+**Armwarmers no es un tipo de prenda** — es este preset. El render se
+comparte con la manga de la remera (misma tela sobre la ModelPart del
+brazo). Neto: menos piezas que hoy (armwarmers tiene renderer + slot +
+lógica propios que se colapsan acá).
+
+### Calzado — slot nuevo `pies`
+
+Región nueva. El modelo vanilla no tiene "pie" separado (es la base del cubo
+de la pierna inferior), así que:
+- zapatilla ceñida / media-zapato → `BODY_PART`, las ~3 filas de abajo de la
+  pierna inferior + una suela chica de geometría debajo.
+- botas / plataformas / cualquier calzado con forma → malla propia
+  (`OVERSIZE_MESH` chico), es la excepción de "ancho".
+
 ### La malla se genera, no se dibuja
 
 Igual que los 36 cortes: un generador paramétrico a partir de ~5 números
@@ -296,17 +395,72 @@ lápiz casi no se mueve, la circular se abre.
 
 ## 6. Personalizable sin explotar en combos
 
-Los ejes **NO son ítems**. Van en un componente estilo `variante`. Se cambian
-en la **mesa de sastrería** (ver MAQUINAS.md).
+### `femclothes:variante` agnóstico de prenda
 
-- **Molde por eje** (`fit`, `flare`, `largo`, `manga`, `cuello`…): son las
-  llaves de progresión. Sin el molde, ese eje aparece gris en la GUI.
-- **Molde de corte** = combo completo guardado, un ítem físico (se comparte,
-  se vende). Se fabrica **una vez a mano** desde el config; no es "un ítem
-  por combo crafteado".
+Hoy `variante` es `{largo, manga, cuello}` hardcodeado para remera. Cada
+familia tiene sus ejes:
 
-36 cortes × 16 colores × flare × largo × estampas = miles de combinaciones,
-un solo ítem con datos encima.
+| familia | ejes |
+|---|---|
+| remera | largo · manga · cuello |
+| medias | largo (tobillo/media/rodilla/muslo) · puño |
+| pollera | flare · largo |
+| pantalón | fit · largo (short/capri/full/campana) · tiro · botamanga |
+| mangas | banda |
+| calzado | tipo · caña |
+
+`variante` pasa a ser un `Map<Eje, Valor>`. Cada prenda declara
+`List<Eje> ejes()` (nombre, valores ordenados, qué región/geometría afecta).
+
+- **Moldes de eje** = llaves **universales**. El molde `manga` desbloquea el
+  eje en *cualquier* prenda que lo tenga.
+- **Molde de corte** = spec **parcial**. Al aplicarlo, la prenda toma los
+  ejes que entiende e ignora el resto. Un molde "manga larga + cuello V" de
+  una remera, aplicado a un vestido de maid, le setea manga y cuello si el
+  maid los tiene.
+- **Migración**: `variante` genérico tiene que leer el formato viejo
+  (remeras en mundos guardados con `{largo, manga, cuello}`). Decidir el
+  formato ANTES de implementar la fase de cortes.
+
+Los ejes **NO son ítems**. Se cambian en la **mesa de sastrería** (ver
+MAQUINAS.md). El molde de corte es un ítem físico (se comparte, se vende),
+fabricado **una vez a mano** desde el config — no es "un ítem por combo".
+
+### Patrones de tinte — no autorar N prendas × M patrones
+
+1. **Agrupar prendas por topología de región**, no por prenda:
+   - torso: remera, croptop, musculosa, polera, maid-top
+   - pierna: medias, fishnet, leggings, pantalón ajustado, minifalda tubo
+   - brazo: mangas
+   - malla acampanada: pollera con vuelo, campana, babucha (UV de cono
+     desplegado, set propio)
+
+   Los patrones se autoran **por grupo**. De N×M a ~4×M.
+
+2. **Largo plazo — patrones en espacio del cuerpo + proyector.** Un patrón
+   deja de ser un PNG y pasa a ser una spec ("rayas horizontales cada 20%",
+   "banda vertical centrada"). Un script la proyecta al UV de cualquier
+   prenda y genera la máscara. **Rotar sale gratis** (rotás en body-space),
+   **prenda nueva sale gratis**. El path `<prenda>/<patrón>.png` queda como
+   salida.
+
+### Combinar patrones
+
+`pattern_id` / `pattern_color` pasan a ser una **lista corta** (tope 3-4
+capas, no 6 como banderas), compositadas en orden con su color. De los
+primitivos que ya hay (rayas, raya vertical, tres rayas) salen varsity,
+tartán, etc.
+
+- **Ícono**: el truco de 2 capas no estira solo → runtime-composed (reusa el
+  compositor de estampas) o tope fijo de 4 con un tintindex por capa.
+- **UI**: aplicar patrón = agrega capa. Shift-aplicar = saca la última.
+  Prenda sola = las saca todas.
+- Encamina al pipeline unificado `base → patrón(es) → estampa → sombreado`,
+  donde la estampa es otra capa más de la lista.
+
+**Rotar máscaras: NO.** Van pegadas al UV del cuerpo — rotar el PNG rompe en
+las costuras del cubo. Las orientaciones se hacen como máscaras separadas
+(o salen del proyector body-space).
 
 ---
 
