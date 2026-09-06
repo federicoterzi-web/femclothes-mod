@@ -503,9 +503,12 @@ tiempo" de FEMCLOTHES.md. Un **cuerpo base elegido a mano** borra eso.
 
 ### Qué es
 
-- **Set curado** de texturas en layout de skin (a 8×): build plano, con
-  abdominales, con curvas, pecho aplanado (binder), etc. Set fijo, **no por
-  prenda**.
+- **Set curado** de texturas en layout de skin: build plano, con abdominales,
+  con curvas, pecho aplanado (binder), etc. Set fijo, **no por prenda**.
+  Implementado a **1×** (una skin común de 64×64) y no a 8× como la tela: el
+  cuerpo nunca recibe una foto ni un patrón, así que no necesita más
+  resolución que un pixel de skin. Las dos escalas conviven sin desalinearse
+  — ver "El cuerpo va a 1×" en FEMCLOTHES.md.
 - Trae **ropa interior básica** baked, o engancha con los slots
   `torso/interior` + `piernas/interior` (§1) — viene un default, se cambia
   (slip / boxer / bralette). El censurado es el fallback si no elegís nada.

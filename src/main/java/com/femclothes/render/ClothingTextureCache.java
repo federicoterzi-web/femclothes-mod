@@ -176,7 +176,7 @@ public final class ClothingTextureCache {
     private static final float FACE_LIGHT = 1.10F;
     private static final float FACE_DARK = 0.84F;
     /** Ancho en pixeles de las caras frontal y trasera de una pierna. */
-    private static final int FACE_COLUMNS = 4 * CuerpoGeometria.ESCALA;
+    private static final int FACE_COLUMNS = 4 * CuerpoGeometria.ESCALA_TELA;
 
     /**
      * Factor de luz del pixel segun donde cae en el cuboide de la pierna.
@@ -198,7 +198,7 @@ public final class ClothingTextureCache {
     private static float faceFactor(int x, int y, Shading shading) {
         if (shading != Shading.LEGS) return 1.0F;
 
-        final int S = CuerpoGeometria.ESCALA;
+        final int S = CuerpoGeometria.ESCALA_TELA;
         final int face = 4 * S;   // ancho de una cara del cuboide, en pixeles
 
         // Pierna derecha, uv(0, 16S): caras laterales en y 20S..32S-1, x 0..16S-1

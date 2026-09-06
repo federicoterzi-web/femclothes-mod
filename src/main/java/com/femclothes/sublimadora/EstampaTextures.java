@@ -197,7 +197,7 @@ public final class EstampaTextures {
 
     /** La remera del corte que sea. */
     private static Prenda deLaRemera(Variante v) {
-        return new Prenda(com.femclothes.render.CuerpoGeometria.ESCALA, LIENZO_ANCHO, lienzoAlto(v),
+        return new Prenda(com.femclothes.render.CuerpoGeometria.ESCALA_TELA, LIENZO_ANCHO, lienzoAlto(v),
                 BANDA_HOMBRO, v.largo().filas, caras(v));
     }
 
@@ -244,7 +244,7 @@ public final class EstampaTextures {
         java.util.List<Cara> todas = new java.util.ArrayList<>();
         todas.addAll(java.util.Arrays.asList(deUnaPierna(0, 16)));
         todas.addAll(java.util.Arrays.asList(deUnaPierna(16, 48)));
-        MEDIAS = new Prenda(com.femclothes.render.CuerpoGeometria.ESCALA,
+        MEDIAS = new Prenda(com.femclothes.render.CuerpoGeometria.ESCALA_TELA,
                 LIENZO_PIERNA, MEDIA_ALTO, 0, MEDIA_ALTO, todas.toArray(new Cara[0]));
     }
 

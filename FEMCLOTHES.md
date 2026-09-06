@@ -352,8 +352,25 @@ cuerpo.
 |---|---|
 | `PerfilCuerpo` | qué cuerpo, qué tono y qué ropa interior eligió el jugador |
 | `PerfilesDeCuerpo` | dónde vive: attachment persistente y sincronizado |
-| `CuerpoBaseTextures` | compone la textura del cuerpo, en layout de skin a 8× |
+| `CuerpoBaseTextures` | compone la textura del cuerpo, en layout de skin a **1×** |
 | `SkinRegions` + `ComposedSkin` | le borran a la skin la segunda capa donde manda una prenda |
+
+### El cuerpo va a 1×, no a 8×
+
+La tela (medias, remera) va a 8× porque se sublima: una foto necesita
+resolución. El cuerpo **nunca** recibe una foto ni un patrón — nada más fino
+que un pixel de skin — así que dibujarlo a 8× serían 64 veces los texels para
+pintar exactamente lo mismo. `CuerpoGeometria.ESCALA_CUERPO = 1`.
+
+Que las dos superficies tengan escalas distintas no las desalinea: en
+`ModelPart.Cuboid` la fracción de UV que ocupa una cara es
+`(tamaño × S) / (64 × S)`, la misma para cualquier `S`. La escala solo decide
+cuántos texels caen adentro, nunca dónde cae el borde. El cuerpo y la tela son
+dos cajas separadas con su propia textura; el borde de una prenda lo define el
+alfa de SU textura, no un texel del cuerpo de abajo.
+
+De yapa: el arte del cuerpo se pinta como una skin común de 64×64 en
+cualquier editor de skins, y una textura pasa de 1&nbsp;MB a 16&nbsp;KB.
 
 **El default no le cambia el cuerpo a nadie**: `CuerpoBase.SKIN_REAL` con el
 tono derivado de la propia skin del jugador, sampleado UNA vez con
@@ -432,7 +449,7 @@ borde de una prenda.
 | `Capa` | el ordinal: cuerpo 0, interior 5, media 10, short 20, remera 25, pollera 30, ruedo 40, calzado 50 |
 | `Garment` / `Garments` | qué items son prendas y qué partes gobiernan (lado servidor) |
 | `Pieza` / `PiezasDePrenda` | cómo se ve cada una (lado cliente) |
-| `CuerpoGeometria` | las cajas a 8×, fusión de los dos renderers viejos |
+| `CuerpoGeometria` | las cajas, fusión de los dos renderers viejos — dos `Superficie` (cuerpo a 1×, tela a 8×) |
 
 Los ordinales **se comparan solo dentro de una misma `Parte`**: que la remera
 sea 25 y el short 20 no significa nada, nunca comparten píxel.

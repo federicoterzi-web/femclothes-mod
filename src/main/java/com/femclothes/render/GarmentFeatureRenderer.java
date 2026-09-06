@@ -105,28 +105,28 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             if (!delJugador.visible) continue;
 
             if (llevaCuerpo) {
-                dibujar(parte, slim, CuerpoGeometria.DILATACION_CUERPO, cuerpo,
+                dibujar(CuerpoGeometria.Superficie.CUERPO, parte, slim, cuerpo,
                         delJugador, matrices, vertexConsumers, luz);
             }
             if (piezas == null) continue;
             piezas.sort(Comparator.comparingInt(Pieza::capa));
             for (Pieza pieza : piezas) {
-                dibujar(parte, slim, CuerpoGeometria.DILATACION_TELA, pieza.textura(),
+                dibujar(CuerpoGeometria.Superficie.TELA, parte, slim, pieza.textura(),
                         delJugador, matrices, vertexConsumers, luz);
             }
         }
     }
 
     /** Copia la pose ya calculada de la parte del jugador y dibuja la nuestra encima. */
-    private static void dibujar(Parte parte, boolean slim, float dilatacion, Identifier textura,
-                                ModelPart delJugador, MatrixStack matrices,
+    private static void dibujar(CuerpoGeometria.Superficie superficie, Parte parte, boolean slim,
+                                Identifier textura, ModelPart delJugador, MatrixStack matrices,
                                 VertexConsumerProvider vertexConsumers, int luz) {
-        ModelPart nuestra = CuerpoGeometria.parte(parte, slim, dilatacion);
+        ModelPart nuestra = CuerpoGeometria.parte(superficie, parte, slim);
         VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getArmorCutoutNoCull(textura));
         nuestra.copyTransform(delJugador);
         // copyTransform tambien copia xScale/yScale/zScale, asi que la nuestra
         // va DESPUES o se pierde.
-        nuestra.xScale = nuestra.yScale = nuestra.zScale = 1.0F / CuerpoGeometria.ESCALA;
+        nuestra.xScale = nuestra.yScale = nuestra.zScale = superficie.escalaDeParte();
         nuestra.render(matrices, buffer, luz, OverlayTexture.DEFAULT_UV);
     }
 

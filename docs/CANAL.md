@@ -1,4 +1,4 @@
-<!-- canal-version: 5 -->
+<!-- canal-version: 6 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,41 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v6 — 2026-09-06 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:** corregido un desperdicio que el dueño detectó al leer v5: el
+cuerpo base compartía la escala 8× de la tela (`CuerpoGeometria.ESCALA`) sin
+motivo. La tela va a 8× porque se sublima —una foto necesita resolución—,
+pero el cuerpo nunca recibe foto ni patrón, nada más fino que un pixel de
+skin, así que 8× ahí eran 64 veces los texels para pintar lo mismo (512×512
+en vez de 64×64 por cuerpo).
+
+- `CuerpoGeometria.ESCALA` se partió en `ESCALA_TELA` (8, sin cambios) y
+  `ESCALA_CUERPO` (1, nuevo) dentro de un enum `Superficie` que junta escala +
+  dilatación por superficie (evita pedir una combinación que no exista).
+- Verificado por qué las dos escalas pueden diferir sin desalinear nada: en
+  `ModelPart.Cuboid` la fracción de UV de una cara es `(tamaño×S)/(64×S)`, la
+  misma para cualquier `S` — confirmado leyendo el .java de vanilla
+  (`ModelPart$Cuboid`, líneas ~252-257). La escala solo decide cuántos texels
+  caen adentro, nunca dónde cae el borde.
+- `CuerpoBaseTextures` ahora compone a 64×64. `GarmentFeatureRenderer` pasa
+  `Superficie.CUERPO`/`Superficie.TELA` en vez de una dilatación suelta.
+  `ClothingTextureCache` y `EstampaTextures` (que trabajan con TELA) solo
+  cambiaron el nombre de la constante, ningún número.
+- De yapa: el arte del cuerpo (`textures/entity/cuerpo/*.png`) pasa a ser una
+  skin común de 64×64 pintable en cualquier editor de skins, y de 1 MB a
+  16 KB por cuerpo.
+- FEMCLOTHES.md y PRENDAS.md §7 actualizados (la v5 decía "8×" para el
+  cuerpo, que ya no es cierto).
+
+**Próximo:** sin cambios respecto de v5 — migrar shorts sigue siendo lo
+primero, y sigue sin probarse puesto en el juego.
+
+**Para el otro Claude:** si tocás `CuerpoGeometria`, las dos escalas viven en
+el enum `Superficie` (`CUERPO` y `TELA`) junto con su dilatación — no vuelvas
+a separarlas en constantes sueltas, es lo que evita pedir una combinación que
+no tiene sentido (p. ej. tela a la dilatación del cuerpo).
 
 ## v5 — 2026-09-06 — cuenta de H0p3san · Claude Code (extensión de VSCode)
 

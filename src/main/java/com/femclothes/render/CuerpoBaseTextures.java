@@ -24,9 +24,15 @@ import java.util.Map;
  * pierna se borraban entre si. Ahora la piel se dibuja UNA vez, abajo de
  * todo, y cada prenda deja transparente lo que no cubre.
  *
- * La textura sale en LAYOUT DE SKIN a {@link CuerpoGeometria#ESCALA}x, la
- * misma que usan las prendas, asi que el sustrato y la tela caen pixel a
- * pixel en el mismo lugar.
+ * La textura sale en LAYOUT DE SKIN a {@link CuerpoGeometria#ESCALA_CUERPO}x
+ * —o sea 1x, una skin comun de 64x64—, DISTINTA de la escala de la tela
+ * ({@link CuerpoGeometria#ESCALA_TELA}). No hace falta que coincidan: el UV
+ * de un cuboide es la MISMA fraccion sea cual sea la escala (ver el javadoc
+ * de {@link CuerpoGeometria}), asi que dos superficies con resoluciones
+ * distintas siguen cayendo en el mismo lugar del cuerpo. Y el cuerpo no
+ * necesita mas que esto: no hay fotos ni patrones sobre piel, nada mas fino
+ * que un pixel de skin. Ir a 8x ahi son 64 veces los texels para dibujar
+ * exactamente lo mismo.
  *
  * <h2>Como se arma</h2>
  * <ol>
@@ -116,7 +122,7 @@ public final class CuerpoBaseTextures {
     }
 
     private static NativeImage componer(PerfilCuerpo perfil, int tonoRgb, boolean slim) {
-        final int S = CuerpoGeometria.ESCALA;
+        final int S = CuerpoGeometria.ESCALA_CUERPO;
         final int lado = LayoutSkin.LADO * S;
 
         NativeImage img = new NativeImage(lado, lado, true);
