@@ -1,4 +1,4 @@
 {
-  "_comment": "Config del grupo de slot 'arms' para los calentadores de brazo. Ver wiki de Trinkets Data Formats: data/trinkets/slots/[group]/group.json. Ajustar 'order' si se superpone con otro grupo en la UI.",
-  "order": 10
+  "_comment": "Los tres grupos van con numeros consecutivos. Antes este era 10 contra -2048 y -2047 de los otros, y quedaba tan lejos en el orden que el slot no aparecia en la UI.",
+  "order": -2046
 }

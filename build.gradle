@@ -5,10 +5,21 @@ plugins {
 
 // El subproyecto tiene que estar evaluado antes de que la raiz referencie su
 // tarea remapJar, si no Gradle dice "Task with name 'remapJar' not found".
-evaluationDependsOn(':sublimadora')
 
 version = project.mod_version
 group = project.maven_group
+
+loom {
+    runs {
+        client {
+            // Nombre de jugador fijo. Sin esto Loom estrena uno al azar
+            // (Player947, Player532...) en cada arranque, y como el UUID
+            // offline sale del nombre, cada sesion entra al mundo como un
+            // jugador distinto y con el inventario vacio.
+            programArgs '--username', 'H0p3san'
+        }
+    }
+}
 
 repositories {
     maven {
@@ -77,17 +88,13 @@ dependencies {
     // juego (además de compilarlo acá para poder programar contra su API).
     modImplementation files("libs/armor-model-api-1.0.0-1.21.1.jar")
 
-    // Sublimadora en el cliente de desarrollo. Es modLocalRuntime a
-    // proposito: femclothes NO depende de ella para compilar ni la arrastra
-    // al jar publicado, solo la carga el runClient de este repo para poder
-    // probar los dos mods juntos.
-    // Como JAR y no como project(): con project(...) Loom lo mete de una forma
-    // en la que su entrypoint de cliente no corre — el mod aparece listado pero
-    // nunca registra su renderer, y el bloque queda invisible. Cargarlo como
-    // archivo es ademas lo que hace un server de verdad.
-    modLocalRuntime files(project(":sublimadora").tasks.named("remapJar"))
-    // Como archivo no arrastra sus dependencias: van explicitas.
-    modLocalRuntime "maven.modrinth:geckolib:6UTA5nCc"
+    // GeckoLib: la sublimadora es un bloque animado. Fijado en 4.7.7 a
+    // proposito, ver docs/SUBLIMADORA.md.
+    modImplementation "maven.modrinth:geckolib:6UTA5nCc"
+    // Camerapture: de aca sale el UUID de la foto que estampa la
+    // sublimadora. Opcional en runtime, el acceso va aislado detras de
+    // isModLoaded.
+    modCompileOnly "maven.modrinth:camerapture:RYOi2mzR"
     modLocalRuntime "maven.modrinth:camerapture:RYOi2mzR"
     // Camerapture trae webp4j como jar ANIDADO y Loom no lo extrae para
     // modLocalRuntime: sacar una foto moria con
@@ -115,6 +122,29 @@ dependencies {
 }
 
 processResources {
+    // Sello de build: el mod lo loguea al arrancar y, comparado contra
+    // build/resources/main/build.txt, contesta sin discutir si el cliente
+    // abierto trae los ultimos cambios.
+    //
+    // Sale del CONTENIDO de las fuentes y no del reloj. Con la hora, lanzar
+    // el cliente volvia a correr esta tarea y regeneraba el sello despues de
+    // haberlo leido: el chequeo daba distinto siempre aunque estuviera todo
+    // bien. Con un hash, dos builds del mismo codigo dan el mismo sello.
+    //
+    // Y tiene que ser un RECURSO y no un hash de las clases compiladas: en
+    // desarrollo Loom remapea el jar y los .class cambian de bytes aunque el
+    // codigo sea identico.
+    def huella = java.security.MessageDigest.getInstance("MD5")
+    fileTree("src/main").files.toSorted { it.path }.each { f ->
+        huella.update(f.path.bytes)
+        huella.update(f.bytes)
+    }
+    def sello = huella.digest().encodeHex().toString().substring(0, 12)
+    inputs.property "sello", sello
+    doLast {
+        new File(destinationDir, "build.txt").text = sello
+    }
+
     inputs.property "version", project.version
     filteringCharset "UTF-8"
     filesMatching("fabric.mod.json") {

@@ -2,6 +2,7 @@ package com.femclothes.render;
 
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.util.SkinTextures;
+import net.minecraft.util.math.MathHelper;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -84,6 +85,70 @@ public final class SkinToneSampler {
 
     /** Tres tonos de la misma piel, para poder sombrear en vez de rellenar plano. */
     public record Tones(int mid, int light, int dark) {}
+
+    /**
+     * Los tonos de piel REALES del jugador, ordenados de oscuro a claro.
+     *
+     * Existe porque reconstruir piel a partir de un solo color y derivar el
+     * resto multiplicando no le pega nunca a la paleta de la skin: sale un
+     * degrade matematico que se ve artificial al lado del pixel art de al
+     * lado. Estos son pixeles que el jugador ya tiene en su cara y sus
+     * antebrazos, asi que combinan por construccion.
+     */
+    public record Paleta(int[] tonos) {
+
+        public boolean util() {
+            return tonos.length >= 3;
+        }
+
+        /** El tono a esa altura de la escala, 0 el mas oscuro y 1 el mas claro. */
+        public int enNivel(float nivel) {
+            if (tonos.length == 0) return FALLBACK_ABGR;
+            int i = Math.round(MathHelper.clamp(nivel, 0f, 1f) * (tonos.length - 1));
+            return tonos[i];
+        }
+    }
+
+    /**
+     * La paleta de piel del jugador: los colores cercanos a la moda, sin
+     * repetir y ordenados por luminancia.
+     *
+     * Se descartan los lejanos igual que en sampleTones, para que el pelo,
+     * los ojos y la boca no entren como si fueran piel.
+     */
+    public static Paleta samplePaleta(NativeImage skinImage, SkinTextures.Model model) {
+        if (skinImage == null) return new Paleta(new int[0]);
+        boolean slim = model == SkinTextures.Model.SLIM;
+
+        Map<Integer, Integer> counts = new HashMap<>();
+        tally(counts, skinImage, FACE);
+        tally(counts, skinImage, slim ? RIGHT_FOREARM_SLIM : RIGHT_FOREARM_WIDE);
+        tally(counts, skinImage, slim ? LEFT_FOREARM_SLIM : LEFT_FOREARM_WIDE);
+        if (counts.isEmpty()) return new Paleta(new int[0]);
+
+        int mid = FALLBACK_ABGR, best = 0;
+        for (Map.Entry<Integer, Integer> e : counts.entrySet()) {
+            if (e.getValue() > best) {
+                best = e.getValue();
+                mid = e.getKey();
+            }
+        }
+
+        // Un color se toma en cuenta si aparece lo suficiente: un pixel suelto
+        // de sombra de ojo cerca del tono de piel no tiene que definir un
+        // escalon de la paleta.
+        int minimo = Math.max(2, best / 20);
+        List<Integer> cerca = new ArrayList<>();
+        for (Map.Entry<Integer, Integer> e : counts.entrySet()) {
+            if (e.getValue() >= minimo && distance(e.getKey(), mid) <= NEAR_THRESHOLD) {
+                cerca.add(e.getKey());
+            }
+        }
+        cerca.sort(Comparator.comparingInt(SkinToneSampler::luminance));
+        int[] tonos = new int[cerca.size()];
+        for (int i = 0; i < tonos.length; i++) tonos[i] = cerca.get(i);
+        return new Paleta(tonos);
+    }
 
     public static Tones fallbackTones() {
         return new Tones(FALLBACK_ABGR, scale(FALLBACK_ABGR, 1.18F), scale(FALLBACK_ABGR, 0.72F));

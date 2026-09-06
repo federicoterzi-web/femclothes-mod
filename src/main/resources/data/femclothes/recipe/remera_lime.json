@@ -1,0 +1,25 @@
+{
+  "_comment": "Una receta por color de lana, y nada mas: el corte ya no se craftea. Sale la remera base y en el telar, con los moldes, se le cambia largo, mangas y cuello. Asi son 16 recetas y no 576.",
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "L L",
+    "LLL",
+    "LLL"
+  ],
+  "key": {
+    "L": {
+      "item": "minecraft:lime_wool"
+    }
+  },
+  "result": {
+    "id": "femclothes:remera",
+    "count": 1,
+    "components": {
+      "minecraft:dyed_color": {
+        "rgb": 8439583,
+        "show_in_tooltip": false
+      }
+    }
+  }
+}

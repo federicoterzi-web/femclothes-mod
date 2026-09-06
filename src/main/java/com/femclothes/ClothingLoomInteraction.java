@@ -56,6 +56,8 @@ public final class ClothingLoomInteraction {
     }
 
     private static boolean opensClothingLoom(ItemStack stack) {
-        return FemclothesDye.isClothing(stack) || stack.getItem() instanceof ClothingPatternItem;
+        return FemclothesDye.isClothing(stack)
+                || stack.getItem() instanceof ClothingPatternItem
+                || stack.getItem() instanceof com.femclothes.sublimadora.MoldeItem;
     }
 }

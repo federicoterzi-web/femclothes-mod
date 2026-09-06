@@ -1,0 +1,30 @@
+{
+  "_comment": "Sin esto el bloque no dropea nada al romperlo. En 1.21 la carpeta es loot_table en singular, igual que recipe: en plural el cargador la ignora sin decir nada. copy_components es lo que hace que la tinta cargada viaje adentro del item, igual que el contenido de una caja de shulker.",
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "femclothes:sublimadora",
+          "functions": [
+            {
+              "function": "minecraft:copy_components",
+              "source": "block_entity",
+              "include": [
+                "femclothes:cargas"
+              ]
+            }
+          ]
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ]
+    }
+  ]
+}

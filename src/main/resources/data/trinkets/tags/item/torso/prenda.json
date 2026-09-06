@@ -1,3 +1,7 @@
 {
-  "values": ["femclothes:croptop"]
+  "_comment": "El croptop y la remera comparten slot a proposito: dos prendas dibujadas sobre el mismo pedazo de cuerpo se pisarian. Antes cada mod declaraba lo suyo y los tags se fusionaban solos; con un solo mod van juntos aca.",
+  "values": [
+    "femclothes:croptop",
+    "femclothes:remera"
+  ]
 }

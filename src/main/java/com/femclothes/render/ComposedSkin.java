@@ -60,15 +60,16 @@ public final class ComposedSkin {
         }
 
         SkinToneSampler.Tones tono = SkinToneSampler.sampleTones(base, original.model());
+        SkinToneSampler.Paleta paleta = SkinToneSampler.samplePaleta(base, original.model());
         for (ItemStack stack : prendas) {
-            SkinRegions.Effect ef = SkinRegions.of(stack.getItem());
+            SkinRegions.Effect ef = SkinRegions.of(stack);
             if (ef == null) continue;
             // Capa externa: se borra. Ademas de sacar el pantalon pintado,
             // hace que 3D Skin Layers no extruya geometria ahi, porque solo
             // extruye pixeles solidos.
             for (SkinRegions.Rect r : ef.clearOverlay()) pintar(composed, r, 0);
             // Capa base: piel plana donde la prenda deja el cuerpo a la vista.
-            for (SkinRegions.Rect r : ef.bareSkin()) pintar(composed, r, tono.mid());
+            for (SkinRegions.Piel p : ef.bareSkin()) pintarPiel(composed, p, paleta, tono);
         }
 
         Identifier id = Identifier.of("femclothes", "dynamic/skin_" + Integer.toHexString(key.hashCode()));
@@ -79,6 +80,47 @@ public final class ComposedSkin {
                 original.capeTexture(), original.elytraTexture(), original.model(), original.secure());
         CACHE.put(key, result);
         return result;
+    }
+
+    /**
+     * Piel reconstruida con los tonos REALES del jugador.
+     *
+     * Cada cara toma el nivel de luz que le corresponde y, encima, un ruido
+     * de un escalon para arriba o para abajo. Ese ruido es lo que la saca de
+     * "plancha de color": las skins pintadas a mano nunca son un color
+     * uniforme, y una zona que si lo es canta al lado de una que no.
+     *
+     * El ruido es DETERMINISTA por pixel: si dependiera del azar cambiaria en
+     * cada recomposicion de la skin y la piel titilaria.
+     */
+    private static void pintarPiel(NativeImage img, SkinRegions.Piel p,
+                                   SkinToneSampler.Paleta paleta, SkinToneSampler.Tones tono) {
+        SkinRegions.Rect r = p.zona();
+        for (int y = r.y0(); y < Math.min(r.y1(), img.getHeight()); y++) {
+            int inicio = r.x0();
+            for (SkinRegions.Franja franja : p.caras()) {
+                int hasta = Math.min(inicio + franja.ancho(), Math.min(r.x1(), img.getWidth()));
+                for (int x = inicio; x < hasta; x++) {
+                    img.setColor(x, y, color(paleta, tono, franja.nivel(), x, y));
+                }
+                inicio += franja.ancho();
+            }
+        }
+    }
+
+    private static int color(SkinToneSampler.Paleta paleta, SkinToneSampler.Tones tono,
+                             float nivel, int x, int y) {
+        if (!paleta.util()) {
+            // Skin sin variacion propia en la zona muestreada: no hay paleta
+            // que usar y se cae a los tres tonos derivados.
+            if (nivel >= 0.7f) return tono.light();
+            return nivel <= 0.3f ? tono.dark() : tono.mid();
+        }
+        int escalones = paleta.tonos().length;
+        // Hash de la posicion: mismo pixel, mismo ruido, siempre.
+        int ruido = ((x * 73856093) ^ (y * 19349663)) & 0x7FFFFFFF;
+        float desvio = (ruido % 3 - 1) / (float) Math.max(escalones - 1, 1);
+        return paleta.enNivel(nivel + desvio);
     }
 
     private static void pintar(NativeImage img, SkinRegions.Rect r, int abgr) {
@@ -103,7 +145,7 @@ public final class ComposedSkin {
     /** Identifica el conjunto de prendas puestas, para cachear. */
     private static String firma(List<ItemStack> prendas) {
         StringBuilder sb = new StringBuilder();
-        for (ItemStack s : prendas) sb.append(s.getItem()).append(';');
+        for (ItemStack s : prendas) sb.append(SkinRegions.clave(s)).append(';');
         return sb.toString();
     }
 }

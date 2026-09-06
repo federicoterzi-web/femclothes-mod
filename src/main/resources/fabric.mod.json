@@ -3,23 +3,29 @@
   "id": "femclothes",
   "version": "${version}",
   "name": "FemClothes",
-  "description": "Ropa craftable, tenible y compatible con cualquier tono de piel del skin del jugador.",
+  "description": "Ropa craftable, tenible y compatible con cualquier tono de piel, y una sublimadora que le estampa fotos.",
   "environment": "*",
   "entrypoints": {
     "main": [
-      "com.femclothes.Femclothes"
+      "com.femclothes.Femclothes",
+      "com.femclothes.sublimadora.SublimadoraMod"
     ],
     "client": [
-      "com.femclothes.client.FemclothesClient"
+      "com.femclothes.client.FemclothesClient",
+      "com.femclothes.sublimadora.SublimadoraModClient"
     ]
   },
   "depends": {
     "fabricloader": ">=0.15.0",
     "minecraft": "~1.21",
     "fabric-api": "*",
-    "trinkets": "*"
+    "trinkets": "*",
+    "geckolib": ">=4.5.0"
   },
   "mixins": [
     "femclothes.mixins.json"
-  ]
+  ],
+  "suggests": {
+    "camerapture": "*"
+  }
 }

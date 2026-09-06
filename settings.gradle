@@ -10,6 +10,3 @@ pluginManagement {
 
 rootProject.name = 'femclothes'
 
-// Mod aparte (id, jar y ciclo propios) pero desarrollado en este mismo
-// repo, para compartir el toolchain y poder correr los dos juntos.
-include 'sublimadora'

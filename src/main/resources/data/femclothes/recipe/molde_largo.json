@@ -1,0 +1,17 @@
+{
+  "_comment": "El molde no se consume en el telar, asi que se craftea una sola vez.",
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    {
+      "item": "minecraft:paper"
+    },
+    {
+      "item": "minecraft:shears"
+    }
+  ],
+  "result": {
+    "id": "femclothes:molde_largo",
+    "count": 1
+  }
+}

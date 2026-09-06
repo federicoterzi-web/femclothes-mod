@@ -1,5 +1,10 @@
 package com.femclothes.screen;
 
+import com.femclothes.sublimadora.ModItems;
+import com.femclothes.sublimadora.MoldeItem;
+import com.femclothes.sublimadora.RemeraItem;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.DyedColorComponent;
 import com.femclothes.item.ClothingPatternItem;
 import com.femclothes.item.ClothingStyle;
 import com.femclothes.item.FemclothesDye;
@@ -91,7 +96,11 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
         this.patternSlot = this.addSlot(new Slot(this.input, 2, 23, 45) {
             @Override
             public boolean canInsert(ItemStack stack) {
-                return stack.getItem() instanceof ClothingPatternItem;
+                // Los moldes de corte viajan por el mismo slot que los
+                // patrones: los dos son algo que se le aplica a la prenda y
+                // que no se consume.
+                return stack.getItem() instanceof ClothingPatternItem
+                        || stack.getItem() instanceof MoldeItem;
             }
         });
         this.outputSlot = this.addSlot(new Slot(this.output, 0, 143, 57) {
@@ -162,6 +171,14 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
             return;
         }
 
+        // La remera de la sublimadora tiene su propio sistema de color y de
+        // corte, asi que no pasa por el camino de patrones de FemClothes.
+        if (garment.getItem() instanceof RemeraItem) {
+            this.outputSlot.setStackNoCallbacks(reformarRemera(garment, dye, pattern));
+            this.sendContentUpdates();
+            return;
+        }
+
         // Prenda SOLA, sin tinte ni patron: saca el patron y la deja lisa.
         // Sin esto no habia forma de volver atras — una vez aplicado un
         // patron, el modo re-tenido solo cambia el color base y el patron
@@ -204,6 +221,31 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
 
         this.outputSlot.setStackNoCallbacks(result);
         this.sendContentUpdates();
+    }
+
+    /**
+     * Lo que sale del telar con una remera adentro.
+     *
+     * El molde le mueve un eje del corte y el tinte le cambia el color; se
+     * pueden usar juntos o por separado. Nada de esto toca la estampa: se
+     * puede reformar una remera ya impresa sin perder la foto, que es
+     * justamente lo que no permitiria hacerlo por receta.
+     */
+    private ItemStack reformarRemera(ItemStack remera, ItemStack dye, ItemStack pattern) {
+        boolean hayMolde = pattern.getItem() instanceof MoldeItem;
+        boolean hayTinte = dye.getItem() instanceof DyeItem;
+        if (!hayMolde && !hayTinte) return ItemStack.EMPTY;
+
+        ItemStack out = remera.copyWithCount(1);
+        if (hayMolde) {
+            out.set(ModItems.VARIANTE,
+                    ((MoldeItem) pattern.getItem()).aplicar(RemeraItem.variante(remera)));
+        }
+        if (hayTinte) {
+            out.set(DataComponentTypes.DYED_COLOR, new DyedColorComponent(
+                    ((DyeItem) dye.getItem()).getColor().getFireworkColor(), false));
+        }
+        return out;
     }
 
     /** Copia de la prenda sin patron en el lado elegido, o vacio si no tenia. */
