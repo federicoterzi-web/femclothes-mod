@@ -7,11 +7,11 @@ jugador y no como armadura ancha — más una sublimadora que le estampa fotos.
 Este es el mapa del proyecto. El detalle profundo de la máquina está aparte,
 en [docs/SUBLIMADORA.md](docs/SUBLIMADORA.md).
 
-> **Diseño en curso (no implementado)**: el rediseño del sistema de capas y
-> geometría de prendas (cortes, fit, polleras, pantalones acampanados) está en
-> [docs/PRENDAS.md](docs/PRENDAS.md), y las mesas de tinturas/sastrería con su
-> automatización en [docs/MAQUINAS.md](docs/MAQUINAS.md). Los dos resuelven el
-> "Problema abierto" de más abajo y reemplazan el hook del telar.
+> **Diseño en curso**: el rediseño de la geometría de prendas (cortes, fit,
+> polleras, pantalones acampanados) está en [docs/PRENDAS.md](docs/PRENDAS.md),
+> y las mesas de tinturas/sastrería con su automatización en
+> [docs/MAQUINAS.md](docs/MAQUINAS.md). La **fase 1** —sistema de capas,
+> cuerpo base y selector de región— ya está implementada; el resto es diseño.
 >
 > **[docs/CANAL.md](docs/CANAL.md)** es la bitácora entre sesiones de Claude.
 > `git pull` y leelo ANTES de trabajar; agregá una entrada y subí el
@@ -56,11 +56,13 @@ dibujó el arte —salía en damero— y desde que la remera tiene el eje de lar
 el corte crop hace lo mismo pero teñible, estampable y sobre la geometría del
 cuerpo. Sacarlo destruye los que hubiera en mundos guardados.
 
-### El slot de torso es de a una prenda
+### El slot de torso es de a una prenda — por ahora
 
-`torso/prenda` acepta una sola cosa por vez, a propósito: dos prendas
-dibujadas sobre el mismo pedazo de cuerpo se pisarían, así que en vez de
-resolver el solapamiento se eligió que no puedan coexistir.
+`torso/prenda` acepta una sola cosa por vez. La razón original ya no vale:
+era que dos prendas sobre el mismo pedazo de cuerpo se pisaban, y **eso lo
+resolvió el sistema de capas**. Queda como está hasta que existan las prendas
+que lo justifican (binder, corpiño), que es cuando se parte en
+`torso/interior` + `torso/exterior` — ver PRENDAS.md §1.
 
 Los iconos de los huecos vacíos van en `textures/gui/slot/`, en gris y al 45%
 de alpha. Dos cosas aprendidas ahí: apuntar a la textura del ítem deja un
@@ -143,9 +145,30 @@ Componentes `RIGHT_DYED_COLOR`, `RIGHT_PATTERN_ID` y `RIGHT_PATTERN_COLOR`,
 todos OPCIONALES: ausentes, la derecha usa lo de la izquierda. Así un par
 parejo no guarda nada extra y las 16 recetas siguen valiendo sin tocarlas.
 
-`ClothingStyle` centraliza la resolución por lado. ⚠️ Trampa que ya costó un
-bug: para tocar SOLO la izquierda hay que llamar antes a `pinRight()`, porque
-si no la derecha sigue heredando y cambian las dos.
+`RegionResolver` centraliza la resolución por lado, y ahora también el eje
+frente/espalda y la orientación. ⚠️ La trampa que costó un bug —tocar SOLO la
+izquierda arrastraba la derecha, que heredaba— ya no se puede pisar: el guard
+`fijarDerecha()` lo llaman los propios setters. Un guard que hay que acordarse
+de invocar vuelve a fallar tarde o temprano.
+
+### El selector de región
+
+"Ambas / izquierda / derecha" y "frente / espalda" son **el mismo concepto**:
+a qué pedazo de la prenda apunta una operación. Estaba escrito distinto en
+cada lugar (el telar ciclaba su propio enum, la sublimadora tiene un selector
+físico, los componentes se llamaban `right_dyed_color` en inglés pero
+`estampa_frente` en castellano).
+
+Ahora son `Lado` y `Cara`, los dos `Region`, y cada prenda declara
+`regionesDe(Operacion)` — por operación y no de una vez, porque no coinciden:
+una remera se tiñe entera pero se estampa por cara.
+
+⚠️ **`AMBAS` no es uniforme.** Al teñir, setea el primario y BORRA el override
+del otro lado (un par parejo no ocupa data extra). Al estampar, aplica a las
+dos caras pero **cuesta tinta por cara**.
+
+`Orientacion` (girado / espejado) se aplica **al resolver**, no permutando
+datos guardados: sacar el flag devuelve la prenda exactamente a como estaba.
 
 ### Reconocer el patrón sin ponerse la prenda
 
@@ -180,7 +203,9 @@ Esta es la trampa más fácil de pisar del proyecto. El layout depende de con
 qué renderer se dibuja la prenda, y **no son intercambiables**:
 
 - **Prendas del sistema nuevo** (`socks_solid`, `remera`): layout de **SKIN DE
-  JUGADOR**, porque el renderer dibuja las ModelPart reales. Las dos piernas
+  JUGADOR**, porque el renderer dibuja cajas con la geometría del jugador.
+  `LayoutSkin` y `CajaSkin` calculan dónde cae cada cara — antes eran
+  rectángulos escritos a mano y había que contar píxeles sobre la plantilla. Las dos piernas
   están en regiones SEPARADAS: derecha en `uv(0,16)`, izquierda en
   `uv(16,48)`; los brazos, derecho en `uv(40,16)` e izquierdo en `uv(32,48)`.
   Verificado en `PlayerEntityModel.getTexturedModelData`.
@@ -188,9 +213,10 @@ qué renderer se dibuja la prenda, y **no son intercambiables**:
 - **Prendas que siguen en `ClothingArmorItem`** (shorts, maid, buzo): layout
   de ARMADURA vanilla, tipo `leather_layer_1.png`.
 
-Una textura 64x32 de armadura usada en una prenda de Trinkets hace que la
-pierna izquierda samplee fuera de la imagen. Antes de dibujar, mirar con qué
-renderer está registrada la prenda en `FemclothesClient`.
+Una textura 64x32 de armadura usada en una prenda del sistema nuevo hace que
+la pierna izquierda samplee fuera de la imagen. Antes de dibujar, mirar si la
+prenda está registrada en `PiezasDelMod` (sistema nuevo) o sigue siendo un
+`ClothingArmorItem`.
 
 ### Resolución 8×
 
@@ -198,8 +224,9 @@ Las prendas del sistema nuevo son **512x512**, ocho veces la skin. Subir
 `textureWidth` solo no alcanza: en `ModelPart.Cuboid` el rectángulo UV se
 calcula con el **TAMAÑO DEL CUBOIDE** en unidades de modelo, no con el tamaño
 de la textura. El truco es armar el cuboide a 8× y escalar la parte a 1/8.
-Sale de `BodyPartTrinketRenderer.SCALE` y de `RemeraTrinketRenderer.ESCALA`,
-que valen lo mismo.
+Sale de `CuerpoGeometria.ESCALA`. Eran dos constantes con el mismo valor en
+dos renderers distintos hasta que el sistema de capas los fusionó — y tenían
+que coincidir sin que nada lo verificara.
 
 Fueron 2× hasta que las medias se volvieron estampables: a esa escala una cara
 de pierna eran 8x24 texels y ninguna foto se lee ahí.
@@ -259,9 +286,10 @@ modelo. Las prendas placeholder no tienen nada.
    abandonó. El truco es el campo `"components"` en el resultado de una receta
    shaped normal.
 
-2. **Las prendas "pegadas al cuerpo" usan Trinkets con renderer propio**
-   (`BodyPartTrinketRenderer`), que dibuja directo sobre las ModelPart reales
-   del jugador en vez de la geometría de armadura, más ancha.
+2. **Las prendas "pegadas al cuerpo" usan Trinkets para el inventario, pero
+   NO para dibujarse.** Un solo `GarmentFeatureRenderer` dibuja toda la ropa
+   del mod, porque el orden de capa lo tenemos que decidir nosotros y no el
+   order de los slots de Trinkets.
 
 3. **El buzo oversize es la única prenda que se queda con geometría ancha a
    propósito** (Cosmetic Armor Updated + Armor Model API).
@@ -308,22 +336,50 @@ perdió funcionalidad.
 
 ---
 
-## Color de la piel expuesta
+## El cuerpo base: qué hay debajo de la ropa
 
 Muchas prendas dejan piel a la vista: la panza de un croptop, el muslo sobre
 la media, el brazo de una musculosa. **No alcanza con dejar alpha 0** para que
 se vea el jugador debajo: la skin casi siempre tiene ropa pintada en el torso,
-así que un croptop mostraría la remera pintada de la skin y no piel. Hay que
-repintar esas zonas con el tono real.
+así que un croptop mostraría la remera pintada de la skin y no piel.
 
-`SkinRegions` dice qué parte de la skin toca cada prenda, `SkinToneSampler`
-saca la paleta y `ComposedSkin` la repinta, una sola vez, sobre la skin misma
-(vía `AbstractClientPlayerEntityMixin`).
+La respuesta es un **cuerpo base**: una geometría propia, con las mismas cajas
+que el jugador, dibujada **abajo de toda la ropa** y dilatada 0.30. Cada
+prenda dibuja SOLO su tela y deja transparente lo demás; el hueco lo llena el
+cuerpo.
 
-La regla del torso: **la prenda manda de los hombros a la cintura, el pantalón
-de la cintura para abajo.** Repintar el torso completo borraba la cintura del
-pantalón, que en una skin va pintada en las últimas filas del TORSO y no en
-las piernas.
+| clase | qué hace |
+|---|---|
+| `PerfilCuerpo` | qué cuerpo, qué tono y qué ropa interior eligió el jugador |
+| `PerfilesDeCuerpo` | dónde vive: attachment persistente y sincronizado |
+| `CuerpoBaseTextures` | compone la textura del cuerpo, en layout de skin a 8× |
+| `SkinRegions` + `ComposedSkin` | le borran a la skin la segunda capa donde manda una prenda |
+
+**El default no le cambia el cuerpo a nadie**: `CuerpoBase.SKIN_REAL` con el
+tono derivado de la propia skin del jugador, sampleado UNA vez con
+`SkinToneSampler`. El set curado (plano, atlético, curvy, binder) son
+alternativas, no un reemplazo.
+
+Antes de esto, cada prenda **rellenaba su hueco con piel** ella misma. Eso
+andaba con una prenda por parte del cuerpo y se rompía con dos: cada una
+pintaba la pierna entera y el que dibujaba último hacía desaparecer al otro.
+
+El arte del cuerpo (`textures/entity/cuerpo/*.png`) y el de la ropa interior
+(`interior_*.png`) son **opcionales**: sin ellos sale un cuerpo liso sombreado
+por cara, que es exactamente lo que producía la reconstrucción vieja. Se
+enchufan soltando un PNG, igual que un patrón.
+
+La regla del torso sigue viva, pero acotada: **con el cuerpo derivado de la
+skin, la prenda manda de los hombros a la cintura y el pantalón de la cintura
+para abajo.** Pintar el torso completo borraba la cintura del pantalón, que en
+una skin va pintada en las últimas filas del TORSO y no en las piernas. Con un
+cuerpo curado no aplica: ese cuerpo es dueño de su cintura.
+
+### La GUI de primera interacción todavía no está
+
+El perfil se cambia por ahora con `/femclothes cuerpo|tono|interior|reset|ver`.
+La GUI que se abre la primera vez que te ponés una prenda es lo que va arriba
+de esto.
 
 ### Trampas que ya costaron tiempo
 
@@ -349,26 +405,43 @@ occlusión a la segunda capa de la skin.
 
 ---
 
-## ⚠️ Problema abierto: dos prendas en la misma parte del cuerpo
+## El sistema de capas
 
-`composeGarment` rellena con tono de piel TODO lo que la prenda deja
-transparente. Para una sola prenda por parte del cuerpo está perfecto: la
-media reconstruye el muslo desnudo de arriba.
+Antes cada prenda se registraba como `TrinketRenderer` y se dibujaba sola, con
+una textura opaca que era *tela + piel reconstruida en todo lo demás*. El
+último que dibujaba tapaba al anterior **por completo** — no se veía feo,
+desaparecía una de las dos prendas. Eso bloqueaba shorts, el maid y cualquier
+layering.
 
-Pero medias y shorts van los dos en las piernas. Cada uno rellenaría la pierna
-entera con piel más su propia tela, y **el que se dibuje último tapa al otro
-por completo**. No es que se vea feo: desaparece una de las dos prendas.
+Ahora hay **un solo punto de dibujo** para toda la ropa del mod,
+`GarmentFeatureRenderer`, enganchado con
+`LivingEntityFeatureRendererRegistrationCallback` (hook público de Fabric API,
+sin Mixins). Por cada parte del cuerpo dibuja:
 
-Esto BLOQUEA migrar shorts. Dos caminos:
+1. el **cuerpo base**, una vez, dilatado **0.30**;
+2. las piezas de esa parte ordenadas por el ordinal `Capa`, todas a **0.32**.
 
-- **Capa de piel separada**: un solo renderer dibuja la piel reconstruida, con
-  dilatación un poco menor que las prendas, y cada prenda queda transparente
-  donde no tiene tela. Sin Mixins.
-- **Reconstruir sobre la skin** (lo que ya hace `ComposedSkin` para el torso):
-  las prendas no saben nada de piel. Es además lo que hace falta para 3D Skin
-  Layers.
+**Toda la tela va a la MISMA dilatación.** Apilar 0.30 / 0.32 / 0.34 deja un
+"anillo de árbol" en la silueta: se ve el canto de cada prenda alrededor de la
+de abajo. Solo el cuerpo va un pelín adentro, para no asomar nunca por el
+borde de una prenda.
 
----
+| clase | qué es |
+|---|---|
+| `Parte` | cabeza, torso, y brazos/piernas por separado |
+| `Capa` | el ordinal: cuerpo 0, interior 5, media 10, short 20, remera 25, pollera 30, ruedo 40, calzado 50 |
+| `Garment` / `Garments` | qué items son prendas y qué partes gobiernan (lado servidor) |
+| `Pieza` / `PiezasDePrenda` | cómo se ve cada una (lado cliente) |
+| `CuerpoGeometria` | las cajas a 8×, fusión de los dos renderers viejos |
+
+Los ordinales **se comparan solo dentro de una misma `Parte`**: que la remera
+sea 25 y el short 20 no significa nada, nunca comparten píxel.
+
+⚠️ **El cuerpo base va donde la prenda MANDA, no donde tiene tela.** Las partes
+salen de `Garment.partes()`, no de las piezas dibujadas: una musculosa no
+dibuja nada en los brazos pero igual tiene que taparle las mangas pintadas de
+la skin. Por lo mismo, **no declarar una parte hasta que haya tela ahí**:
+declararla le borra al jugador la capa externa de la skin a cambio de nada.
 
 ## 3D Skin Layers (mod del server, id `skinlayers3d`)
 
@@ -409,9 +482,18 @@ siguen comentadas en `build.gradle`.
 3. **El ícono de las medias estampadas** no muestra la foto. La remera tiene
    un renderer propio para eso (`RemeraItemRenderer`); las medias usan un
    modelo normal.
-4. **Migrar shorts** a `BodyPartTrinketRenderer` — BLOQUEADO, ver arriba.
-5. **Deduplicar `RemeraTrinketRenderer` contra `BodyPartTrinketRenderer`**,
-   que hoy hacen casi lo mismo. Se podía recién desde la fusión de los mods.
-6. **Geometría Blockbench del buzo oversize** (Armor Model API). Hay un TODO
+4. **La GUI de primera interacción del cuerpo base.** Hoy el perfil se cambia
+   solo por comando (`/femclothes ...`).
+5. **Arte del cuerpo base**: `textures/entity/cuerpo/<cuerpo>.png` e
+   `interior_<ropa>.png`. Sin ellos el cuerpo sale liso sombreado por cara,
+   que es lo que había antes — o sea que no se perdió nada, pero es lo que
+   hace que el set curado se distinga entre sí.
+6. **Migrar shorts** al sistema de capas. Ya NO está bloqueado: es la primera
+   prueba real del layering (short sobre media). Después fishnet y socks_34
+   caen solos.
+7. **Geometría Blockbench del buzo oversize** (Armor Model API). Hay un TODO
    en `FemclothesClient` marcando dónde va el registro.
-7. **Probar el puente de 3D Skin Layers.**
+8. **Probar el puente de 3D Skin Layers.**
+9. **Colapsar `Estampa.Cara` en `region.Cara`.** Quedaron dos enums con el
+   mismo nombre y casi el mismo contenido; unificarlos toca 8 archivos de la
+   sublimadora (el selector físico y su NBT), y no era parte de la fase 1.

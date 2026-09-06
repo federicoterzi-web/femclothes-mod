@@ -3,6 +3,8 @@ package com.femclothes.item;
 import dev.emi.trinkets.api.TrinketItem;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.DyedColorComponent;
+import com.femclothes.region.Lado;
+import com.femclothes.region.RegionResolver;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
@@ -15,7 +17,7 @@ import java.util.List;
  * Prenda "pegada al cuerpo" (medias, shorts, croptop, etc). A diferencia
  * de ClothingArmorItem, esta NO usa la geometría de armadura (más ancha)
  * — se registra en un slot custom de Trinkets y se dibuja directo sobre
- * las ModelPart reales del jugador vía BodyPartTrinketRenderer, así que
+ * las ModelPart reales del jugador vía GarmentFeatureRenderer, así que
  * queda pegada al cuerpo como una "segunda piel" en vez de verse como
  * una bota/peto puestos encima.
  */
@@ -50,28 +52,20 @@ public class ClothingTrinketItem extends TrinketItem {
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
 
-        Identifier left = ClothingStyle.patternId(stack, ClothingStyle.Side.LEFT);
-        Identifier right = ClothingStyle.patternId(stack, ClothingStyle.Side.RIGHT);
-        boolean sameStyle = java.util.Objects.equals(left, right)
-                && ClothingStyle.baseColor(stack, ClothingStyle.Side.LEFT)
-                    == ClothingStyle.baseColor(stack, ClothingStyle.Side.RIGHT)
-                && ClothingStyle.patternColor(stack, ClothingStyle.Side.LEFT)
-                    == ClothingStyle.patternColor(stack, ClothingStyle.Side.RIGHT);
-
-        if (sameStyle) {
-            tooltip.add(patternLine(stack, ClothingStyle.Side.LEFT, null));
+        if (RegionResolver.parejo(stack)) {
+            tooltip.add(patternLine(stack, Lado.IZQUIERDA, null));
         } else {
-            tooltip.add(patternLine(stack, ClothingStyle.Side.LEFT, "femclothes.tooltip.left"));
-            tooltip.add(patternLine(stack, ClothingStyle.Side.RIGHT, "femclothes.tooltip.right"));
+            tooltip.add(patternLine(stack, Lado.IZQUIERDA, "femclothes.tooltip.left"));
+            tooltip.add(patternLine(stack, Lado.DERECHA, "femclothes.tooltip.right"));
         }
     }
 
-    private static Text patternLine(ItemStack stack, ClothingStyle.Side side, String sideKey) {
-        Identifier pattern = ClothingStyle.patternId(stack, side);
+    private static Text patternLine(ItemStack stack, Lado lado, String sideKey) {
+        Identifier pattern = RegionResolver.patronId(stack, lado);
         Text name = pattern == null
                 ? Text.translatable("femclothes.pattern.none").formatted(Formatting.DARK_GRAY)
                 : Text.translatable("femclothes.pattern." + pattern.getPath())
-                        .styled(st -> st.withColor(ClothingStyle.patternColor(stack, side)));
+                        .styled(st -> st.withColor(RegionResolver.colorPatron(stack, lado)));
 
         if (sideKey == null) return name;
         return Text.translatable(sideKey).formatted(Formatting.GRAY).append(" ").append(name);

@@ -1,5 +1,6 @@
 package com.femclothes.item;
 
+import com.femclothes.region.Orientacion;
 import com.mojang.serialization.Codec;
 import net.minecraft.component.ComponentType;
 import net.minecraft.network.codec.PacketCodecs;
@@ -62,6 +63,25 @@ public final class FemclothesComponents {
             ComponentType.<Integer>builder()
                     .codec(Codec.INT)
                     .packetCodec(PacketCodecs.INTEGER)
+                    .build());
+
+    /**
+     * Como esta puesta la prenda: girada (frente/espalda) y/o espejada
+     * (izquierda/derecha).
+     *
+     * Ausente = normal, y se BORRA al volver a la normal en vez de guardarse
+     * con los dos bits en false: una prenda sin girar tiene que apilar con
+     * otra igual, y un componente presente no apila contra uno ausente.
+     *
+     * No permuta nada guardado — lo aplica RegionResolver al resolver, asi
+     * que sacar el flag devuelve la prenda a como estaba.
+     */
+    public static final ComponentType<Orientacion> ORIENTACION = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "orientacion"),
+            ComponentType.<Orientacion>builder()
+                    .codec(Orientacion.CODEC)
+                    .packetCodec(Orientacion.PACKET_CODEC)
                     .build());
 
     public static void init() {

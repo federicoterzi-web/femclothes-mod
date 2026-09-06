@@ -1,14 +1,15 @@
 package com.femclothes.client;
 
-import com.femclothes.item.ClothingStyle;
 import com.femclothes.item.FemclothesItems;
-import com.femclothes.render.BodyPartTrinketRenderer;
-import com.femclothes.render.ClothingTextureCache;
+import com.femclothes.region.Lado;
+import com.femclothes.region.RegionResolver;
+import com.femclothes.render.GarmentFeatureRenderer;
 import com.femclothes.screen.FemclothesScreenHandlers;
-import dev.emi.trinkets.api.client.TrinketRendererRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
-import net.minecraft.client.gui.screen.ingame.HandledScreens;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
+import net.minecraft.client.gui.screen.ingame.HandledScreens;
+import net.minecraft.client.render.entity.PlayerEntityRenderer;
 import net.minecraft.util.Identifier;
 
 public class FemclothesClient implements ClientModInitializer {
@@ -20,22 +21,35 @@ public class FemclothesClient implements ClientModInitializer {
         // que Loom aplica en tiempo de compilacion.
         HandledScreens.register(FemclothesScreenHandlers.CLOTHING_LOOM, ClothingLoomScreen::new);
 
-        // --- SOCKS_SOLID: primera prenda migrada al sistema nuevo ---
-        // Se dibuja pegada a la pierna real (BodyPartTrinketRenderer.Part.LEGS)
-        // en vez de con geometría de bota. La textura base se tiñe en
-        // runtime con ClothingTextureCache, igual que antes pero ya no
-        // depende del "dyeable" automático de ArmorItem (eso solo existe
-        // en el pipeline viejo).
-        // Icono del item: capa 0 = la media tenida con el color base,
+        PiezasDelMod.init();
+
+        // TODA la ropa del mod se dibuja desde un solo feature renderer.
+        //
+        // Antes cada prenda se registraba en TrinketRendererRegistry y se
+        // dibujaba sola. Eso alcanzaba con una prenda por parte del cuerpo,
+        // pero el orden lo decidia Trinkets por el order de los slots: no
+        // habia forma de decir "el short va arriba de la media". El ordinal
+        // de capa necesita un unico punto de dibujo.
+        //
+        // LivingEntityFeatureRendererRegistrationCallback es un hook publico
+        // de Fabric API — sigue sin hacer falta ningun Mixin para la ropa.
+        LivingEntityFeatureRendererRegistrationCallback.EVENT.register(
+                (tipo, renderer, helper, ctx) -> {
+                    if (renderer instanceof PlayerEntityRenderer jugador) {
+                        helper.register(new GarmentFeatureRenderer<>(jugador));
+                    }
+                });
+
+        // Icono de las medias: capa 0 = la media tenida con el color base,
         // capa 1 = las rayas tenidas con el color del patron. Sin patron, la
         // capa 1 se pinta del MISMO color que la base y las rayas desaparecen
         // — un ItemColorProvider no puede ocultar una capa, pero si fundirla.
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
-            int base = ClothingStyle.baseColor(stack, ClothingStyle.Side.LEFT);
+            int base = RegionResolver.colorBase(stack, Lado.IZQUIERDA);
             int color = base;
             if (tintIndex == 1) {
-                Identifier pattern = ClothingStyle.patternId(stack, ClothingStyle.Side.LEFT);
-                if (pattern != null) color = ClothingStyle.patternColor(stack, ClothingStyle.Side.LEFT);
+                Identifier patron = RegionResolver.patronId(stack, Lado.IZQUIERDA);
+                if (patron != null) color = RegionResolver.colorPatron(stack, Lado.IZQUIERDA);
             }
             // El tinte de item es ARGB y el alfa CUENTA: vanilla devuelve -1
             // para "sin tinte". Nuestros colores son 0xRRGGBB, o sea alfa 0,
@@ -43,46 +57,8 @@ public class FemclothesClient implements ClientModInitializer {
             return 0xFF000000 | color;
         }, FemclothesItems.SOCKS_SOLID);
 
-        Identifier socksSolidBase = Identifier.of("femclothes", "textures/models/armor/socks_solid_layer_1.png");
-        TrinketRendererRegistry.registerRenderer(FemclothesItems.SOCKS_SOLID,
-                new BodyPartTrinketRenderer(BodyPartTrinketRenderer.Part.LEGS, (stack, side, entity) -> {
-                    int baseColor = ClothingStyle.baseColor(stack, side);
-                    Identifier patternId = ClothingStyle.patternId(stack, side);
-                    Identifier mask = patternId == null ? null
-                            : ClothingTextureCache.patternMaskFor("socks", patternId);
-                    // Arriba de la media hay que reconstruir la pierna
-                    // desnuda: dejarla transparente mostraria el pantalon
-                    // pintado en la skin del jugador, no piel.
-                    // Sin relleno de piel: de eso se encarga ComposedSkin, una
-                    // vez sobre la skin. Ademas evita leer la skin desde la GPU
-                    // en pleno render, que es lo que hacia esta llamada.
-                    // Las medias tambien se sublimant: la foto se pinta
-                    // sobre la media ya tenida y con su patron, que es el
-                    // orden de una sublimadora de verdad. Sin estampa el
-                    // gancho no hace nada y la textura sale igual que antes.
-                    ClothingTextureCache.Encima estampa =
-                            com.femclothes.sublimadora.EstampaTextures.tieneEstampa(stack)
-                                    ? new ClothingTextureCache.Encima() {
-                                        @Override
-                                        public String clave() {
-                                            return com.femclothes.sublimadora.EstampaTextures
-                                                    .claveEstampas(stack);
-                                        }
-                                        @Override
-                                        public boolean aplicar(net.minecraft.client.texture.NativeImage destino) {
-                                            return com.femclothes.sublimadora.EstampaTextures
-                                                    .estampar(destino, stack);
-                                        }
-                                    }
-                                    : null;
-                    return ClothingTextureCache.composeGarment(socksSolidBase, baseColor,
-                            mask, ClothingStyle.patternColor(stack, side), null,
-                            ClothingTextureCache.Shading.LEGS, estampa);
-                }));
-
         // TODO: acá también va el registro de la geometría custom del
         // buzo oversize y la falda del traje de maid vía Armor Model API
         // (ver README, sección "Buzo oversize y Armor Model API").
     }
-
 }

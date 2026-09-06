@@ -1,5 +1,6 @@
 package com.femclothes.client;
 
+import com.femclothes.region.Lado;
 import com.femclothes.screen.ClothingLoomScreenHandler;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -27,11 +28,15 @@ public class ClothingLoomScreen extends HandledScreen<ClothingLoomScreenHandler>
 
     private static final Identifier TEXTURE = Identifier.ofVanilla("textures/gui/container/loom.png");
 
-    /** Mismo orden que ClothingLoomScreenHandler.Target. */
+    /**
+     * Mismo orden que Lado.values(), que es lo que cicla el handler. Si el
+     * enum se reordena, esto se rompe en silencio: el boton diria "izquierda"
+     * y tenirya la derecha.
+     */
     private static final String[] TARGET_KEYS = {
-            "femclothes.loom.target.both",
-            "femclothes.loom.target.left",
-            "femclothes.loom.target.right",
+            "femclothes.region.izquierda",
+            "femclothes.region.derecha",
+            "femclothes.region.ambas",
     };
 
     private ButtonWidget targetButton;
@@ -59,8 +64,7 @@ public class ClothingLoomScreen extends HandledScreen<ClothingLoomScreenHandler>
     }
 
     private void cycleTarget() {
-        ClothingLoomScreenHandler.Target[] all = ClothingLoomScreenHandler.Target.values();
-        int next = (this.handler.getTarget().ordinal() + 1) % all.length;
+        int next = (this.handler.getTarget().ordinal() + 1) % Lado.values().length;
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.player == null || client.interactionManager == null) return;
 

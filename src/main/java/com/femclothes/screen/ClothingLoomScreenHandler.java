@@ -6,7 +6,8 @@ import com.femclothes.sublimadora.RemeraItem;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.DyedColorComponent;
 import com.femclothes.item.ClothingPatternItem;
-import com.femclothes.item.ClothingStyle;
+import com.femclothes.region.Lado;
+import com.femclothes.region.RegionResolver;
 import com.femclothes.item.FemclothesDye;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -43,11 +44,17 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
     private static final int HOTBAR_START = 31;
     private static final int HOTBAR_END = 40;
 
-    /** A que pierna se aplica lo que se arma: las dos, solo izquierda, solo derecha. */
-    public enum Target { BOTH, LEFT, RIGHT }
-
     private final ScreenHandlerContext context;
-    private Target target = Target.BOTH;
+
+    /**
+     * A que region se aplica lo que se arma.
+     *
+     * Es Lado y no un enum propio del telar: "ambas / izquierda / derecha" es
+     * EL MISMO concepto que ya usan las medias por componente y que van a
+     * usar las mesas nuevas. Tenerlo escrito distinto en cada lugar es lo que
+     * este refactor viene a sacar.
+     */
+    private Lado target = Lado.AMBAS;
     Runnable inventoryChangeListener = () -> {};
 
     final Slot garmentSlot;
@@ -143,7 +150,7 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
         return canUse(this.context, player, net.minecraft.block.Blocks.LOOM);
     }
 
-    public Target getTarget() {
+    public Lado getTarget() {
         return this.target;
     }
 
@@ -154,8 +161,8 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
      */
     @Override
     public boolean onButtonClick(PlayerEntity player, int id) {
-        if (id < 0 || id >= Target.values().length) return false;
-        this.target = Target.values()[id];
+        if (id < 0 || id >= Lado.values().length) return false;
+        this.target = Lado.values()[id];
         this.onContentChanged(this.input);
         return true;
     }
@@ -201,23 +208,11 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
         ItemStack result = garment.copyWithCount(1);
         boolean hasPattern = !pattern.isEmpty() && pattern.getItem() instanceof ClothingPatternItem;
 
-        if (this.target == Target.BOTH) {
-            // Par parejo: se escribe solo el lado base y se borran los
-            // overrides de la derecha, para no dejar datos colgados de una
-            // configuracion anterior.
-            apply(result, ClothingStyle.Side.LEFT, pattern, hasPattern, rgb);
-            ClothingStyle.clearRightOverrides(result);
-        } else {
-            ClothingStyle.Side side = this.target == Target.LEFT
-                    ? ClothingStyle.Side.LEFT : ClothingStyle.Side.RIGHT;
-            if (side == ClothingStyle.Side.LEFT) {
-                // La derecha hereda de la izquierda mientras no tenga valores
-                // propios, asi que hay que clavarle los actuales antes de
-                // tocar la izquierda: si no, cambian las dos.
-                ClothingStyle.pinRight(result);
-            }
-            apply(result, side, pattern, hasPattern, rgb);
-        }
+        // La regla de AMBAS -escribir el primario y borrar el override- y el
+        // guard de "clavar la derecha antes de tocar la izquierda" viven en
+        // RegionResolver. Estaban escritos aca y en el renderer, y el bug de
+        // "tenir una pierna tine las dos" salio justo de tener dos copias.
+        apply(result, this.target, pattern, hasPattern, rgb);
 
         this.outputSlot.setStackNoCallbacks(result);
         this.sendContentUpdates();
@@ -250,40 +245,32 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
 
     /** Copia de la prenda sin patron en el lado elegido, o vacio si no tenia. */
     private ItemStack stripPattern(ItemStack garment) {
-        boolean left = ClothingStyle.hasPattern(garment, ClothingStyle.Side.LEFT);
-        boolean right = ClothingStyle.hasPattern(garment, ClothingStyle.Side.RIGHT);
+        boolean izq = RegionResolver.tienePatron(garment, Lado.IZQUIERDA);
+        boolean der = RegionResolver.tienePatron(garment, Lado.DERECHA);
+
+        // Sin patron del lado elegido no hay nada que sacar: la salida vacia
+        // es lo que evita que el telar ofrezca una copia identica.
+        boolean hay = switch (this.target) {
+            case AMBAS -> izq || der;
+            case IZQUIERDA -> izq;
+            case DERECHA -> der;
+        };
+        if (!hay) return ItemStack.EMPTY;
 
         ItemStack result = garment.copyWithCount(1);
-        switch (this.target) {
-            case BOTH -> {
-                if (!left && !right) return ItemStack.EMPTY;
-                ClothingStyle.clearPattern(result, ClothingStyle.Side.LEFT);
-                ClothingStyle.clearPattern(result, ClothingStyle.Side.RIGHT);
-                // Sin patron en ninguna, los overrides de la derecha solo
-                // servirian para desparejar el color sin querer.
-                ClothingStyle.clearRightOverrides(result);
-            }
-            case LEFT -> {
-                if (!left) return ItemStack.EMPTY;
-                ClothingStyle.pinRight(result);
-                ClothingStyle.clearPattern(result, ClothingStyle.Side.LEFT);
-            }
-            case RIGHT -> {
-                if (!right) return ItemStack.EMPTY;
-                ClothingStyle.clearPattern(result, ClothingStyle.Side.RIGHT);
-            }
-        }
+        RegionResolver.quitarPatron(result, this.target);
         return result;
     }
 
-    private static void apply(ItemStack result, ClothingStyle.Side side, ItemStack pattern,
+    private static void apply(ItemStack result, Lado lado, ItemStack pattern,
                               boolean hasPattern, int rgb) {
         if (hasPattern) {
             // Modo patron: no toca el color base de ese lado.
-            ClothingStyle.setPattern(result, side, ((ClothingPatternItem) pattern.getItem()).patternId, rgb);
+            RegionResolver.ponerPatron(result, lado,
+                    ((ClothingPatternItem) pattern.getItem()).patternId, rgb);
         } else {
             // Modo re-tenido: recolorea el color base de ese lado, como el cuero.
-            ClothingStyle.setBaseColor(result, side, rgb);
+            RegionResolver.ponerColorBase(result, lado, rgb);
         }
     }
 

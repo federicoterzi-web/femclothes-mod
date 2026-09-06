@@ -1,4 +1,4 @@
-<!-- canal-version: 4 -->
+<!-- canal-version: 5 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,68 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v5 — 2026-09-06 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:** **FASE 1 IMPLEMENTADA** — primer código del track de prendas. Compila
+y el cliente arranca limpio (63 mods, sin excepciones nuestras).
+
+- **Sistema de capas (§1)**: `GarmentFeatureRenderer` es AHORA EL ÚNICO punto
+  de dibujo de toda la ropa del mod, enganchado con
+  `LivingEntityFeatureRendererRegistrationCallback` (hook público de Fabric,
+  sin Mixins). Por parte del cuerpo: cuerpo base a 0.30, después las piezas
+  ordenadas por `Capa`, todas a 0.32. Piezas nuevas: `Parte`, `Capa`,
+  `Garment`/`Garments`/`PrendasDelMod` (servidor), `Pieza`/`PiezasDePrenda`/
+  `PiezasDelMod` (cliente).
+- **Cuerpo base (§7)**: `PerfilCuerpo` (cuerpo · tono · ropa interior) como
+  attachment de Fabric, persistente, `copyOnDeath`, sincronizado a TODOS (los
+  demás también te dibujan). `CuerpoBaseTextures` lo compone en layout de skin
+  a 8×. Default = `SKIN_REAL` con tono derivado de tu propia skin: ponerse una
+  prenda NO te cambia el cuerpo.
+- **RegionResolver (§3)**: `Lado`/`Cara`/`Region`/`Operacion`/`Orientacion`.
+  Absorbió `ClothingStyle`, que ya no existe. El telar dejó su enum `Target` y
+  usa `Lado`. Componente nuevo `femclothes:orientacion`.
+- **Se fueron**: `ClothingStyle`, `BodyPartTrinketRenderer`,
+  `RemeraTrinketRenderer`, `TrinketsClientCompat`. La fusión de los dos
+  renderers (punto 3 del roadmap) se adelantó porque el ordinal la exige.
+- **Se simplificó**: `SkinRegions` pasó de tabla de rectángulos a mano +
+  reconstrucción de piel a solo "qué overlay borrar", `f(partes)` y ya no
+  `f(prenda, corte)`. `ComposedSkin` ya no repinta piel. `SkinToneSampler`
+  perdió `Tones`/`Paleta`. `composeGarment` perdió el parámetro de piel: lo
+  que la prenda no cubre queda TRANSPARENTE, que es el contrato del sistema.
+  `LayoutSkin`/`CajaSkin` calculan el desdoblado en vez de tenerlo escrito.
+- Docs: `FEMCLOTHES.md` y `PRENDAS.md` actualizados con lo hecho y lo que no.
+
+**Próximo:** lo que quedó explícitamente afuera de la fase 1, en este orden:
+1. **Migrar shorts** — es la primera prueba REAL del layering (short sobre
+   media) y ya no está bloqueado. Hasta que eso ande, el sistema de capas
+   está implementado pero no ejercitado.
+2. **GUI de primera interacción** del cuerpo base. Hoy se cambia solo con
+   `/femclothes cuerpo|tono|interior|reset|ver`.
+3. **Arte del cuerpo base**: `textures/entity/cuerpo/<id>.png` (mapa de
+   sombras, se multiplica) e `interior_<ropa>.png` (encima). Los dos son
+   OPCIONALES: sin ellos sale el cuerpo liso sombreado por cara, o sea lo
+   mismo que antes — pero los cinco cuerpos del set se ven idénticos.
+4. `RegionPickerWidget` y colapsar `Estampa.Cara` en `region.Cara`.
+
+**Para el otro Claude:**
+- **NADA de esto se probó puesto en el juego.** Compila y el cliente llega al
+  menú sin excepciones; equipar una prenda y mirarla no lo pude hacer desde
+  acá. Lo primero que hay que hacer es entrar con medias y con remera y mirar.
+  Sospechas concretas a verificar: que el cuerpo base no asome por el borde de
+  la media, que la musculosa muestre brazo y no la manga pintada de la skin, y
+  que el torso no pierda la cintura del pantalón.
+- ⚠️ **`Garment.partes()` es un arma de doble filo**: declarar una parte hace
+  que se le dibuje cuerpo base Y se le borre la capa externa de la skin. Si la
+  prenda no tiene tela ahí, le estás borrando el pantalón pintado al jugador a
+  cambio de nada. Por eso el remerón NO declara las piernas todavía, aunque el
+  diseño diga que las va a usar. Declarar la parte recién cuando haya tela.
+- ⚠️ **Toda la tela va a la MISMA dilatación (0.32)**. Poner una por capa deja
+  un "anillo de árbol" en la silueta. Solo el cuerpo va adentro (0.30).
+- El bug histórico de "teñir una pierna tiñe las dos" ya no se puede pisar:
+  `fijarDerecha()` lo llaman los propios setters de `RegionResolver`. No
+  vuelvas a exponerlo como algo que el que llama tiene que acordarse.
+- Del canal v1 sigue todo vigente: nada de re-litigar las decisiones cerradas.
 
 ## v4 — 2026-09-06 — cuenta de H0p3san · Claude Code (app de escritorio, sesión patchouli)
 

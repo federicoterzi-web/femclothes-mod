@@ -1,10 +1,11 @@
 package com.femclothes.render;
 
+import com.femclothes.garment.Garments;
+import com.femclothes.garment.Parte;
 import dev.emi.trinkets.api.TrinketsApi;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.util.SkinTextures;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
@@ -15,17 +16,18 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Arma una version de la skin del jugador preparada para la ropa del mod:
- * limpia la segunda capa donde va una prenda y repinta con tono de piel lo
- * que la prenda deja expuesto.
+ * La skin del jugador con la segunda capa borrada donde manda una prenda.
  *
- * Se hace UNA vez sobre la skin, no una vez por prenda. Antes cada prenda
- * rellenaba de piel todo lo que dejaba transparente, y por eso dos prendas
- * en la misma parte del cuerpo se pisaban entera una a la otra.
+ * Es lo unico que le queda por hacer a la skin. Antes tambien repintaba piel
+ * en las zonas expuestas; eso lo hace ahora el cuerpo base, dibujado como
+ * geometria propia abajo de la ropa ({@link CuerpoBaseTextures}).
  *
- * Si el jugador no lleva ninguna prenda que toque la skin, esto no hace nada
- * y se devuelve la skin original tal cual: costo cero para cualquiera que no
- * use ropa del mod.
+ * Se hace UNA vez sobre la skin y no una vez por prenda. Y si el jugador no
+ * lleva ninguna prenda del mod se devuelve la skin original tal cual: costo
+ * cero para cualquiera que no use ropa del mod.
+ *
+ * El enganche es AbstractClientPlayerEntity.getSkinTextures() y no
+ * PlayerEntityRenderer.getTexture(), porque 3D Skin Layers lee de ahi.
  */
 public final class ComposedSkin {
 
@@ -37,10 +39,11 @@ public final class ComposedSkin {
     public static SkinTextures forPlayer(AbstractClientPlayerEntity player, SkinTextures original) {
         if (original == null || original.texture() == null) return original;
 
-        List<ItemStack> prendas = prendasQueAfectan(player);
-        if (prendas.isEmpty()) return original;
+        List<Parte> partes = partesGobernadas(player);
+        if (partes.isEmpty()) return original;
 
-        String key = original.texture() + "|" + firma(prendas);
+        boolean slim = original.model() == SkinTextures.Model.SLIM;
+        String key = original.texture() + "|" + SkinRegions.clave(partes, slim);
         SkinTextures cached = CACHE.get(key);
         if (cached != null) return cached;
 
@@ -59,18 +62,7 @@ public final class ComposedSkin {
             return original;
         }
 
-        SkinToneSampler.Tones tono = SkinToneSampler.sampleTones(base, original.model());
-        SkinToneSampler.Paleta paleta = SkinToneSampler.samplePaleta(base, original.model());
-        for (ItemStack stack : prendas) {
-            SkinRegions.Effect ef = SkinRegions.of(stack);
-            if (ef == null) continue;
-            // Capa externa: se borra. Ademas de sacar el pantalon pintado,
-            // hace que 3D Skin Layers no extruya geometria ahi, porque solo
-            // extruye pixeles solidos.
-            for (SkinRegions.Rect r : ef.clearOverlay()) pintar(composed, r, 0);
-            // Capa base: piel plana donde la prenda deja el cuerpo a la vista.
-            for (SkinRegions.Piel p : ef.bareSkin()) pintarPiel(composed, p, paleta, tono);
-        }
+        for (CajaSkin.Rect r : SkinRegions.aBorrar(partes, slim)) borrar(composed, r);
 
         Identifier id = Identifier.of("femclothes", "dynamic/skin_" + Integer.toHexString(key.hashCode()));
         MinecraftClient.getInstance().getTextureManager()
@@ -82,70 +74,23 @@ public final class ComposedSkin {
         return result;
     }
 
-    /**
-     * Piel reconstruida con los tonos REALES del jugador.
-     *
-     * Cada cara toma el nivel de luz que le corresponde y, encima, un ruido
-     * de un escalon para arriba o para abajo. Ese ruido es lo que la saca de
-     * "plancha de color": las skins pintadas a mano nunca son un color
-     * uniforme, y una zona que si lo es canta al lado de una que no.
-     *
-     * El ruido es DETERMINISTA por pixel: si dependiera del azar cambiaria en
-     * cada recomposicion de la skin y la piel titilaria.
-     */
-    private static void pintarPiel(NativeImage img, SkinRegions.Piel p,
-                                   SkinToneSampler.Paleta paleta, SkinToneSampler.Tones tono) {
-        SkinRegions.Rect r = p.zona();
-        for (int y = r.y0(); y < Math.min(r.y1(), img.getHeight()); y++) {
-            int inicio = r.x0();
-            for (SkinRegions.Franja franja : p.caras()) {
-                int hasta = Math.min(inicio + franja.ancho(), Math.min(r.x1(), img.getWidth()));
-                for (int x = inicio; x < hasta; x++) {
-                    img.setColor(x, y, color(paleta, tono, franja.nivel(), x, y));
-                }
-                inicio += franja.ancho();
-            }
-        }
-    }
-
-    private static int color(SkinToneSampler.Paleta paleta, SkinToneSampler.Tones tono,
-                             float nivel, int x, int y) {
-        if (!paleta.util()) {
-            // Skin sin variacion propia en la zona muestreada: no hay paleta
-            // que usar y se cae a los tres tonos derivados.
-            if (nivel >= 0.7f) return tono.light();
-            return nivel <= 0.3f ? tono.dark() : tono.mid();
-        }
-        int escalones = paleta.tonos().length;
-        // Hash de la posicion: mismo pixel, mismo ruido, siempre.
-        int ruido = ((x * 73856093) ^ (y * 19349663)) & 0x7FFFFFFF;
-        float desvio = (ruido % 3 - 1) / (float) Math.max(escalones - 1, 1);
-        return paleta.enNivel(nivel + desvio);
-    }
-
-    private static void pintar(NativeImage img, SkinRegions.Rect r, int abgr) {
+    private static void borrar(NativeImage img, CajaSkin.Rect r) {
         for (int y = r.y0(); y < Math.min(r.y1(), img.getHeight()); y++) {
             for (int x = r.x0(); x < Math.min(r.x1(), img.getWidth()); x++) {
-                img.setColor(x, y, abgr);
+                img.setColor(x, y, 0);
             }
         }
     }
 
-    private static List<ItemStack> prendasQueAfectan(AbstractClientPlayerEntity player) {
-        List<ItemStack> out = new ArrayList<>();
+    /** Las partes del cuerpo que gobierna alguna prenda del mod. */
+    private static List<Parte> partesGobernadas(AbstractClientPlayerEntity player) {
+        List<ItemStack> prendas = new ArrayList<>();
         TrinketsApi.getTrinketComponent(player).ifPresent(c -> {
             for (var par : c.getAllEquipped()) {
                 ItemStack stack = par.getRight();
-                if (!stack.isEmpty() && SkinRegions.afecta(stack.getItem())) out.add(stack);
+                if (Garments.esPrenda(stack)) prendas.add(stack);
             }
         });
-        return out;
-    }
-
-    /** Identifica el conjunto de prendas puestas, para cachear. */
-    private static String firma(List<ItemStack> prendas) {
-        StringBuilder sb = new StringBuilder();
-        for (ItemStack s : prendas) sb.append(SkinRegions.clave(s)).append(';');
-        return sb.toString();
+        return Garments.partesCubiertas(prendas);
     }
 }

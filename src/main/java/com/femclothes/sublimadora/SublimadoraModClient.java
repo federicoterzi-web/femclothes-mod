@@ -37,11 +37,10 @@ public class SublimadoraModClient implements ClientModInitializer {
                 (stack, capa) -> capa == 0 ? 0xFF000000 | RemeraItem.color(stack) : -1,
                 ModItems.REMERA);
 
-        // La remera puesta sobre el cuerpo, solo si Trinkets esta. El puente
-        // vive en otra clase para que la JVM no tenga que resolver clases de
-        // Trinkets cuando no esta instalado.
-        if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("trinkets")) {
-            TrinketsClientCompat.registrarRenderer();
-        }
+        // La remera puesta sobre el cuerpo ya NO se registra aca. La dibuja
+        // el GarmentFeatureRenderer de FemClothes junto con el resto de la
+        // ropa, que es lo unico que permite ordenarla por capa contra las
+        // otras prendas. Lo que la remera declara -sus piezas- esta en
+        // PiezasDelMod.
     }
 }

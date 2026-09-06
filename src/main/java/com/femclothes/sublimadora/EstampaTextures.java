@@ -197,7 +197,7 @@ public final class EstampaTextures {
 
     /** La remera del corte que sea. */
     private static Prenda deLaRemera(Variante v) {
-        return new Prenda(RemeraTrinketRenderer.ESCALA, LIENZO_ANCHO, lienzoAlto(v),
+        return new Prenda(com.femclothes.render.CuerpoGeometria.ESCALA, LIENZO_ANCHO, lienzoAlto(v),
                 BANDA_HOMBRO, v.largo().filas, caras(v));
     }
 
@@ -244,7 +244,7 @@ public final class EstampaTextures {
         java.util.List<Cara> todas = new java.util.ArrayList<>();
         todas.addAll(java.util.Arrays.asList(deUnaPierna(0, 16)));
         todas.addAll(java.util.Arrays.asList(deUnaPierna(16, 48)));
-        MEDIAS = new Prenda(com.femclothes.render.BodyPartTrinketRenderer.SCALE,
+        MEDIAS = new Prenda(com.femclothes.render.CuerpoGeometria.ESCALA,
                 LIENZO_PIERNA, MEDIA_ALTO, 0, MEDIA_ALTO, todas.toArray(new Cara[0]));
     }
 
@@ -354,7 +354,7 @@ public final class EstampaTextures {
      * paso queda recortada a la tela sola.
      */
     @Nullable
-    static Identifier cuerpoEstampado(Variante variante, @Nullable Estampa frente,
+    public static Identifier cuerpoEstampado(Variante variante, @Nullable Estampa frente,
                                       @Nullable Estampa espalda, int color) {
         // Sin estampas y sin tenir no hay nada que componer: se usa la
         // textura del pack tal cual.

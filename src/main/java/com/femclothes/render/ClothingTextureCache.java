@@ -38,7 +38,7 @@ public final class ClothingTextureCache {
         Identifier cached = TINTED_CACHE.get(key);
         if (cached != null) return cached;
 
-        NativeImage base = getBaseImage(baseTexture);
+        NativeImage base = imagenBase(baseTexture);
         if (base == null) return baseTexture;
 
         NativeImage composite = new NativeImage(base.getWidth(), base.getHeight(), true);
@@ -81,7 +81,7 @@ public final class ClothingTextureCache {
         Identifier cached = TINTED_CACHE.get(key);
         if (cached != null) return cached;
 
-        NativeImage base = getBaseImage(baseTexture);
+        NativeImage base = imagenBase(baseTexture);
         if (base == null) return baseTexture;
 
         NativeImage composite = new NativeImage(base.getWidth(), base.getHeight(), true);
@@ -142,10 +142,10 @@ public final class ClothingTextureCache {
         Identifier cached = TINTED_CACHE.get(key);
         if (cached != null) return cached;
 
-        NativeImage base = getBaseImage(baseTexture);
+        NativeImage base = imagenBase(baseTexture);
         if (base == null) return baseTexture;
 
-        NativeImage mask = getBaseImage(patternMask);
+        NativeImage mask = imagenBase(patternMask);
         if (mask == null) return tinted(baseTexture, baseRgb);
 
         NativeImage composite = new NativeImage(base.getWidth(), base.getHeight(), true);
@@ -176,7 +176,7 @@ public final class ClothingTextureCache {
     private static final float FACE_LIGHT = 1.10F;
     private static final float FACE_DARK = 0.84F;
     /** Ancho en pixeles de las caras frontal y trasera de una pierna. */
-    private static final int FACE_COLUMNS = 4 * BodyPartTrinketRenderer.SCALE;
+    private static final int FACE_COLUMNS = 4 * CuerpoGeometria.ESCALA;
 
     /**
      * Factor de luz del pixel segun donde cae en el cuboide de la pierna.
@@ -198,7 +198,7 @@ public final class ClothingTextureCache {
     private static float faceFactor(int x, int y, Shading shading) {
         if (shading != Shading.LEGS) return 1.0F;
 
-        final int S = BodyPartTrinketRenderer.SCALE;
+        final int S = CuerpoGeometria.ESCALA;
         final int face = 4 * S;   // ancho de una cara del cuboide, en pixeles
 
         // Pierna derecha, uv(0, 16S): caras laterales en y 20S..32S-1, x 0..16S-1
@@ -260,18 +260,6 @@ public final class ClothingTextureCache {
     }
 
     /**
-     * Todo junto: base tenida + patron encima + relleno de PIEL en lo que la
-     * prenda deja transparente.
-     *
-     * El relleno es lo que hace que una media 3/4 se vea bien: arriba de la
-     * media hay que reconstruir la pierna desnuda, porque dejar alpha 0 ahi
-     * mostraria la skin del jugador, que casi siempre tiene un pantalon
-     * pintado. Pasar fillArgb = 0 deja esas zonas transparentes.
-     *
-     * mask puede ser null (prenda lisa). El relleno se sombrea segun
-     * Shading: con un solo tono plano las dos piernas se leen pegadas.
-     */
-    /**
      * Algo que se pinta ENCIMA de la prenda ya compuesta.
      *
      * Existe para que la sublimadora pueda meter la foto sin que este cache
@@ -285,36 +273,47 @@ public final class ClothingTextureCache {
         boolean aplicar(NativeImage destino);
     }
 
+    /**
+     * Todo junto: base tenida + patron encima. Lo que la prenda no cubre
+     * queda TRANSPARENTE.
+     *
+     * Esa transparencia es el contrato del sistema de capas. Hasta la fase 1
+     * habia un parametro mas —un tono de piel con el que rellenar el hueco—
+     * porque cada prenda tenia que reconstruir sola la pierna desnuda de
+     * arriba. Rellenar era justo lo que hacia que dos prendas en la misma
+     * pierna se taparan por completo: cada una pintaba la pierna entera. Ese
+     * hueco ahora lo llena el cuerpo base, dibujado una sola vez abajo de
+     * todo.
+     *
+     * mask puede ser null (prenda lisa).
+     */
     public static Identifier composeGarment(Identifier baseTexture, int baseRgb,
                                             @Nullable Identifier mask, int patternRgb,
-                                            @Nullable SkinToneSampler.Tones skin, Shading shading) {
-        return composeGarment(baseTexture, baseRgb, mask, patternRgb, skin, shading, null);
+                                            Shading shading) {
+        return composeGarment(baseTexture, baseRgb, mask, patternRgb, shading, null);
     }
 
     public static Identifier composeGarment(Identifier baseTexture, int baseRgb,
                                             @Nullable Identifier mask, int patternRgb,
-                                            @Nullable SkinToneSampler.Tones skin, Shading shading,
+                                            Shading shading,
                                             @Nullable Encima encima) {
         String key = baseTexture + "#" + Integer.toHexString(baseRgb)
-                + "@" + mask + "#" + Integer.toHexString(patternRgb)
-                + "~" + (skin == null ? "sinpiel" : Integer.toHexString(skin.mid())
-                        + "/" + Integer.toHexString(skin.light())
-                        + "/" + Integer.toHexString(skin.dark())) + ":" + shading
+                + "@" + mask + "#" + Integer.toHexString(patternRgb) + ":" + shading
                 + (encima == null ? "" : "+" + encima.clave());
         Identifier cached = TINTED_CACHE.get(key);
         if (cached != null) return cached;
 
-        NativeImage base = getBaseImage(baseTexture);
+        NativeImage base = imagenBase(baseTexture);
         if (base == null) return baseTexture;
 
-        NativeImage maskImg = mask != null ? getBaseImage(mask) : null;
+        NativeImage maskImg = mask != null ? imagenBase(mask) : null;
 
         NativeImage composite = new NativeImage(base.getWidth(), base.getHeight(), true);
         for (int y = 0; y < base.getHeight(); y++) {
             for (int x = 0; x < base.getWidth(); x++) {
-                // El mismo factor por cara se aplica a la TELA, no solo a la
-                // piel: si la prenda es un color plano, las dos piernas se
-                // siguen leyendo pegadas aunque la piel este sombreada.
+                // El factor por cara se aplica a la TELA: si la prenda es un
+                // color plano, las dos piernas se leen pegadas, sin volumen
+                // ni separacion entre una y otra.
                 float f = faceFactor(x, y, shading);
                 if (maskImg != null && x < maskImg.getWidth() && y < maskImg.getHeight()) {
                     int maskPx = maskImg.getColor(x, y);
@@ -327,7 +326,7 @@ public final class ClothingTextureCache {
                 if (((basePx >> 24) & 0xFF) != 0) {
                     composite.setColor(x, y, shade(tintPixel(basePx, baseRgb), f));
                 } else {
-                    composite.setColor(x, y, fill(x, y, skin, shading));
+                    composite.setColor(x, y, 0);
                 }
             }
         }
@@ -347,44 +346,17 @@ public final class ClothingTextureCache {
         return id;
     }
 
-    /** Como sombrear la piel reconstruida segun a que parte del cuerpo va. */
+    /** Como sombrear la tela segun a que parte del cuerpo va. */
     public enum Shading { NONE, LEGS }
 
     /**
-     * Tono de piel para este pixel, INTERPOLADO con el mismo factor por cara
-     * que usa la tela.
+     * El png crudo de una textura del resource pack, cacheado.
      *
-     * Antes elegia entre los tres tonos sueltos, y como el degrade de una
-     * cara da 0.84 / 0.93 / 1.01 / 1.10, tres de las cuatro columnas caian
-     * en el mismo tono: la piel se veia de un color plano aunque la media
-     * ya tuviera degrade. Interpolando, la piel acompana a la tela.
+     * Publico porque el compositor del cuerpo base lee los mismos archivos
+     * (el mapa de sombras del cuerpo, la ropa interior) y no tiene sentido
+     * que cada compositor mantenga su propio cache de imagenes de disco.
      */
-    private static int fill(int x, int y, @Nullable SkinToneSampler.Tones skin, Shading shading) {
-        // Sin tonos: la prenda deja transparente lo que no cubre y se ve el
-        // cuerpo. Es el caso normal desde que la skin se reconstruye una sola
-        // vez en ComposedSkin, en vez de que cada prenda rellene piel.
-        if (skin == null) return 0;
-        float f = faceFactor(x, y, shading);
-        float t = (f - FACE_DARK) / (FACE_LIGHT - FACE_DARK);
-        t = Math.min(Math.max(t, 0.0F), 1.0F);
-        // Dos tramos, para que el tono medio real de la skin siga siendo el
-        // neutro y no se pierda al interpolar de punta a punta.
-        return t < 0.5F
-                ? lerp(skin.dark(), skin.mid(), t * 2.0F)
-                : lerp(skin.mid(), skin.light(), (t - 0.5F) * 2.0F);
-    }
-
-    /** Mezcla dos colores ABGR. */
-    private static int lerp(int a, int b, float t) {
-        int ar = a & 0xFF, ag = (a >> 8) & 0xFF, ab = (a >> 16) & 0xFF;
-        int br = b & 0xFF, bg = (b >> 8) & 0xFF, bb = (b >> 16) & 0xFF;
-        int r = Math.round(ar + (br - ar) * t);
-        int g = Math.round(ag + (bg - ag) * t);
-        int bl = Math.round(ab + (bb - ab) * t);
-        return 0xFF000000 | (bl << 16) | (g << 8) | r;
-    }
-
-    private static NativeImage getBaseImage(Identifier id) {
+    public static NativeImage imagenBase(Identifier id) {
         if (BASE_IMAGE_CACHE.containsKey(id)) return BASE_IMAGE_CACHE.get(id);
         try {
             Optional<Resource> resource = MinecraftClient.getInstance().getResourceManager().getResource(id);

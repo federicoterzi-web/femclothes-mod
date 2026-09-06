@@ -1,9 +1,10 @@
 # Sistema de prendas — diseño
 
-> **Estado: DISEÑO, nada de esto está implementado.** Es la bajada de una
-> charla de diseño (2026-09-06) para que se pueda retomar sin el historial.
-> El mapa general está en [FEMCLOTHES.md](../FEMCLOTHES.md); las máquinas de
-> confección en [MAQUINAS.md](MAQUINAS.md).
+> **Estado: la FASE 1 está implementada** (§1, §3 y §7); §2 y §4–§6 siguen
+> siendo diseño. Es la bajada de una charla de diseño (2026-09-06) para que se
+> pueda retomar sin el historial. El mapa general está en
+> [FEMCLOTHES.md](../FEMCLOTHES.md); las máquinas de confección en
+> [MAQUINAS.md](MAQUINAS.md).
 
 Objetivo: pasar de "ropa ceñida que no es armadura" a un guardarropa
 personalizable de verdad —cortes, fit, prendas acampanadas— sin que el mod
@@ -11,7 +12,7 @@ se vuelva inmantenible ni la GUI se llene de sliders.
 
 ---
 
-## 1. El bloqueo actual: dos prendas en la misma parte del cuerpo
+## 1. El bloqueo actual: dos prendas en la misma parte del cuerpo — ✅ RESUELTO
 
 Hoy cada renderer (`BodyPartTrinketRenderer`, `RemeraTrinketRenderer`) dibuja
 la ModelPart real del cuerpo con una textura que es **tela donde hay tela +
@@ -23,9 +24,13 @@ muslo desnudo de arriba. Pero medias y shorts van los dos en las piernas, y
 **el que se dibuje último hace desaparecer al otro**. Esto bloquea migrar
 shorts, el traje de maid, y cualquier layering.
 
-### Solución: capa de piel separada + orden de capa explícito
+### Solución: capa de piel separada + orden de capa explícito — ✅ hecho
 
 **Camino A del FEMCLOTHES.md, con la pieza que faltaba (el ordinal).**
+
+Implementado como `GarmentFeatureRenderer` (un solo punto de dibujo para toda
+la ropa), `Capa` (los ordinales), `Parte`, `Garment`/`Garments` (servidor) y
+`Pieza`/`PiezasDePrenda` (cliente). El sustrato es el cuerpo base de §7.
 
 - **Sustrato de piel reconstruida**: un solo renderer dibuja la piel desnuda
   reconstruida por parte de cuerpo, **una sola vez**, cuando hay cualquier
@@ -46,14 +51,19 @@ rellene su propio hueco.
 dilatación; solo el sustrato de piel un pelín adentro (0.30) para que nunca
 asome más allá de una prenda.
 
-### El torso se queda con ComposedSkin
+### ~~El torso se queda con ComposedSkin~~ — reemplazado
 
-`ComposedSkin` ya reconstruye el torso sobre la skin misma y lo necesita 3D
-Skin Layers (ver FEMCLOTHES.md). Piernas y brazos usan el sustrato separado.
-Si algún día 3DSL tiene que respetar las piernas, ahí se unifica todo en
-ComposedSkin.
+Esto era anterior al cuerpo base. Hoy el sustrato cubre TODAS las partes por
+igual, y a `ComposedSkin` solo le quedó **borrar la segunda capa de la skin**
+donde manda una prenda —que sigue siendo imprescindible por 3D Skin Layers—.
+Ya no reconstruye piel en ningún lado.
 
-### El torso también es multi-capa
+La única herencia de la regla vieja: **con el cuerpo derivado de la skin real,
+el torso se pinta hasta la cintura y no más abajo**, porque la cintura del
+pantalón va pintada en las últimas filas del torso. Con un cuerpo curado no
+aplica.
+
+### El torso también es multi-capa — pendiente
 
 La decisión vieja "`El slot de torso es de a una prenda`" es **anterior** al
 sistema de capas — que es justo lo que la hace innecesaria. Con el ordinal,
@@ -66,12 +76,16 @@ El **binder** hoy es solo una textura (banda compresora / top deportivo)
 sobre el torso plano del modelo. Si algún día se agrega geometría de pecho,
 gana un flag que la suprime — **eso NO es fase 1**.
 
-### La zona de piel reconstruida sigue al corte, no es fija
+### ~~La zona de piel reconstruida sigue al corte~~ — el problema se disolvió
 
-`SkinRegions` (ver FEMCLOTHES.md) hoy dice qué parte de la skin toca cada
-**tipo** de prenda. Pasa a ser `f(prenda, variante)` — se calcula **desde la
-máscara del corte**. Así cualquier escote (V, redondo, plunge, corazón) o
-largo de manga expone la piel correcta **sin código nuevo por variante**.
+Esto pedía que `SkinRegions` pasara a ser `f(prenda, variante)`, calculado
+desde la máscara del corte, para que cualquier escote expusiera la piel
+correcta. **Con el cuerpo base no hace falta nada de eso**: la prenda deja
+transparente lo que no cubre y abajo está el cuerpo entero. El escote más
+profundo del mundo no necesita una línea de código.
+
+`SkinRegions` quedó como `f(partes cubiertas)`: qué rectángulos de la segunda
+capa de la skin hay que borrar. Un croptop y un remerón borran lo mismo.
 
 ### Mapa de regiones y slots
 
@@ -118,7 +132,7 @@ migración de shorts, que ya toca esos archivos.
 
 ---
 
-## 3. Selector de región — normalizar izq/der y frente/espalda
+## 3. Selector de región — normalizar izq/der y frente/espalda — ✅ HECHO (salvo el widget)
 
 Hoy "qué lado toco" aparece distinto en cada lugar: el telar cicla
 "Ambas/Izq/Der", la sublimadora tiene un selector físico frente/espalda, los
@@ -147,10 +161,15 @@ Set<Region> regionesDe(Operacion op)   // op ∈ TEÑIR, PATRON, CORTE, ESTAMPAR
 | `remera` | ESTAMPAR | {FRENTE, ESPALDA} |
 | `armwarmers` | cualquiera | {IZQ, DER, AMBAS} |
 
-### Un solo resolvedor
+### Un solo resolvedor — ✅ hecho
 
 `RegionResolver` — clase única, `(ItemStack, Region, componente) → valor`.
-**Absorbe `ClothingStyle`.** La regla en un solo lado:
+**Absorbió `ClothingStyle`**, que ya no existe. Un detalle que salió mejor de
+lo diseñado: el guard `fijarDerecha()` (el ex `pinRight`) lo llaman **los
+propios setters**, no el que llama. Un guard que hay que acordarse de invocar
+vuelve a fallar tarde o temprano, y ese fue exactamente el bug original.
+
+La regla en un solo lado:
 
 - **`Lado`**: la IZQUIERDA es primaria (guarda el valor). La DERECHA guarda
   *overrides opcionales*; ausente = hereda. Es lo que hoy hace el mod con
@@ -159,7 +178,12 @@ Set<Region> regionesDe(Operacion op)   // op ∈ TEÑIR, PATRON, CORTE, ESTAMPAR
   arrastrar el otro.
 - **`Cara`**: cada cara su componente (`estampa_frente` / `estampa_espalda`).
 
-### Un widget + el selector físico
+### Un widget + el selector físico — PENDIENTE
+
+El widget no está: el telar sigue con su botón que cicla, pero ahora cicla
+`Lado` y no un enum propio. `Estampa.Cara` tampoco se colapsó todavía contra
+`region.Cara` — son dos enums con el mismo nombre, y unificarlos toca 8
+archivos de la sublimadora (el selector físico y su NBT).
 
 - Estaciones con GUI (tinturas, sastrería): `RegionPickerWidget` — toma el
   `Set<Region>` válido y muestra exactamente esos botones.
@@ -185,7 +209,14 @@ Set<Region> regionesDe(Operacion op)   // op ∈ TEÑIR, PATRON, CORTE, ESTAMPAR
   (§6) lo hace solo; con PNGs por prenda, cada patrón lleva flag
   `simétrico` / `con lateralidad`.
 
-### Rotar la prenda entera — `orientacion` en `variante`
+### Rotar la prenda entera — `orientacion` — ✅ el dato y la resolución, hechos
+
+Terminó siendo un **componente propio** (`femclothes:orientacion`) y no un
+campo de `variante`: `variante` es de la remera y esto vale para cualquier
+prenda. Se borra al volver a la normal, para que una prenda sin girar siga
+apilando con otra igual.
+
+Falta lo que lo usa: espejar la máscara al renderizar, y la acción de estación.
 
 Campo chico: `{ girado: bool, espejado: bool }`. **No destructivo.**
 
@@ -464,7 +495,7 @@ las costuras del cubo. Las orientaciones se hacen como máscaras separadas
 
 ---
 
-## 7. Cuerpo base — reemplaza la reconstrucción de piel
+## 7. Cuerpo base — reemplaza la reconstrucción de piel — ✅ HECHO (salvo la GUI y el arte)
 
 Hoy `SkinToneSampler` / `ComposedSkin` / `SkinRegions` reconstruyen la piel
 desnuda leyendo la skin real, con toda la lista de "trampas que costaron
@@ -488,11 +519,22 @@ El sustrato de §1 deja de "reconstruir" y **ES** el cuerpo base elegido. UV
 conocido, regiones desnudas conocidas. `SkinRegions` pasa a ser "qué parte
 del cuerpo base asoma por esta prenda" — trivial. **Es parte de fase 1.**
 
-### Primera interacción
+### Primera interacción — PENDIENTE
 
 La primera vez que crafteás/equipás una prenda del mod, se abre una GUI:
-elegís cuerpo base, tono, ropa interior, preview. Se guarda en componente
-persistente server-side del jugador.
+elegís cuerpo base, tono, ropa interior, preview.
+
+**Lo que sí está**: el perfil (`PerfilCuerpo`) como attachment persistente,
+sincronizado a **todos** los clientes y no solo al dueño —los demás también
+tienen que dibujarte el mismo cuerpo—, con `copyOnDeath`. Mientras no haya
+GUI se cambia con `/femclothes cuerpo|tono|interior|reset|ver`.
+
+**Lo que falta además de la GUI**: el arte. `textures/entity/cuerpo/<id>.png`
+(mapa de sombras, se multiplica) e `interior_<ropa>.png` (se compone encima)
+son los dos **opcionales**; sin ellos sale el cuerpo liso sombreado por cara,
+que es lo que ya producía la reconstrucción vieja. O sea que hoy los cinco
+cuerpos del set se ven iguales — el sistema anda, el arte es lo que los
+distingue.
 
 ### No romper la filosofía
 
@@ -540,17 +582,20 @@ Pollera, campana, buzo ya tienen volumen. Solo hay que **estilarlas blocky**
 
 ## 9. Roadmap (dos tracks paralelos después de la fase 1)
 
-**Fase 1 — Sistema de capas + cuerpo base.** Sustrato = cuerpo base elegido
-+ ordinal de capa + `SkinRegions` paramétrico por corte. Diseñado
-anticipando la ruta 3DSL (§8). Es el desbloqueo de todo lo demás.
+**Fase 1 — Sistema de capas + cuerpo base. ✅ HECHA.** Sustrato = cuerpo base
+elegido + ordinal de capa + `RegionResolver`. `SkinRegions` no terminó siendo
+paramétrico por corte: con el cuerpo base ese problema se disolvió (ver §1).
+El punto 3 de acá abajo se adelantó, porque el ordinal exige un único punto de
+dibujo. Quedan afuera de la fase 1, a propósito: la **GUI de primera
+interacción**, el **arte del cuerpo base** y el **`RegionPickerWidget`**.
 
 Después, dos tracks independientes:
 
 ### Track prendas
 2. Migrar shorts al sistema nuevo (prueba el layering). Después fishnet y
-   socks_34 caen solos.
-3. Fusionar `RemeraTrinketRenderer` + `BodyPartTrinketRenderer` en
-   `BodyPartGarmentRenderer`.
+   socks_34 caen solos. **Ya no está bloqueado.**
+3. ~~Fusionar `RemeraTrinketRenderer` + `BodyPartTrinketRenderer`~~ — hecho en
+   la fase 1 (`CuerpoGeometria` + `GarmentFeatureRenderer`).
 4. Mangas (banda) con dobladillo. Cuello redondo/V/escote como máscaras de
    silueta.
 5. Polera como prenda de dos piezas (torso-sin-escote + banda-en-cabeza) —
