@@ -12,6 +12,10 @@ en [docs/SUBLIMADORA.md](docs/SUBLIMADORA.md).
 > [docs/PRENDAS.md](docs/PRENDAS.md), y las mesas de tinturas/sastrería con su
 > automatización en [docs/MAQUINAS.md](docs/MAQUINAS.md). Los dos resuelven el
 > "Problema abierto" de más abajo y reemplazan el hook del telar.
+>
+> **[docs/CANAL.md](docs/CANAL.md)** es la bitácora entre sesiones de Claude.
+> `git pull` y leelo ANTES de trabajar; agregá una entrada y subí el
+> `canal-version` DESPUÉS.
 
 > **Toolchain**: Fabric Loom **1.15.3** + Gradle **9.2.0**.
 > En Windows, `gradlew.bat` desde PowerShell — el `./gradlew` de Bash falla
