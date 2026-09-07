@@ -339,11 +339,51 @@ public final class ClothingTextureCache {
             return baseTexture;
         }
 
+        // maskImg y no mask: si el patron se pidio pero le falta el PNG, el
+        // bucle de arriba ya cayo a lisa (misma trampa que documenta
+        // tintedWithPattern), asi que el tamano tiene que seguirla.
+        composite = reducirSiHaceFalta(composite, encima != null, maskImg != null);
+
         Identifier id = Identifier.of("femclothes", "dynamic/garment_" + Integer.toHexString(key.hashCode()));
         MinecraftClient.getInstance().getTextureManager()
                 .registerTexture(id, new NativeImageBackedTexture(composite));
         TINTED_CACHE.put(key, id);
         return id;
+    }
+
+    /**
+     * Achica la imagen ya compuesta si no necesita toda su resolucion nativa.
+     *
+     * La composicion (tenido, patron, estampa) siempre corre a la resolucion
+     * NATIVA de la textura base (`ESCALA_TELA`, 8x): tocar esa matematica por
+     * el ahorro de memoria arriesgaria el sombreado y el recorte de la
+     * estampa por nada, ya que estampar es justo el caso que SI necesita esa
+     * resolucion. Achicar la imagen DESPUES de componerla, en vez de componer
+     * a menos resolucion desde el principio, deja fuera de discusion romper
+     * esa matematica.
+     *
+     * Sin foto y sin patron la prenda es un color plano: 2x. Con patron pero
+     * sin foto, un poco mas de detalle para el borde del patron: 4x. Con
+     * foto, la resolucion nativa completa — es la unica que de verdad la
+     * necesita.
+     *
+     * `resizeSubRectTo` es de vainilla (usa STBIR, no vecino-mas-cercano), asi
+     * que el degrade de {@link #faceFactor} sobrevive el achique, mezclado en
+     * vez de cortado en bandas.
+     */
+    private static NativeImage reducirSiHaceFalta(NativeImage composite, boolean estampada, boolean tienePatron) {
+        if (estampada) return composite;
+
+        int escalaDestino = tienePatron ? CuerpoGeometria.ESCALA_TELA_PATRON : CuerpoGeometria.ESCALA_TELA_LISA;
+        float factor = escalaDestino / (float) CuerpoGeometria.ESCALA_TELA;
+        int anchoDestino = Math.max(1, Math.round(composite.getWidth() * factor));
+        int altoDestino = Math.max(1, Math.round(composite.getHeight() * factor));
+        if (anchoDestino >= composite.getWidth() && altoDestino >= composite.getHeight()) return composite;
+
+        NativeImage reducida = new NativeImage(anchoDestino, altoDestino, true);
+        composite.resizeSubRectTo(0, 0, composite.getWidth(), composite.getHeight(), reducida);
+        composite.close();
+        return reducida;
     }
 
     /** Como sombrear la tela segun a que parte del cuerpo va. */

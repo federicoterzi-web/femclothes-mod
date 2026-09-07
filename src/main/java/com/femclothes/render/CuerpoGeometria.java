@@ -52,13 +52,37 @@ import java.util.Map;
 public final class CuerpoGeometria {
 
     /**
-     * Ocho veces la skin: 512x512.
+     * Ocho veces la skin: 512x512. La resolucion de una prenda ESTAMPADA.
      *
      * Fueron 2x hasta que las medias se volvieron estampables. A esa escala
      * una cara de pierna eran 8x24 texels y ninguna foto se lee ahi. Es una
-     * resolucion que existe SOLO por las estampas.
+     * resolucion que existe SOLO por las estampas — ver {@link #ESCALA_TELA_LISA}
+     * y {@link #ESCALA_TELA_PATRON} para cuando no hace falta.
      */
     public static final int ESCALA_TELA = 8;
+
+    /**
+     * Dos veces la skin. La resolucion de una prenda sin foto y sin patron.
+     *
+     * Es el valor que ya tenia TODA la tela antes de que las medias se
+     * volvieran estampables (ver el javadoc de {@link #ESCALA_TELA}): no es
+     * un numero elegido a ciegas, es el que ya se probo que se ve bien.
+     *
+     * ⚠️ Esto NO es una escala de geometria como {@link #ESCALA_CUERPO}: la
+     * fraccion de UV de un cuboide se cancela sola respecto de la escala con
+     * la que se construyo (ver el javadoc de la clase), asi que una sola
+     * geometria de tela sirve para CUALQUIER resolucion real de textura. Este
+     * numero se usa del lado de la COMPOSICION (`ClothingTextureCache`), para
+     * decidir a que tamano real reducir la imagen ya compuesta antes de
+     * subirla a la GPU — ahi es donde esta la memoria que se ahorra.
+     */
+    public static final int ESCALA_TELA_LISA = 2;
+
+    /**
+     * Cuatro veces la skin. Una prenda con patron mas fino que un color
+     * plano, pero que la sublimadora no puede estampar por foto.
+     */
+    public static final int ESCALA_TELA_PATRON = 4;
 
     /**
      * El cuerpo va a 1x: una skin de 64x64 y nada mas.

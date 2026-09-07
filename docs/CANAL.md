@@ -1,4 +1,4 @@
-<!-- canal-version: 6 -->
+<!-- canal-version: 7 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,50 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v7 — 2026-09-06 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:** tres resoluciones de tela en vez de una, a pedido del dueño ("para
+minimizar el impacto en servers"). Aclarado además un malentendido propio en
+v6: `CuerpoGeometria.ESCALA_*` **no controla el detalle real de nada** — la
+fracción de UV de un cuboide se cancela sola respecto de `S` (verificado
+línea por línea contra `ModelPart$Cuboid` de vanilla). El ahorro de VRAM no
+sale de re-declarar geometría a otra escala — eso es cosméticamente inerte —
+sino de encoger la imagen YA COMPUESTA antes de subirla a la GPU. Por eso
+`CuerpoGeometria.Superficie`/`Pieza`/`GarmentFeatureRenderer` **no se
+tocaron**: el cambio quedó contenido en `ClothingTextureCache`.
+
+- `CuerpoGeometria`: `ESCALA_TELA_LISA = 2`, `ESCALA_TELA_PATRON = 4`, junto a
+  `ESCALA_TELA = 8` (sin cambios). Son constantes de COMPOSICIÓN, no de
+  geometría — las usa `ClothingTextureCache`, no `raiz()`.
+- `ClothingTextureCache.reducirSiHaceFalta`: compone SIEMPRE a resolución
+  nativa (8×) — el sombreado por cara y el recorte de estampa no se tocan —
+  y recién al final encoge con `NativeImage.resizeSubRectTo` (STB, no
+  vecino-más-cercano) si el resultado no tiene ni patrón ni foto. El nivel
+  sale gratis de datos que la función YA recibía (`maskImg != null` →
+  patrón, `encima != null` → estampa), cero parámetros nuevos.
+- **Remera (`EstampaTextures`) queda AFUERA a propósito.** Es un compositor
+  separado con su propia matemática (lienzo virtual, tablas de caras, full
+  print) que `SUBLIMADORA.md` marca como frágil, y el dueño señaló que
+  todavía pinta el puño cuando la doc dice que no debería — señal de que ese
+  pipeline tiene deuda propia sin resolver antes de tocarlo.
+- FEMCLOTHES.md: nueva sección "Tres resoluciones de tela, no una" +
+  corregida la afirmación de v6 sobre qué controla `ESCALA_*`.
+
+**Próximo:** sin cambios de fondo respecto de v6 — migrar shorts sigue
+primero, y nada de esto se probó puesto en el juego. Si alguien retoma la
+resolución de tela para remera: primero investigar el puño (por qué se
+pinta si la doc dice que no), después decidir si `EstampaTextures` necesita
+su propio `reducirSiHaceFalta` o si conviene esperar a fusionar los dos
+compositores.
+
+**Para el otro Claude:** si vas a tocar resolución de texturas, la lección
+de esta entrada es la que importa: **medí qué controla cada número antes de
+asumirlo**. `CuerpoGeometria.ESCALA_*` se lee como si fuera "la resolución",
+pero la resolución real la decide quien arma el `NativeImage` de salida —
+`CuerpoBaseTextures`/`ClothingTextureCache` — no la geometría. Si algo
+similar te hace ruido, verificalo contra el `.java` de vanilla antes de
+construir encima, como acá.
 
 ## v6 — 2026-09-06 — cuenta de H0p3san · Claude Code (extensión de VSCode)
 

@@ -364,10 +364,18 @@ pintar exactamente lo mismo. `CuerpoGeometria.ESCALA_CUERPO = 1`.
 
 Que las dos superficies tengan escalas distintas no las desalinea: en
 `ModelPart.Cuboid` la fracción de UV que ocupa una cara es
-`(tamaño × S) / (64 × S)`, la misma para cualquier `S`. La escala solo decide
-cuántos texels caen adentro, nunca dónde cae el borde. El cuerpo y la tela son
-dos cajas separadas con su propia textura; el borde de una prenda lo define el
-alfa de SU textura, no un texel del cuerpo de abajo.
+`(tamaño × S) / (64 × S)`, la misma para cualquier `S` — se cancela sola. El
+cuerpo y la tela son dos cajas separadas con su propia textura; el borde de
+una prenda lo define el alfa de SU textura, no un texel del cuerpo de abajo.
+
+⚠️ **Ojo con lo que esto implica**: como la fracción de UV no depende de `S`,
+`CuerpoGeometria.ESCALA_*` **no controla el detalle real de nada por sí
+sola** — es solo la convención que usa el código que SÍ decide un tamaño real
+de imagen (`CuerpoBaseTextures`, `ClothingTextureCache`). La geometría
+renderiza igual de bien una textura de 64×64 que una de 512×512 atada al
+mismo `Superficie`; el ahorro de memoria sale de encoger la imagen real, no
+de re-declarar la geometría a otra escala. Ver "Tres resoluciones de tela" más
+abajo, que es exactamente ese lugar.
 
 De yapa: el arte del cuerpo se pinta como una skin común de 64×64 en
 cualquier editor de skins, y una textura pasa de 1&nbsp;MB a 16&nbsp;KB.
@@ -391,6 +399,36 @@ skin, la prenda manda de los hombros a la cintura y el pantalón de la cintura
 para abajo.** Pintar el torso completo borraba la cintura del pantalón, que en
 una skin va pintada en las últimas filas del TORSO y no en las piernas. Con un
 cuerpo curado no aplica: ese cuerpo es dueño de su cintura.
+
+### Tres resoluciones de tela, no una
+
+Igual que el cuerpo, la tela de una prenda tampoco necesita siempre 8×. Solo
+lo necesita si la sublimadora la va a estampar con una foto — un color plano
+o un patrón de rayas no ganan nada con esa resolución, y con muchos jugadores
+puestos a la vez en un server poblado esa es memoria de video que no hace
+falta gastar (la composición es 100% del lado cliente: el servidor nunca toca
+un píxel, así que esto no es carga de CPU del servidor, es VRAM de cada
+cliente que ve jugadores puestos).
+
+| nivel | escala | cuándo |
+|---|---|---|
+| `ESCALA_TELA_LISA` | 2× | sin patrón y sin foto |
+| `ESCALA_TELA_PATRON` | 4× | con patrón, sin foto |
+| `ESCALA_TELA` | 8× | con foto (la única que de verdad necesita esa resolución) |
+
+**No se compone a menos resolución desde el principio.** `ClothingTextureCache`
+sigue tiñendo, aplicando el patrón y sombreando por cara a la resolución
+NATIVA de la textura base — tocar esa matemática por el ahorro arriesgaría el
+sombreado y el recorte de la estampa (justo el caso que sí necesita 8×) por
+nada. Lo que hace `reducirSiHaceFalta` es encoger la imagen YA compuesta, con
+`NativeImage.resizeSubRectTo` (STB, no vecino-más-cercano: el degradé de
+`faceFactor` sobrevive mezclado, no cortado en bandas).
+
+Hoy esto vive solo en `ClothingTextureCache` (medias). **Remera queda
+pendiente**: pasa por `EstampaTextures`, un compositor separado con su propia
+matemática de píxeles (el lienzo virtual, las tablas de caras, el recorte del
+full print) que `SUBLIMADORA.md` marca como frágil — se toca en una pasada
+aparte, con más cuidado.
 
 ### La GUI de primera interacción todavía no está
 
