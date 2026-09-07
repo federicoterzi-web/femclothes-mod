@@ -38,7 +38,7 @@ ciclo de prensado no tiene nada que ver con el resto de las prendas.
 
 | Prenda | Estado | Mecanismo |
 |---|---|---|
-| **Remera** (`remera`) | ✅ 36 cortes, teñible, patrones, estampable | Trinket, slot `torso/prenda`, dibujada sobre el cuerpo real |
+| **Remera** (`remera`) | ✅ 45 cortes, teñible, patrones, estampable | Trinket, slot `torso/prenda`, dibujada sobre el cuerpo real |
 | **Medias color pleno** (`socks_solid`) | ✅ 5 largos, patrones, teñible, **estampable** | Trinket, slot `socks/pair`, dibujada sobre la pierna real |
 | **Pantalón** (`pantalon`) | ✅ 5 largos + 3 tiros, teñible, sin patrón todavía | Trinket, slot `piernas/exterior`, primera prueba real del layering (capa arriba de la media) |
 | **Calentadores de brazo** (`armwarmers`) | ✅ funcional | Trinket, slot custom `arms/armwarmer` |
@@ -146,22 +146,24 @@ vanilla.
 | eje | valores | filas de tela |
 |---|---|---|
 | largo | crop · normal · largo | 5 · 9 · 12 de las 12 del torso |
-| mangas | sin · cortas · 3/4 · largas | 0 · 4 · 8 · 12 de las 12 del brazo |
+| mangas | sin · cortas · 3/4 · siete octavos · largas | 0 · 4 · 8 · 10 · 12 de las 12 del brazo |
 | cuello | redondo · en V · polera | — |
 
-Son **36 combinaciones**, y por eso el corte **no se craftea**: una receta por
-combinación y color serían 576, y ninguna grilla de 3x3 distingue una manga
-3/4 de una larga. Se craftea la remera base y el corte se cambia después en el
-telar, con un **molde por eje** que *cicla* su valor — tres ítems en vez de
-diez. El molde no toca la estampa, así que una remera ya impresa se puede
-reformar sin perder la foto: justamente lo que no dejaría hacer una receta,
-que tendría que fabricar el ítem de cero.
+Son **45 combinaciones** (antes 36 — `siete_octavos` se sumó a mangas, ver
+"El eje cobertura" más abajo), y por eso el corte **no se craftea**: una
+receta por combinación y color sería carísima, y ninguna grilla de 3x3
+distingue una manga 3/4 de una larga. Se craftea la remera base y el corte
+se cambia después en el telar. El molde de **largo** fija un valor
+(`MoldeLargoRemeraItem`, uno por valor); los de **manga** y **cuello**
+siguen ciclando (`MoldeItem`). El molde no toca la estampa, así que una
+remera ya impresa se puede reformar sin perder la foto: justamente lo que
+no dejaría hacer una receta, que tendría que fabricar el ítem de cero.
 
 El nombre del ítem sale del rasgo que más lo define (croptop, musculosa,
 polera, remerón, remera) y el resto del corte va al tooltip. 36 nombres serían
 ilegibles y uno solo dejaría prendas muy distintas indistinguibles.
 
-### El eje "cobertura": largo compartido entre pantalón, medias (y remera pendiente)
+### El eje "cobertura": largo en pantalón, medias y remera
 
 Tres prendas bilaterales miden lo mismo —cuánto de una extremidad tapan— con
 la misma escala de 5 pasos: **sin/corto/medio/largo/extralargo**. Cada una le
@@ -174,7 +176,7 @@ ciegas para llegar al que querés.
 |---|---|---|---|
 | **Pantalón** | `PantalonLargo` | pantalón · tres cuartos · bermudas · shorts · ropa interior | 12·9·7·4·2 (cuenta DESDE la cintura hacia abajo) |
 | **Medias** | `MediasLargo` | cancán · 3/4 · rodilla · medias · zoquetes | 10·8·6·4·2 (cuenta DESDE el tobillo hacia arriba — ¡al revés!) |
-| Remera (manga) | — | pendiente, ver más abajo | — |
+| **Remera (manga)** | `Variante.Manga` | larga · siete octavos · tres cuartos · corta · sin | 12·10·8·4·0 de las 12 del brazo |
 
 ⚠️ **Pantalón y medias llenan en direcciones OPUESTAS.** Un pantalón nace en
 la cintura y crece hacia el tobillo; una media nace en el tobillo y crece
@@ -201,23 +203,30 @@ cintura sobre el torso, pintado en runtime, no en el PNG) es OTRO eje
 independiente de `PantalonLargo`: uno decide hasta dónde llega la pierna, el
 otro decide dónde arranca la cintura. Se pueden combinar libremente.
 
-⚠️ **Pendiente, todavía sin tocar**: la manga de remera (`Variante.Manga`, 4
-valores: sin/corta/tres_cuartos/larga) necesita un 5º valor —"un corte un
-poco más arriba del puño"— para completar el mismo diseño de 5 pasos. No se
-implementó porque tocaría las 45 combinaciones resultantes (3 largo × 5
-manga × 3 cuello) de texturas de remera, que **no tienen generador en este
-repo** — a diferencia de pantalón/medias, que sí lo tienen (Python, ver
-`PiezasDelMod`/canal). El camino más seguro cuando se haga es DERIVAR el
-nuevo valor recortando las texturas "larga" ya existentes (poner alfa 0 en
-las últimas ~2 filas de manga), no generarlas de cero.
+**Remera llegó al mismo diseño de 5 pasos** con `SIETE_OCTAVOS` (10 filas,
+"un corte un poco más arriba del puño"), insertado entre `TRES_CUARTOS` y
+`LARGA`. La remera pasa de 36 a **45 combinaciones** (3 largo × 5 manga × 3
+cuello). Se generaron las 9 texturas nuevas (3 largo × 3 cuello, manga fija
+en el valor nuevo) **derivándolas** de las 9 "larga" ya existentes —
+recortando (alfa 0) las últimas 2 filas de manga y agregando una fila de
+dobladillo en el nuevo borde, con el MISMO tono de dobladillo
+`(188,188,198)` que ya usaba el generador original en el puño real, para que
+no se note la costura entre lo generado por script y lo derivado a mano.
+No hizo falta tocar `EstampaTextures`: `caras(Variante)` ya calculaba todo a
+partir de `manga().filas` como variable, sin ningún valor hardcodeado — el
+sistema de estampado es genérico de por sí.
 
-⚠️ **El ícono es UNO SOLO para los 5+5+3 valores de estos tres ejes**, a
-propósito. Las siluetas de `item/pantalon.png` (y el ícono de medias) son
-dibujos simbólicos, no un desdoblado proporcional como la textura del
-cuerpo — no hay una forma principista de derivar siluetas distintas
-recortándolas, a diferencia de remera (36 sprites generados por script). El
-nombre del ítem (que sí cambia con el largo en pantalón) es la única
-diferenciación en el inventario por ahora.
+⚠️ **Insertar un valor en el MEDIO de un enum de `Variante` es seguro** para
+mundos guardados: el `CODEC` persistente serializa por NOMBRE
+(`StringIdentifiable`), no por posición. Solo el `PACKET_CODEC` (sync de
+red, no persistente) usa ordinal, y no necesita sobrevivir entre sesiones.
+
+⚠️ **El ícono es UNO SOLO para los 5+5+3 valores de pantalón/medias/tiro**, a
+propósito — esos NO tienen generador de sprite por valor. La manga de
+remera es la excepción: sus 9 íconos nuevos SÍ existen, pero como
+**placeholder** (reusan el ícono de manga larga del mismo largo/cuello, sin
+arte propia todavía — visualmente indistinguibles de su combinación "larga"
+hasta que alguien dibuje el sprite real).
 
 Todos los moldes nuevos reusan el ícono de `molde_largo` (de la remera):
 misma idea de herramienta, sin arte nueva todavía — moldes distintos se ven

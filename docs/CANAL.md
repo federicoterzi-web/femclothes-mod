@@ -1,4 +1,4 @@
-<!-- canal-version: 11 -->
+<!-- canal-version: 12 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,78 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v12 — 2026-09-07 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:** remera se sumó al eje "cobertura" de v11 — ya NO quedó afuera.
+El dueño preguntó "¿cómo que quedó afuera remera?" y al reconsiderar, mi
+excusa de v11 ("no tengo el generador") no era tan válida: para medias
+TAMPOCO tenía el generador original, y ahí ya había resuelto esto derivando
+la textura validada por recorte. Apliqué la misma técnica acá.
+
+- **`Variante.Manga` ganó `SIETE_OCTAVOS`** (10 de 12 filas — "un corte un
+  poco más arriba del puño"), insertado entre `TRES_CUARTOS` y `LARGA`.
+  Remera pasa de 36 a **45 combinaciones**.
+- **Verificado ANTES de tocar nada** (mismo criterio que medias en v11):
+  la manga "larga" real cubre las 12 filas completas, opacidad uniforme —
+  confirmado contra `cuerpo_normal_larga_redondo.png` con Python antes de
+  generar un solo archivo.
+- **Las 9 texturas nuevas se DERIVARON** de las 9 "larga" existentes (3
+  largo × 3 cuello), recortando (alfa 0) las últimas 2 filas de manga y
+  agregando dobladillo en el nuevo borde — reusando el MISMO tono
+  `(188,188,198)` que el generador original ya usaba en el puño real
+  (lo detecté inspeccionando los píxeles reales, no lo inventé), para que
+  la costura entre lo generado por script y lo derivado a mano no se note.
+- **Verificado que no hacía falta tocar `EstampaTextures`**: revisé
+  `caras(Variante)` línea por línea y ya calcula todo desde
+  `v.manga().filas` como variable — CERO valores hardcodeados a los 4
+  manga viejos. El sistema de estampado es genérico de por sí; un 5º valor
+  de manga funciona solo.
+- **Riesgo de compatibilidad con mundos viejos, verificado y descartado**:
+  insertar un valor en el MEDIO de un enum corre el riesgo de romper datos
+  guardados si la serialización es por ordinal. Confirmé que
+  `Variante.CODEC` (el persistente) serializa por NOMBRE
+  (`StringIdentifiable`) — solo el `PACKET_CODEC` (sync de red, no
+  persistente) usa ordinal, y ese no necesita sobrevivir entre sesiones.
+  Insertar en el medio es seguro.
+- **Ícono**: los 9 nuevos reusan el ícono de "larga" del mismo largo/cuello
+  como placeholder (mismo criterio que los moldes de v11) — visualmente
+  indistinguibles de su combinación larga hasta que alguien dibuje el
+  sprite real.
+- FEMCLOTHES.md actualizado: la tabla de "El eje cobertura" ya no dice
+  "remera pendiente", el corte de remera pasa de 36 a 45 en todos los
+  lugares que hacían una afirmación factual (no todos los "36" sueltos del
+  documento, algunos son menciones históricas/ilustrativas sin importancia).
+
+**Aclaración importante para no confundir**: esto NO es el bug de "la línea
+de piel en los puños" que el dueño reportó con una captura hace varias
+entradas. Ese bug **sigue sin resolver** — nunca se consiguió una captura
+clara para diagnosticarlo (la primera estaba tomada en un ángulo/zoom
+extremo que no permitía distinguir brazo de pierna), y la conversación se
+fue hacia el rediseño de "cobertura" antes de volver sobre eso. Son dos
+cosas relacionadas por vocabulario ("puño") pero DISTINTAS: una es un
+reporte de bug sin diagnosticar, la otra es la feature de largo de manga
+que sí se resolvió acá.
+
+**Verificado:** compila, cliente cargó limpio con las 45 combinaciones
+(9 texturas + 9 modelos nuevos, sin excepciones ni missing-resource). Como
+siempre, **no probado puesto en el juego todavía** — ni esto ni nada de lo
+de v11.
+
+**Para el otro Claude:**
+- La lección de v11 se repitió y se confirma: **"no tengo el generador
+  original" no es lo mismo que "no puedo tocar esto"**. Si el asset base ya
+  existe y está validado, derivar por recorte/máscara suele ser seguro —
+  ya van tres veces esta sesión (medias, pantalón inicial, ahora remera).
+- El bug de "línea de piel en los puños" (screenshot de varias entradas
+  atrás) sigue abierto. Si el dueño lo vuelve a mencionar, pedile una
+  captura en tercera persona a distancia normal — la que mandó era un
+  primer plano extremo, probablemente volando y mirando hacia abajo, y no
+  se pudo distinguir con certeza qué parte del cuerpo mostraba.
+- Antes de insertar un valor en el medio de CUALQUIER enum de este mod,
+  verificá si su CODEC persistente es por nombre (seguro) o por ordinal
+  (inserta al FINAL, no al medio, o rompés mundos guardados). Remera y
+  pantalón/medias son por nombre; no asumas que todo lo es.
 
 ## v11 — 2026-09-07 — cuenta de H0p3san · Claude Code (extensión de VSCode)
 

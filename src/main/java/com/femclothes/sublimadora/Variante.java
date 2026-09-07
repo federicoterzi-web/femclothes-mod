@@ -47,6 +47,7 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
         SIN("sin", 0),
         CORTA("corta", 4),
         TRES_CUARTOS("tres_cuartos", 8),
+        SIETE_OCTAVOS("siete_octavos", 10),
         LARGA("larga", 12);
 
         public final String clave;
