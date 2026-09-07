@@ -60,7 +60,13 @@ public class ClothingTrinketItem extends TrinketItem {
         }
     }
 
-    private static Text patternLine(ItemStack stack, Lado lado, String sideKey) {
+    /**
+     * Publico porque RemeraItem tambien lo necesita: el patron ya no es
+     * exclusivo de las prendas bilaterales. Remera lo llama con
+     * Lado.AMBAS y sideKey null (una sola linea, sin "izquierda/derecha"
+     * porque no tiene sentido para una prenda que no es por lado).
+     */
+    public static Text patternLine(ItemStack stack, Lado lado, String sideKey) {
         Identifier pattern = RegionResolver.patronId(stack, lado);
         Text name = pattern == null
                 ? Text.translatable("femclothes.pattern.none").formatted(Formatting.DARK_GRAY)

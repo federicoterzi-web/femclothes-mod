@@ -225,11 +225,34 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
      * pueden usar juntos o por separado. Nada de esto toca la estampa: se
      * puede reformar una remera ya impresa sin perder la foto, que es
      * justamente lo que no permitiria hacerlo por receta.
+     *
+     * El patron es interino aca: `RegionResolver`/`PATTERN_ID` no son
+     * especificos de ninguna prenda, asi que el dato ya funciona para
+     * remera sin tocarlo. Lo que faltaba era ESTA funcion, que hoy vive en
+     * el telar viejo por el mismo motivo que las medias — cuando exista la
+     * Estacion de tintes de MAQUINAS.md, la aplicacion se muda ahi y esto se
+     * borra, sin tocar RegionResolver ni el render.
+     *
+     * La remera es Lado.AMBAS siempre (PrendasDelMod.REMERA declara ENTERA
+     * para PATRON): una remera, un patron, no por lado como las medias.
      */
     private ItemStack reformarRemera(ItemStack remera, ItemStack dye, ItemStack pattern) {
         boolean hayMolde = pattern.getItem() instanceof MoldeItem;
+        boolean hayPatron = pattern.getItem() instanceof ClothingPatternItem;
         boolean hayTinte = dye.getItem() instanceof DyeItem;
-        if (!hayMolde && !hayTinte) return ItemStack.EMPTY;
+
+        // Remera sola: le saca el patron si tenia, igual que cualquier otra
+        // prenda (ver stripPattern). Sin patron que sacar no hay salida.
+        if (!hayMolde && !hayPatron && !hayTinte) {
+            if (!RegionResolver.tienePatron(remera, Lado.AMBAS)) return ItemStack.EMPTY;
+            ItemStack sinPatron = remera.copyWithCount(1);
+            RegionResolver.quitarPatron(sinPatron, Lado.AMBAS);
+            return sinPatron;
+        }
+
+        // Un patron sin tinte no dice de que color pintarlo — combinacion
+        // invalida, igual que el resto de las prendas (ver onContentChanged).
+        if (hayPatron && !hayTinte) return ItemStack.EMPTY;
 
         ItemStack out = remera.copyWithCount(1);
         if (hayMolde) {
@@ -237,8 +260,16 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
                     ((MoldeItem) pattern.getItem()).aplicar(RemeraItem.variante(remera)));
         }
         if (hayTinte) {
-            out.set(DataComponentTypes.DYED_COLOR, new DyedColorComponent(
-                    ((DyeItem) dye.getItem()).getColor().getFireworkColor(), false));
+            int rgb = ((DyeItem) dye.getItem()).getColor().getFireworkColor();
+            if (hayPatron) {
+                // Con patron, el tinte pinta el PATRON y no la base — igual
+                // que el resto de las prendas: "prenda + tinte + patron" no
+                // toca el color de fondo.
+                RegionResolver.ponerPatron(out, Lado.AMBAS,
+                        ((ClothingPatternItem) pattern.getItem()).patternId, rgb);
+            } else {
+                out.set(DataComponentTypes.DYED_COLOR, new DyedColorComponent(rgb, false));
+            }
         }
         return out;
     }

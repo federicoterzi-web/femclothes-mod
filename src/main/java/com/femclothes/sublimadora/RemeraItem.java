@@ -123,6 +123,13 @@ public class RemeraItem extends Item {
                 Text.translatable("femclothes.sublimadora.cuello." + v.cuello().clave))
                 .formatted(Formatting.GRAY));
 
+        // Mismo mecanismo que las medias: el nombre del patron EN su color,
+        // reusado de ClothingTrinketItem porque no hay nada especifico de
+        // prenda en esa linea. Lado.AMBAS y sideKey null porque la remera
+        // tiene un solo patron para toda la prenda, no por lado.
+        tooltip.add(com.femclothes.item.ClothingTrinketItem.patternLine(
+                stack, com.femclothes.region.Lado.AMBAS, null));
+
         tooltipEstampa(stack, tooltip);
     }
 }

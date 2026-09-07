@@ -251,8 +251,14 @@ public final class ClothingTextureCache {
         return a | (b << 16) | (g << 8) | r;
     }
 
-    /** Multiplica un pixel ABGR por un color RGB (el tinte estilo cuero). */
-    private static int tintPixel(int px, int rgb) {
+    /**
+     * Multiplica un pixel ABGR por un color RGB (el tinte estilo cuero).
+     *
+     * Publico porque EstampaTextures pinta patrones sobre remera con esta
+     * misma cuenta: es matematica pura de pixeles, no hay motivo para
+     * duplicarla en otro paquete.
+     */
+    public static int tintPixel(int px, int rgb) {
         int a = (px >> 24) & 0xFF;
         int bChan = (px >> 16) & 0xFF, gChan = (px >> 8) & 0xFF, rChan = px & 0xFF;
         int dr = (rgb >> 16) & 0xFF, dg = (rgb >> 8) & 0xFF, db = rgb & 0xFF;

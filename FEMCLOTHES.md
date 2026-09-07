@@ -112,9 +112,31 @@ otra cosa, el Telar normal de banderas.
 | Prenda SOLA | Le saca el patrón y la deja lisa |
 | Remera + molde | Avanza un eje del corte |
 | Remera + molde + tinte | Las dos cosas de una pasada |
+| Remera + tinte + patrón | Igual que cualquier prenda: aplica el patrón con ese color |
+| Remera SOLA | Le saca el patrón, igual que cualquier prenda |
 
 Un botón debajo del panel cicla **Ambas / Izquierda / Derecha**, y todo lo de
-arriba respeta esa elección.
+arriba respeta esa elección — salvo la remera, que siempre es un solo color y
+un solo patrón para toda la prenda (`Garment.regionesDe(PATRON)` declara
+`ENTERA`), así que el botón no le hace nada.
+
+⚠️ **El patrón de remera vive en el telar por ahora, como interino.**
+`RegionResolver`/`PATTERN_ID` no son específicos de ninguna prenda —el dato
+ya funcionaba para remera sin tocar nada—, lo que faltaba era la función del
+telar (`reformarRemera`). Cuando exista la Estación de tintes de
+`MAQUINAS.md` la aplicación se muda ahí; el render y el dato no cambian.
+
+El patrón se pinta con **una sola máscara compartida por los 36 cortes**
+(`textures/models/armor/patterns/remera/<patrón>.png`, del tamaño del corte
+más grande), recortada gratis por el alfa de cada corte: un croptop nunca
+muestra patrón más allá de su propio ruedo porque ahí la base ya es
+transparente. Evita el problema de "N prendas × M patrones" que
+[PRENDAS.md §6](docs/PRENDAS.md) marca — ver `EstampaTextures.aplicarPatron`.
+
+**Pendiente, a propósito**: el ÍCONO de la remera no muestra el patrón
+todavía (sí lo hacen las medias, con un modelo de dos capas). Remera tiene 36
+modelos de ítem —uno por corte— y sumarle una segunda capa tintada a cada
+uno es un trabajo de arte aparte, no de código.
 
 Ni el patrón ni el molde se consumen, igual que un patrón de estandarte
 vanilla.
@@ -552,3 +574,11 @@ siguen comentadas en `build.gradle`.
 9. **Colapsar `Estampa.Cara` en `region.Cara`.** Quedaron dos enums con el
    mismo nombre y casi el mismo contenido; unificarlos toca 8 archivos de la
    sublimadora (el selector físico y su NBT), y no era parte de la fase 1.
+10. **Máscaras de patrón para remera** (`textures/models/armor/patterns/remera/*.png`).
+    El código ya compone el patrón (`EstampaTextures.aplicarPatron`); sin el
+    PNG cae a la prenda tenida lisa, igual que cualquier máscara faltante.
+11. **Ícono de remera con patrón.** Necesita una segunda capa tintada por
+    cada uno de los 36 modelos de corte — trabajo de arte, no de código.
+12. **Migrar el patrón de remera del telar a la Estación de tintes**, cuando
+    `MAQUINAS.md` deje de ser diseño. El dato (`RegionResolver`) y el render
+    no cambian; solo `reformarRemera` se borra.

@@ -1,4 +1,4 @@
-<!-- canal-version: 7 -->
+<!-- canal-version: 8 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,57 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v8 — 2026-09-07 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:** patrones de tela (rayas, etc) para la remera, a pedido del dueño.
+Antes solo existían para medias. El dato ya era genérico
+(`RegionResolver`/`PATTERN_ID` no son de ninguna prenda en particular); lo
+que faltaba era quien lo aplicara y quien lo pintara.
+
+- **Telar** (`ClothingLoomScreenHandler.reformarRemera`): ahora acepta un
+  `ClothingPatternItem` en el slot de patrón. Remera + tinte + patrón aplica
+  el patrón con ese color sin tocar la base (misma regla que el resto de las
+  prendas); remera sola le saca el patrón si tenía. Es **interino a
+  propósito**: el dueño aclaró que corte y patrón se van a mudar a las
+  máquinas nuevas de `MAQUINAS.md` (mesa de sastrería / Estación de tintes —
+  sus nombres para lo que el doc llama mesa de sastrería / mesa de
+  tinturas), hoy sin implementar. Cuando eso exista, se borra
+  `reformarRemera` y no se toca ni el dato ni el render.
+- **Render** (`EstampaTextures.aplicarPatron`, nuevo): pinta la máscara
+  DESPUÉS del tenido y ANTES de la estampa. Reusa **una sola máscara para
+  los 36 cortes** (tamaño del corte más grande) en vez de generar 36 — se
+  recorta sola contra el alfa de cada corte, así un croptop nunca ve patrón
+  más allá de su propio ruedo. `cuerpoEstampado` ganó dos parámetros
+  (`patronId`, `patronColor`) y la clave de cache los incluye.
+- **Tooltip**: `ClothingTrinketItem.patternLine` pasó a público y
+  `RemeraItem` lo reusa (`Lado.AMBAS`, sin side-key) en vez de reimplementar
+  el mismo texto.
+- `ClothingTextureCache.tintPixel` pasó a público: es la misma cuenta ABGR
+  que ya usaba `composeGarment`, sin motivo para duplicarla.
+- **Queda afuera a propósito**: el ÍCONO de remera no muestra el patrón —
+  necesita una segunda capa tintada en cada uno de los 36 modelos de corte,
+  trabajo de arte. Y falta el PNG de la máscara en sí
+  (`textures/models/armor/patterns/remera/*.png`); sin él cae a la prenda
+  tenida lisa, como cualquier máscara faltante del mod.
+- FEMCLOTHES.md: tabla del telar con las filas nuevas, sección de la
+  máscara compartida, y tres ítems nuevos en "Lo que falta".
+
+**Próximo:** sin cambios de fondo — migrar shorts sigue primero. Nada de
+esto se probó puesto en el juego (sigue siendo cierto para TODA la fase 1,
+no es nuevo de esta entrada).
+
+**Para el otro Claude:**
+- Si tocás `EstampaTextures`, la resolución de tela (2×/4×/8× de v7) sigue
+  SIN aplicarse ahí a propósito — quedó explícitamente afuera por lo frágil
+  del compositor, y esta entrada tampoco la tocó.
+- El "puño que no se pinta" que el dueño señaló en v7 sigue sin
+  investigarse. No lo toqué en esta entrada tampoco; sigue pendiente.
+- Si armás la Estación de tintes de verdad: `reformarRemera` es exactamente
+  la lógica a migrar (molde/patrón/tinte), y `RegionResolver`/
+  `EstampaTextures.aplicarPatron` NO deberían necesitar tocarse — el dato y
+  el render ya son genéricos, es la UI la que hoy vive en el lugar
+  equivocado.
 
 ## v7 — 2026-09-06 — cuenta de H0p3san · Claude Code (extensión de VSCode)
 

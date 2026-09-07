@@ -98,10 +98,15 @@ public final class PiezasDelMod {
      */
     private static List<Pieza> remera(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
         Variante variante = RemeraItem.variante(stack);
+        // La remera es Lado.AMBAS siempre para PATRON (un solo color, un
+        // solo patron para toda la prenda): ver Garment.regionesDe en
+        // PrendasDelMod.
         Identifier textura = EstampaTextures.cuerpoEstampado(variante,
                 RemeraItem.estampaDe(stack, Estampa.Cara.FRENTE),
                 RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA),
-                RemeraItem.color(stack));
+                RemeraItem.color(stack),
+                RegionResolver.patronId(stack, Lado.AMBAS),
+                RegionResolver.colorPatron(stack, Lado.AMBAS));
         // Si todavia no se pudo componer -la foto no bajo- se usa la lisa,
         // que es lo correcto mientras tanto.
         if (textura == null) textura = variante.texturaCuerpo();

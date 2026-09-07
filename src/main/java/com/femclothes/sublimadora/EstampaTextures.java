@@ -345,21 +345,28 @@ public final class EstampaTextures {
     }
 
     /**
-     * La remera del cuerpo con las estampas ya pintadas encima, o null si no
-     * hay ninguna o no se pudo componer.
+     * La remera del cuerpo con patron y estampas ya pintados encima, o null
+     * si no hay nada de eso o no se pudo componer.
      *
      * Se compone una textura entera en vez de dibujar cuadrados sobre el
      * cuerpo porque la prenda YA es una textura en layout de skin: meter la
      * foto adentro de ella la hace seguir al cuerpo sin geometria extra, y de
      * paso queda recortada a la tela sola.
+     *
+     * El orden es tenido → patron → estampa, igual que en el resto del mod:
+     * la foto se imprime sobre la prenda terminada y no se tine con ella.
      */
     @Nullable
     public static Identifier cuerpoEstampado(Variante variante, @Nullable Estampa frente,
-                                      @Nullable Estampa espalda, int color) {
-        // Sin estampas y sin tenir no hay nada que componer: se usa la
-        // textura del pack tal cual.
-        if (frente == null && espalda == null && color == RemeraItem.BLANCO) return null;
-        String clave = variante.clave() + "|" + frente + "|" + espalda + "|" + color;
+                                      @Nullable Estampa espalda, int color,
+                                      @Nullable Identifier patronId, int patronColor) {
+        // Sin estampas, sin patron y sin tenir no hay nada que componer: se
+        // usa la textura del pack tal cual.
+        if (frente == null && espalda == null && patronId == null && color == RemeraItem.BLANCO) {
+            return null;
+        }
+        String clave = variante.clave() + "|" + frente + "|" + espalda + "|" + color
+                + "|" + patronId + "|" + patronColor;
         Identifier hecha = CACHE_CUERPO.get(clave);
         if (hecha != null) return hecha;
         if (FALLADAS.containsKey(clave)) return null;
@@ -373,6 +380,7 @@ public final class EstampaTextures {
                 base.getWidth(), base.getHeight(), false);
         salida.copyFrom(base);
         if (color != RemeraItem.BLANCO) tenir(salida, color);
+        if (patronId != null) aplicarPatron(salida, patronId, patronColor);
 
         if (!estampar(salida, deLaRemera(variante), frente, espalda)) {
             salida.close();
@@ -479,6 +487,39 @@ public final class EstampaTextures {
                         | ((pb * b / 255) << 16)
                         | ((pg * g / 255) << 8)
                         | (pr * r / 255));
+            }
+        }
+    }
+
+    /**
+     * Pinta un patron (rayas, etc) sobre la tela ya tenida. Va DESPUES de
+     * {@link #tenir} y ANTES de la estampa, mismo orden que
+     * {@code ClothingTextureCache.composeGarment}.
+     *
+     * Reusa la MISMA mascara para los 36 cortes en vez de generar una por
+     * corte — el problema de "N prendas x M patrones" que PRENDAS.md §6
+     * marca. La mascara se autora del tamano del corte MAS GRANDE
+     * (remeron + manga larga) y cada corte mas chico la recorta solo,
+     * gratis: se pinta patron unicamente donde la tela de ESE corte ya tiene
+     * alfa — un croptop nunca ve el patron mas alla de su propio ruedo,
+     * porque ahi la base ya es transparente.
+     *
+     * Si el PNG todavia no existe cae a la prenda tenida lisa, igual que
+     * cualquier mascara de patron del mod.
+     */
+    private static void aplicarPatron(NativeImage tela, Identifier patronId, int patronColor) {
+        NativeImage mascara = com.femclothes.render.ClothingTextureCache
+                .imagenBase(com.femclothes.render.ClothingTextureCache.patternMaskFor("remera", patronId));
+        if (mascara == null) return;
+
+        for (int y = 0; y < Math.min(tela.getHeight(), mascara.getHeight()); y++) {
+            for (int x = 0; x < Math.min(tela.getWidth(), mascara.getWidth()); x++) {
+                int maskPx = mascara.getColor(x, y);
+                if (((maskPx >>> 24) & 0xFF) == 0) continue;
+                // Sin tela de ESTE corte en este pixel, no hay donde pintar
+                // patron: es el recorte gratis contra el ruedo del corte.
+                if (((tela.getColor(x, y) >>> 24) & 0xFF) == 0) continue;
+                tela.setColor(x, y, com.femclothes.render.ClothingTextureCache.tintPixel(maskPx, patronColor));
             }
         }
     }
