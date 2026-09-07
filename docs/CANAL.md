@@ -1,4 +1,4 @@
-<!-- canal-version: 8 -->
+<!-- canal-version: 9 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,64 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v9 — 2026-09-07 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:** shorts migrados al sistema de capas, a pedido del dueño — **la
+primera prueba real del layering** (shorts dibujados ENCIMA de las medias sin
+borrarlas, que es exactamente lo que el sistema viejo no podía hacer). El
+cliente arranca limpio con el nuevo slot cargado, sin probar puesto en el
+juego todavía.
+
+- `FemclothesItems.SHORTS`: de `ClothingArmorItem` (geometría de armadura,
+  **sin textura de armadura siquiera** — `cloth_layer_1.png` nunca existió,
+  así que puesto no se veía nada) a `ClothingTrinketItem`. No había
+  comportamiento previo que preservar.
+- **Slot nuevo** `piernas/exterior` (Trinkets), separado de `socks/pair` a
+  propósito: las dos prendas coexisten, y quién va arriba lo decide
+  `Capa.PIERNA_EXTERIOR` (20) contra `Capa.MEDIA` (10) — no el `order` de
+  Trinkets. Nombre tomado directo de `PRENDAS.md` §1 (la región `piernas` ya
+  estaba diseñada con este slot).
+- **Sin patrón ni corte todavía** (`Garment.regionesDe`: solo `TENIR` →
+  `BILATERAL`). A propósito, para no mezclar "probar que el layering anda"
+  con features nuevas — el mecanismo para sumarlo después es el mismo que ya
+  tienen medias y remera.
+- **Textura base generada por script** (Python + Pillow, no había generador
+  en el repo así que escribí uno ad-hoc para esto), reusando la MISMA
+  matemática de `CajaSkin`/`LayoutSkin` que el renderer para no adivinar
+  coordenadas: cubre las 4 filas de arriba de las 12 del cuboide de pierna
+  (waist → medio muslo) más la tapa de arriba, con una fila de dobladillo un
+  poco más oscura en el borde — mismo principio que pide FEMCLOTHES.md para
+  las mangas ("no cortado con tijera"). 512×512, blanco puro + gris de
+  dobladillo, para que el tinte multiplicativo de siempre funcione.
+- **Ícono**: recoloreado a blanco/gris tintables (mismo patrón que
+  `socks_solid.png`) — antes era un color fijo sin tinte real, porque
+  `ClothingArmorItem` con material `dyeable=false` nunca lo tiñó. Comparte
+  el `ColorProviderRegistry` de las medias (mismo callback, dos ítems).
+- Slot icon (`gui/slot/shorts.png`) generado con la misma convención: gris
+  al 45% de alpha.
+- FEMCLOTHES.md y PRENDAS.md actualizados: tabla de prendas, la mención
+  vieja a `BodyPartTrinketRenderer` en la sección de layouts (que ya no
+  existe desde la fase 1 y quedó sin corregir hasta ahora), roadmap.
+
+**Próximo:** fishnet y socks_34 son los siguientes candidatos obvios —
+mismo mecanismo, sin slot nuevo que inventar (fishnet podría compartir
+`piernas/exterior` con shorts, o necesitar el suyo si conviven). Patrón para
+shorts, si hace falta, es directamente reusar `ClothingTextureCache` con una
+`patternMaskFor("shorts", ...)`.
+
+**Para el otro Claude:**
+- **Nada de esto se probó puesto en el juego** — ver medias/short simultáneos
+  en persona es lo primero que hay que hacer. La sospecha concreta a
+  verificar: que el short tape las primeras 4 filas de la media sin agujeros
+  ni un borde raro en el dobladillo.
+- El generador Python que usé para la textura y el ícono no quedó guardado en
+  el repo (lo corrí ad-hoc, one-off) — si hace falta regenerar o hacer una
+  variante, la matemática está documentada en el comentario de
+  `PiezasDelMod.shorts`/`texturaShorts` y en este mismo mensaje, no hay
+  script para reejecutar.
+- El slot `piernas/exterior` es nuevo pero el NOMBRE ya estaba en
+  `PRENDAS.md` §1 desde v3 — no lo inventé, lo implementé.
 
 ## v8 — 2026-09-07 — cuenta de H0p3san · Claude Code (extensión de VSCode)
 

@@ -4,6 +4,7 @@
   ],
   "slots": [
     "arms/armwarmer",
+    "piernas/exterior",
     "socks/pair",
     "torso/prenda"
   ]

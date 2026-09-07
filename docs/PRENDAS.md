@@ -94,11 +94,15 @@ capa de la skin hay que borrar. Un croptop y un remerón borran lo mismo.
 | cabeza | — (sin slot, es una pieza de la polera) | banda de polera |
 | torso | `torso/interior`, `torso/exterior` | binder/corpiño · remera/top |
 | brazos | `brazos` | mangas (incl. armwarmers, ver §5) |
-| piernas | `piernas/media`, `piernas/exterior` | medias/fishnet/leggings · shorts/pollera/pantalón |
+| piernas | `piernas/media`¹, `piernas/exterior` | medias/fishnet/leggings · shorts/pollera/pantalón |
 | pies | `pies` | calzado |
 
 Dentro y entre slots de una región, el **ordinal `layer`** decide el orden
 de dibujo.
+
+¹ `piernas/exterior` ya existe (shorts). Las medias siguen en el slot viejo
+`socks/pair` y no en `piernas/media` — renombrarlo es aparte, no hacía falta
+para probar el layering.
 
 ---
 
@@ -595,8 +599,10 @@ interacción**, el **arte del cuerpo base** y el **`RegionPickerWidget`**.
 Después, dos tracks independientes:
 
 ### Track prendas
-2. Migrar shorts al sistema nuevo (prueba el layering). Después fishnet y
-   socks_34 caen solos. **Ya no está bloqueado.**
+2. ~~Migrar shorts al sistema nuevo (prueba el layering)~~ — **hecho.**
+   Trinket, slot `piernas/exterior`, `Capa.PIERNA_EXTERIOR` (20) arriba de la
+   media. Sin patrón todavía — solo tenido. Después fishnet y socks_34 caen
+   con el mismo mecanismo.
 3. ~~Fusionar `RemeraTrinketRenderer` + `BodyPartTrinketRenderer`~~ — hecho en
    la fase 1 (`CuerpoGeometria` + `GarmentFeatureRenderer`).
 4. Mangas (banda) con dobladillo. Cuello redondo/V/escote como máscaras de

@@ -38,18 +38,18 @@ ciclo de prensado no tiene nada que ver con el resto de las prendas.
 
 | Prenda | Estado | Mecanismo |
 |---|---|---|
-| **Remera** (`remera`) | ✅ 36 cortes, teñible, estampable | Trinket, slot `torso/prenda`, dibujada sobre el cuerpo real |
+| **Remera** (`remera`) | ✅ 36 cortes, teñible, patrones, estampable | Trinket, slot `torso/prenda`, dibujada sobre el cuerpo real |
 | **Medias color pleno** (`socks_solid`) | ✅ patrones, teñible, **estampable** | Trinket, slot `socks/pair`, dibujada sobre la pierna real |
+| **Shorts** (`shorts`) | ✅ teñible, sin patrón todavía | Trinket, slot `piernas/exterior`, primera prueba real del layering (capa arriba de la media) |
 | **Calentadores de brazo** (`armwarmers`) | ✅ funcional | Trinket, slot custom `arms/armwarmer` |
 | Medias 3/4 (`socks_34`) | placeholder | Slot cosmético (Cosmetic Armor Updated) |
 | Medias de red (`fishnet_socks`) | placeholder, no teñible | Pendiente: pasar a patrón "fishnet" |
-| Shorts | placeholder | Pendiente migrar a `BodyPartTrinketRenderer` |
 | Traje de maid | placeholder, set completo en una textura | Sin definir |
 | Buzo oversize | placeholder | Se queda con geometría ANCHA a propósito |
 
-Las tres primeras están en el sistema nuevo (`BodyPartTrinketRenderer` o el
-renderer propio de la remera). El resto sigue en `ClothingArmorItem`, con
-geometría de armadura.
+Las cuatro primeras están en el sistema nuevo: `GarmentFeatureRenderer`
+dibuja TODA la ropa del mod desde un solo lugar (ver "El sistema de capas"
+más abajo). El resto sigue en `ClothingArmorItem`, con geometría de armadura.
 
 **El croptop se retiró.** Era un chestplate del pipeline viejo, nunca se le
 dibujó el arte —salía en damero— y desde que la remera tiene el eje de largo,
@@ -224,16 +224,16 @@ en un dedicado cargaría `NativeImage` y `MinecraftClient`.
 Esta es la trampa más fácil de pisar del proyecto. El layout depende de con
 qué renderer se dibuja la prenda, y **no son intercambiables**:
 
-- **Prendas del sistema nuevo** (`socks_solid`, `remera`): layout de **SKIN DE
-  JUGADOR**, porque el renderer dibuja cajas con la geometría del jugador.
-  `LayoutSkin` y `CajaSkin` calculan dónde cae cada cara — antes eran
-  rectángulos escritos a mano y había que contar píxeles sobre la plantilla. Las dos piernas
-  están en regiones SEPARADAS: derecha en `uv(0,16)`, izquierda en
-  `uv(16,48)`; los brazos, derecho en `uv(40,16)` e izquierdo en `uv(32,48)`.
-  Verificado en `PlayerEntityModel.getTexturedModelData`.
+- **Prendas del sistema nuevo** (`socks_solid`, `shorts`, `remera`): layout de
+  **SKIN DE JUGADOR**, porque el renderer dibuja cajas con la geometría del
+  jugador. `LayoutSkin` y `CajaSkin` calculan dónde cae cada cara — antes eran
+  rectángulos escritos a mano y había que contar píxeles sobre la plantilla.
+  Las dos piernas están en regiones SEPARADAS: derecha en `uv(0,16)`,
+  izquierda en `uv(16,48)`; los brazos, derecho en `uv(40,16)` e izquierdo en
+  `uv(32,48)`. Verificado en `PlayerEntityModel.getTexturedModelData`.
 
-- **Prendas que siguen en `ClothingArmorItem`** (shorts, maid, buzo): layout
-  de ARMADURA vanilla, tipo `leather_layer_1.png`.
+- **Prendas que siguen en `ClothingArmorItem`** (maid, buzo, fishnet, socks_34):
+  layout de ARMADURA vanilla, tipo `leather_layer_1.png`.
 
 Una textura 64x32 de armadura usada en una prenda del sistema nuevo hace que
 la pierna izquierda samplee fuera de la imagen. Antes de dibujar, mirar si la
@@ -565,9 +565,10 @@ siguen comentadas en `build.gradle`.
    `interior_<ropa>.png`. Sin ellos el cuerpo sale liso sombreado por cara,
    que es lo que había antes — o sea que no se perdió nada, pero es lo que
    hace que el set curado se distinga entre sí.
-6. **Migrar shorts** al sistema de capas. Ya NO está bloqueado: es la primera
-   prueba real del layering (short sobre media). Después fishnet y socks_34
-   caen solos.
+6. ~~**Migrar shorts**~~ — hecho: `shorts` es Trinket, slot `piernas/exterior`,
+   se dibuja en `Capa.PIERNA_EXTERIOR` (20) arriba de la media (`Capa.MEDIA`,
+   10). Sin patrón todavía (§Prendas). Con esto probado, fishnet y socks_34
+   caen con el mismo mecanismo.
 7. **Geometría Blockbench del buzo oversize** (Armor Model API). Hay un TODO
    en `FemclothesClient` marcando dónde va el registro.
 8. **Probar el puente de 3D Skin Layers.**

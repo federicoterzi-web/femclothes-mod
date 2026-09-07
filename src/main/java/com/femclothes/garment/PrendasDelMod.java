@@ -23,6 +23,7 @@ public final class PrendasDelMod {
 
     public static void init() {
         Garments.registrar(FemclothesItems.SOCKS_SOLID, MEDIAS);
+        Garments.registrar(FemclothesItems.SHORTS, SHORTS);
         Garments.registrar(ModItems.REMERA, REMERA);
     }
 
@@ -43,6 +44,34 @@ public final class PrendasDelMod {
                 // a BILATERAL tambien: nada impide una media hasta la rodilla
                 // y la otra al tobillo.
                 case CORTE -> Set.of();
+            };
+        }
+
+        @Override
+        public Set<Parte> partes(ItemStack stack) {
+            return EnumSet.of(Parte.PIERNA_IZQ, Parte.PIERNA_DER);
+        }
+    };
+
+    /**
+     * Shorts: la primera prueba real del sistema de capas.
+     *
+     * Va en {@code piernas/exterior}, un slot DISTINTO del de las medias
+     * ({@code socks/pair}) — pueden estar puestas las dos a la vez, que es
+     * justo lo que hace falta para probar el layering. Quien decide que se
+     * dibuja arriba es {@code Capa.PIERNA_EXTERIOR} (20) contra
+     * {@code Capa.MEDIA} (10), no el order de los slots de Trinkets.
+     *
+     * Sin patron ni corte todavia: es a proposito, para no mezclar "probar
+     * que el layering anda" con features nuevas. Se suman despues con el
+     * mismo mecanismo generico que ya tienen las medias.
+     */
+    private static final Garment SHORTS = new Garment() {
+        @Override
+        public Set<Region> regionesDe(Operacion op) {
+            return switch (op) {
+                case TENIR -> BILATERAL;
+                case PATRON, CORTE, ESTAMPAR -> Set.of();
             };
         }
 
