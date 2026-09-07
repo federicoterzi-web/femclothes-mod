@@ -7,6 +7,7 @@ import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.StringIdentifiable;
 
 /**
  * Componentes de datos custom para el sistema de personalización:
@@ -82,6 +83,19 @@ public final class FemclothesComponents {
             ComponentType.<Orientacion>builder()
                     .codec(Orientacion.CODEC)
                     .packetCodec(Orientacion.PACKET_CODEC)
+                    .build());
+
+    /**
+     * El largo del pantalón (§{@link PantalonLargo}). Ausente = pantalón
+     * largo completo, que es lo que sale del crafteo — mismo default que
+     * remera con {@code Variante.BASE}.
+     */
+    public static final ComponentType<PantalonLargo> PANTALON_LARGO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "pantalon_largo"),
+            ComponentType.<PantalonLargo>builder()
+                    .codec(StringIdentifiable.createCodec(PantalonLargo::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PantalonLargo.values()[i], Enum::ordinal))
                     .build());
 
     public static void init() {

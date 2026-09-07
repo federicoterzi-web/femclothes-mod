@@ -3,6 +3,7 @@ package com.femclothes.client;
 import com.femclothes.garment.Capa;
 import com.femclothes.garment.Parte;
 import com.femclothes.item.FemclothesItems;
+import com.femclothes.item.PantalonItem;
 import com.femclothes.region.Lado;
 import com.femclothes.region.RegionResolver;
 import com.femclothes.render.ClothingTextureCache;
@@ -37,14 +38,11 @@ public final class PiezasDelMod {
     private static final Identifier MEDIAS_BASE =
             Identifier.of("femclothes", "textures/models/armor/socks_solid_layer_1.png");
 
-    private static final Identifier SHORTS_BASE =
-            Identifier.of("femclothes", "textures/models/armor/shorts_layer_1.png");
-
     private PiezasDelMod() {}
 
     public static void init() {
         PiezasDePrenda.registrar(FemclothesItems.SOCKS_SOLID, PiezasDelMod::medias);
-        PiezasDePrenda.registrar(FemclothesItems.SHORTS, PiezasDelMod::shorts);
+        PiezasDePrenda.registrar(FemclothesItems.PANTALON, PiezasDelMod::pantalon);
         PiezasDePrenda.registrar(ModItems.REMERA, PiezasDelMod::remera);
     }
 
@@ -128,22 +126,24 @@ public final class PiezasDelMod {
     }
 
     /**
-     * Shorts: la prueba del layering. Se dibuja en {@code Capa.PIERNA_EXTERIOR}
-     * (20), arriba de la media ({@code Capa.MEDIA}, 10) — donde el short no
-     * tiene tela (todo el muslo para abajo) se sigue viendo la media, y donde
-     * ninguna de las dos tiene, el cuerpo base. Ese es el layering.
+     * Pantalón: la prueba del layering, con siete largos posibles. Se dibuja
+     * en {@code Capa.PIERNA_EXTERIOR} (20), arriba de la media
+     * ({@code Capa.MEDIA}, 10) — donde el pantalón no tiene tela se sigue
+     * viendo la media, y donde ninguna de las dos tiene, el cuerpo base.
      *
-     * Sin patron ni estampa todavia (ver {@code Garment.regionesDe} en
-     * PrendasDelMod): solo tenido, mismo mecanismo que un color de cuero.
+     * La textura base cambia con {@link PantalonItem#largo}, una por cada
+     * valor de {@code PantalonLargo} (generadas por script, mismo criterio
+     * que los 36 cortes de remera). Sin patrón ni estampa todavía.
      */
-    private static List<Pieza> shorts(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
+    private static List<Pieza> pantalon(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
+        Identifier base = PantalonItem.largo(stack).texturaCuerpo();
         return List.of(
-                new Pieza(Parte.PIERNA_IZQ, Capa.PIERNA_EXTERIOR, texturaShorts(stack, Lado.IZQUIERDA)),
-                new Pieza(Parte.PIERNA_DER, Capa.PIERNA_EXTERIOR, texturaShorts(stack, Lado.DERECHA)));
+                new Pieza(Parte.PIERNA_IZQ, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA)),
+                new Pieza(Parte.PIERNA_DER, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.DERECHA)));
     }
 
-    private static Identifier texturaShorts(ItemStack stack, Lado lado) {
-        return ClothingTextureCache.composeGarment(SHORTS_BASE, RegionResolver.colorBase(stack, lado),
+    private static Identifier texturaPantalon(Identifier base, ItemStack stack, Lado lado) {
+        return ClothingTextureCache.composeGarment(base, RegionResolver.colorBase(stack, lado),
                 null, 0, ClothingTextureCache.Shading.LEGS);
     }
 }

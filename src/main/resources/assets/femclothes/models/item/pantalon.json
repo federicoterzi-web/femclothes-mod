@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "femclothes:item/shorts"
+    "layer0": "femclothes:item/pantalon"
   }
 }

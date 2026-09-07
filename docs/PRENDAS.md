@@ -100,7 +100,8 @@ capa de la skin hay que borrar. Un croptop y un remerón borran lo mismo.
 Dentro y entre slots de una región, el **ordinal `layer`** decide el orden
 de dibujo.
 
-¹ `piernas/exterior` ya existe (shorts). Las medias siguen en el slot viejo
+¹ `piernas/exterior` ya existe (`pantalon`, con eje de largo — de pantalón
+completo a tanga, ver FEMCLOTHES.md). Las medias siguen en el slot viejo
 `socks/pair` y no en `piernas/media` — renombrarlo es aparte, no hacía falta
 para probar el layering.
 
@@ -440,12 +441,19 @@ familia tiene sus ejes:
 | remera | largo · manga · cuello |
 | medias | largo (tobillo/media/rodilla/muslo) · puño |
 | pollera | flare · largo |
-| pantalón | fit · largo (short/capri/full/campana) · tiro · botamanga |
+| pantalón | fit · largo² · tiro · botamanga |
 | mangas | banda |
 | calzado | tipo · caña |
 
 `variante` pasa a ser un `Map<Eje, Valor>`. Cada prenda declara
 `List<Eje> ejes()` (nombre, valores ordenados, qué región/geometría afecta).
+
+² El eje `largo` de pantalón YA está implementado, pero suelto —
+`PantalonLargo` + `MoldePantalonItem`, no el `Map<Eje,Valor>` genérico de acá
+arriba— y con valores distintos a los especulados en esta tabla:
+**pantalón · tres cuartos · bermudas · shorts · calzoncillos · slip · tanga**
+(7, no 4). Ver FEMCLOTHES.md, "El largo del pantalón". Cuando este sistema
+genérico se construya, es el punto donde se pliega.
 
 - **Moldes de eje** = llaves **universales**. El molde `manga` desbloquea el
   eje en *cualquier* prenda que lo tenga.
@@ -599,10 +607,12 @@ interacción**, el **arte del cuerpo base** y el **`RegionPickerWidget`**.
 Después, dos tracks independientes:
 
 ### Track prendas
-2. ~~Migrar shorts al sistema nuevo (prueba el layering)~~ — **hecho.**
-   Trinket, slot `piernas/exterior`, `Capa.PIERNA_EXTERIOR` (20) arriba de la
-   media. Sin patrón todavía — solo tenido. Después fishnet y socks_34 caen
-   con el mismo mecanismo.
+2. ~~Migrar shorts al sistema nuevo (prueba el layering)~~ — **hecho, y creció
+   a `pantalon`**: Trinket, slot `piernas/exterior`, `Capa.PIERNA_EXTERIOR`
+   (20) arriba de la media. Eje de largo (`PantalonLargo`, 7 valores de
+   pantalón completo a tanga) vía molde, mismo mecanismo que el corte de
+   remera — ver FEMCLOTHES.md. Sin patrón todavía. Después fishnet y
+   socks_34 caen con el mismo mecanismo.
 3. ~~Fusionar `RemeraTrinketRenderer` + `BodyPartTrinketRenderer`~~ — hecho en
    la fase 1 (`CuerpoGeometria` + `GarmentFeatureRenderer`).
 4. Mangas (banda) con dobladillo. Cuello redondo/V/escote como máscaras de

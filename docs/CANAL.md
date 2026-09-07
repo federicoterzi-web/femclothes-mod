@@ -1,4 +1,4 @@
-<!-- canal-version: 9 -->
+<!-- canal-version: 10 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,79 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v10 — 2026-09-07 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:**
+
+1. **El layering de v9 se probó EN PERSONA y anda.** El dueño equipó medias +
+   shorts en el mundo guardado, confirmó que la media se sigue viendo por
+   debajo — la sospecha que quedaba anotada en v9 está resuelta. (Yo intenté
+   automatizar la prueba a ciegas con PowerShell/Win32 antes de esto —
+   `SetForegroundWindow` no le puede robar el foco a un proceso que no es el
+   foreground, hace falta el truco del tap de ALT antes— y terminó siendo más
+   lento que dejar que el dueño juegue directo. Anotado por si a alguien se
+   le ocurre retomarlo: no vale la pena, no hay Playwright para un juego 3D.)
+
+2. **`shorts` se reemplazó por `pantalon`**, a pedido del dueño: la prenda
+   larga de pierna es la base (igual que la remera con el torso), y se
+   recorta después con molde — de pantalón completo a tanga, 7 valores.
+   - `PantalonLargo` (enum, clave+filas, en `com.femclothes.item` — NO en
+     `sublimadora`, porque no tiene nada que ver con estampar) +
+     `PantalonItem` (`ClothingTrinketItem`, nombre por valor) +
+     `MoldePantalonItem` (cicla el eje, no consume, mismo mecanismo que los
+     moldes de remera pero clase propia — el `MoldeItem.Eje` de remera está
+     tipado a `Variante`, que es de otra prenda).
+   - Componente nuevo `femclothes:pantalon_largo`. Ausente = pantalón
+     completo (default del crafteo, igual que remera con `Variante.BASE`).
+   - **Rama propia en el telar** (`reformarPantalon`), pero MÁS CHICA que la
+     de remera: el pantalón es bilateral para el tinte (cada pierna su
+     color, lo que ya tenía shorts) así que el tinte sigue el camino
+     genérico — solo el LARGO necesita rama especial, porque el molde no es
+     un `ClothingPatternItem` que el camino genérico reconozca.
+   - **7 texturas de cuerpo generadas** (Python otra vez, mismo generador de
+     v9 parametrizado por filas: 12/9/7/4/3/2/1). La de `shorts` (4 filas)
+     NO se regeneró — se copió el archivo ya probado en el juego, para no
+     arriesgar el único pixel ya validado.
+   - **Ícono: UNO SOLO para los 7 valores**, a propósito — la silueta del
+     ítem es simbólica, no un desdoblado proporcional como la textura de
+     cuerpo, así que no hay forma principista de recortarla en 7. El nombre
+     (que sí cambia por valor) es la diferenciación en el inventario.
+     Documentado como gap explícito, mismo criterio que el ícono de patrón
+     de remera en v8.
+   - `molde_pantalon` reusa el ícono de `molde_largo` (de remera) — dos
+     herramientas distintas, mismo sprite, hasta que alguien dibuje el
+     propio. Casi se me pasa: el primer build con el cliente arriba tiró un
+     `FileNotFoundException` por el modelo de ítem faltante — quedó
+     detectado y arreglado ANTES de devolverle el cliente al dueño.
+   - Renombrados: `shorts.json`→`pantalon.json` (receta), item/slot icons,
+     tag de `piernas/exterior`. `PrendasDelMod`/`PiezasDelMod` actualizados.
+
+**Cliente probado dos veces tras el cambio** (arranca limpio, sin warnings de
+femclothes) pero **el pantalón en sí — puesto, con el molde cicleando los 7
+largos — todavía NO se probó en persona.** Solo shorts (el valor que ya
+tenía, filas=4) se vio andando.
+
+**Próximo:** que el dueño pruebe el molde ciclando los 7 largos (¿el
+dobladillo se ve bien en las siete? ¿"pantalón" completo tapa bien la media
+entera o se ve una franja?). Después: patrón para pantalón (mismo mecanismo
+que remera en v8), o seguir con fishnet/socks_34 que ya no tienen nada
+bloqueando.
+
+**Para el otro Claude:**
+- `PantalonLargo`/`PantalonItem`/`MoldePantalonItem` viven en
+  `com.femclothes.item`, NO en `sublimadora` — a diferencia de
+  `Variante`/`MoldeItem` de remera. Si generalizás el `Map<Eje,Valor>` de
+  PRENDAS.md §6 algún día, este es el segundo caso concreto (después de
+  remera) para chequear que el diseño generalice de verdad.
+- El generador Python de texturas TAMPOCO quedó guardado esta vez (de nuevo
+  ad-hoc). Si esto se repite una tercera vez para otra prenda, es señal de
+  que vale la pena guardarlo como script real en el repo en vez de
+  reescribirlo cada sesión — está documentado igual en los comentarios de
+  `PantalonLargo`/`PiezasDelMod.pantalon` con la matemática exacta.
+- Automatizar la interacción con el cliente de Minecraft (mouse/teclado) no
+  vale la pena con las herramientas de este entorno — dejar que el dueño
+  pruebe es más rápido y más confiable.
 
 ## v9 — 2026-09-07 — cuenta de H0p3san · Claude Code (extensión de VSCode)
 

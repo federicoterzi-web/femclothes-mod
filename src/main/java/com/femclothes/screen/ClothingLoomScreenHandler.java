@@ -6,6 +6,9 @@ import com.femclothes.sublimadora.RemeraItem;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.DyedColorComponent;
 import com.femclothes.item.ClothingPatternItem;
+import com.femclothes.item.MoldePantalonItem;
+import com.femclothes.item.PantalonItem;
+import com.femclothes.item.PantalonLargo;
 import com.femclothes.region.Lado;
 import com.femclothes.region.RegionResolver;
 import com.femclothes.item.FemclothesDye;
@@ -186,6 +189,16 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
             return;
         }
 
+        // El pantalón tiene su propio molde (largo) igual que la remera, pero
+        // el tinte SÍ pasa por el camino normal de FemClothes -es bilateral,
+        // no un color unico como la remera- asi que solo el corte necesita
+        // rama propia.
+        if (garment.getItem() instanceof PantalonItem) {
+            this.outputSlot.setStackNoCallbacks(reformarPantalon(garment, dye, pattern));
+            this.sendContentUpdates();
+            return;
+        }
+
         // Prenda SOLA, sin tinte ni patron: saca el patron y la deja lisa.
         // Sin esto no habia forma de volver atras — una vez aplicado un
         // patron, el modo re-tenido solo cambia el color base y el patron
@@ -270,6 +283,35 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
             } else {
                 out.set(DataComponentTypes.DYED_COLOR, new DyedColorComponent(rgb, false));
             }
+        }
+        return out;
+    }
+
+    /**
+     * Lo que sale del telar con un pantalón adentro.
+     *
+     * El molde mueve {@code PantalonLargo} y el tinte cambia el color; se
+     * pueden usar juntos o por separado, igual que la remera con su corte.
+     *
+     * A diferencia de la remera, el tinte respeta el selector {@code Lado}
+     * ({@code RegionResolver.ponerColorBase}) y no un componente fijo: el
+     * pantalón es bilateral (cada pierna su color), como ya lo era cuando se
+     * llamaba shorts. Solo el LARGO necesita rama propia — el resto ya lo
+     * resuelve el camino genérico si no fuera por el molde en el medio.
+     */
+    private ItemStack reformarPantalon(ItemStack pantalon, ItemStack dye, ItemStack pattern) {
+        boolean hayMolde = pattern.getItem() instanceof MoldePantalonItem;
+        boolean hayTinte = dye.getItem() instanceof DyeItem;
+        if (!hayMolde && !hayTinte) return ItemStack.EMPTY;
+
+        ItemStack out = pantalon.copyWithCount(1);
+        if (hayMolde) {
+            PantalonLargo actual = PantalonItem.largo(pantalon);
+            PantalonItem.setLargo(out, ((MoldePantalonItem) pattern.getItem()).aplicar(actual));
+        }
+        if (hayTinte) {
+            int rgb = ((DyeItem) dye.getItem()).getColor().getFireworkColor();
+            RegionResolver.ponerColorBase(out, this.target, rgb);
         }
         return out;
     }

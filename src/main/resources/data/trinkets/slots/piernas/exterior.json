@@ -1,5 +1,5 @@
 {
-  "_comment": "Slot para lo que va ENCIMA de la media: shorts hoy, pollera y pantalon despues (ver PRENDAS.md §1). Separado de socks/pair a proposito -son capas distintas de la misma region- para que las dos puedan estar puestas a la vez; el orden de dibujo entre ellas lo decide Capa, no el order de Trinkets.",
-  "icon": "femclothes:gui/slot/shorts",
+  "_comment": "Slot para lo que va ENCIMA de la media: pantalon hoy (7 largos, de completo a tanga), pollera despues (ver PRENDAS.md §1). Separado de socks/pair a proposito -son capas distintas de la misma region- para que las dos puedan estar puestas a la vez; el orden de dibujo entre ellas lo decide Capa, no el order de Trinkets.",
+  "icon": "femclothes:gui/slot/pantalon",
   "order": 0
 }

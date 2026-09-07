@@ -28,13 +28,16 @@ public final class FemclothesItems {
             new ClothingArmorItem(FemclothesArmorMaterials.CLOTH, ArmorItem.Type.BOOTS,
                     new Item.Settings().maxCount(1), false));
 
-    // Migrado al sistema de capas: primera prueba real del layering (short
-    // dibujado ENCIMA de la media, sin borrarla — ver Capa.PIERNA_EXTERIOR).
-    // Antes era ClothingArmorItem con geometria de armadura y sin textura de
-    // armadura siquiera (cloth_layer_1.png nunca existio), asi que puesto no
-    // se veia nada: no habia comportamiento previo que preservar.
-    public static final ClothingTrinketItem SHORTS = register("shorts",
-            new ClothingTrinketItem(new Item.Settings().maxCount(1), true));
+    // Reemplaza a SHORTS. Primera prueba real del layering (se dibuja
+    // ENCIMA de la media, sin borrarla — ver Capa.PIERNA_EXTERIOR), y ahora
+    // ademas la prenda LARGA de pierna: se craftea pantalon completo y se
+    // recorta con MOLDE_PANTALON en el telar, ciclando PantalonLargo (7
+    // valores, de pantalon a tanga) — mismo mecanismo que el corte de la
+    // remera. shorts.json se fue: era el antiguo item fijo, sin eje.
+    public static final PantalonItem PANTALON = register("pantalon", new PantalonItem(new Item.Settings().maxCount(1)));
+
+    public static final MoldePantalonItem MOLDE_PANTALON = register("molde_pantalon",
+            new MoldePantalonItem(new Item.Settings().maxCount(1)));
 
     // El croptop de FemClothes se retiro: era un chestplate del pipeline
     // viejo, nunca se le dibujo el arte -salia en damero- y desde que la

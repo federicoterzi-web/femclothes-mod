@@ -60,7 +60,7 @@ public class FemclothesClient implements ClientModInitializer {
             // para "sin tinte". Nuestros colores son 0xRRGGBB, o sea alfa 0,
             // y sin este OR el item se dibuja transparente — desaparecia.
             return 0xFF000000 | color;
-        }, FemclothesItems.SOCKS_SOLID, FemclothesItems.SHORTS);
+        }, FemclothesItems.SOCKS_SOLID, FemclothesItems.PANTALON);
 
         // TODO: acá también va el registro de la geometría custom del
         // buzo oversize y la falda del traje de maid vía Armor Model API

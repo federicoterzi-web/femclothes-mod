@@ -23,7 +23,7 @@ public final class PrendasDelMod {
 
     public static void init() {
         Garments.registrar(FemclothesItems.SOCKS_SOLID, MEDIAS);
-        Garments.registrar(FemclothesItems.SHORTS, SHORTS);
+        Garments.registrar(FemclothesItems.PANTALON, PANTALON);
         Garments.registrar(ModItems.REMERA, REMERA);
     }
 
@@ -54,24 +54,29 @@ public final class PrendasDelMod {
     };
 
     /**
-     * Shorts: la primera prueba real del sistema de capas.
+     * Pantalón: la prenda larga de pierna, y la primera prueba real del
+     * sistema de capas (era "shorts" — ver FEMCLOTHES.md).
      *
      * Va en {@code piernas/exterior}, un slot DISTINTO del de las medias
-     * ({@code socks/pair}) — pueden estar puestas las dos a la vez, que es
-     * justo lo que hace falta para probar el layering. Quien decide que se
-     * dibuja arriba es {@code Capa.PIERNA_EXTERIOR} (20) contra
-     * {@code Capa.MEDIA} (10), no el order de los slots de Trinkets.
+     * ({@code socks/pair}) — pueden estar puestas las dos a la vez. Quien
+     * decide que se dibuja arriba es {@code Capa.PIERNA_EXTERIOR} (20)
+     * contra {@code Capa.MEDIA} (10), no el order de los slots de Trinkets.
      *
-     * Sin patron ni corte todavia: es a proposito, para no mezclar "probar
-     * que el layering anda" con features nuevas. Se suman despues con el
-     * mismo mecanismo generico que ya tienen las medias.
+     * `CORTE` es `ENTERA` (como remera): el largo es UN valor para todo el
+     * pantalón, no por pierna — nadie tiene una pierna en bermudas y la otra
+     * en tanga. `TENIR` sigue siendo `BILATERAL`, sin cambios respecto de
+     * cuando era shorts: cada pierna puede tener su propio color.
+     *
+     * Sin patrón todavía: a propósito, mismo motivo que shorts no lo tenía
+     * — se suma después con el mismo mecanismo genérico de medias/remera.
      */
-    private static final Garment SHORTS = new Garment() {
+    private static final Garment PANTALON = new Garment() {
         @Override
         public Set<Region> regionesDe(Operacion op) {
             return switch (op) {
                 case TENIR -> BILATERAL;
-                case PATRON, CORTE, ESTAMPAR -> Set.of();
+                case CORTE -> ENTERA;
+                case PATRON, ESTAMPAR -> Set.of();
             };
         }
 

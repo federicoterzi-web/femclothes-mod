@@ -40,7 +40,7 @@ ciclo de prensado no tiene nada que ver con el resto de las prendas.
 |---|---|---|
 | **Remera** (`remera`) | ✅ 36 cortes, teñible, patrones, estampable | Trinket, slot `torso/prenda`, dibujada sobre el cuerpo real |
 | **Medias color pleno** (`socks_solid`) | ✅ patrones, teñible, **estampable** | Trinket, slot `socks/pair`, dibujada sobre la pierna real |
-| **Shorts** (`shorts`) | ✅ teñible, sin patrón todavía | Trinket, slot `piernas/exterior`, primera prueba real del layering (capa arriba de la media) |
+| **Pantalón** (`pantalon`) | ✅ 7 largos (pantalón→tanga), teñible, sin patrón todavía | Trinket, slot `piernas/exterior`, primera prueba real del layering (capa arriba de la media) |
 | **Calentadores de brazo** (`armwarmers`) | ✅ funcional | Trinket, slot custom `arms/armwarmer` |
 | Medias 3/4 (`socks_34`) | placeholder | Slot cosmético (Cosmetic Armor Updated) |
 | Medias de red (`fishnet_socks`) | placeholder, no teñible | Pendiente: pasar a patrón "fishnet" |
@@ -161,6 +161,40 @@ El nombre del ítem sale del rasgo que más lo define (croptop, musculosa,
 polera, remerón, remera) y el resto del corte va al tooltip. 36 nombres serían
 ilegibles y uno solo dejaría prendas muy distintas indistinguibles.
 
+### El largo del pantalón: un eje, siete valores
+
+Mismo mecanismo que el corte de la remera —una prenda, un molde que cicla—
+pero con un solo eje: `PantalonLargo`.
+
+| valor | filas de tela (de 12) |
+|---|---|
+| pantalón | 12 |
+| tres cuartos | 9 |
+| bermudas | 7 |
+| shorts | 4 |
+| calzoncillos | 3 |
+| slip | 2 |
+| tanga | 1 |
+
+Se craftea el pantalón **largo** (12 filas, el default sin componente) y se
+recorta con `MoldePantalonItem` en el telar — `femclothes:molde_pantalon`,
+item propio y no un caso más de `MoldeItem.Eje` porque ese molde está tipado a
+`Variante`, que es de la remera. Cada valor tiene, a diferencia de los 36
+cortes de remera, un **nombre propio sin ambigüedad** (no hace falta elegir
+"el rasgo que más lo define"): pantalón, tres cuartos, bermudas, shorts,
+calzoncillos, slip, tanga.
+
+⚠️ **El ícono es UNO SOLO para los siete valores**, a propósito. La silueta de
+`item/pantalon.png` es un dibujo simbólico y no un desdoblado proporcional
+como la textura del cuerpo, así que no hay una forma principista de derivar
+siete siluetas distintas recortándola — a diferencia de remera, que sí tiene
+36 sprites de ítem generados por script. El nombre (que sí cambia por valor)
+es la única diferenciación en el inventario por ahora.
+
+`femclothes:molde_pantalon` reusa el ícono de `molde_largo` (de la remera):
+misma idea de herramienta, sin arte nueva todavía — dos moldes distintos se
+ven iguales en el inventario hasta que alguien dibuje el propio.
+
 ### Piernas independientes, sin duplicar ítems
 
 Componentes `RIGHT_DYED_COLOR`, `RIGHT_PATTERN_ID` y `RIGHT_PATTERN_COLOR`,
@@ -224,7 +258,7 @@ en un dedicado cargaría `NativeImage` y `MinecraftClient`.
 Esta es la trampa más fácil de pisar del proyecto. El layout depende de con
 qué renderer se dibuja la prenda, y **no son intercambiables**:
 
-- **Prendas del sistema nuevo** (`socks_solid`, `shorts`, `remera`): layout de
+- **Prendas del sistema nuevo** (`socks_solid`, `pantalon`, `remera`): layout de
   **SKIN DE JUGADOR**, porque el renderer dibuja cajas con la geometría del
   jugador. `LayoutSkin` y `CajaSkin` calculan dónde cae cada cara — antes eran
   rectángulos escritos a mano y había que contar píxeles sobre la plantilla.
@@ -565,10 +599,12 @@ siguen comentadas en `build.gradle`.
    `interior_<ropa>.png`. Sin ellos el cuerpo sale liso sombreado por cara,
    que es lo que había antes — o sea que no se perdió nada, pero es lo que
    hace que el set curado se distinga entre sí.
-6. ~~**Migrar shorts**~~ — hecho: `shorts` es Trinket, slot `piernas/exterior`,
-   se dibuja en `Capa.PIERNA_EXTERIOR` (20) arriba de la media (`Capa.MEDIA`,
-   10). Sin patrón todavía (§Prendas). Con esto probado, fishnet y socks_34
-   caen con el mismo mecanismo.
+6. ~~**Migrar shorts**~~ — hecho, y creció a `pantalon`: Trinket, slot
+   `piernas/exterior`, siete largos (pantalón→tanga) vía `PantalonLargo` +
+   `MoldePantalonItem`, se dibuja en `Capa.PIERNA_EXTERIOR` (20) arriba de la
+   media (`Capa.MEDIA`, 10). Sin patrón todavía, e ícono único para los siete
+   valores (§"El largo del pantalón"). Con el layering probado, fishnet y
+   socks_34 caen con el mismo mecanismo.
 7. **Geometría Blockbench del buzo oversize** (Armor Model API). Hay un TODO
    en `FemclothesClient` marcando dónde va el registro.
 8. **Probar el puente de 3D Skin Layers.**
