@@ -98,6 +98,33 @@ public final class FemclothesComponents {
                     .packetCodec(PacketCodecs.indexed(i -> PantalonLargo.values()[i], Enum::ordinal))
                     .build());
 
+    /**
+     * El tiro del pantalón (§{@link PantalonTiro}): cuánto sube la cintura
+     * sobre el torso. Eje independiente de {@code PANTALON_LARGO} — ausente
+     * = {@code MEDIO}, la cintura natural.
+     */
+    public static final ComponentType<PantalonTiro> PANTALON_TIRO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "pantalon_tiro"),
+            ComponentType.<PantalonTiro>builder()
+                    .codec(StringIdentifiable.createCodec(PantalonTiro::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PantalonTiro.values()[i], Enum::ordinal))
+                    .build());
+
+    /**
+     * El largo de las medias (§{@link MediasLargo}). Ausente = CANCAN, el
+     * largo que ya tenían las medias antes de este eje (10 de 12 filas,
+     * verificado contra `socks_solid_layer_1.png`) — así una media vieja
+     * guardada sigue viéndose exactamente igual.
+     */
+    public static final ComponentType<MediasLargo> MEDIAS_LARGO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "medias_largo"),
+            ComponentType.<MediasLargo>builder()
+                    .codec(StringIdentifiable.createCodec(MediasLargo::values))
+                    .packetCodec(PacketCodecs.indexed(i -> MediasLargo.values()[i], Enum::ordinal))
+                    .build());
+
     public static void init() {
         // fuerza class-loading
     }

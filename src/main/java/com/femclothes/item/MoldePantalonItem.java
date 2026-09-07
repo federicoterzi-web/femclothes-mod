@@ -9,23 +9,23 @@ import net.minecraft.util.Formatting;
 import java.util.List;
 
 /**
- * El molde del pantalón: cicla {@link PantalonLargo} en el telar.
+ * Molde de largo de pantalón: FIJA un valor de {@link PantalonLargo}, no
+ * cicla — a pedido del dueño, un ítem por cada uno de los siete valores en
+ * vez de uno que va ciclando a ciegas. Mismo mecanismo que
+ * {@link MoldeLargoRemeraItem} (remera) y {@link MoldeTiroItem} (tiro).
  *
- * Mismo mecanismo que {@code MoldeItem} de la remera —no se consume, cicla
- * en vez de fijar un valor—, pero acá es una clase propia y no un caso más
- * de {@code MoldeItem.Eje} porque ese molde vive en el paquete de la
- * sublimadora y está tipado a {@code Variante}, que es de la remera. El
- * pantalón tiene un solo eje hoy; si suma otros (fit, tiro, botamanga — ver
- * PRENDAS.md §6) ES el momento de generalizar, no antes.
+ * Empezó cíclico y se cambió apenas se probó en el juego: con solo 3 pasos
+ * ciclar es cómodo (remera, antes de este cambio), pero con siete hay que
+ * clickear hasta seis veces para llegar a "tanga" — siete ítems con nombre
+ * propio es mejor UX que un dial de siete posiciones.
  */
 public class MoldePantalonItem extends Item {
 
-    public MoldePantalonItem(Settings settings) {
-        super(settings);
-    }
+    public final PantalonLargo valor;
 
-    public PantalonLargo aplicar(PantalonLargo actual) {
-        return actual.siguiente();
+    public MoldePantalonItem(Settings settings, PantalonLargo valor) {
+        super(settings);
+        this.valor = valor;
     }
 
     @Override

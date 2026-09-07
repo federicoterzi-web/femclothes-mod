@@ -95,21 +95,35 @@ public final class ModItems {
     }
 
     /**
-     * Los tres moldes del telar, uno por eje del corte.
+     * Los moldes de manga y cuello: uno por eje, ciclan.
      *
-     * Tres y no diez -uno por valor- porque ciclan: pasar el molde de mangas
-     * lleva de sin a cortas, de cortas a tres cuartos, y asi. Con 36
-     * combinaciones, un item por valor es ruido en el inventario y en las
-     * recetas.
+     * Con 36 combinaciones, un item por valor de estos dos ejes seguiría
+     * siendo ruido en el inventario y en las recetas.
      */
-    public static final MoldeItem MOLDE_LARGO = molde("largo", MoldeItem.Eje.LARGO);
     public static final MoldeItem MOLDE_MANGA = molde("manga", MoldeItem.Eje.MANGA);
     public static final MoldeItem MOLDE_CUELLO = molde("cuello", MoldeItem.Eje.CUELLO);
+
+    /**
+     * Los moldes de largo: uno POR VALOR, no cíclico — ver
+     * {@link MoldeLargoRemeraItem}.
+     */
+    public static final MoldeLargoRemeraItem MOLDE_LARGO_CROP =
+            moldeLargo("molde_largo_crop", Variante.Largo.CROP);
+    public static final MoldeLargoRemeraItem MOLDE_LARGO_NORMAL =
+            moldeLargo("molde_largo_normal", Variante.Largo.NORMAL);
+    public static final MoldeLargoRemeraItem MOLDE_LARGO_LARGO =
+            moldeLargo("molde_largo_largo", Variante.Largo.LARGO);
 
     private static MoldeItem molde(String nombre, MoldeItem.Eje eje) {
         return Registry.register(Registries.ITEM,
                 Identifier.of(Femclothes.MOD_ID, "molde_" + nombre),
                 new MoldeItem(new Item.Settings().maxCount(1), eje));
+    }
+
+    private static MoldeLargoRemeraItem moldeLargo(String id, Variante.Largo valor) {
+        return Registry.register(Registries.ITEM,
+                Identifier.of(Femclothes.MOD_ID, id),
+                new MoldeLargoRemeraItem(new Item.Settings().maxCount(1), valor));
     }
 
     public static void register() {

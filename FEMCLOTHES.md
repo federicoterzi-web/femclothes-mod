@@ -39,8 +39,8 @@ ciclo de prensado no tiene nada que ver con el resto de las prendas.
 | Prenda | Estado | Mecanismo |
 |---|---|---|
 | **Remera** (`remera`) | ✅ 36 cortes, teñible, patrones, estampable | Trinket, slot `torso/prenda`, dibujada sobre el cuerpo real |
-| **Medias color pleno** (`socks_solid`) | ✅ patrones, teñible, **estampable** | Trinket, slot `socks/pair`, dibujada sobre la pierna real |
-| **Pantalón** (`pantalon`) | ✅ 7 largos (pantalón→tanga), teñible, sin patrón todavía | Trinket, slot `piernas/exterior`, primera prueba real del layering (capa arriba de la media) |
+| **Medias color pleno** (`socks_solid`) | ✅ 5 largos, patrones, teñible, **estampable** | Trinket, slot `socks/pair`, dibujada sobre la pierna real |
+| **Pantalón** (`pantalon`) | ✅ 5 largos + 3 tiros, teñible, sin patrón todavía | Trinket, slot `piernas/exterior`, primera prueba real del layering (capa arriba de la media) |
 | **Calentadores de brazo** (`armwarmers`) | ✅ funcional | Trinket, slot custom `arms/armwarmer` |
 | Medias 3/4 (`socks_34`) | placeholder | Slot cosmético (Cosmetic Armor Updated) |
 | Medias de red (`fishnet_socks`) | placeholder, no teñible | Pendiente: pasar a patrón "fishnet" |
@@ -161,39 +161,67 @@ El nombre del ítem sale del rasgo que más lo define (croptop, musculosa,
 polera, remerón, remera) y el resto del corte va al tooltip. 36 nombres serían
 ilegibles y uno solo dejaría prendas muy distintas indistinguibles.
 
-### El largo del pantalón: un eje, siete valores
+### El eje "cobertura": largo compartido entre pantalón, medias (y remera pendiente)
 
-Mismo mecanismo que el corte de la remera —una prenda, un molde que cicla—
-pero con un solo eje: `PantalonLargo`.
+Tres prendas bilaterales miden lo mismo —cuánto de una extremidad tapan— con
+la misma escala de 5 pasos: **sin/corto/medio/largo/extralargo**. Cada una le
+pone SUS nombres reales a esos 5 pasos, pero **no comparten ítems**: cada
+prenda tiene su propio set de moldes, todos con la misma filosofía —FIJAN un
+valor, no ciclan— porque con 5 pasos ciclar significa hasta cuatro clicks a
+ciegas para llegar al que querés.
 
-| valor | filas de tela (de 12) |
-|---|---|
-| pantalón | 12 |
-| tres cuartos | 9 |
-| bermudas | 7 |
-| shorts | 4 |
-| calzoncillos | 3 |
-| slip | 2 |
-| tanga | 1 |
+| prenda | eje | valores (sin → extralargo) | filas de las 12 |
+|---|---|---|---|
+| **Pantalón** | `PantalonLargo` | pantalón · tres cuartos · bermudas · shorts · ropa interior | 12·9·7·4·2 (cuenta DESDE la cintura hacia abajo) |
+| **Medias** | `MediasLargo` | cancán · 3/4 · rodilla · medias · zoquetes | 10·8·6·4·2 (cuenta DESDE el tobillo hacia arriba — ¡al revés!) |
+| Remera (manga) | — | pendiente, ver más abajo | — |
 
-Se craftea el pantalón **largo** (12 filas, el default sin componente) y se
-recorta con `MoldePantalonItem` en el telar — `femclothes:molde_pantalon`,
-item propio y no un caso más de `MoldeItem.Eje` porque ese molde está tipado a
-`Variante`, que es de la remera. Cada valor tiene, a diferencia de los 36
-cortes de remera, un **nombre propio sin ambigüedad** (no hace falta elegir
-"el rasgo que más lo define"): pantalón, tres cuartos, bermudas, shorts,
-calzoncillos, slip, tanga.
+⚠️ **Pantalón y medias llenan en direcciones OPUESTAS.** Un pantalón nace en
+la cintura y crece hacia el tobillo; una media nace en el tobillo y crece
+hacia la cintura. Confundir la dirección al generar una textura nueva deja el
+hueco del lado equivocado.
 
-⚠️ **El ícono es UNO SOLO para los siete valores**, a propósito. La silueta de
-`item/pantalon.png` es un dibujo simbólico y no un desdoblado proporcional
-como la textura del cuerpo, así que no hay una forma principista de derivar
-siete siluetas distintas recortándola — a diferencia de remera, que sí tiene
-36 sprites de ítem generados por script. El nombre (que sí cambia por valor)
-es la única diferenciación en el inventario por ahora.
+**Calzoncillos, slip y tanga se fusionaron en `ROPA_INTERIOR`** (un solo
+valor): son parecidos en largo y así el eje de pantalón queda en exactos 5
+pasos, igual que medias.
 
-`femclothes:molde_pantalon` reusa el ícono de `molde_largo` (de la remera):
-misma idea de herramienta, sin arte nueva todavía — dos moldes distintos se
-ven iguales en el inventario hasta que alguien dibuje el propio.
+**`MediasLargo.CANCAN` (10 filas) es idéntico byte a byte a la textura
+`socks_solid_layer_1.png` de siempre** — verificado, no es una aproximación.
+Es el default (sin componente = CANCAN), así que una media de un mundo viejo
+se sigue viendo exactamente igual.
+
+Los moldes de largo son **por valor, no cíclicos**, para las tres familias:
+`MoldePantalonItem` (5), `MoldeMediaItem` (5, nuevo), y el de remera
+(`MoldeLargoRemeraItem`, 3 — crop/normal/largo) es un eje APARTE, no
+unificado con este (se evaluó y se descartó: quedan como conceptos
+independientes, cada uno con su propio set de moldes).
+
+El **tiro** del pantalón (`PantalonTiro`: corto/medio/largo — cuánto sube la
+cintura sobre el torso, pintado en runtime, no en el PNG) es OTRO eje
+independiente de `PantalonLargo`: uno decide hasta dónde llega la pierna, el
+otro decide dónde arranca la cintura. Se pueden combinar libremente.
+
+⚠️ **Pendiente, todavía sin tocar**: la manga de remera (`Variante.Manga`, 4
+valores: sin/corta/tres_cuartos/larga) necesita un 5º valor —"un corte un
+poco más arriba del puño"— para completar el mismo diseño de 5 pasos. No se
+implementó porque tocaría las 45 combinaciones resultantes (3 largo × 5
+manga × 3 cuello) de texturas de remera, que **no tienen generador en este
+repo** — a diferencia de pantalón/medias, que sí lo tienen (Python, ver
+`PiezasDelMod`/canal). El camino más seguro cuando se haga es DERIVAR el
+nuevo valor recortando las texturas "larga" ya existentes (poner alfa 0 en
+las últimas ~2 filas de manga), no generarlas de cero.
+
+⚠️ **El ícono es UNO SOLO para los 5+5+3 valores de estos tres ejes**, a
+propósito. Las siluetas de `item/pantalon.png` (y el ícono de medias) son
+dibujos simbólicos, no un desdoblado proporcional como la textura del
+cuerpo — no hay una forma principista de derivar siluetas distintas
+recortándolas, a diferencia de remera (36 sprites generados por script). El
+nombre del ítem (que sí cambia con el largo en pantalón) es la única
+diferenciación en el inventario por ahora.
+
+Todos los moldes nuevos reusan el ícono de `molde_largo` (de la remera):
+misma idea de herramienta, sin arte nueva todavía — moldes distintos se ven
+iguales en el inventario hasta que alguien dibuje el propio.
 
 ### Piernas independientes, sin duplicar ítems
 
@@ -600,11 +628,12 @@ siguen comentadas en `build.gradle`.
    que es lo que había antes — o sea que no se perdió nada, pero es lo que
    hace que el set curado se distinga entre sí.
 6. ~~**Migrar shorts**~~ — hecho, y creció a `pantalon`: Trinket, slot
-   `piernas/exterior`, siete largos (pantalón→tanga) vía `PantalonLargo` +
-   `MoldePantalonItem`, se dibuja en `Capa.PIERNA_EXTERIOR` (20) arriba de la
-   media (`Capa.MEDIA`, 10). Sin patrón todavía, e ícono único para los siete
-   valores (§"El largo del pantalón"). Con el layering probado, fishnet y
-   socks_34 caen con el mismo mecanismo.
+   `piernas/exterior`, 5 largos + 3 tiros vía `PantalonLargo`/`PantalonTiro`,
+   se dibuja en `Capa.PIERNA_EXTERIOR` (20) arriba de la media (`Capa.MEDIA`,
+   10). Medias ganó su propio eje de largo (`MediasLargo`, 5 valores) con el
+   mismo mecanismo. Sin patrón todavía en ninguna de las dos, e ícono único
+   por prenda para todos los valores (§"El eje cobertura"). Con el layering
+   probado, fishnet y socks_34 caen con el mismo mecanismo.
 7. **Geometría Blockbench del buzo oversize** (Armor Model API). Hay un TODO
    en `FemclothesClient` marcando dónde va el registro.
 8. **Probar el puente de 3D Skin Layers.**

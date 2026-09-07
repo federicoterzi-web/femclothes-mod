@@ -2,13 +2,17 @@ package com.femclothes.screen;
 
 import com.femclothes.sublimadora.ModItems;
 import com.femclothes.sublimadora.MoldeItem;
+import com.femclothes.sublimadora.MoldeLargoRemeraItem;
 import com.femclothes.sublimadora.RemeraItem;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.DyedColorComponent;
 import com.femclothes.item.ClothingPatternItem;
+import com.femclothes.item.FemclothesItems;
+import com.femclothes.item.MediasLargo;
+import com.femclothes.item.MoldeMediaItem;
 import com.femclothes.item.MoldePantalonItem;
+import com.femclothes.item.MoldeTiroItem;
 import com.femclothes.item.PantalonItem;
-import com.femclothes.item.PantalonLargo;
 import com.femclothes.region.Lado;
 import com.femclothes.region.RegionResolver;
 import com.femclothes.item.FemclothesDye;
@@ -110,7 +114,11 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
                 // patrones: los dos son algo que se le aplica a la prenda y
                 // que no se consume.
                 return stack.getItem() instanceof ClothingPatternItem
-                        || stack.getItem() instanceof MoldeItem;
+                        || stack.getItem() instanceof MoldeItem
+                        || stack.getItem() instanceof MoldeLargoRemeraItem
+                        || stack.getItem() instanceof MoldePantalonItem
+                        || stack.getItem() instanceof MoldeTiroItem
+                        || stack.getItem() instanceof MoldeMediaItem;
             }
         });
         this.outputSlot = this.addSlot(new Slot(this.output, 0, 143, 57) {
@@ -199,6 +207,24 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
             return;
         }
 
+        // Las medias tienen su eje de largo (MediasLargo), con su propio
+        // molde por valor -mismo mecanismo que pantalón-. No es una clase
+        // de item dedicada (SOCKS_SOLID sigue siendo ClothingTrinketItem
+        // generico, el nombre no cambia con el largo), asi que la rama
+        // mira el ITEM y no un tipo. El tinte sigue el camino bilateral
+        // normal si vino un tinte junto con el molde.
+        if (garment.getItem() == FemclothesItems.SOCKS_SOLID
+                && pattern.getItem() instanceof MoldeMediaItem moldeMedia) {
+            ItemStack result = garment.copyWithCount(1);
+            MediasLargo.aplicar(result, moldeMedia.valor);
+            if (!dye.isEmpty() && dye.getItem() instanceof DyeItem dyeItem) {
+                RegionResolver.ponerColorBase(result, this.target, dyeItem.getColor().getFireworkColor());
+            }
+            this.outputSlot.setStackNoCallbacks(result);
+            this.sendContentUpdates();
+            return;
+        }
+
         // Prenda SOLA, sin tinte ni patron: saca el patron y la deja lisa.
         // Sin esto no habia forma de volver atras — una vez aplicado un
         // patron, el modo re-tenido solo cambia el color base y el patron
@@ -250,7 +276,10 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
      * para PATRON): una remera, un patron, no por lado como las medias.
      */
     private ItemStack reformarRemera(ItemStack remera, ItemStack dye, ItemStack pattern) {
-        boolean hayMolde = pattern.getItem() instanceof MoldeItem;
+        // El largo es molde FIJO (MoldeLargoRemeraItem); manga y cuello
+        // siguen ciclando (MoldeItem). Los dos comparten el slot de patron.
+        boolean hayMolde = pattern.getItem() instanceof MoldeItem
+                || pattern.getItem() instanceof MoldeLargoRemeraItem;
         boolean hayPatron = pattern.getItem() instanceof ClothingPatternItem;
         boolean hayTinte = dye.getItem() instanceof DyeItem;
 
@@ -268,9 +297,10 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
         if (hayPatron && !hayTinte) return ItemStack.EMPTY;
 
         ItemStack out = remera.copyWithCount(1);
-        if (hayMolde) {
-            out.set(ModItems.VARIANTE,
-                    ((MoldeItem) pattern.getItem()).aplicar(RemeraItem.variante(remera)));
+        if (pattern.getItem() instanceof MoldeItem molde) {
+            out.set(ModItems.VARIANTE, molde.aplicar(RemeraItem.variante(remera)));
+        } else if (pattern.getItem() instanceof MoldeLargoRemeraItem moldeLargo) {
+            out.set(ModItems.VARIANTE, moldeLargo.aplicar(RemeraItem.variante(remera)));
         }
         if (hayTinte) {
             int rgb = ((DyeItem) dye.getItem()).getColor().getFireworkColor();
@@ -290,24 +320,30 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
     /**
      * Lo que sale del telar con un pantalón adentro.
      *
-     * El molde mueve {@code PantalonLargo} y el tinte cambia el color; se
-     * pueden usar juntos o por separado, igual que la remera con su corte.
+     * Dos ejes, dos familias de molde, los dos FIJAN un valor (no ciclan):
+     * {@code MoldePantalonItem} para el largo, {@code MoldeTiroItem} para el
+     * tiro. Se pueden usar por separado o... no los dos a la vez, porque
+     * comparten el ÚNICO slot de patrón del telar — otra razón más para que
+     * esto se mude a la Estación de tintes/sastrería del futuro, que va a
+     * tener slots de molde separados por eje.
      *
-     * A diferencia de la remera, el tinte respeta el selector {@code Lado}
+     * El tinte respeta el selector {@code Lado}
      * ({@code RegionResolver.ponerColorBase}) y no un componente fijo: el
      * pantalón es bilateral (cada pierna su color), como ya lo era cuando se
-     * llamaba shorts. Solo el LARGO necesita rama propia — el resto ya lo
-     * resuelve el camino genérico si no fuera por el molde en el medio.
+     * llamaba shorts.
      */
     private ItemStack reformarPantalon(ItemStack pantalon, ItemStack dye, ItemStack pattern) {
-        boolean hayMolde = pattern.getItem() instanceof MoldePantalonItem;
+        boolean hayMoldeLargo = pattern.getItem() instanceof MoldePantalonItem;
+        boolean hayMoldeTiro = pattern.getItem() instanceof MoldeTiroItem;
         boolean hayTinte = dye.getItem() instanceof DyeItem;
-        if (!hayMolde && !hayTinte) return ItemStack.EMPTY;
+        if (!hayMoldeLargo && !hayMoldeTiro && !hayTinte) return ItemStack.EMPTY;
 
         ItemStack out = pantalon.copyWithCount(1);
-        if (hayMolde) {
-            PantalonLargo actual = PantalonItem.largo(pantalon);
-            PantalonItem.setLargo(out, ((MoldePantalonItem) pattern.getItem()).aplicar(actual));
+        if (hayMoldeLargo) {
+            PantalonItem.setLargo(out, ((MoldePantalonItem) pattern.getItem()).valor);
+        }
+        if (hayMoldeTiro) {
+            PantalonItem.setTiro(out, ((MoldeTiroItem) pattern.getItem()).valor);
         }
         if (hayTinte) {
             int rgb = ((DyeItem) dye.getItem()).getColor().getFireworkColor();

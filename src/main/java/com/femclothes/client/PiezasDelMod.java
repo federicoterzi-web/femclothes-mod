@@ -3,10 +3,14 @@ package com.femclothes.client;
 import com.femclothes.garment.Capa;
 import com.femclothes.garment.Parte;
 import com.femclothes.item.FemclothesItems;
+import com.femclothes.item.MediasLargo;
 import com.femclothes.item.PantalonItem;
 import com.femclothes.region.Lado;
 import com.femclothes.region.RegionResolver;
+import com.femclothes.render.CajaSkin;
 import com.femclothes.render.ClothingTextureCache;
+import com.femclothes.render.CuerpoGeometria;
+import com.femclothes.render.LayoutSkin;
 import com.femclothes.render.Pieza;
 import com.femclothes.render.PiezasDePrenda;
 import com.femclothes.sublimadora.Estampa;
@@ -35,9 +39,6 @@ import java.util.List;
  */
 public final class PiezasDelMod {
 
-    private static final Identifier MEDIAS_BASE =
-            Identifier.of("femclothes", "textures/models/armor/socks_solid_layer_1.png");
-
     private PiezasDelMod() {}
 
     public static void init() {
@@ -52,14 +53,20 @@ public final class PiezasDelMod {
      * Van separadas y no como una sola textura de las dos piernas porque el
      * color y el patron se resuelven POR LADO: un par disparejo son dos
      * composiciones distintas, y el cache las guarda por separado.
+     *
+     * El LARGO ({@link MediasLargo}) en cambio es ENTERO, no por lado —
+     * un componente único, sin variante RIGHT_*: un par de medias de largo
+     * disparejo (una hasta la rodilla, la otra zoquete) no es un caso real
+     * que hiciera falta cubrir, a diferencia del color.
      */
     private static List<Pieza> medias(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
+        Identifier base = MediasLargo.de(stack).texturaCuerpo();
         return List.of(
-                new Pieza(Parte.PIERNA_IZQ, Capa.MEDIA, texturaMedia(stack, Lado.IZQUIERDA)),
-                new Pieza(Parte.PIERNA_DER, Capa.MEDIA, texturaMedia(stack, Lado.DERECHA)));
+                new Pieza(Parte.PIERNA_IZQ, Capa.MEDIA, texturaMedia(base, stack, Lado.IZQUIERDA)),
+                new Pieza(Parte.PIERNA_DER, Capa.MEDIA, texturaMedia(base, stack, Lado.DERECHA)));
     }
 
-    private static Identifier texturaMedia(ItemStack stack, Lado lado) {
+    private static Identifier texturaMedia(Identifier base, ItemStack stack, Lado lado) {
         int colorBase = RegionResolver.colorBase(stack, lado);
         Identifier patron = RegionResolver.patronId(stack, lado);
         Identifier mascara = patron == null ? null
@@ -81,7 +88,7 @@ public final class PiezasDelMod {
                 }
                 : null;
 
-        return ClothingTextureCache.composeGarment(MEDIAS_BASE, colorBase, mascara,
+        return ClothingTextureCache.composeGarment(base, colorBase, mascara,
                 RegionResolver.colorPatron(stack, lado),
                 ClothingTextureCache.Shading.LEGS, estampa);
     }
@@ -131,19 +138,68 @@ public final class PiezasDelMod {
      * ({@code Capa.MEDIA}, 10) — donde el pantalón no tiene tela se sigue
      * viendo la media, y donde ninguna de las dos tiene, el cuerpo base.
      *
-     * La textura base cambia con {@link PantalonItem#largo}, una por cada
-     * valor de {@code PantalonLargo} (generadas por script, mismo criterio
-     * que los 36 cortes de remera). Sin patrón ni estampa todavía.
+     * La textura de PIERNA base cambia con {@link PantalonItem#largo} (7
+     * PNGs generados por script, mismo criterio que los 36 cortes de
+     * remera). Sin patrón ni estampa todavía.
+     *
+     * <h2>La cintura sube al torso, en runtime</h2>
+     * Las 12 filas del cuboide de pierna terminan justo en el pivote de la
+     * cadera, que corta seco contra el torso — un pantalón "completo" que
+     * llegara solo hasta ahí se veía cortado, no puesto hasta la cintura de
+     * verdad. En vez de hornear la banda en cada uno de los 7 PNGs de largo
+     * (que multiplicaría por el eje de {@link PantalonItem#tiro}, 7×3=21
+     * archivos para algo que es un simple rectángulo), se pinta la banda EN
+     * RUNTIME sobre la textura ya compuesta, reusando el gancho
+     * {@code Encima} que ya existía para las estampas — {@link #pintarCintura}.
+     * El alto de la banda depende del tiro; el largo de pierna, no.
+     *
+     * Hay una tercera pieza en {@code Parte.TORSO}, a la misma capa que las
+     * piernas: por debajo de una remera puesta (`Capa.TORSO_EXTERIOR`, 25 >
+     * 20), pero visible si el torso no tiene nada encima. Usa el color de la
+     * IZQUIERDA — es una sola pieza central, no tiene sentido partirla por
+     * lado como las piernas.
      */
     private static List<Pieza> pantalon(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
         Identifier base = PantalonItem.largo(stack).texturaCuerpo();
         return List.of(
                 new Pieza(Parte.PIERNA_IZQ, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA)),
-                new Pieza(Parte.PIERNA_DER, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.DERECHA)));
+                new Pieza(Parte.PIERNA_DER, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.DERECHA)),
+                new Pieza(Parte.TORSO, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA)));
     }
 
     private static Identifier texturaPantalon(Identifier base, ItemStack stack, Lado lado) {
-        return ClothingTextureCache.composeGarment(base, RegionResolver.colorBase(stack, lado),
-                null, 0, ClothingTextureCache.Shading.LEGS);
+        int colorBase = RegionResolver.colorBase(stack, lado);
+        int filasTiro = PantalonItem.tiro(stack).filas;
+        // Nota: usar Encima acá hace que reducirSiHaceFalta trate al
+        // pantalón como si tuviera estampa (8x, sin achicar). Es una
+        // sobra chica -12 filas de torso- frente a complicar esa deteccion
+        // para distinguir "encima real" de "banda de cintura".
+        ClothingTextureCache.Encima cintura = new ClothingTextureCache.Encima() {
+            @Override public String clave() { return "cintura" + filasTiro; }
+            @Override public boolean aplicar(NativeImage destino) {
+                pintarCintura(destino, colorBase, filasTiro);
+                return true;
+            }
+        };
+        return ClothingTextureCache.composeGarment(base, colorBase, null, 0,
+                ClothingTextureCache.Shading.LEGS, cintura);
+    }
+
+    /** Pinta una banda lisa en las últimas {@code filas} del cuboide de TORSO. */
+    private static void pintarCintura(NativeImage img, int colorRgb, int filas) {
+        int escala = CuerpoGeometria.ESCALA_TELA;
+        CajaSkin torso = LayoutSkin.base(Parte.TORSO, false).escalada(escala);
+        int alto = filas * escala;
+        int blanco = 0xFFFFFFFF; // ABGR: blanco es el mismo valor en cualquier orden de canales
+        for (CajaSkin.Rect cara : new CajaSkin.Rect[]{
+                torso.derecha(), torso.frente(), torso.izquierda(), torso.atras()}) {
+            int y0 = Math.max(cara.y0(), cara.y1() - alto);
+            int color = ClothingTextureCache.tintPixel(blanco, colorRgb);
+            for (int y = y0; y < cara.y1(); y++) {
+                for (int x = cara.x0(); x < cara.x1(); x++) {
+                    img.setColor(x, y, color);
+                }
+            }
+        }
     }
 }

@@ -31,13 +31,57 @@ public final class FemclothesItems {
     // Reemplaza a SHORTS. Primera prueba real del layering (se dibuja
     // ENCIMA de la media, sin borrarla — ver Capa.PIERNA_EXTERIOR), y ahora
     // ademas la prenda LARGA de pierna: se craftea pantalon completo y se
-    // recorta con MOLDE_PANTALON en el telar, ciclando PantalonLargo (7
-    // valores, de pantalon a tanga) — mismo mecanismo que el corte de la
-    // remera. shorts.json se fue: era el antiguo item fijo, sin eje.
+    // recorta con moldes en el telar. shorts.json se fue: era el antiguo
+    // item fijo, sin eje.
     public static final PantalonItem PANTALON = register("pantalon", new PantalonItem(new Item.Settings().maxCount(1)));
 
-    public static final MoldePantalonItem MOLDE_PANTALON = register("molde_pantalon",
-            new MoldePantalonItem(new Item.Settings().maxCount(1)));
+    /**
+     * Un molde de largo POR VALOR (7), no uno que cicla. Se probó ciclico y
+     * se cambio de inmediato: con siete pasos, ciclar significa clickear
+     * hasta seis veces para llegar a "tanga" — siete items con nombre propio
+     * es mejor que un dial de siete posiciones.
+     */
+    public static final MoldePantalonItem MOLDE_PANTALON_PANTALON =
+            moldePantalon("molde_pantalon_pantalon", PantalonLargo.PANTALON);
+    public static final MoldePantalonItem MOLDE_PANTALON_TRES_CUARTOS =
+            moldePantalon("molde_pantalon_tres_cuartos", PantalonLargo.TRES_CUARTOS);
+    public static final MoldePantalonItem MOLDE_PANTALON_BERMUDAS =
+            moldePantalon("molde_pantalon_bermudas", PantalonLargo.BERMUDAS);
+    public static final MoldePantalonItem MOLDE_PANTALON_SHORTS =
+            moldePantalon("molde_pantalon_shorts", PantalonLargo.SHORTS);
+    // Calzoncillos, slip y tanga se fusionaron en un solo valor: ver
+    // PantalonLargo.ROPA_INTERIOR.
+    public static final MoldePantalonItem MOLDE_PANTALON_ROPA_INTERIOR =
+            moldePantalon("molde_pantalon_ropa_interior", PantalonLargo.ROPA_INTERIOR);
+
+    /** Molde de tiro, uno por valor (3) — mismo criterio que el de largo. */
+    public static final MoldeTiroItem MOLDE_TIRO_CORTO = moldeTiro("molde_tiro_corto", PantalonTiro.CORTO);
+    public static final MoldeTiroItem MOLDE_TIRO_MEDIO = moldeTiro("molde_tiro_medio", PantalonTiro.MEDIO);
+    public static final MoldeTiroItem MOLDE_TIRO_LARGO = moldeTiro("molde_tiro_largo", PantalonTiro.LARGO);
+
+    /**
+     * Molde de largo de MEDIAS, uno por valor (5) — eje nuevo, medias no
+     * tenían ninguno. CANCAN es el default (sin componente): el largo que
+     * ya tenían las medias antes de este eje.
+     */
+    public static final MoldeMediaItem MOLDE_MEDIA_ZOQUETES = moldeMedia("molde_media_zoquetes", MediasLargo.ZOQUETES);
+    public static final MoldeMediaItem MOLDE_MEDIA_MEDIAS = moldeMedia("molde_media_medias", MediasLargo.MEDIAS);
+    public static final MoldeMediaItem MOLDE_MEDIA_RODILLA = moldeMedia("molde_media_rodilla", MediasLargo.RODILLA);
+    public static final MoldeMediaItem MOLDE_MEDIA_TRES_CUARTOS =
+            moldeMedia("molde_media_tres_cuartos", MediasLargo.TRES_CUARTOS);
+    public static final MoldeMediaItem MOLDE_MEDIA_CANCAN = moldeMedia("molde_media_cancan", MediasLargo.CANCAN);
+
+    private static MoldePantalonItem moldePantalon(String id, PantalonLargo valor) {
+        return register(id, new MoldePantalonItem(new Item.Settings().maxCount(1), valor));
+    }
+
+    private static MoldeTiroItem moldeTiro(String id, PantalonTiro valor) {
+        return register(id, new MoldeTiroItem(new Item.Settings().maxCount(1), valor));
+    }
+
+    private static MoldeMediaItem moldeMedia(String id, MediasLargo valor) {
+        return register(id, new MoldeMediaItem(new Item.Settings().maxCount(1), valor));
+    }
 
     // El croptop de FemClothes se retiro: era un chestplate del pipeline
     // viejo, nunca se le dibujo el arte -salia en damero- y desde que la

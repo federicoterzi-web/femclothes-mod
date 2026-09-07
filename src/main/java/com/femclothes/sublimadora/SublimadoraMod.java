@@ -25,7 +25,9 @@ public class SublimadoraMod implements ModInitializer {
                 .register(entries -> {
                     entries.add(ModBlocks.SUBLIMADORA_ITEM);
                     entries.add(ModItems.REMERA);
-                    entries.add(ModItems.MOLDE_LARGO);
+                    entries.add(ModItems.MOLDE_LARGO_CROP);
+                    entries.add(ModItems.MOLDE_LARGO_NORMAL);
+                    entries.add(ModItems.MOLDE_LARGO_LARGO);
                     entries.add(ModItems.MOLDE_MANGA);
                     entries.add(ModItems.MOLDE_CUELLO);
                 });

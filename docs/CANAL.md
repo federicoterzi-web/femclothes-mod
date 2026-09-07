@@ -1,4 +1,4 @@
-<!-- canal-version: 10 -->
+<!-- canal-version: 11 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,87 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v11 — 2026-09-07 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:** dos bugs de v10 arreglados + el eje "cobertura" compartido entre
+pantalón y medias, tras varias vueltas de diseño en vivo con el dueño.
+
+**Bugs:**
+- **Cintura**: el pantalón ahora sube al TORSO (banda pintada en runtime,
+  ver abajo), no corta seco en el pivote de la cadera.
+- **Telar rechazaba `MoldePantalonItem`**: el `canInsert` del slot de patrón
+  solo chequeaba `ClothingPatternItem`/`MoldeItem`, nunca agregué el molde
+  de pantalón. Por eso "no entraban".
+
+**Rediseño de moldes — dos decisiones tomadas EN VIVO, con marcha atrás
+incluida:**
+1. Se probó unificar el largo de remera (crop/normal/largo) con el tiro de
+   pantalón (alto/normal/bajo) en un solo set de 3 moldes universales
+   ("Patrón 1"). **Se descartó** ("bueno los separemos") — quedan como dos
+   ejes independientes, cada uno con sus propios moldes.
+2. **Todos los moldes de largo pasaron de cíclicos a POR VALOR** —
+   `MoldeLargoRemeraItem` (remera, 3), `MoldePantalonItem` (pantalón,
+   redise­ñado de cíclico a 5 valores), `MoldeMediaItem` (medias, nuevo, 5).
+   Con 5-7 pasos, ciclar es mal UX (hasta 6 clicks a ciegas); un ítem con
+   nombre propio por valor es mejor. `MoldeItem` (manga/cuello de remera)
+   SIGUE cíclico — son solo 3-4 pasos, no hace falta el cambio ahí.
+
+**El eje "cobertura" (sin/corto/medio/largo/extralargo), confirmado y
+parcialmente implementado:**
+- **Pantalón**: `PantalonLargo` bajó de 7 a 5 valores — calzoncillos, slip y
+  tanga se FUSIONARON en `ROPA_INTERIOR` (a pedido del dueño, "son un mismo
+  largo"). Textura regenerada para el valor fusionado; las otras 4 quedan
+  igual.
+- **`PantalonTiro`** (nuevo, 3 valores: corto/medio/largo — cuánto sube la
+  cintura): eje INDEPENDIENTE de `PantalonLargo`. Se pinta en RUNTIME
+  (`PiezasDelMod.pintarCintura`, reusando el gancho `Encima` que ya existía
+  para estampas) en vez de hornearse en cada PNG de largo — evita 5×3=15
+  archivos para lo que es un rectángulo simple. Nota: usar `Encima` acá hace
+  que `reducirSiHaceFalta` (v7) trate al pantalón como "estampado" (8x, sin
+  achicar) — sobra chica, no se resolvió.
+- **Medias ganaron un eje de largo que no existía** (`MediasLargo`, 5
+  valores: zoquetes/medias/rodilla/tres_cuartos/cancán). Verificado contra
+  el asset real ANTES de generar nada: `socks_solid_layer_1.png` cubre 10 de
+  las 12 filas (no 12), contadas desde el TOBILLO hacia arriba —
+  **dirección OPUESTA a pantalón**, que cuenta desde la cintura hacia
+  abajo. `CANCAN` (10 filas, el default) es **byte a byte idéntico** al
+  archivo validado — verificado con una comparación directa, no aproximado.
+- **Remera manga (4→5 valores, "un corte un poco más arriba del puño")
+  QUEDÓ SIN TOCAR a propósito**: implicaría regenerar 45 combinaciones de
+  textura de remera (3 largo × 5 manga × 3 cuello) y no hay generador de
+  esos assets en este repo. Anotado en FEMCLOTHES.md con el camino más
+  seguro para cuando se haga (derivar por recorte de "larga", no generar de
+  cero).
+- Los tres ejes NO comparten moldes físicos (se evaluó y se descartó
+  también, mismo criterio que remera/pantalón arriba) — cada prenda tiene
+  su propio set, con nombres propios por prenda para los mismos 5 pasos
+  abstractos.
+
+**Verificado:** compila, cliente carga limpio (probado 3 veces distintas
+tras cada tanda de cambios), sin excepciones. **Lo puesto en el juego solo
+se probó hasta la iteración de v10** (cintura + shorts/medias) — todo lo de
+esta entrada (pantalón 5 valores, tiro, medias con largo) **no se probó
+puesto todavía**.
+
+**Para el otro Claude:**
+- Si volvés a tocar `PantalonLargo`/`MediasLargo`: son ejes que MIDEN LO
+  MISMO (cobertura de una extremidad) pero **llenan en direcciones
+  opuestas** — pantalón desde arriba(cintura), medias desde abajo(tobillo).
+  Verificá la dirección contra el asset real antes de generar nada nuevo,
+  como se hizo acá — no asumas.
+- El generador Python (tercera vez ya) sigue sin guardarse en el repo. Si
+  hace falta una CUARTA vez (ej. cuando se aborde manga de remera), es
+  momento de guardarlo como script real — está documentado igual en los
+  comentarios de cada clase.
+- `reducirSiHaceFalta` (v7, resolución de tela) y el uso de `Encima` para la
+  cintura de pantalón (v11) tienen una tensión sin resolver: cualquier
+  `Encima` fuerza 8x. No se arregló, queda anotado en el código.
+- Interacción sin probar: media CORTA (zoquetes) + estampa de la
+  sublimadora. `EstampaTextures.estampar` no sabe de `MediasLargo` y podría
+  pintar una foto sobre lo que ahora es piel transparente. El patrón de
+  remera (`aplicarPatron`, v8) ya resuelve esto recortando contra el alfa de
+  la base — el mismo truco aplicaría acá si hace falta.
 
 ## v10 — 2026-09-07 — cuenta de H0p3san · Claude Code (extensión de VSCode)
 

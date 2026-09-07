@@ -3,15 +3,11 @@
   "type": "minecraft:crafting_shapeless",
   "category": "equipment",
   "ingredients": [
-    {
-      "item": "minecraft:paper"
-    },
-    {
-      "item": "minecraft:shears"
-    }
+    { "item": "minecraft:paper" },
+    { "item": "minecraft:shears" }
   ],
   "result": {
-    "id": "femclothes:molde_largo",
+    "id": "femclothes:molde_pantalon_bermudas",
     "count": 1
   }
 }
