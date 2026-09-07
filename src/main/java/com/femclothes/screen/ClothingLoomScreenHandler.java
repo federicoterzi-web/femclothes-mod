@@ -408,7 +408,12 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
                     if (!this.insertItem(stack, this.dyeSlot.id, this.dyeSlot.id + 1, false)) {
                         return ItemStack.EMPTY;
                     }
-                } else if (stack.getItem() instanceof ClothingPatternItem) {
+                } else if (stack.getItem() instanceof ClothingPatternItem
+                        || stack.getItem() instanceof MoldeItem
+                        || stack.getItem() instanceof MoldeLargoRemeraItem
+                        || stack.getItem() instanceof MoldePantalonItem
+                        || stack.getItem() instanceof MoldeTiroItem
+                        || stack.getItem() instanceof MoldeMediaItem) {
                     if (!this.insertItem(stack, this.patternSlot.id, this.patternSlot.id + 1, false)) {
                         return ItemStack.EMPTY;
                     }

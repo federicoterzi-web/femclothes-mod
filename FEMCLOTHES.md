@@ -166,13 +166,13 @@ ilegibles y uno solo dejaría prendas muy distintas indistinguibles.
 ### El eje "cobertura": largo en pantalón, medias y remera
 
 Tres prendas bilaterales miden lo mismo —cuánto de una extremidad tapan— con
-la misma escala de 5 pasos: **sin/corto/medio/largo/extralargo**. Cada una le
-pone SUS nombres reales a esos 5 pasos, pero **no comparten ítems**: cada
-prenda tiene su propio set de moldes, todos con la misma filosofía —FIJAN un
-valor, no ciclan— porque con 5 pasos ciclar significa hasta cuatro clicks a
-ciegas para llegar al que querés.
+la misma escala de 5 pasos: **extra corto/corto/mediano/largo/extralargo**.
+Cada una le pone SUS nombres reales a esos 5 pasos, pero **no comparten
+ítems**: cada prenda tiene su propio set de moldes, todos con la misma
+filosofía —FIJAN un valor, no ciclan— porque con 5 pasos ciclar significa
+hasta cuatro clicks a ciegas para llegar al que querés.
 
-| prenda | eje | valores (sin → extralargo) | filas de las 12 |
+| prenda | eje | valores (extra corto → extralargo) | filas de las 12 |
 |---|---|---|---|
 | **Pantalón** | `PantalonLargo` | pantalón · tres cuartos · bermudas · shorts · ropa interior | 12·9·7·4·2 (cuenta DESDE la cintura hacia abajo) |
 | **Medias** | `MediasLargo` | cancán · 3/4 · rodilla · medias · zoquetes | 10·8·6·4·2 (cuenta DESDE el tobillo hacia arriba — ¡al revés!) |
