@@ -29,6 +29,13 @@ public final class Capa {
     /** Medias, fishnet, leggings. */
     public static final int MEDIA = 10;
 
+    /**
+     * Calientabrazos y cualquier otra prenda "interior" de brazo: va bajo la
+     * manga de la remera ({@code TORSO_EXTERIOR}=25 en Parte.BRAZO_DER/IZQ),
+     * igual que {@code MEDIA} va bajo {@code PIERNA_EXTERIOR} en la pierna.
+     */
+    public static final int MANGA_INTERIOR = 15;
+
     /** Shorts, pantalon, minifalda tubo: lo que va sobre la media. */
     public static final int PIERNA_EXTERIOR = 20;
 

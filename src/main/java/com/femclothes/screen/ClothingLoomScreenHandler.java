@@ -6,6 +6,7 @@ import com.femclothes.sublimadora.MoldeLargoRemeraItem;
 import com.femclothes.sublimadora.RemeraItem;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.DyedColorComponent;
+import com.femclothes.item.CalientabrazosItem;
 import com.femclothes.item.ClothingPatternItem;
 import com.femclothes.item.FemclothesItems;
 import com.femclothes.item.MediasLargo;
@@ -207,6 +208,17 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
             return;
         }
 
+        // Calientabrazos reusa los DOS moldes de otras prendas -manga de
+        // remera para la cobertura, tiro de pantalón para la banda de
+        // hombro- en vez de tener los suyos propios (a pedido del dueño: no
+        // se craftean moldes nuevos). Por eso necesita su propia rama, igual
+        // que pantalón, aunque no tenga ningún molde exclusivo.
+        if (garment.getItem() instanceof CalientabrazosItem) {
+            this.outputSlot.setStackNoCallbacks(reformarCalientabrazos(garment, dye, pattern));
+            this.sendContentUpdates();
+            return;
+        }
+
         // Las medias tienen su eje de largo (MediasLargo), con su propio
         // molde por valor -mismo mecanismo que pantalón-. No es una clase
         // de item dedicada (SOCKS_SOLID sigue siendo ClothingTrinketItem
@@ -344,6 +356,40 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
         }
         if (hayMoldeTiro) {
             PantalonItem.setTiro(out, ((MoldeTiroItem) pattern.getItem()).valor);
+        }
+        if (hayTinte) {
+            int rgb = ((DyeItem) dye.getItem()).getColor().getFireworkColor();
+            RegionResolver.ponerColorBase(out, this.target, rgb);
+        }
+        return out;
+    }
+
+    /**
+     * Lo que sale del telar con un calientabrazos adentro.
+     *
+     * Los dos moldes que acepta son de OTRAS prendas: {@code MoldeItem} con
+     * {@code eje==MANGA} (el mismo molde cíclico de la manga de la remera,
+     * ver {@link com.femclothes.sublimadora.MoldeItem#siguienteManga}) mueve
+     * la cobertura, y {@code MoldeTiroItem} (el mismo molde fijo del tiro de
+     * pantalón) mueve la banda de hombro. Ninguno de los dos es exclusivo de
+     * calientabrazos — por eso la cobertura cicla (relativa a su propio
+     * componente, no al de una remera puesta) en vez de fijar valor como el
+     * tiro.
+     */
+    private ItemStack reformarCalientabrazos(ItemStack prenda, ItemStack dye, ItemStack pattern) {
+        boolean hayMoldeCobertura = pattern.getItem() instanceof MoldeItem molde
+                && molde.eje == MoldeItem.Eje.MANGA;
+        boolean hayMoldeTiro = pattern.getItem() instanceof MoldeTiroItem;
+        boolean hayTinte = dye.getItem() instanceof DyeItem;
+        if (!hayMoldeCobertura && !hayMoldeTiro && !hayTinte) return ItemStack.EMPTY;
+
+        ItemStack out = prenda.copyWithCount(1);
+        if (hayMoldeCobertura) {
+            CalientabrazosItem.setCobertura(out,
+                    MoldeItem.siguienteManga(CalientabrazosItem.cobertura(out)));
+        }
+        if (hayMoldeTiro) {
+            CalientabrazosItem.setTiro(out, ((MoldeTiroItem) pattern.getItem()).valor);
         }
         if (hayTinte) {
             int rgb = ((DyeItem) dye.getItem()).getColor().getFireworkColor();

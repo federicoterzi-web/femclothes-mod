@@ -1,7 +1,9 @@
 package com.femclothes.client;
 
+import com.femclothes.Femclothes;
 import com.femclothes.garment.Capa;
 import com.femclothes.garment.Parte;
+import com.femclothes.item.CalientabrazosItem;
 import com.femclothes.item.FemclothesItems;
 import com.femclothes.item.MediasLargo;
 import com.femclothes.item.PantalonItem;
@@ -45,6 +47,7 @@ public final class PiezasDelMod {
         PiezasDePrenda.registrar(FemclothesItems.SOCKS_SOLID, PiezasDelMod::medias);
         PiezasDePrenda.registrar(FemclothesItems.PANTALON, PiezasDelMod::pantalon);
         PiezasDePrenda.registrar(ModItems.REMERA, PiezasDelMod::remera);
+        PiezasDePrenda.registrar(FemclothesItems.CALIENTABRAZOS, PiezasDelMod::calientabrazos);
     }
 
     /**
@@ -199,6 +202,97 @@ public final class PiezasDelMod {
                 for (int x = cara.x0(); x < cara.x1(); x++) {
                     img.setColor(x, y, color);
                 }
+            }
+        }
+    }
+
+    /**
+     * Calientabrazos: DOS bandas independientes en el MISMO brazo, ancladas
+     * en puntas opuestas — no una en el brazo y otra en el torso.
+     *
+     * <ul>
+     *   <li>{@code cobertura} llena desde la MUÑECA hacia arriba (ya
+     *       existía: el archivo base elegido por {@link Variante.Manga}).</li>
+     *   <li>{@code tiro} llena desde el HOMBRO hacia abajo, pintado en
+     *       runtime sobre ESE MISMO archivo — no depende de cuánto llegue
+     *       la cobertura, y viceversa.</li>
+     * </ul>
+     *
+     * Con las dos cortas queda un hueco de piel a la vista en el medio del
+     * brazo a propósito: "mangas custom en paralelo" (muñequera + hombrera
+     * sueltas), no un solo tubo continuo. Si se solapan, es un tubo
+     * continuo igual — normal, la fila de más no se nota.
+     *
+     * Primer intento (v1: pintar el tiro como parche en el TORSO) estaba
+     * mal — la manga real y el parche no tenían por qué tocarse, y el
+     * parche pintaba las 4 caras del torso entero (pecho Y espalda),
+     * reportado como "pinta todo el pecho". Corregido acá, en el brazo.
+     */
+    private static List<Pieza> calientabrazos(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
+        Variante.Manga cobertura = CalientabrazosItem.cobertura(stack);
+        int filasTiro = CalientabrazosItem.tiro(stack).filas;
+        boolean hayCobertura = cobertura != Variante.Manga.SIN;
+        if (!hayCobertura && filasTiro == 0) return List.of();
+
+        // Sin archivo propio para SIN -nunca hacía falta antes de esto: el
+        // tiro fuerza sus propias filas igual, así que se parte de "larga"
+        // (siempre tiene contenido) y se borra la manga entera primero.
+        Identifier base = texturaBaseCalientabrazos(hayCobertura ? cobertura : Variante.Manga.LARGA);
+
+        return List.of(
+                new Pieza(Parte.BRAZO_IZQ, Capa.MANGA_INTERIOR,
+                        texturaCalientabrazos(base, stack, Lado.IZQUIERDA, Parte.BRAZO_IZQ, hayCobertura, filasTiro)),
+                new Pieza(Parte.BRAZO_DER, Capa.MANGA_INTERIOR,
+                        texturaCalientabrazos(base, stack, Lado.DERECHA, Parte.BRAZO_DER, hayCobertura, filasTiro)));
+    }
+
+    private static Identifier texturaBaseCalientabrazos(Variante.Manga cobertura) {
+        return Identifier.of(Femclothes.MOD_ID,
+                "textures/models/armor/calientabrazos_" + cobertura.clave + "_layer_1.png");
+    }
+
+    private static Identifier texturaCalientabrazos(Identifier base, ItemStack stack, Lado lado, Parte parte,
+                                                     boolean hayCobertura, int filasTiro) {
+        int colorBase = RegionResolver.colorBase(stack, lado);
+        ClothingTextureCache.Encima banda = new ClothingTextureCache.Encima() {
+            // BUG encontrado jugando: sin `parte` en la clave, BRAZO_IZQ y
+            // BRAZO_DER piden la MISMA clave de compose -mismo base, mismo
+            // colorBase en un item sin teñir- y el segundo en pedirla
+            // recibe el resultado cacheado del primero en vez del suyo
+            // propio (que nunca llega a componerse).
+            @Override public String clave() { return "banda" + parte.clave() + hayCobertura + "_" + filasTiro; }
+            @Override public boolean aplicar(NativeImage destino) {
+                if (!hayCobertura) borrarManga(destino, parte);
+                if (filasTiro > 0) pintarBandaHombro(destino, parte, colorBase, filasTiro);
+                return true;
+            }
+        };
+        return ClothingTextureCache.composeGarment(base, colorBase, null, 0,
+                ClothingTextureCache.Shading.NONE, banda);
+    }
+
+    /** Transparenta toda la manga de esa Parte -para cuando cobertura es SIN pero el tiro igual pinta algo. */
+    private static void borrarManga(NativeImage img, Parte parte) {
+        CajaSkin.Rect r = LayoutSkin.base(parte, false).escalada(CuerpoGeometria.ESCALA_TELA).caras();
+        for (int y = r.y0(); y < r.y1(); y++) {
+            for (int x = r.x0(); x < r.x1(); x++) {
+                img.setColor(x, y, 0);
+            }
+        }
+    }
+
+    /**
+     * Pinta una banda lisa en las PRIMERAS {@code filas} de la manga de esa
+     * Parte -desde el HOMBRO hacia abajo, espejo de cómo cobertura llena
+     * desde la MUÑECA hacia arriba.
+     */
+    private static void pintarBandaHombro(NativeImage img, Parte parte, int colorRgb, int filas) {
+        CajaSkin.Rect r = LayoutSkin.base(parte, false).escalada(CuerpoGeometria.ESCALA_TELA).caras();
+        int y1 = Math.min(r.y1(), r.y0() + filas * CuerpoGeometria.ESCALA_TELA);
+        int color = ClothingTextureCache.tintPixel(0xFFFFFFFF, colorRgb);
+        for (int y = r.y0(); y < y1; y++) {
+            for (int x = r.x0(); x < r.x1(); x++) {
+                img.setColor(x, y, color);
             }
         }
     }

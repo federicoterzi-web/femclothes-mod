@@ -8,7 +8,7 @@
   "item.femclothes.pantalon_shorts": "Shorts",
   "item.femclothes.maid_outfit": "Traje de Maid",
   "item.femclothes.oversized_hoodie": "Buzo Oversize",
-  "item.femclothes.armwarmers": "Calentadores de Brazo",
+  "item.femclothes.calientabrazos": "Calentadores de Brazo",
   "item.femclothes.pattern_stripe_top": "Patrón: Raya Superior",
   "item.femclothes.pattern_stripe_alt": "Patrón: Rayado",
   "container.femclothes.clothing_loom": "Telar de Ropa",
@@ -106,5 +106,15 @@
   "femclothes.medias.medias": "medias",
   "femclothes.medias.rodilla": "hasta la rodilla",
   "femclothes.medias.tres_cuartos": "3/4",
-  "femclothes.medias.cancan": "cancán"
+  "femclothes.medias.cancan": "cancán",
+  "femclothes.calientabrazos.cobertura": "Cobertura: %s",
+  "femclothes.calientabrazos.tiro": "Tiro: %s",
+  "femclothes.categoria.molde": "Molde",
+  "femclothes.categoria.patron": "Patrón",
+  "femclothes.tooltip.se_usa_en": "Se usa en: %s",
+  "femclothes.prenda.remera": "Remera",
+  "femclothes.prenda.pantalon": "Pantalón",
+  "femclothes.prenda.medias": "Medias",
+  "femclothes.prenda.calientabrazos": "Calentadores de brazo",
+  "femclothes.pattern.tooltip.ayuda": "Se aplica con un tinte, en el telar, sobre una prenda lisa"
 }

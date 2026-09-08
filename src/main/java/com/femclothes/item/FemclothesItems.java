@@ -15,8 +15,11 @@ public final class FemclothesItems {
 
     // Migrada a Trinket: se dibuja pegada a la pierna real del jugador,
     // no con la geometría (más ancha) de bota de armadura.
+    // maxCount(16): mismo criterio que remera -dos medias con distinto largo/
+    // color/patrón tienen distintos componentes y nunca se apilan entre sí,
+    // esto solo junta medias realmente iguales.
     public static final ClothingTrinketItem SOCKS_SOLID = register("socks_solid",
-            new ClothingTrinketItem(new Item.Settings().maxCount(1), true));
+            new ClothingTrinketItem(new Item.Settings().maxCount(16), true));
 
     // socks_stripe_top / socks_stripe_alt SE FUERON: eran un item por
     // combinacion de colores. Ahora son patrones que se aplican sobre
@@ -33,7 +36,8 @@ public final class FemclothesItems {
     // ademas la prenda LARGA de pierna: se craftea pantalon completo y se
     // recorta con moldes en el telar. shorts.json se fue: era el antiguo
     // item fijo, sin eje.
-    public static final PantalonItem PANTALON = register("pantalon", new PantalonItem(new Item.Settings().maxCount(1)));
+    // maxCount(16): mismo criterio que remera/medias.
+    public static final PantalonItem PANTALON = register("pantalon", new PantalonItem(new Item.Settings().maxCount(16)));
 
     /**
      * Un molde de largo POR VALOR (7), no uno que cicla. Se probó ciclico y
@@ -97,8 +101,14 @@ public final class FemclothesItems {
                     new Item.Settings().maxCount(1), true));
 
     // --- Slot custom "arms" (via Trinkets) ---
-    public static final ArmWarmerItem ARMWARMERS = register("armwarmers",
-            new ArmWarmerItem(new Item.Settings().maxCount(1)));
+    // Reemplaza a ARMWARMERS: aquel nunca se enganchó al sistema de capas
+    // (sin color por lado, sin Garment, sin Pieza — no dibujaba nada). El
+    // item viejo no se migra, se retira sin más (mismo criterio que shorts
+    // al nacer PantalonItem): un stack viejo en un mundo existente queda
+    // como ítem desconocido, no rompe nada.
+    // maxCount(16): mismo criterio que remera/medias/pantalón.
+    public static final CalientabrazosItem CALIENTABRAZOS = register("calientabrazos",
+            new CalientabrazosItem(new Item.Settings().maxCount(16)));
 
     // --- Patrones reusables para la estación de personalización ---
     public static final ClothingPatternItem PATTERN_STRIPE_TOP = register("pattern_stripe_top",

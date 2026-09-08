@@ -25,6 +25,7 @@ public final class PrendasDelMod {
         Garments.registrar(FemclothesItems.SOCKS_SOLID, MEDIAS);
         Garments.registrar(FemclothesItems.PANTALON, PANTALON);
         Garments.registrar(ModItems.REMERA, REMERA);
+        Garments.registrar(FemclothesItems.CALIENTABRAZOS, CALIENTABRAZOS);
     }
 
     /**
@@ -83,6 +84,35 @@ public final class PrendasDelMod {
         @Override
         public Set<Parte> partes(ItemStack stack) {
             return EnumSet.of(Parte.PIERNA_IZQ, Parte.PIERNA_DER);
+        }
+    };
+
+    /**
+     * Calientabrazos: la prenda base de brazo, análoga a medias en la pierna.
+     *
+     * `CORTE` es `ENTERA`: cobertura y tiro son un valor para toda la prenda,
+     * no por brazo (nadie tiene un brazo con muñequera y el otro con manga
+     * larga). `TENIR` sigue siendo `BILATERAL`, cada brazo su color, igual
+     * que pantalón cada pierna.
+     *
+     * `partes()` es siempre los dos brazos, nunca TORSO — igual que pantalón
+     * NO declara TORSO pese a pintar ahí una pieza por el tiro: una parte
+     * declarada se cubre con cuerpo base, y eso taparía el torso entero sin
+     * remera puesta a cambio de una banda de un par de filas.
+     */
+    private static final Garment CALIENTABRAZOS = new Garment() {
+        @Override
+        public Set<Region> regionesDe(Operacion op) {
+            return switch (op) {
+                case TENIR -> BILATERAL;
+                case CORTE -> ENTERA;
+                case PATRON, ESTAMPAR -> Set.of();
+            };
+        }
+
+        @Override
+        public Set<Parte> partes(ItemStack stack) {
+            return EnumSet.of(Parte.BRAZO_IZQ, Parte.BRAZO_DER);
         }
     };
 

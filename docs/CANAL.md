@@ -1,4 +1,4 @@
-<!-- canal-version: 12 -->
+<!-- canal-version: 14 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,170 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v14 — 2026-09-08 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:** sesión larga (varias horas) de calibración visual de calientabrazos
++ limpieza de deuda general. Resumen de lo que quedó CONFIRMADO funcionando
+jugando (no solo compilando):
+
+- **Bug real encontrado y arreglado — cache de `ClothingTextureCache`
+  colisionaba entre brazos.** `Encima.clave()` no incluía `parte`: con un
+  ítem sin teñir (mismo `colorBase` en los dos lados), `BRAZO_IZQ` y
+  `BRAZO_DER` pedían la MISMA clave de compose y el segundo se quedaba con
+  el resultado cacheado del primero — de ahí el síntoma reportado jugando
+  ("un hombro sale naranja/blanco, el otro no"). Confirmado con
+  `ClothingTextureCache.DEBUG_DUMP` (volcado a disco de la textura
+  compuesta real, agregado esta sesión — ver más abajo) comparando ambos
+  brazos byte a byte. Fix: `clave()` ahora incluye `parte.clave()`.
+- **Tiro de calientabrazos rediseñado dos veces sobre la marcha, jugando.**
+  v1 (mal): banda pintada en `Parte.TORSO`, mismo mecanismo que
+  `pintarCintura` de pantalón — descartado, pintaba las 4 caras del torso
+  entero ("pinta pecho y espalda") y quedaba flotante si la cobertura no
+  llegaba al hombro. v2 (la que quedó): `pintarBandaHombro` pinta una
+  SEGUNDA banda en el MISMO brazo, anclada en el hombro creciendo hacia
+  abajo — espejo de cómo cobertura llena desde la muñeca hacia arriba. Con
+  las dos cortas queda hueco de piel en el medio a propósito ("mangas
+  custom en paralelo"). Ver `PiezasDelMod.calientabrazos()`.
+- **Tapas (gorro de hombro/muñeca) de calientabrazos: dos bugs de diseño
+  encontrados jugando, con capturas F2 leídas directo del archivo (no por
+  chat) y comparación de píxeles con Python.**
+  1. Espejar horizontalmente el brazo izquierdo (`ImageOps.mirror`) invertía
+     "arriba" (gorro de hombro, opaco) con "abajo" (agujero de muñeca,
+     transparente) — porque están lado a lado en el mismo rect, y un
+     espejo horizontal les da vuelta el orden. Resultado: un hombro con la
+     tapa opaca y el otro con piel a la vista. Fix: tapas NUNCA se espejan
+     (`TAPAS_RECTS` con `espejar=False` para los dos brazos); caras sí,
+     donde no cambia nada visible porque el degradé ya es casi simétrico.
+  2. Se probó rellenar "abajo" con el color de "arriba" y después con el
+     dobladillo — las dos veces mal: "abajo" es el agujero real del puño,
+     tiene que quedar TRANSPARENTE (piel del cuerpo base a la vista), no
+     tela de ningún color. Quedó así.
+- **Costura de brillo en el borde hombro/tapa**: se probó agregar
+  `Shading.ARMS` (mismo mecanismo de `Shading.LEGS`, sombreado falso por
+  columna para simular redondez) — craeaba un salto de brillo visible
+  contra la tapa (sin sombrear) justo en el borde. Se revirtió a
+  `Shading.NONE` para calientabrazos; el bug de fondo (cache) ya estaba
+  resuelto sin necesitar este sombreado.
+- **Sangrado de color en bordes recortados (alfa 0 con RGB negro
+  puro).** Encontrado jugando: "línea de un pixel en el puño". Los píxeles
+  transparentes de `derivar_banda.py` quedaban en `(0,0,0,0)` — el
+  filtrado de textura de Minecraft mezcla ese negro con el píxel opaco
+  vecino en el borde y se ve como una línea oscura fina. Fix:
+  `_extender_bordes()` en el script copia el RGB del vecino opaco a cada
+  transparente adyacente (alfa se queda en 0). **Sin confirmar todavía si
+  esto resolvió el síntoma** — el dueño cortó la sesión de pruebas antes de
+  poder verificarlo con captura, queda pendiente para la próxima.
+- **`RemeraItem` volvió a `maxCount(16)`** (había quedado en 1 en un intento
+  fallido de esta misma sesión): dos remeras iguales (mismos componentes)
+  se apilan, una remera única customizada no comparte componentes con
+  ninguna otra así que nunca se mezcla — mismo criterio ahora en
+  `SOCKS_SOLID`, `PANTALON` y `CALIENTABRAZOS` (antes `maxCount(1)`), a
+  pedido explícito del dueño: "las prendas base sí me gustaría que
+  stackeen a 16".
+- **Todos los ítems de `FemclothesItems` (antes solo remera+sus moldes)
+  ahora aparecen en la pestaña creativa** — `Femclothes.onInitialize`
+  registra un `ItemGroupEvents` propio. Sin esto, pantalón/medias/
+  calientabrazos/los 16 moldes/los 3 patrones solo eran alcanzables
+  sabiendo la receta de memoria.
+- **Moldes: un color de acento por EJE, no por prenda** (recolor de la
+  MISMA silueta de `molde_largo.png`, con Pillow) — `molde_pantalon.png`
+  (ámbar), `molde_tiro.png` (violeta), `molde_media.png` (magenta), suman
+  a los 3 ya existentes de remera (largo=rojo, manga=azul, cuello=verde).
+  Tooltip nuevo en todos los moldes/patrones: categoría ("Molde"
+  dorado / "Patrón" celeste) + "Se usa en: X" con la(s) prenda(s) reales
+  — helper compartido `PrendaLore.seUsaEn(...)`.
+- **Shift-click de un molde en el telar ahora va directo al slot de
+  patrón** (antes solo `ClothingPatternItem` lo hacía; los moldes caían al
+  inventario general).
+- **Herramienta nueva, para quedarse: `ClothingTextureCache.DEBUG_DUMP`**
+  (flag estático, default `false`) — prendido, cada textura compuesta se
+  vuelca a `run/femclothes_debug/<hash>.png` con la clave de compose en el
+  log. Fue lo que finalmente permitió diagnosticar el bug de cache sin
+  seguir adivinando desde capturas de pantalla borrosas — mucho más
+  confiable que screenshots. Usar esto ANTES que pedir capturas la próxima
+  vez que algo "se vea mal" y no se entienda por qué.
+- **F3+T NO sirve para ver cambios de textura in-game** en esta sesión —
+  se agregó un `SimpleSynchronousResourceReloadListener` que limpia
+  `ClothingTextureCache` en cada recarga (`FemclothesClient.java`), pero
+  el dueño reportó repetidas veces que igual no se actualizaba nada.
+  **Sin diagnosticar por qué** — puede que el listener no se esté
+  disparando, o que haya otro cache no contemplado. Hasta que se
+  entienda, asumir que SIEMPRE hace falta relanzar el cliente entero
+  (`gradlew :runClient`) para ver un cambio de asset, no confiar en F3+T.
+- **3DSL probado en vivo por primera vez** (`modLocalRuntime` reactivado
+  temporalmente en `build.gradle`): carga bien, el agujero que
+  `ComposedSkin` hace en la skin funciona. PERO reactivarlo hizo que el
+  cliente se cuelgue reproduciblemente justo después de "Initializing
+  MixinExtras" — sospecha de choque de mixins con
+  `AbstractClientPlayerEntityMixin`, sin confirmar. **Se volvió a
+  desactivar** (las 3 líneas de `modLocalRuntime` comentadas de nuevo en
+  `build.gradle`) — no tocar sin investigar el choque primero.
+- **Pendiente, sin tocar:** el eje "Borde" (forma de escote/cintura/borde
+  superior) y el eje "fit" (skin tight/regular/oversize) — ambos
+  discutidos, ninguno implementado, ver notas en `FEMCLOTHES.md`.
+- **Pendiente, sin resolver:** el bug original de "línea/piel en los
+  puños" de la manga de REMERA (el que motivó `SIETE_OCTAVOS` en v12)
+  sigue sin diagnosticarse — nunca se consiguió una captura que lo
+  mostrara con claridad. Puede o no ser el mismo mecanismo de sangrado de
+  color que se encontró y arregló para calientabrazos esta sesión (el fix
+  de `derivar_banda.py` no toca los assets de remera).
+
+## v13 — 2026-09-07 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:** `armwarmers` (el ítem más viejo del mod — Trinket con slot y receta,
+pero NUNCA enganchado al sistema de capas: sin `Garment`, sin `Pieza`, sin
+color por lado) se retiró y se reemplazó por `calientabrazos`, ahora sí
+dibujado de verdad, con dos ejes que **reusan moldes que ya existían para
+otras prendas** — a pedido explícito del dueño ("separar todos los patrones
+ya era"): cero ítems nuevos que craftear.
+
+- **`FemclothesItems.CALIENTABRAZOS` (`CalientabrazosItem extends
+  ClothingTrinketItem`)** reemplaza a `ARMWARMERS`/`ArmWarmerItem`. Corte
+  limpio, sin migración: como el viejo no renderizaba nada, un stack de
+  antes de este cambio queda como ítem desconocido, no rompe nada — mismo
+  criterio que cuando `shorts` se retiró al nacer `PantalonItem`.
+- **Cobertura** (`FemclothesComponents.CALIENTABRAZOS_COBERTURA`, tipo
+  `Variante.Manga`): reusa el MISMO molde cíclico de la manga de remera
+  (`MOLDE_MANGA`), pero llena desde la MUÑECA hacia arriba — dirección
+  invertida respecto de remera (hombro hacia abajo), mismo patrón ya
+  resuelto entre `PantalonLargo`/`MediasLargo`. `MoldeItem` ganó un
+  helper público `siguienteManga(Variante.Manga)` para que el telar cicle
+  sin pasar por un `Variante` completo (antes esa lógica vivía inline en
+  `aplicar()`, exclusiva de remera).
+- **Tiro** (`FemclothesComponents.CALIENTABRAZOS_TIRO`, tipo `PantalonTiro`):
+  reusa el MISMO molde fijo del tiro de pantalón. Pinta una banda extra
+  hacia el hombro/torso, técnica idéntica a `pintarCintura` pero espejada
+  (`pintarHombro`: primeras filas del torso en vez de las últimas).
+- **`Capa.MANGA_INTERIOR = 15`** nueva, entre `MEDIA` y `PIERNA_EXTERIOR` —
+  calientabrazos dibuja debajo de la manga de la remera (`TORSO_EXTERIOR`),
+  igual que las medias debajo del pantalón.
+- **4 texturas derivadas** (`calientabrazos_{corta,tres_cuartos,
+  siete_octavos,larga}_layer_1.png`, 512×512) de la manga de
+  `cuerpo_normal_larga_redondo.png`, truncando desde el HOMBRO (dirección
+  opuesta a como remera deriva sus propias mangas cortas, que truncan desde
+  la muñeca) — verificado por lectura de píxeles antes de generar nada:
+  fila 0 = hombro, fila 11 = muñeca, dobladillo real `(188,188,198,255)`.
+  `SIN` no genera archivo (cobertura 0 = no se agrega `Pieza` de brazo).
+- **Script guardado esta vez**: `tools/derivar_banda.py`, parametrizado por
+  dirección (`hombro`/`muneca`) para cubrir las dos técnicas que ya usa el
+  mod. Cierra la deuda marcada en v9-v11 ("la 4ª vez hay que guardarlo").
+- **Verificado con un bug real encontrado y corregido en el camino**: la
+  primera versión del script partía de una COPIA COMPLETA del PNG fuente
+  (incluyendo el torso de la remera) y solo transparentaba filas puntuales
+  de la manga — violaba el contrato de `Pieza` (transparente donde no hay
+  tela) y hubiera tapado el torso de cualquiera que se pusiera un
+  calientabrazos sin remera. Se corrigió antes de compilar: el lienzo
+  arranca TRANSPARENTE y solo se copian los rects de brazo (`caras()` +
+  `tapas()` de `LayoutSkin.base(Parte.BRAZO_*)`).
+- **Pendiente, no tocado**: el eje "Borde" (forma de escote/cintura/borde
+  superior para pantalón/medias/calientabrazos, generalización de "cuello")
+  se discutió en la sesión pero nunca se cerraron los valores concretos —
+  no se le reservó nada en el código, no asumir que existe.
+- **Sin verificar visualmente todavía**: compiló limpio y el cliente bootea
+  sin excepciones (grep del log, sin referencias colgadas a `armwarmers`),
+  pero nadie probó en el juego que la cobertura, el tiro o el color por
+  brazo se vean bien — falta la prueba manual del dueño.
 
 ## v12 — 2026-09-07 — cuenta de H0p3san · Claude Code (extensión de VSCode)
 

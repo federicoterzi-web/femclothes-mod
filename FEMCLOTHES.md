@@ -41,7 +41,7 @@ ciclo de prensado no tiene nada que ver con el resto de las prendas.
 | **Remera** (`remera`) | ✅ 45 cortes, teñible, patrones, estampable | Trinket, slot `torso/prenda`, dibujada sobre el cuerpo real |
 | **Medias color pleno** (`socks_solid`) | ✅ 5 largos, patrones, teñible, **estampable** | Trinket, slot `socks/pair`, dibujada sobre la pierna real |
 | **Pantalón** (`pantalon`) | ✅ 5 largos + 3 tiros, teñible, sin patrón todavía | Trinket, slot `piernas/exterior`, primera prueba real del layering (capa arriba de la media) |
-| **Calentadores de brazo** (`armwarmers`) | ✅ funcional | Trinket, slot custom `arms/armwarmer` |
+| **Calientabrazos** (`calientabrazos`) | ✅ cobertura (5, molde de manga reusado) + tiro (3, molde de pantalón reusado), teñible, sin patrón todavía | Trinket, slot custom `arms/armwarmer`, dibujada sobre el brazo real (`Capa.MANGA_INTERIOR`, bajo la manga de la remera) |
 | Medias 3/4 (`socks_34`) | placeholder | Slot cosmético (Cosmetic Armor Updated) |
 | Medias de red (`fishnet_socks`) | placeholder, no teñible | Pendiente: pasar a patrón "fishnet" |
 | Traje de maid | placeholder, set completo en una textura | Sin definir |
@@ -228,9 +228,100 @@ remera es la excepción: sus 9 íconos nuevos SÍ existen, pero como
 arte propia todavía — visualmente indistinguibles de su combinación "larga"
 hasta que alguien dibuje el sprite real).
 
-Todos los moldes nuevos reusan el ícono de `molde_largo` (de la remera):
-misma idea de herramienta, sin arte nueva todavía — moldes distintos se ven
-iguales en el inventario hasta que alguien dibuje el propio.
+**Un color de acento por EJE, no por prenda.** Los 3 moldes originales de
+remera ya tenían esta convención sin que estuviera escrita: misma silueta de
+"molde de papel" (`molde_largo.png`), un color de acento distinto por eje
+— largo=rojo, manga=azul, cuello=verde. Los 13 moldes de pantalón/tiro/
+medias la habían roto sin querer, reusando el rojo de largo-de-remera para
+los tres a la vez. Se corrigió recoloreando (mismo script de un tinte,
+Pillow) la MISMA silueta con un acento nuevo por eje: `molde_pantalon.png`
+(ámbar) para el largo de pantalón, `molde_tiro.png` (violeta) para el tiro
+—de pantalón Y calientabrazos, mismo ítem, mismo acento—, `molde_media.png`
+(magenta) para el largo de medias. El eje sigue siendo lo que decide el
+color, no la prenda: por eso tiro tiene un solo acento aunque sirva para dos
+prendas distintas.
+
+**Tooltip con lore, no solo "En el telar, con una prenda".** Cada molde
+ahora dice arriba "Molde" (dorado) y una línea "Se usa en: X" con la(s)
+prenda(s) reales — clave para que compartir moldes (manga, tiro) no
+confunda cuál sirve para qué. Los patrones (`ClothingPatternItem`, antes sin
+tooltip propio) ganaron lo mismo con "Patrón" (celeste, color opuesto a
+molde a propósito) y su propia lista de prendas (remera, medias — pantalón
+y calientabrazos todavía no aceptan patrón, por diseño). Helper compartido:
+`PrendaLore.seUsaEn(...)`.
+
+**Ningún ítem de `FemclothesItems` aparecía en el buscador creativo** —
+pantalón, medias, calientabrazos, los 16 moldes y los 3 patrones solo eran
+alcanzables sabiendo la receta de memoria (`SublimadoraMod` únicamente
+agrega los de SU paquete: remera + sus 2 moldes cíclicos). Se notó cuando
+faltó calientabrazos recién agregado; se agregaron TODOS los de
+`FemclothesItems` a la pestaña `ItemGroups.FUNCTIONAL`, en
+`Femclothes.onInitialize`.
+
+### 💡 Idea anotada, SIN implementar: eje "fit"
+
+El dueño tiró la idea de un cuarto eje transversal, además de cobertura/
+tiro/borde: **fit** — cuán ajustada o suelta cae la tela sobre el cuerpo,
+3 pasos: **skin tight / regular / oversize**. `PRENDAS.md` ya lo tenía
+listado hace tiempo como eje de pantalón únicamente (línea "pantalón | fit
+· largo² · tiro · botamanga"); la idea nueva es generalizarlo cross-prenda,
+mismo criterio que ya se hizo con cobertura y tiro. Sin resolver todavía:
+qué prendas lo usan, si comparte molde o es una familia por prenda, y cómo
+se ve en la geometría (¿silueta distinta por Superficie, o solo un
+recorte/dilatación distinta de la tela?). No tocar hasta que se hable el
+concepto, mismo protocolo que el eje "Borde" (ver más abajo).
+
+### Calientabrazos: 4ta prenda del eje, PRIMERA que comparte moldes
+
+`Calientabrazos` (ex `armwarmers` — el ítem más viejo del mod, nunca
+enganchado al sistema de capas) es la prenda base de BRAZO, análoga a las
+medias en la pierna. A diferencia de pantalón/medias/remera (línea 170: "no
+comparten ítems"), acá el dueño pidió explícitamente lo contrario — **cero
+moldes nuevos**, reusar los que ya existen:
+
+| eje | qué mueve | molde reusado |
+|---|---|---|
+| cobertura (5 pasos) | cuánto brazo tapa la tela, desde la MUÑECA hacia arriba | `MOLDE_MANGA` — el mismo cíclico de la manga de remera (`MoldeItem.Eje.MANGA`) |
+| tiro (3 pasos) | otra banda, independiente, desde el HOMBRO hacia abajo | `MOLDE_TIRO_*` — el mismo fijo del tiro de pantalón |
+
+Mismo molde físico, pero **componente propio por prenda**
+(`CALIENTABRAZOS_COBERTURA`/`CALIENTABRAZOS_TIRO`, tipos `Variante.Manga`/
+`PantalonTiro` reusados) — la manga de una remera puesta y la cobertura de
+un calientabrazos puesto no se pisan entre sí. `MoldeItem` ganó un helper
+público `siguienteManga(Variante.Manga)` para ciclar sin pasar por un
+`Variante` completo.
+
+⚠️ **Tiro NO pinta un parche en el torso — pinta una SEGUNDA banda en el
+BRAZO, anclada en la punta opuesta a cobertura.** Cobertura llena desde la
+muñeca hacia arriba; tiro llena desde el hombro hacia abajo, sobre el
+MISMO archivo, en runtime, ignorando el alfa que cobertura ya haya puesto.
+Con las dos cortas queda un hueco de piel en el medio del brazo a
+propósito — "mangas custom en paralelo" (muñequera + hombrera sueltas), no
+necesariamente un tubo continuo. El primer intento (pintar el tiro como
+banda de cintura pero en el `Parte.TORSO`, copiando el mecanismo de
+`pintarCintura` de pantalón tal cual) estaba mal: la manga real y el
+parche del torso no tenían por qué tocarse -cobertura corta deja piel
+antes de llegar al hombro-, y el parche pintaba las 4 caras del torso
+entero (pecho Y espalda a la vez) — reportado jugando como "pinta todo el
+pecho y la espalda". Corregido: `pintarBandaHombro` vive en
+`PiezasDelMod.java` y pinta sobre `LayoutSkin.base(Parte.BRAZO_*).caras()`,
+no sobre `Parte.TORSO`. Sin archivo propio para cobertura `SIN` (nunca
+hacía falta antes): se parte de "larga" como base y se borra la manga
+entera primero (`borrarManga`) para que el tiro no herede tela de muñeca
+que cobertura dijo que no hay.
+
+`Capa.MANGA_INTERIOR` (15, nueva) dibuja debajo de la manga de la remera —
+mismo rol que `MEDIA` para la pierna. Las 4 texturas (`SIN` no genera
+archivo) se derivaron de la manga de `cuerpo_normal_larga_redondo.png`
+truncando desde el HOMBRO (dirección opuesta a como remera trunca las
+suyas, desde la muñeca) — ver `tools/derivar_banda.py`, el primer script de
+derivación que se guarda en el repo (antes eran ad-hoc, ver v9-v11 de
+`docs/CANAL.md`).
+
+⚠️ **El eje "Borde"** (forma de escote/cintura/borde superior — generalización
+de "cuello" para pantalón/medias/calientabrazos) se discutió en la misma
+sesión pero **no se implementó**: no tiene componente, no tiene molde, no
+asumir que existe.
 
 ### Piernas independientes, sin duplicar ítems
 

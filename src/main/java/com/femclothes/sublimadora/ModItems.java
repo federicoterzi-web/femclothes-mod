@@ -67,6 +67,12 @@ public final class ModItems {
                     .packetCodec(Variante.PACKET_CODEC)
                     .build());
 
+    // maxCount(16): dos remeras con distinto corte/color/estampa tienen
+    // distintos componentes, así que Minecraft nunca las apila entre sí de
+    // todos modos -esto solo junta remeras REALMENTE iguales (recién
+    // crafteadas, en blanco, mismo corte)-, conveniente para tener varias
+    // de sobra. El telar/sublimadora ya toman de a 1 del stack
+    // (garmentSlot.takeStack(1)), así que un stack >1 en el slot es seguro.
     public static final RemeraItem REMERA = Registry.register(
             Registries.ITEM,
             Identifier.of(Femclothes.MOD_ID, "remera"),

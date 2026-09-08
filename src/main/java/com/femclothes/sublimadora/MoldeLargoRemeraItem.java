@@ -1,5 +1,6 @@
 package com.femclothes.sublimadora;
 
+import com.femclothes.item.PrendaLore;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
@@ -34,6 +35,8 @@ public class MoldeLargoRemeraItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
+        tooltip.add(Text.translatable("femclothes.categoria.molde").formatted(Formatting.GOLD));
+        tooltip.add(PrendaLore.seUsaEn("remera").formatted(Formatting.DARK_GRAY));
         tooltip.add(Text.translatable("femclothes.sublimadora.molde.ayuda").formatted(Formatting.DARK_GRAY));
     }
 }

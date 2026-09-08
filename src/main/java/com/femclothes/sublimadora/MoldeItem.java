@@ -1,5 +1,6 @@
 package com.femclothes.sublimadora;
 
+import com.femclothes.item.PrendaLore;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
@@ -45,9 +46,19 @@ public class MoldeItem extends Item {
     /** El corte que sale de pasar este molde por esa prenda. */
     public Variante aplicar(Variante v) {
         return switch (eje) {
-            case MANGA -> new Variante(v.largo(), siguiente(Variante.Manga.values(), v.manga()), v.cuello());
+            case MANGA -> new Variante(v.largo(), siguienteManga(v.manga()), v.cuello());
             case CUELLO -> new Variante(v.largo(), v.manga(), siguiente(Variante.Cuello.values(), v.cuello()));
         };
+    }
+
+    /**
+     * El siguiente valor de manga en el ciclo — público porque calientabrazos
+     * también usa este molde (misma cobertura, dirección invertida, ver
+     * {@code FemclothesComponents.CALIENTABRAZOS_COBERTURA}) y el telar
+     * necesita ciclarlo sin pasar por un {@link Variante} completo.
+     */
+    public static Variante.Manga siguienteManga(Variante.Manga actual) {
+        return siguiente(Variante.Manga.values(), actual);
     }
 
     private static <T extends Enum<T>> T siguiente(T[] valores, T actual) {
@@ -57,6 +68,15 @@ public class MoldeItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
+        tooltip.add(Text.translatable("femclothes.categoria.molde").formatted(Formatting.GOLD));
+        net.minecraft.text.MutableText prendas = switch (eje) {
+            // MANGA es el mismo molde para remera Y calientabrazos (ver
+            // FemclothesComponents.CALIENTABRAZOS_COBERTURA) — CUELLO sigue
+            // siendo exclusivo de remera.
+            case MANGA -> PrendaLore.seUsaEn("remera", "calientabrazos");
+            case CUELLO -> PrendaLore.seUsaEn("remera");
+        };
+        tooltip.add(prendas.formatted(Formatting.DARK_GRAY));
         tooltip.add(Text.translatable("femclothes.sublimadora.molde.ayuda").formatted(Formatting.DARK_GRAY));
     }
 }

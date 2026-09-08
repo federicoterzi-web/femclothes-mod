@@ -8,7 +8,7 @@
   "item.femclothes.pantalon_shorts": "Shorts",
   "item.femclothes.maid_outfit": "Maid Outfit",
   "item.femclothes.oversized_hoodie": "Oversized Hoodie",
-  "item.femclothes.armwarmers": "Arm Warmers",
+  "item.femclothes.calientabrazos": "Arm Warmers",
   "item.femclothes.pattern_stripe_top": "Pattern: Top Stripe",
   "item.femclothes.pattern_stripe_alt": "Pattern: Striped",
   "container.femclothes.clothing_loom": "Clothing Loom",
@@ -106,5 +106,15 @@
   "femclothes.medias.medias": "regular",
   "femclothes.medias.rodilla": "knee-high",
   "femclothes.medias.tres_cuartos": "3/4",
-  "femclothes.medias.cancan": "thigh-high"
+  "femclothes.medias.cancan": "thigh-high",
+  "femclothes.calientabrazos.cobertura": "Coverage: %s",
+  "femclothes.calientabrazos.tiro": "Rise: %s",
+  "femclothes.categoria.molde": "Template",
+  "femclothes.categoria.patron": "Pattern",
+  "femclothes.tooltip.se_usa_en": "Fits: %s",
+  "femclothes.prenda.remera": "T-Shirt",
+  "femclothes.prenda.pantalon": "Pants",
+  "femclothes.prenda.medias": "Socks",
+  "femclothes.prenda.calientabrazos": "Arm Warmers",
+  "femclothes.pattern.tooltip.ayuda": "Apply with a dye, at the loom, over a plain garment"
 }

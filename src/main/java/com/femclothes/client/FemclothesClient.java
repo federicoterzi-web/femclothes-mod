@@ -3,13 +3,18 @@ package com.femclothes.client;
 import com.femclothes.item.FemclothesItems;
 import com.femclothes.region.Lado;
 import com.femclothes.region.RegionResolver;
+import com.femclothes.render.ClothingTextureCache;
 import com.femclothes.render.GarmentFeatureRenderer;
 import com.femclothes.screen.FemclothesScreenHandlers;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
 import net.minecraft.client.render.entity.PlayerEntityRenderer;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 
 public class FemclothesClient implements ClientModInitializer {
@@ -65,5 +70,22 @@ public class FemclothesClient implements ClientModInitializer {
         // TODO: acá también va el registro de la geometría custom del
         // buzo oversize y la falda del traje de maid vía Armor Model API
         // (ver README, sección "Buzo oversize y Armor Model API").
+
+        // Sin esto, F3+T releía los .png del disco pero ClothingTextureCache
+        // seguía devolviendo la composición vieja desde su cache estático
+        // -encontrado jugando, iterando la textura de calientabrazos: hacía
+        // falta relanzar el cliente entero para ver un cambio de asset.
+        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(
+                new SimpleSynchronousResourceReloadListener() {
+                    @Override
+                    public Identifier getFabricId() {
+                        return Identifier.of("femclothes", "clothing_texture_cache");
+                    }
+
+                    @Override
+                    public void reload(ResourceManager manager) {
+                        ClothingTextureCache.limpiarCache();
+                    }
+                });
     }
 }

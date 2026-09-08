@@ -25,7 +25,41 @@ public final class ClothingTextureCache {
     private static final Map<Identifier, NativeImage> BASE_IMAGE_CACHE = new HashMap<>();
     private static final Map<String, Identifier> TINTED_CACHE = new HashMap<>();
 
+    /**
+     * Volcado a disco de cada textura compuesta, para diagnosticar sin
+     * depender de lo que se alcanza a ver en una captura de pantalla.
+     * Prender a mano, probar en el juego, apagar — no queda prendido.
+     */
+    public static boolean DEBUG_DUMP = false;
+
     private ClothingTextureCache() {}
+
+    /**
+     * Vacía los dos caches (imagen cruda + composición final).
+     *
+     * Hace falta llamarlo en cada recarga de recursos: F3+T vuelve a leer
+     * los .png del disco, pero estos mapas son estáticos y sobreviven esa
+     * recarga solos — sin esto, cambiar un asset y F3+T seguía mostrando
+     * la composición vieja (encontrado jugando, iterando la textura de
+     * calientabrazos: "sigue igual" después de F3+T, hacía falta relanzar
+     * el cliente entero para ver el cambio).
+     */
+    public static void limpiarCache() {
+        BASE_IMAGE_CACHE.clear();
+        TINTED_CACHE.clear();
+    }
+
+    private static void volcarADisco(String key, NativeImage img) {
+        try {
+            java.nio.file.Path dir = java.nio.file.Paths.get("femclothes_debug");
+            java.nio.file.Files.createDirectories(dir);
+            String nombre = Integer.toHexString(key.hashCode()) + ".png";
+            img.writeTo(dir.resolve(nombre));
+            System.out.println("[femclothes-debug] volcado " + dir.resolve(nombre) + " <- " + key);
+        } catch (IOException e) {
+            System.out.println("[femclothes-debug] no se pudo volcar: " + e);
+        }
+    }
 
     /** Devuelve la textura base sin modificar (para prendas sin tinte, ej. maid_outfit). */
     public static Identifier plain(Identifier baseTexture) {
@@ -196,32 +230,63 @@ public final class ClothingTextureCache {
      * para la pierna derecha el lado interno es +X y para la izquierda es -X.
      */
     private static float faceFactor(int x, int y, Shading shading) {
-        if (shading != Shading.LEGS) return 1.0F;
-
         final int S = CuerpoGeometria.ESCALA_TELA;
         final int face = 4 * S;   // ancho de una cara del cuboide, en pixeles
 
-        // Pierna derecha, uv(0, 16S): caras laterales en y 20S..32S-1, x 0..16S-1
-        if (y >= 20 * S && y < 32 * S && x >= 0 && x < 16 * S) {
-            int col = x / face;
-            return switch (col) {
-                case 0 -> FACE_LIGHT;                       // WEST, exterior
-                case 1 -> ramp((2 * face - 1) - x);         // NORTH: interno en el borde derecho
-                case 2 -> FACE_DARK;                        // EAST, interior
-                default -> ramp(x - 3 * face);              // SOUTH: interno en el borde izquierdo
-            };
+        if (shading == Shading.LEGS) {
+            // Pierna derecha, uv(0, 16S): caras laterales en y 20S..32S-1, x 0..16S-1
+            if (y >= 20 * S && y < 32 * S && x >= 0 && x < 16 * S) {
+                int col = x / face;
+                return switch (col) {
+                    case 0 -> FACE_LIGHT;                       // WEST, exterior
+                    case 1 -> ramp((2 * face - 1) - x);         // NORTH: interno en el borde derecho
+                    case 2 -> FACE_DARK;                        // EAST, interior
+                    default -> ramp(x - 3 * face);              // SOUTH: interno en el borde izquierdo
+                };
+            }
+            // Pierna izquierda, uv(16S, 48S): caras laterales en y 52S..64S-1, x 16S..32S-1
+            if (y >= 52 * S && y < 64 * S && x >= 16 * S && x < 32 * S) {
+                int lx = x - 16 * S;
+                int col = lx / face;
+                return switch (col) {
+                    case 0 -> FACE_DARK;                        // WEST, interior
+                    case 1 -> ramp(lx - face);                  // NORTH: interno en el borde izquierdo
+                    case 2 -> FACE_LIGHT;                       // EAST, exterior
+                    default -> ramp((4 * face - 1) - lx);       // SOUTH: interno en el borde derecho
+                };
+            }
+            return 1.0F;
         }
-        // Pierna izquierda, uv(16S, 48S): caras laterales en y 52S..64S-1, x 16S..32S-1
-        if (y >= 52 * S && y < 64 * S && x >= 16 * S && x < 32 * S) {
-            int lx = x - 16 * S;
-            int col = lx / face;
-            return switch (col) {
-                case 0 -> FACE_DARK;                        // WEST, interior
-                case 1 -> ramp(lx - face);                  // NORTH: interno en el borde izquierdo
-                case 2 -> FACE_LIGHT;                       // EAST, exterior
-                default -> ramp((4 * face - 1) - lx);       // SOUTH: interno en el borde derecho
-            };
+
+        if (shading == Shading.ARMS) {
+            // Mismo mecanismo que LEGS -mismas proporciones de cuboide
+            // (ancho=prof=4, alto=12)-, trasladado al UV de los brazos:
+            // BRAZO_DER uv(40S,16S), BRAZO_IZQ uv(32S,48S) (ver CuerpoGeometria).
+            // Brazo derecho: caras laterales en y 20S..32S-1, x 40S..56S-1
+            if (y >= 20 * S && y < 32 * S && x >= 40 * S && x < 56 * S) {
+                int lx = x - 40 * S;
+                int col = lx / face;
+                return switch (col) {
+                    case 0 -> FACE_LIGHT;                       // WEST, exterior
+                    case 1 -> ramp((2 * face - 1) - lx);        // NORTH: interno en el borde derecho
+                    case 2 -> FACE_DARK;                        // EAST, interior
+                    default -> ramp(lx - 3 * face);             // SOUTH: interno en el borde izquierdo
+                };
+            }
+            // Brazo izquierdo: caras laterales en y 52S..64S-1, x 32S..48S-1
+            if (y >= 52 * S && y < 64 * S && x >= 32 * S && x < 48 * S) {
+                int lx = x - 32 * S;
+                int col = lx / face;
+                return switch (col) {
+                    case 0 -> FACE_DARK;                        // WEST, interior
+                    case 1 -> ramp(lx - face);                  // NORTH: interno en el borde izquierdo
+                    case 2 -> FACE_LIGHT;                       // EAST, exterior
+                    default -> ramp((4 * face - 1) - lx);       // SOUTH: interno en el borde derecho
+                };
+            }
+            return 1.0F;
         }
+
         return 1.0F;
     }
 
@@ -345,6 +410,8 @@ public final class ClothingTextureCache {
             return baseTexture;
         }
 
+        if (DEBUG_DUMP) volcarADisco(key, composite);
+
         // maskImg y no mask: si el patron se pidio pero le falta el PNG, el
         // bucle de arriba ya cayo a lisa (misma trampa que documenta
         // tintedWithPattern), asi que el tamano tiene que seguirla.
@@ -393,7 +460,7 @@ public final class ClothingTextureCache {
     }
 
     /** Como sombrear la tela segun a que parte del cuerpo va. */
-    public enum Shading { NONE, LEGS }
+    public enum Shading { NONE, LEGS, ARMS }
 
     /**
      * El png crudo de una textura del resource pack, cacheado.

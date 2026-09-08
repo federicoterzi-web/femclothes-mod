@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "femclothes:item/molde_largo"
+    "layer0": "femclothes:item/molde_media"
   }
 }

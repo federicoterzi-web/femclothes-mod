@@ -1,6 +1,7 @@
 package com.femclothes.item;
 
 import com.femclothes.region.Orientacion;
+import com.femclothes.sublimadora.Variante;
 import com.mojang.serialization.Codec;
 import net.minecraft.component.ComponentType;
 import net.minecraft.network.codec.PacketCodecs;
@@ -123,6 +124,39 @@ public final class FemclothesComponents {
             ComponentType.<MediasLargo>builder()
                     .codec(StringIdentifiable.createCodec(MediasLargo::values))
                     .packetCodec(PacketCodecs.indexed(i -> MediasLargo.values()[i], Enum::ordinal))
+                    .build());
+
+    /**
+     * La cobertura de calientabrazos (§{@link com.femclothes.sublimadora.Variante.Manga}):
+     * cuánto brazo tapa la tela, contado desde la MUÑECA hacia arriba — misma
+     * dirección invertida que ya existe entre {@code PANTALON_LARGO} (cintura
+     * hacia abajo) y {@code MEDIAS_LARGO} (tobillo hacia arriba). Reusa el
+     * MISMO molde cíclico que la manga de la remera (`MoldeItem.Eje.MANGA`),
+     * pero en un componente propio: la manga de una remera puesta y la
+     * cobertura de un calientabrazos puesto no se pisan entre sí. Ausente =
+     * {@code LARGA} (cobertura completa, el estado "recién crafteado").
+     */
+    public static final ComponentType<Variante.Manga> CALIENTABRAZOS_COBERTURA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "calientabrazos_cobertura"),
+            ComponentType.<Variante.Manga>builder()
+                    .codec(StringIdentifiable.createCodec(Variante.Manga::values))
+                    .packetCodec(PacketCodecs.indexed(i -> Variante.Manga.values()[i], Enum::ordinal))
+                    .build());
+
+    /**
+     * El tiro de calientabrazos (§{@link PantalonTiro}): una banda extra que
+     * sube desde el hombro hacia el torso, misma técnica de runtime que
+     * {@code PiezasDelMod.pintarCintura} usa para pantalón (ver
+     * {@code pintarHombro}). Reusa el MISMO molde que el tiro de pantalón,
+     * en un componente propio — ausente = {@code MEDIO}.
+     */
+    public static final ComponentType<PantalonTiro> CALIENTABRAZOS_TIRO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "calientabrazos_tiro"),
+            ComponentType.<PantalonTiro>builder()
+                    .codec(StringIdentifiable.createCodec(PantalonTiro::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PantalonTiro.values()[i], Enum::ordinal))
                     .build());
 
     public static void init() {
