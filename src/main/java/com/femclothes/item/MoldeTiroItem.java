@@ -26,7 +26,7 @@ public class MoldeTiroItem extends Item {
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
         tooltip.add(Text.translatable("femclothes.categoria.molde").formatted(Formatting.GOLD));
-        tooltip.add(PrendaLore.seUsaEn("pantalon", "calientabrazos").formatted(Formatting.DARK_GRAY));
+        tooltip.add(PrendaLore.seUsaEn("pantalon").formatted(Formatting.DARK_GRAY));
         tooltip.add(Text.translatable("femclothes.sublimadora.molde.ayuda").formatted(Formatting.DARK_GRAY));
     }
 }

@@ -1,4 +1,4 @@
-<!-- canal-version: 15 -->
+<!-- canal-version: 16 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,59 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v16 — 2026-09-08 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:** el dueño volvió después del cierre cansado de v15 con un
+documento de arquitectura propio, redactado a propósito "para que Claude
+entienda la arquitectura sin perderse en nuestros cadáveres de medias con
+tiro" — resuelve TODA la confusión de v14-v15 de un saque.
+
+- **El punto que lo cambia todo: "Tiro... aplicable principalmente a:
+  pantalones, calzas y futuras prendas inferiores similares. No debe
+  aplicarse a medias ni cubrebrazos."** Los dos rediseños de v14-v15 (banda
+  en el torso, después segunda banda en el brazo ancorada al hombro) partían
+  de una premisa equivocada: calientabrazos nunca debió tener tiro. No hacía
+  falta seguir intentando adivinar la geometría correcta — había que
+  retirarlo.
+- **Documento completo transcripto en `docs/MAQUINAS.md`**, nueva sección
+  "Categorías de patrones de modelado — la arquitectura definitiva", entre
+  "Mesa de sastrería" y "Sublimadora". Formaliza: cobertura como UN patrón
+  reusable de 6 niveles (0=sin … 5=completo) con un anclaje
+  Superior/Inferior que es config de máquina, no ítem seleccionable (ya
+  implementado correctamente: manga de remera=Superior, cubrebrazos/media=
+  Inferior, pantalón/calza=Superior); tiro exclusivo de pantalón/calza;
+  forma de cuello exclusiva de remera; un eje nuevo, **fit** (tight/regular/
+  loose/oversize), transversal a las 4 prendas — formaliza la idea que
+  quedó anotada sin implementar en v13-v14. Incluye tabla de compatibilidad
+  por prenda y el diagrama de flujo completo (prenda base → mesa de
+  modelado → estación de tintes → sublimadora → prenda final).
+- **Tiro retirado de calientabrazos, código real, no solo docs:**
+  `CalientabrazosItem` perdió `tiro()`/`setTiro()`; `FemclothesComponents`
+  perdió el registro `CALIENTABRAZOS_TIRO` (un mundo viejo con el dato
+  guardado simplemente lo ignora al leer, no rompe nada); `PiezasDelMod`
+  perdió `calientabrazos()`'s lógica de banda y los helpers `borrarManga`/
+  `pintarBandaHombro` enteros, quedó igual de simple que `medias()` (dos
+  `Pieza` de brazo, cobertura sola, `Shading.NONE`); `ClothingLoomScreenHandler
+  .reformarCalientabrazos` perdió el manejo de `MoldeTiroItem`. **Bug real
+  encontrado de paso**: `MoldeTiroItem`'s tooltip seguía anunciando
+  `seUsaEn("pantalon", "calientabrazos")` — corregido a solo `"pantalon"`.
+  Lang keys `femclothes.calientabrazos.tiro` retiradas de `es_ar.json` y
+  `en_us.json`. `FEMCLOTHES.md` actualizado (tabla resumen + sección
+  "Calientabrazos: 4ta prenda del eje" + nota del molde de tiro compartido)
+  para reflejar el diseño final: cobertura sola, mismo patrón que medias.
+- Las 4 texturas de cobertura (`calientabrazos_*_layer_1.png`, con el fix
+  de sangrado de 8px de v15) **no necesitaron ningún cambio** — el tiro
+  siempre se pintaba en runtime sobre un archivo estático que ya era
+  correcto solo-cobertura.
+- `./gradlew.bat compileJava` limpio después de todos los cambios.
+- **El "línea en el puño" de v14-v15 sigue técnicamente sin diagnóstico
+  confirmado**, pero con tiro fuera de la ecuación el hueco tiro/cobertura
+  que se había encontrado en v15 (evidenciado por dump, real pero ahora
+  irrelevante) desaparece solo. Si el síntoma reaparece con la prenda
+  ya cobertura-only, retomar ahí — no asumir que quedó resuelto por
+  descarte, no se relanzó el cliente para confirmar visualmente en esta
+  sesión.
 
 ## v15 — 2026-09-08 — cuenta de H0p3san · Claude Code (extensión de VSCode)
 

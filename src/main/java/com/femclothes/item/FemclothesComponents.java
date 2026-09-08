@@ -144,20 +144,11 @@ public final class FemclothesComponents {
                     .packetCodec(PacketCodecs.indexed(i -> Variante.Manga.values()[i], Enum::ordinal))
                     .build());
 
-    /**
-     * El tiro de calientabrazos (§{@link PantalonTiro}): una banda extra que
-     * sube desde el hombro hacia el torso, misma técnica de runtime que
-     * {@code PiezasDelMod.pintarCintura} usa para pantalón (ver
-     * {@code pintarHombro}). Reusa el MISMO molde que el tiro de pantalón,
-     * en un componente propio — ausente = {@code MEDIO}.
-     */
-    public static final ComponentType<PantalonTiro> CALIENTABRAZOS_TIRO = Registry.register(
-            Registries.DATA_COMPONENT_TYPE,
-            Identifier.of("femclothes", "calientabrazos_tiro"),
-            ComponentType.<PantalonTiro>builder()
-                    .codec(StringIdentifiable.createCodec(PantalonTiro::values))
-                    .packetCodec(PacketCodecs.indexed(i -> PantalonTiro.values()[i], Enum::ordinal))
-                    .build());
+    // CALIENTABRAZOS_TIRO se retiró (ver docs/MAQUINAS.md §"Categorías de
+    // patrones de modelado"): tiro es exclusivo de prendas inferiores, no
+    // de cubrebrazos. Si un mundo viejo tiene el componente guardado, el
+    // codec ya no está registrado y Minecraft simplemente lo ignora al leer
+    // -no rompe el guardado, el dato queda huérfano sin efecto.
 
     public static void init() {
         // fuerza class-loading

@@ -208,11 +208,10 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
             return;
         }
 
-        // Calientabrazos reusa los DOS moldes de otras prendas -manga de
-        // remera para la cobertura, tiro de pantalón para la banda de
-        // hombro- en vez de tener los suyos propios (a pedido del dueño: no
-        // se craftean moldes nuevos). Por eso necesita su propia rama, igual
-        // que pantalón, aunque no tenga ningún molde exclusivo.
+        // Calientabrazos reusa el molde de manga de remera para la
+        // cobertura (a pedido del dueño: no se craftean moldes nuevos). Sin
+        // tiro -es exclusivo de prendas inferiores, ver
+        // docs/MAQUINAS.md §"Categorías de patrones de modelado".
         if (garment.getItem() instanceof CalientabrazosItem) {
             this.outputSlot.setStackNoCallbacks(reformarCalientabrazos(garment, dye, pattern));
             this.sendContentUpdates();
@@ -367,29 +366,22 @@ public class ClothingLoomScreenHandler extends ScreenHandler {
     /**
      * Lo que sale del telar con un calientabrazos adentro.
      *
-     * Los dos moldes que acepta son de OTRAS prendas: {@code MoldeItem} con
+     * El único molde que acepta es de OTRA prenda: {@code MoldeItem} con
      * {@code eje==MANGA} (el mismo molde cíclico de la manga de la remera,
      * ver {@link com.femclothes.sublimadora.MoldeItem#siguienteManga}) mueve
-     * la cobertura, y {@code MoldeTiroItem} (el mismo molde fijo del tiro de
-     * pantalón) mueve la banda de hombro. Ninguno de los dos es exclusivo de
-     * calientabrazos — por eso la cobertura cicla (relativa a su propio
-     * componente, no al de una remera puesta) en vez de fijar valor como el
-     * tiro.
+     * la cobertura — cicla relativa a su propio componente, no al de una
+     * remera puesta. Sin tiro, ver docs/MAQUINAS.md.
      */
     private ItemStack reformarCalientabrazos(ItemStack prenda, ItemStack dye, ItemStack pattern) {
         boolean hayMoldeCobertura = pattern.getItem() instanceof MoldeItem molde
                 && molde.eje == MoldeItem.Eje.MANGA;
-        boolean hayMoldeTiro = pattern.getItem() instanceof MoldeTiroItem;
         boolean hayTinte = dye.getItem() instanceof DyeItem;
-        if (!hayMoldeCobertura && !hayMoldeTiro && !hayTinte) return ItemStack.EMPTY;
+        if (!hayMoldeCobertura && !hayTinte) return ItemStack.EMPTY;
 
         ItemStack out = prenda.copyWithCount(1);
         if (hayMoldeCobertura) {
             CalientabrazosItem.setCobertura(out,
                     MoldeItem.siguienteManga(CalientabrazosItem.cobertura(out)));
-        }
-        if (hayMoldeTiro) {
-            CalientabrazosItem.setTiro(out, ((MoldeTiroItem) pattern.getItem()).valor);
         }
         if (hayTinte) {
             int rgb = ((DyeItem) dye.getItem()).getColor().getFireworkColor();

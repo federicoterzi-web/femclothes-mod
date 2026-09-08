@@ -116,6 +116,130 @@ desde el config).
 Aplicar setea `femclothes:variante`. No consume material (o aguja+hilo si se
 quiere un sink blando).
 
+### Categorías de patrones de modelado — la arquitectura definitiva
+
+> Bajada de una charla de diseño (2026-09-08), después de una sesión larga
+> de calientabrazos que terminó confundiendo cobertura y tiro entre sí (ver
+> `docs/CANAL.md` v14-v15). Esto es la referencia que resuelve esa
+> confusión — **antes de tocar el eje tiro/cobertura de nuevo, leer esto
+> primero**, no la bitácora de la sesión anterior.
+
+Los patrones de modelado **no son exclusivos de una prenda**. La idea es
+que existan categorías reutilizables entre prendas — hoy hay cuatro
+prendas principales (remera, pantalón, medias, cubrebrazos/mangas
+independientes), y la filosofía es evitar un patrón por combinación de
+prenda×eje (nada de "patrón de manga corta" + "patrón de media corta" +
+"patrón de pantalón corto" por separado): un solo patrón abstracto de
+**Cobertura**, reutilizable, cuya interpretación depende de la región
+corporal y de un **Anclaje** que configura la mesa, no el patrón.
+
+#### Cobertura
+
+Cuánto cubre una prenda de una región corporal. Reutilizable entre
+remera (mangas), cubrebrazos, pantalón, medias. Niveles (0 a 5):
+
+| nivel | significado |
+|---|---|
+| 0 | sin cobertura |
+| 1 | corto |
+| 2 | hasta articulación / medio |
+| 3 | tres cuartos |
+| 4 | siete octavos |
+| 5 | completo |
+
+**La diferencia entre prendas NO está en el patrón — está en el Anclaje.**
+La Mesa de Modelado tiene una configuración de **Anclaje de Cobertura**,
+que decide desde qué punta de la región corporal arranca la cobertura y
+hacia dónde crece:
+
+| anclaje | arranca en | crece hacia |
+|---|---|---|
+| **Superior** | arriba de la región | abajo |
+| **Inferior** | abajo de la región | arriba |
+
+| prenda | región | anclaje |
+|---|---|---|
+| Manga de remera | hombro → muñeca | Superior |
+| Cubrebrazos | muñeca → hombro | Inferior |
+| Pantalón / calza | cintura-cadera → tobillo | Superior |
+| Media | tobillo → pierna | Inferior |
+
+**El Anclaje NO es un patrón independiente** (no es un ítem que el
+jugador elige) — es una configuración técnica fija de la mesa por
+prenda/región, igual que hoy `Variante.Manga` (remera, ancla arriba) y
+`MediasLargo`/`PantalonLargo`/`CalientabrazosItem.cobertura` (ancla
+abajo/arriba según corresponda) son el mismo concepto de "cobertura" con
+direcciones fijas distintas por código, no por elección del jugador.
+
+#### Tiro
+
+Altura de una prenda INFERIOR respecto de la cintura/cadera. Niveles:
+Alto, Medio, Bajo.
+
+**Aplica solo a pantalón y calza (futuras prendas inferiores similares).
+NO aplica a medias ni a cubrebrazos.** Esto es lo que la sesión anterior
+no tenía claro — el tiro de calientabrazos que se probó y rediseñó dos
+veces en v14 no debería haber existido: tiro es un eje de PANTALÓN, punto.
+
+#### Forma de cuello
+
+Geometría del escote: redondo, en V, cuadrado, alto. Aplica a prendas
+superiores (remera y futuras similares). No aplica a pantalón, medias ni
+cubrebrazos.
+
+#### Fit / Ajuste
+
+Qué tan ajustada o voluminosa es la prenda respecto del cuerpo: Tight,
+Regular, Loose, Oversize. Altamente reutilizable — aplica a las 4 prendas
+(remera, pantalón, medias, cubrebrazos) y a las futuras. Es la misma idea
+que ya se había anotado suelta en `FEMCLOTHES.md` como "eje fit,
+sin implementar" — esto la formaliza dentro del sistema de categorías.
+
+#### Compatibilidad de patrones por prenda
+
+| Prenda | Cobertura | Tiro | Cuello | Fit |
+|---|---|---|---|---|
+| Remera | Sí | No | Sí | Sí |
+| Pantalón | Sí | Sí | No | Sí |
+| Medias | Sí | No | No | Sí |
+| Cubrebrazos | Sí | No | No | Sí |
+
+Cada prenda declara qué categorías acepta — mismo mecanismo que ya existe
+para `Region`/`Operacion` en `RegionResolver`/`Garment`, extendido a
+categorías de eje en vez de solo bilateral/estampa.
+
+### Estación de tintes — separada de la forma
+
+La Estación de Tintes (la "Mesa de tinturas" de más arriba) modifica
+**solo apariencia cromática**, nunca forma — usa Patrones de Tinte
+(rayas alternadas, una raya superior, tres rayas, etc.), que **no
+contienen color propio**: el patrón define la distribución, el color lo
+elige el tinte por separado. El mismo patrón "rayas alternadas" sirve
+para rojo+blanco, azul+negro, verde+amarillo — ya es así hoy con
+`ClothingPatternItem` (`PATTERN_STRIPE_TOP`/`PATTERN_STRIPE_ALT`/
+`PATTERN_TRIPLE_STRIPE`, aplicados con un tinte en el telar), esta sección
+solo formaliza el nombre de la estación futura que lo reemplaza.
+
+### Flujo general del sistema completo
+
+```
+PRENDA BASE
+    ↓
+MESA DE MODELADO       (forma: cobertura · tiro · cuello · fit)
+    ↓
+ESTACIÓN DE TINTES      (patrones cromáticos + colores)
+    ↓
+SUBLIMADORA              (imagen concreta, viene de Camerapture)
+    ↓
+PRENDA FINAL
+```
+
+Separación estricta: **Modelado** cambia forma/geometría, **Tintes**
+cambia color/diseño cromático, **Sublimación** aplica una imagen concreta
+(no un patrón abstracto — a diferencia de Modelado y Tintes, la
+Sublimadora no trabaja con categorías reutilizables, trabaja con la foto
+que se cargó).
+
 ### Sublimadora
 
 Ya existe. Ver [SUBLIMADORA.md](SUBLIMADORA.md). En la línea modular va

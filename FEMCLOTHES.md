@@ -41,7 +41,7 @@ ciclo de prensado no tiene nada que ver con el resto de las prendas.
 | **Remera** (`remera`) | ✅ 45 cortes, teñible, patrones, estampable | Trinket, slot `torso/prenda`, dibujada sobre el cuerpo real |
 | **Medias color pleno** (`socks_solid`) | ✅ 5 largos, patrones, teñible, **estampable** | Trinket, slot `socks/pair`, dibujada sobre la pierna real |
 | **Pantalón** (`pantalon`) | ✅ 5 largos + 3 tiros, teñible, sin patrón todavía | Trinket, slot `piernas/exterior`, primera prueba real del layering (capa arriba de la media) |
-| **Calientabrazos** (`calientabrazos`) | ✅ cobertura (5, molde de manga reusado) + tiro (3, molde de pantalón reusado), teñible, sin patrón todavía | Trinket, slot custom `arms/armwarmer`, dibujada sobre el brazo real (`Capa.MANGA_INTERIOR`, bajo la manga de la remera) |
+| **Calientabrazos** (`calientabrazos`) | ✅ cobertura (5, molde de manga reusado), sin tiro (exclusivo de prendas inferiores), teñible, sin patrón todavía | Trinket, slot custom `arms/armwarmer`, dibujada sobre el brazo real (`Capa.MANGA_INTERIOR`, bajo la manga de la remera) |
 | Medias 3/4 (`socks_34`) | placeholder | Slot cosmético (Cosmetic Armor Updated) |
 | Medias de red (`fishnet_socks`) | placeholder, no teñible | Pendiente: pasar a patrón "fishnet" |
 | Traje de maid | placeholder, set completo en una textura | Sin definir |
@@ -236,10 +236,13 @@ medias la habían roto sin querer, reusando el rojo de largo-de-remera para
 los tres a la vez. Se corrigió recoloreando (mismo script de un tinte,
 Pillow) la MISMA silueta con un acento nuevo por eje: `molde_pantalon.png`
 (ámbar) para el largo de pantalón, `molde_tiro.png` (violeta) para el tiro
-—de pantalón Y calientabrazos, mismo ítem, mismo acento—, `molde_media.png`
-(magenta) para el largo de medias. El eje sigue siendo lo que decide el
-color, no la prenda: por eso tiro tiene un solo acento aunque sirva para dos
-prendas distintas.
+de pantalón, `molde_media.png` (magenta) para el largo de medias. El eje
+sigue siendo lo que decide el color, no la prenda.
+
+⚠️ El molde de tiro se pensó en un momento para servir también a
+calientabrazos (de ahí el comentario original de "mismo ítem, mismo acento
+para dos prendas") — se retiró: tiro es exclusivo de pantalón/calza, ver
+más abajo §"Calientabrazos" y `docs/MAQUINAS.md`.
 
 **Tooltip con lore, no solo "En el telar, con una prenda".** Cada molde
 ahora dice arriba "Molde" (dorado) y una línea "Se usa en: X" con la(s)
@@ -277,38 +280,17 @@ concepto, mismo protocolo que el eje "Borde" (ver más abajo).
 enganchado al sistema de capas) es la prenda base de BRAZO, análoga a las
 medias en la pierna. A diferencia de pantalón/medias/remera (línea 170: "no
 comparten ítems"), acá el dueño pidió explícitamente lo contrario — **cero
-moldes nuevos**, reusar los que ya existen:
+moldes nuevos**, reusar el que ya existe:
 
 | eje | qué mueve | molde reusado |
 |---|---|---|
 | cobertura (5 pasos) | cuánto brazo tapa la tela, desde la MUÑECA hacia arriba | `MOLDE_MANGA` — el mismo cíclico de la manga de remera (`MoldeItem.Eje.MANGA`) |
-| tiro (3 pasos) | otra banda, independiente, desde el HOMBRO hacia abajo | `MOLDE_TIRO_*` — el mismo fijo del tiro de pantalón |
 
 Mismo molde físico, pero **componente propio por prenda**
-(`CALIENTABRAZOS_COBERTURA`/`CALIENTABRAZOS_TIRO`, tipos `Variante.Manga`/
-`PantalonTiro` reusados) — la manga de una remera puesta y la cobertura de
-un calientabrazos puesto no se pisan entre sí. `MoldeItem` ganó un helper
-público `siguienteManga(Variante.Manga)` para ciclar sin pasar por un
-`Variante` completo.
-
-⚠️ **Tiro NO pinta un parche en el torso — pinta una SEGUNDA banda en el
-BRAZO, anclada en la punta opuesta a cobertura.** Cobertura llena desde la
-muñeca hacia arriba; tiro llena desde el hombro hacia abajo, sobre el
-MISMO archivo, en runtime, ignorando el alfa que cobertura ya haya puesto.
-Con las dos cortas queda un hueco de piel en el medio del brazo a
-propósito — "mangas custom en paralelo" (muñequera + hombrera sueltas), no
-necesariamente un tubo continuo. El primer intento (pintar el tiro como
-banda de cintura pero en el `Parte.TORSO`, copiando el mecanismo de
-`pintarCintura` de pantalón tal cual) estaba mal: la manga real y el
-parche del torso no tenían por qué tocarse -cobertura corta deja piel
-antes de llegar al hombro-, y el parche pintaba las 4 caras del torso
-entero (pecho Y espalda a la vez) — reportado jugando como "pinta todo el
-pecho y la espalda". Corregido: `pintarBandaHombro` vive en
-`PiezasDelMod.java` y pinta sobre `LayoutSkin.base(Parte.BRAZO_*).caras()`,
-no sobre `Parte.TORSO`. Sin archivo propio para cobertura `SIN` (nunca
-hacía falta antes): se parte de "larga" como base y se borra la manga
-entera primero (`borrarManga`) para que el tiro no herede tela de muñeca
-que cobertura dijo que no hay.
+(`CALIENTABRAZOS_COBERTURA`, tipo `Variante.Manga` reusado) — la manga de
+una remera puesta y la cobertura de un calientabrazos puesto no se pisan
+entre sí. `MoldeItem` ganó un helper público `siguienteManga(Variante.Manga)`
+para ciclar sin pasar por un `Variante` completo.
 
 `Capa.MANGA_INTERIOR` (15, nueva) dibuja debajo de la manga de la remera —
 mismo rol que `MEDIA` para la pierna. Las 4 texturas (`SIN` no genera
@@ -318,10 +300,22 @@ suyas, desde la muñeca) — ver `tools/derivar_banda.py`, el primer script de
 derivación que se guarda en el repo (antes eran ad-hoc, ver v9-v11 de
 `docs/CANAL.md`).
 
+⚠️ **Calientabrazos NO tiene tiro.** Se probó (dos rediseños completos, uno
+pintando una banda extra en el torso, otro una segunda banda en el propio
+brazo anclada al hombro) durante una sesión larga (ver `docs/CANAL.md`
+v14-v15) y terminó retirado por completo: según la arquitectura definitiva
+que el dueño redactó y quedó asentada en `docs/MAQUINAS.md` §"Categorías de
+patrones de modelado", **tiro es exclusivo de prendas inferiores**
+(pantalón/calza) — nunca de medias ni de cubrebrazos. Calientabrazos quedó,
+como medias, con un solo eje: cobertura.
+
 ⚠️ **El eje "Borde"** (forma de escote/cintura/borde superior — generalización
 de "cuello" para pantalón/medias/calientabrazos) se discutió en la misma
 sesión pero **no se implementó**: no tiene componente, no tiene molde, no
-asumir que existe.
+asumir que existe. Ver también `docs/MAQUINAS.md` §"Categorías de patrones
+de modelado" para la arquitectura definitiva de cobertura/tiro/cuello/fit,
+que es la referencia autoritativa a partir de ahora — resuelve
+retroactivamente toda la confusión de v14-v15.
 
 ### Piernas independientes, sin duplicar ítems
 
