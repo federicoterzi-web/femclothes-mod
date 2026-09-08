@@ -1,4 +1,4 @@
-<!-- canal-version: 14 -->
+<!-- canal-version: 15 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,54 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v15 — 2026-09-08 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:** cierre de la sesión larga de v14 — no se resolvió del todo el
+"puño"/"línea", pero quedó una pista concreta para retomar y un fix real
+de más (deuda de sangrado de color, que sí valía la pena guardar aunque no
+haya sido la causa de lo que se reportaba).
+
+- **`tools/derivar_banda.py`: `_extender_bordes` tenía un bug propio** — el
+  sangrado de color nunca pasaba de 1px de profundidad sin importar el
+  parámetro, porque un píxel recién "sangrado" se queda con alfa 0 y el
+  código chequeaba alfa para decidir si un vecino era fuente válida. Un
+  píxel ya sangrado nunca contaba como fuente para la pasada siguiente.
+  Fix: máscara aparte (`tiene_color`) que trackea qué píxeles ya se
+  colorearon, independiente del alfa. Ahora `profundidad=8` sangra de
+  verdad 8 píxeles. **No se confirmó si esto era la causa real del
+  síntoma reportado** ("línea fina de armwarmer en el puño") — se probó y
+  el dueño dijo que seguía igual, así que el sangrado de color queda
+  descartado como explicación de ESE síntoma puntual, aunque el fix en sí
+  es correcto y vale la pena tenerlo.
+- **Pista para la próxima sesión, en las palabras textuales del dueño,
+  sin traducir a código porque las últimas respuestas del intercambio se
+  volvieron inconsistentes (números fuera de rango, señal de cansancio) y
+  no quedó confirmado**: "tiro marca el límite superior del armwarmer,
+  tiro alto es el único que cubre el hombro, cobertura determina la altura
+  de la muñeca" + "es un prisma cuya altura es determinada por tiro y cuya
+  base en Y es determinada por cobertura" + para cobertura=SIN, tiro=ALTO
+  confirmó que el resultado tiene que ser "solo el hombro" (no toca la
+  muñeca). Esto contradice el diseño ACTUAL (dos bandas independientes,
+  cobertura ancla en la muñeca creciendo hacia arriba, tiro ancla en el
+  hombro creciendo hacia abajo, con hueco posible en el medio) en un punto
+  concreto: con cobertura=SIN, el diseño actual NO dibuja nada de cobertura
+  (correcto, coincide), pero el dueño confirmó que igual con tiro=ALTO el
+  resultado válido es shoulder-only — hay que releer esto con la cabeza
+  fresca, armar 2-3 casos concretos más (mismo método que funcionó acá:
+  preguntar "para estos valores, ¿qué filas de las 12 tienen tela?") ANTES
+  de tocar `PiezasDelMod.calientabrazos()` de nuevo. **No implementar a
+  ciegas una tercera reinterpretación sin volver a confirmar con números
+  concretos** — van dos rediseños de este mismo mecanismo en una sola
+  sesión, y el tercero a las apuradas es más probable que empeore las
+  cosas que las mejore.
+- **El bug original del "puño"** (tanto el de calientabrazos como el viejo
+  de remera nunca diagnosticado) sigue sin resolverse. Se agotaron sin
+  éxito: sangrado de color (descartado), costura geométrica por dilatación
+  (descartado por análisis, la dilatación es uniforme), `Shading.ARMS`
+  (revertido, causaba SU PROPIO artefacto distinto). Puede que el
+  síntoma real sea justamente la interacción tiro/cobertura de arriba —
+  retomar ESE hilo primero antes de seguir buscando en texturas.
 
 ## v14 — 2026-09-08 — cuenta de H0p3san · Claude Code (extensión de VSCode)
 

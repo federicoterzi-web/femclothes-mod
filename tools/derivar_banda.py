@@ -120,8 +120,9 @@ def derivar_banda(src, filas_visibles, truncar_desde, hem_rgba,
     return _extender_bordes(dst)
 
 
-def _extender_bordes(img):
-    """Copia el RGB de cada pixel opaco a sus vecinos transparentes.
+def _extender_bordes(img, profundidad=8):
+    """Copia el RGB de cada pixel opaco a sus vecinos transparentes, a
+    varios pixeles de profundidad (una pasada de dilatacion por nivel).
 
     Encontrado jugando -"linea de un pixel en el puño"-: los pixeles
     transparentes quedaban con RGB negro puro (0,0,0,0). El filtrado de
@@ -129,24 +130,39 @@ def _extender_bordes(img):
     vecino en el borde, y se ve como una linea oscura fina justo en el
     corte. El alfa no cambia -sigue sin dibujar tela ahi-, solo el color
     de fondo para que la mezcla en el borde no tire a negro.
+
+    `profundidad=8` -no 1- porque un solo pixel de sangrado alcanza para
+    el filtrado bilineal comun, pero si Minecraft genera mipmaps para esta
+    textura, un nivel de mip promedia un area mas grande (2x2, 4x4...) y
+    1 pixel no alcanza a taparla. 8 cubre hasta el mip nivel 3 (8x8) sin
+    costar nada -esto corre una vez al generar el asset, no en el juego.
     """
     ancho, alto = img.size
-    origen = img.copy()
-    src_px = origen.load()
-    dst_px = img.load()
     vecinos = ((1, 0), (-1, 0), (0, 1), (0, -1))
-    for y in range(alto):
-        for x in range(ancho):
-            r, g, b, a = src_px[x, y]
-            if a != 0:
-                continue
-            for dx, dy in vecinos:
-                nx, ny = x + dx, y + dy
-                if 0 <= nx < ancho and 0 <= ny < alto:
-                    nr, ng, nb, na = src_px[nx, ny]
-                    if na != 0:
-                        dst_px[x, y] = (nr, ng, nb, 0)
+    # Mascara aparte de "ya tiene color de sangrado" -el alfa se queda en 0
+    # a proposito, asi que no sirve para saber si un pixel ya se coloreo en
+    # una pasada anterior. Sin esto, un pixel recien sangrado nunca cuenta
+    # como fuente para la pasada siguiente y la profundidad queda pegada
+    # en 1 pixel sin importar cuantas iteraciones se pidan.
+    px = img.load()
+    tiene_color = [[px[x, y][3] != 0 for x in range(ancho)] for y in range(alto)]
+    for _ in range(profundidad):
+        nuevos = []
+        for y in range(alto):
+            for x in range(ancho):
+                if tiene_color[y][x]:
+                    continue
+                for dx, dy in vecinos:
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < ancho and 0 <= ny < alto and tiene_color[ny][nx]:
+                        nr, ng, nb, _ = px[nx, ny]
+                        nuevos.append((x, y, nr, ng, nb))
                         break
+        if not nuevos:
+            break
+        for x, y, r, g, b in nuevos:
+            px[x, y] = (r, g, b, 0)
+            tiene_color[y][x] = True
     return img
 
 
