@@ -233,10 +233,12 @@ def main():
     for col in range(9):
         img = slot(img, M_MEDIO + col * 18, 382)
 
-    # Columna derecha: almacén de patrones (9, una sola fila), debajo de
-    # los sliders CMYK + la vista previa de color (esas las dibuja Java).
-    for i in range(9):
-        img = slot(img, M_DERECHA + i * 18, 200)
+    # Almacén de patrones: 30 lugares en 5x6 en la columna IZQUIERDA,
+    # debajo de Guardar diseño (2026-09-28, "quiero mas espacios de
+    # almacenamiento") — antes era una fila de 9 en la derecha. Mismas
+    # coordenadas que TinturasScreenHandler.ALMACEN_X/Y/COLUMNAS.
+    for i in range(30):
+        img = slot(img, 8 + (i % 5) * 18, 280 + (i // 5) * 18)
 
     # Separadores cosidos entre las tres columnas.
     img = costura_vertical(img, M_MEDIO - 9, 16, ALTO - 16)

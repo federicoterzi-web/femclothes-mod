@@ -606,9 +606,12 @@ public class SublimadoraBlockEntity extends BlockEntity
      * que cambiar de imagen significaba perder la anterior sin volver a
      * cargarla de afuera. Estos 9 son guardado nomás, ninguno alimenta un
      * prensado directo — se arrastran a Frente/Espalda como cualquier
-     * slot vanilla. Mismo tamaño que el almacén de Tinturas/Modeladora.
+     * slot vanilla. 27 (3 filas) desde 2026-09-28 ("quiero mas espacios
+     * de almacenamiento"), como el almacén de la Modeladora: la lista va al
+     * FINAL del inventario, así que agrandarla no corre ningún índice
+     * guardado.
      */
-    public static final int ALMACEN_TAMANO = 9;
+    public static final int ALMACEN_TAMANO = 27;
     public static final int SLOT_ALMACEN_INICIO = SLOT_SALIDA + 1;
     private final net.minecraft.util.collection.DefaultedList<ItemStack> almacen =
             net.minecraft.util.collection.DefaultedList.ofSize(ALMACEN_TAMANO, ItemStack.EMPTY);
@@ -1153,6 +1156,8 @@ public class SublimadoraBlockEntity extends BlockEntity
         if (!remera.isEmpty()) todo.add(remera);
         for (ItemStack f : fotos) if (!f.isEmpty()) todo.add(f);
         if (!salida.isEmpty()) todo.add(salida);
+        // El almacén también (2026-09-28): antes sus fotos se perdían al romper la máquina.
+        for (ItemStack f : almacen) if (!f.isEmpty()) todo.add(f);
         return todo;
     }
 

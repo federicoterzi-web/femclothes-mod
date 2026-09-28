@@ -158,7 +158,7 @@ El molde de red **perfora** la tela ya teñida: deja ver la piel por los agujero
 
 ![Arneses: cruzado, tirantes, bandas (torso con hombros)](img/arneses.png)
 
-**Arneses.** Son lo contrario de una red: todo queda abierto salvo las tiras. Las tiras siguen los bordes de corte reales, así que si acortás la remera a crop, el arnés se acomoda solo. En la remera, las tiras pasan por los **hombros** y empalman siempre con el frente y la espalda. Los anillos son plateados y no se tiñen; las tiras toman el color de la prenda.
+**Arneses.** Son lo contrario de una red: todo queda abierto salvo las tiras. Las tiras siguen los bordes de corte reales, así que si acortás la remera a crop, el arnés se acomoda solo. En la remera, las tiras pasan por los **hombros** y empalman siempre con el frente y la espalda. En las mangas y calientabrazos que llegan al hombro, cada tira que sube por el brazo **sigue por arriba del hombro** hasta encontrarse con la del otro lado (con el arnés de bandas, que no tiene tiras que suban, el hombro queda abierto). Los anillos son plateados y no se tiñen; las tiras toman el color de la prenda.
 
 ## 7. Estación de Tintes
 
@@ -193,7 +193,7 @@ En medias y calientabrazos, el dibujo se lee **de frente**: el cuadradito de la 
 3. Poné un **molde de patrón** en el cuadradito si querés patrón. **Sin molde, la capa es un color liso** en esa zona.
 4. Elegí el color con los **sliders CMYK** (a la derecha, con la muestra del color).
 5. Apretá la **chincheta** del cuadradito para **fijarlo**:
-   - con molde: queda fijado con ese patrón y el molde vuelve al almacén;
+   - con molde: queda fijado con ese patrón y el molde vuelve al **almacén** (30 lugares, en la columna izquierda debajo de Guardar diseño);
    - sin molde: queda fijado como color liso;
    - si ya estaba fijado y no tiene molde: se desfija.
 6. Poné la prenda en la **Entrada** y apretá **Teñir** (el botón sobre la flecha).
@@ -270,7 +270,7 @@ La Sublimadora **imprime fotos** del mod Camerapture sobre remeras, pantalones, 
 |---|---|
 | **Izquierda** | Vista previa 3D, botón Vista, nombre y **Guardar diseño**. |
 | **Centro** | **Categoría**; el dibujo de la prenda dos veces, **Frente** y **Espalda**, cada una con su slot de foto y su chincheta; el cinturón **Entrada → Salida** con **Prensar** sobre la flecha; los 8 casilleros de diseño; y los controles de la cara elegida: **Escala**, **Posición X**, **Posición Y**, **Ángulo** y **Cara**, más **Simetría** en medias y calientabrazos. |
-| **Derecha** | Los tanques de tinta **C, M, Y, K** y el de **papel** con su nivel (n/64), la guía de pasos y el **almacén** de 9 fotos. |
+| **Derecha** | Los tanques de tinta **C, M, Y, K** y el de **papel** con su nivel (n/64), la guía de pasos y el **almacén** de 27 fotos (3 filas). Al romper la máquina, las fotos del almacén se tiran al piso. |
 
 El dibujo muestra la prenda que está en la Entrada, con su color. Si no hay ninguna, muestra la prenda terminada de la Salida, y si tampoco, una de la categoría elegida.
 

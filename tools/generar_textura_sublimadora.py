@@ -65,10 +65,11 @@ def main():
     for col in range(9):
         img = slot(img, M_MEDIO + col * 18, 382)
 
-    # Columna derecha: almacén de fotos (una fila, como Tintes). Los
-    # tanques de tinta y papel los dibuja Java.
-    for i in range(9):
-        img = slot(img, M_DERECHA + i * 18, 200)
+    # Columna derecha: almacén de fotos, 3 filas de 9 (2026-09-28, "quiero
+    # mas espacios de almacenamiento"). Los tanques de tinta y papel los
+    # dibuja Java.
+    for i in range(27):
+        img = slot(img, M_DERECHA + (i % 9) * 18, 200 + (i // 9) * 18)
 
     img = costura_vertical(img, M_MEDIO - 9, 16, ALTO - 16)
     img = costura_vertical(img, M_DERECHA - 9, 16, ALTO - 16)

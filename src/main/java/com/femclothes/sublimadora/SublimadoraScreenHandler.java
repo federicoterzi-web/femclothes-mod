@@ -104,9 +104,10 @@ public class SublimadoraScreenHandler extends ScreenHandler {
             public boolean canInsert(ItemStack stack) { return false; }
         });
 
-        // Almacén de fotos: una fila en la columna derecha, como el de Tintes.
+        // Almacén de fotos: 3 filas de 9 en la columna derecha (2026-09-28,
+        // "quiero mas espacios de almacenamiento").
         for (int i = 0; i < SublimadoraBlockEntity.ALMACEN_TAMANO; i++) {
-            addSlot(new Slot(be, SublimadoraBlockEntity.SLOT_ALMACEN_INICIO + i, M_DERECHA + i * 18, 200) {
+            addSlot(new Slot(be, SublimadoraBlockEntity.SLOT_ALMACEN_INICIO + i, M_DERECHA + (i % 9) * 18, 200 + (i / 9) * 18) {
                 @Override
                 public boolean canInsert(ItemStack stack) { return SublimadoraBlock.esFoto(stack); }
             });

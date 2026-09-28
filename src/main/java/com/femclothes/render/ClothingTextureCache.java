@@ -839,8 +839,14 @@ public final class ClothingTextureCache {
             perforarRedEnCara(img, tipo, cara.x0(), cara.y0(), cara.x1(), cara.y1(), true, yDesde, yHasta, rol);
         }
         CajaSkin.Rect arriba = caja.arriba(), abajo = caja.abajo();
-        perforarRedEnCara(img, tipo, arriba.x0(), arriba.y0(), arriba.x1(), arriba.y1(),
-                false, Integer.MIN_VALUE, Integer.MAX_VALUE, torso ? ARNES_ROL_HOMBROS : ARNES_ROL_COMUN);
+        boolean brazo = parte == com.femclothes.garment.Parte.BRAZO_DER || parte == com.femclothes.garment.Parte.BRAZO_IZQ;
+        if (tipo.esArnes() && brazo && filaDesde == 0) {
+            // Va DESPUÉS de los costados: lee cómo quedaron sus tiras.
+            continuarTirasEnHombro(img, caja);
+        } else {
+            perforarRedEnCara(img, tipo, arriba.x0(), arriba.y0(), arriba.x1(), arriba.y1(),
+                    false, Integer.MIN_VALUE, Integer.MAX_VALUE, torso ? ARNES_ROL_HOMBROS : ARNES_ROL_COMUN);
+        }
         perforarRedEnCara(img, tipo, abajo.x0(), abajo.y0(), abajo.x1(), abajo.y1(),
                 false, Integer.MIN_VALUE, Integer.MAX_VALUE, ARNES_ROL_COMUN);
     }
@@ -991,6 +997,59 @@ public final class ClothingTextureCache {
             default -> Math.abs(y - h / 3) < medio || Math.abs(y - 2 * h / 3) < medio
                     || (torso && y < h / 3 && (Math.abs(x - w * ARNES_ANCLA_1) < medio || Math.abs(x - w * ARNES_ANCLA_2) < medio));
         };
+    }
+
+    /**
+     * Tapa de arriba del BRAZO con arnés (2026-09-28, "los hombros no estan
+     * pintando los arneses" / "tienen que continuar las tiras de arriba del
+     * brazo"): el hombro que se ve es esta tapa (la del torso queda debajo
+     * de la cabeza), y antes quedaba pelada entera — no tiene ningún borde
+     * propio, así que el arnés la agujereaba toda. Ahora cada tira que
+     * llega al borde de arriba de una cara del brazo sigue por la tapa
+     * hasta la mitad; si la cara de enfrente tiene una tira en el mismo
+     * lugar, las dos se juntan y cruzan el hombro de lado a lado.
+     *
+     * <p>Empalmes en el atlas (mismo layout que {@link CajaSkin}): la fila
+     * de abajo de la tapa toca el frente (misma columna); la de arriba, la
+     * espalda (columna espejada); la columna 0 toca la cara derecha (su
+     * columna {@code j} es la fila {@code j} de la tapa); la última, la
+     * izquierda (su columna 0 va con la fila de abajo).
+     */
+    private static void continuarTirasEnHombro(NativeImage img, CajaSkin caja) {
+        CajaSkin.Rect tapa = caja.arriba(), frente = caja.frente(), atras = caja.atras();
+        CajaSkin.Rect der = caja.derecha(), izq = caja.izquierda();
+        int ancho = tapa.x1() - tapa.x0(), prof = tapa.y1() - tapa.y0();
+        if (ancho <= 0 || prof <= 0) return;
+        boolean[][] tira = new boolean[ancho][prof];
+        int mitadProf = (prof + 1) / 2, mitadAncho = (ancho + 1) / 2;
+        for (int i = 0; i < ancho; i++) {
+            if (opaco(img, frente.x0() + i, frente.y0())) {
+                for (int d = 0; d < mitadProf; d++) tira[i][prof - 1 - d] = true;
+            }
+            if (opaco(img, atras.x1() - 1 - i, atras.y0())) {
+                for (int d = 0; d < mitadProf; d++) tira[i][d] = true;
+            }
+        }
+        for (int j = 0; j < prof; j++) {
+            if (opaco(img, der.x0() + j, der.y0())) {
+                for (int k = 0; k < mitadAncho; k++) tira[k][j] = true;
+            }
+            if (opaco(img, izq.x0() + j, izq.y0())) {
+                for (int k = 0; k < mitadAncho; k++) tira[ancho - 1 - k][prof - 1 - j] = true;
+            }
+        }
+        for (int d = 0; d < prof; d++) {
+            for (int i = 0; i < ancho; i++) {
+                int x = tapa.x0() + i, y = tapa.y0() + d;
+                if (!opaco(img, x, y) || tira[i][d]) continue;
+                img.setColor(x, y, 0);
+            }
+        }
+    }
+
+    private static boolean opaco(NativeImage img, int x, int y) {
+        return x >= 0 && y >= 0 && x < img.getWidth() && y < img.getHeight()
+                && ((img.getColor(x, y) >> 24) & 0xFF) != 0;
     }
 
     /** Tapa de hombros del torso: dos tiras de adelante hacia atrás, en las anclas — iguales para los tres arneses. */
