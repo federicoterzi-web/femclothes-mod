@@ -226,6 +226,13 @@ public class TinturasBlockEntity extends BlockEntity
         /** Qué color (0..2) editan los sliders ahora. */
         public int editando = 0;
         public boolean fijada = false;
+        /**
+         * Ojo cerrado en el panel de capas (Fase B, 2026-09-28): sigue
+         * fijada y se guarda en los diseños, pero no se aplica al teñir, no
+         * gasta tinta y no sale en la vista previa — "oculta también al
+         * teñir", como en un editor de imágenes.
+         */
+        public boolean oculta = false;
         /** El patrón con el que quedó fijada (el molde ya volvió al almacén) — null = liso. */
         @Nullable public Identifier patronFijado = null;
 
@@ -254,6 +261,7 @@ public class TinturasBlockEntity extends BlockEntity
             c.variacion = variacion;
             c.editando = editando;
             c.fijada = fijada;
+            c.oculta = oculta;
             c.patronFijado = patronFijado;
             return c;
         }
@@ -277,6 +285,7 @@ public class TinturasBlockEntity extends BlockEntity
             c.putString("Variacion", variacion.name());
             c.putInt("Editando", editando);
             c.putBoolean("Fijada", fijada);
+            c.putBoolean("Oculta", oculta);
             if (patronFijado != null) c.putString("Patron", patronFijado.toString());
             return c;
         }
@@ -308,6 +317,7 @@ public class TinturasBlockEntity extends BlockEntity
             r.contorno = c.getBoolean("Contorno");
             r.editando = MathHelper.clamp(c.getInt("Editando"), 0, r.colores - 1);
             r.fijada = c.getBoolean("Fijada");
+            r.oculta = c.getBoolean("Oculta");
             r.patronFijado = c.contains("Patron") ? Identifier.tryParse(c.getString("Patron")) : null;
             return r;
         }
@@ -727,6 +737,22 @@ public class TinturasBlockEntity extends BlockEntity
         return 0;
     }
 
+    /**
+     * Las filas del panel de capas (Fase B, 2026-09-28): los cuadraditos
+     * que participan (fijados + el seleccionado, ocultos incluidos), de la
+     * capa de ARRIBA (la que tapa) a la de abajo — como en un editor de
+     * imágenes.
+     */
+    public List<Integer> capasDelPanel() {
+        int c = categoria.ordinal();
+        List<Integer> filas = new ArrayList<>(CASILLAS);
+        for (int k = CASILLAS - 1; k >= 0; k--) {
+            int i = orden[c][k];
+            if (enBorrador(categoria, i)) filas.add(i);
+        }
+        return filas;
+    }
+
     /** Cuántas capas hay en la vista previa de la categoría actual. */
     public int capasEnBorrador() {
         int n = 0;
@@ -753,6 +779,7 @@ public class TinturasBlockEntity extends BlockEntity
             Casilla cas = casillas[c][i];
             Identifier patron;
             if (borrador ? !enBorrador(cat, i) : !cas.fijada) continue;
+            if (cas.oculta) continue;
             patron = patronEnBorrador(cat, i);
             List<Integer> extras = new ArrayList<>(2);
             for (int col = 1; col < cas.colores; col++) extras.add(cas.colorDe(col));
@@ -823,6 +850,10 @@ public class TinturasBlockEntity extends BlockEntity
     /** + índice de cuadradito: su chincheta — ver {@link #chincheta}. */
     public static final int BTN_CHINCHETA_BASE = 60;
     /** + índice de diseño (0..{@link #DISENOS_MAXIMO}-1) — mismos valores que usa la Modeladora, sin colisión acá. */
+    /** Panel de capas (Fase B, 2026-09-28): ojo, subir y bajar de CADA fila — {@code base + cuadradito}. */
+    public static final int BTN_OJO_BASE = 110;
+    public static final int BTN_SUBIR_BASE = 130;
+    public static final int BTN_BAJAR_BASE = 150;
     public static final int BTN_CARGAR_DISENO_BASE = 300;
     public static final int BTN_BORRAR_DISENO_BASE = 320;
 
@@ -934,6 +965,23 @@ public class TinturasBlockEntity extends BlockEntity
         }
         if (id >= BTN_CHINCHETA_BASE && id < BTN_CHINCHETA_BASE + CASILLAS) {
             return chincheta(id - BTN_CHINCHETA_BASE);
+        }
+        if (id >= BTN_OJO_BASE && id < BTN_OJO_BASE + CASILLAS) {
+            int i = id - BTN_OJO_BASE;
+            if (!enBorrador(categoria, i)) return false;
+            casilla(i).oculta = !casilla(i).oculta;
+            return true;
+        }
+        // Flechas de una fila del panel: la selecciona y la mueve (el orden
+        // es el mismo que usan ▼/▲ de abajo, ver mover).
+        if (id >= BTN_SUBIR_BASE && id < BTN_SUBIR_BASE + CASILLAS
+                || id >= BTN_BAJAR_BASE && id < BTN_BAJAR_BASE + CASILLAS) {
+            boolean subir = id < BTN_BAJAR_BASE;
+            int i = id - (subir ? BTN_SUBIR_BASE : BTN_BAJAR_BASE);
+            if (!enBorrador(categoria, i)) return false;
+            seleccionada[categoria.ordinal()] = i;
+            mover(subir ? 1 : -1);
+            return true;
         }
         if (id >= BTN_CARGAR_DISENO_BASE && id < BTN_CARGAR_DISENO_BASE + DISENOS_MAXIMO) {
             return cargarDiseno(id - BTN_CARGAR_DISENO_BASE);
@@ -1188,6 +1236,10 @@ public class TinturasBlockEntity extends BlockEntity
         if (!hayFijadas(cat)) {
             return Text.translatable("femclothes.tinturas.aviso.sin_fijada_seleccionada");
         }
+        // Fijadas hay, pero todas con el ojo cerrado: no hay nada que aplicar.
+        if (capasDe(cat, false).isEmpty()) {
+            return Text.translatable("femclothes.tinturas.aviso.todas_ocultas");
+        }
 
         Garment garment = Garments.de(stack);
         if (garment != null && garment.regionesDe(Operacion.TENIR).isEmpty()
@@ -1200,7 +1252,7 @@ public class TinturasBlockEntity extends BlockEntity
         boolean[] canalUsado = new boolean[4];
         for (int i = 0; i < CASILLAS; i++) {
             Casilla cas = casillas[cat.ordinal()][i];
-            if (regionDe(cat, i) == null || !cas.fijada) continue;
+            if (regionDe(cat, i) == null || !cas.fijada || cas.oculta) continue;
             for (int col = 0; col < cas.colores; col++) {
                 // Solo C/M/Y/K — la transparencia (T) no gasta tinta.
                 for (int canal = 0; canal < 4; canal++) if (cas.mezclaDe(col)[canal] > 0) canalUsado[canal] = true;
@@ -1265,20 +1317,48 @@ public class TinturasBlockEntity extends BlockEntity
      * salió teñida, esa; si hay una cruda en la entrada, ESA con el
      * borrador encima; si no, el representativo de la categoría.
      */
-    public ItemStack prendaDeVistaPrevia() {
-        if (!salida.isEmpty()) return salida;
+    public ItemStack prendaDeVistaPrevia() { return prendaDeVistaPrevia(-1); }
+
+    /**
+     * Igual, con la zona del cuadradito {@code resaltada} (el que tiene el
+     * mouse encima en el esquema o en el panel de capas, -1 = ninguno)
+     * resaltada en 3D — Fase B (2026-09-28), "resto apagado": un velo
+     * oscuro sobre todo lo que NO es esa zona. Solo en esta copia de la
+     * vista previa, nunca en la prenda de verdad.
+     */
+    public ItemStack prendaDeVistaPrevia(int resaltada) {
+        if (!salida.isEmpty()) return conVelo(salida.copy(), categoriaDe(salida), resaltada);
         if (!prendaEntrada.isEmpty()) {
             Categoria cat = categoriaDe(prendaEntrada);
             if (cat != null) {
                 ItemStack copia = prendaEntrada.copy();
                 pintarStack(copia, capasDe(cat, true));
-                return copia;
+                return conVelo(copia, cat, resaltada);
             }
         }
         net.minecraft.item.Item item = itemRepresentativo(categoria);
         if (item == null) return ItemStack.EMPTY;
         ItemStack stack = new ItemStack(item);
         pintarStack(stack, capasDe(categoria, true));
+        return conVelo(stack, categoria, resaltada);
+    }
+
+    /** Opacidad del velo de "resto apagado" — lo de afuera de la zona queda al 40% de brillo. */
+    private static final int OPACIDAD_VELO = 60;
+
+    private ItemStack conVelo(ItemStack stack, @Nullable Categoria cat, int resaltada) {
+        if (resaltada < 0 || cat != categoria) return stack;
+        com.femclothes.region.RegionPintura region = regionDe(cat, resaltada);
+        // Prenda entera: no hay "resto" que apagar.
+        if (region == null || region == com.femclothes.region.RegionPintura.TODO) return stack;
+        List<RegionResolver.CapaPatron> capas = new ArrayList<>(
+                stack.getOrDefault(com.femclothes.item.FemclothesComponents.CAPAS_TINTE, List.of()));
+        capas.add(new RegionResolver.CapaPatron(null, 0x000000, TamanoPatron.GRANDE, 0f, 0.5f,
+                com.femclothes.render.PatronGenerador.Forma.ALTERNADO, false, region,
+                com.femclothes.region.ModoMezcla.MULTIPLICAR, OPACIDAD_VELO,
+                com.femclothes.render.Repeticion.GRILLA, 0, List.of(), false,
+                com.femclothes.render.Variacion.FIJO, true));
+        stack.set(com.femclothes.item.FemclothesComponents.CAPAS_TINTE, List.copyOf(capas));
         return stack;
     }
 

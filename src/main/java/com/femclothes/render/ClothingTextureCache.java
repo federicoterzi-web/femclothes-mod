@@ -386,12 +386,12 @@ public final class ClothingTextureCache {
                                @Nullable java.util.List<CajaSkin.Rect> region,
                                com.femclothes.region.ModoMezcla modo, int opacidad,
                                int[] paleta, boolean contorno, com.femclothes.render.Variacion variacion,
-                               @Nullable NativeImage regionExtra) {
+                               @Nullable NativeImage regionExtra, boolean regionInvertida) {
         public CapaMascara(@Nullable NativeImage mascara, int color, boolean invertido,
                            @Nullable java.util.List<CajaSkin.Rect> region,
                            com.femclothes.region.ModoMezcla modo, int opacidad,
                            int[] paleta, boolean contorno, com.femclothes.render.Variacion variacion) {
-            this(mascara, color, invertido, region, modo, opacidad, paleta, contorno, variacion, null);
+            this(mascara, color, invertido, region, modo, opacidad, paleta, contorno, variacion, null, false);
         }
         public CapaMascara(@Nullable NativeImage mascara, int color) { this(mascara, color, false, null); }
         public CapaMascara(@Nullable NativeImage mascara, int color, boolean invertido) { this(mascara, color, invertido, null); }
@@ -416,13 +416,14 @@ public final class ClothingTextureCache {
         public static CapaMascara de(com.femclothes.region.RegionResolver.CapaPatron capa, @Nullable NativeImage mascara,
                                      @Nullable java.util.List<CajaSkin.Rect> region, @Nullable NativeImage regionExtra) {
             return new CapaMascara(mascara, capa.color(), capa.invertido(), region, capa.modo(), capa.opacidad(),
-                    capa.paleta(), capa.contorno(), capa.variacion(), regionExtra);
+                    capa.paleta(), capa.contorno(), capa.variacion(), regionExtra, capa.fueraDeRegion());
         }
 
         /** Para la clave de cache: todo lo que cambia el resultado además de máscara/región. */
         String claveColores() {
             return java.util.Arrays.toString(paleta) + (contorno ? "c" : "") + variacion.ordinal()
-                    + (regionExtra == null ? "" : "r" + System.identityHashCode(regionExtra));
+                    + (regionExtra == null ? "" : "r" + System.identityHashCode(regionExtra))
+                    + (regionInvertida ? "x" : "");
         }
 
         /**
@@ -454,9 +455,13 @@ public final class ClothingTextureCache {
          * un sí/no.
          */
         public int cobertura(int x, int y) {
-            if (region != null && !dentroDeAlguno(region, x, y)) return 0;
-            if (regionExtra != null && (x >= regionExtra.getWidth() || y >= regionExtra.getHeight()
-                    || ((regionExtra.getColor(x, y) >>> 24) & 0xFF) == 0)) return 0;
+            boolean adentro = (region == null || dentroDeAlguno(region, x, y))
+                    && (regionExtra == null || (x < regionExtra.getWidth() && y < regionExtra.getHeight()
+                        && ((regionExtra.getColor(x, y) >>> 24) & 0xFF) != 0));
+            // Velo de "resto apagado" (Fase B, 2026-09-28): liso, todo lo de
+            // AFUERA de la región — la zona resaltada queda como está.
+            if (regionInvertida) return adentro ? 0 : 255;
+            if (!adentro) return 0;
             if (mascara == null) return 255;
             if (x >= mascara.getWidth() || y >= mascara.getHeight()) return invertido ? 255 : 0;
             int px = mascara.getColor(x, y);

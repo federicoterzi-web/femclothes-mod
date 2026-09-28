@@ -47,7 +47,7 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 ## Pendientes
 
 **Estación de Tintes — plan en curso** (Fase A hecha el 2026-09-28: tapas pintadas, cuello = borde del escote, pecho con tapa de arriba, CMYK de a 5%, canal de Transparencia con recorte y tramado):
-- **Fase B:** panel de capas (lista con ojo para ocultar, subir/bajar, click selecciona) y resaltar en 3D la zona del cuadradito o fila con el mouse encima. Sin vista plana 2D (el usuario dijo que no hace falta).
+- **Fase B (hecha el 2026-09-28, falta probar en el juego):** panel de capas abajo a la derecha (ojo = oculta también al teñir y no gasta tinta; ▲▼ por fila; click selecciona) y "resto apagado" en 3D para la zona con el mouse encima (velo con `CapaPatron.fueraDeRegion`). Sin vista plana 2D (el usuario dijo que no hace falta).
 - **Fase C:** rotar el motivo, girar la grilla, espejo, distancia horizontal/vertical independiente del tamaño, desplazamiento X/Y, más escalones de tamaño.
 - **Fase D:** secuencia de alternancia escrita (ej. `1 1 2`), dirección de la alternancia, aleatorio con pesos, degradé con dirección y bandas, hasta 4 colores, paleta guardada y cuentagotas.
 - Reorganizar la interfaz en pestañas (Color / Patrón / Mezcla / Capas) para que entre todo.
