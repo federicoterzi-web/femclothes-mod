@@ -75,7 +75,7 @@ Las tres máquinas de confección (Modelado, Tintes, Sublimadora) comparten la m
 
 - **Configuración y fijadas.** En la interfaz armás el ajuste y lo **fijás** (con la chincheta o un botón). Lo fijado es lo que se aplica; lo que no está fijado es solo un borrador que se ve en la vista previa.
 - **Vista previa 3D.** La columna izquierda muestra a tu personaje con la prenda como va a quedar. Se gira arrastrando con el mouse o con el botón Vista (frente, costado, espalda), y se hace zoom con la ruedita.
-- **Diseños guardados.** Escribís un nombre y apretás **Guardar diseño**: se guarda todo lo fijado de esa prenda (hasta 8 diseños por prenda). Click en un casillero numerado lo carga (el nombre aparece al pasar el mouse); click derecho lo borra.
+- **Diseños guardados.** Escribís un nombre y apretás **Guardar diseño**: se guarda todo lo fijado de esa prenda (hasta 8 diseños por prenda, en las tres máquinas). Click en un casillero numerado lo carga (el nombre aparece al pasar el mouse); click derecho lo borra.
 - **Entrada y salida.** Cada máquina tiene un slot grande de **Entrada** (la prenda a procesar) y uno de **Salida** (la prenda terminada). Mientras trabaja, la máquina se anima y hace ruido; al terminar suena una campanita.
 - **Tiempos.** Modelado 15 s, Tintes 10 s, Sublimadora 15 s.
 - **¡Cuidado!** Meter la mano (click derecho) en una máquina mientras trabaja lastima: la Modeladora corta, la de Tintes marea con los vapores y la Sublimadora quema.
@@ -91,7 +91,7 @@ Las máquinas se pueden encadenar con tolvas (hoppers):
 | **Atrás** | Los insumos: tintes (C, M, Y, K) y papel. |
 | **Derecha** | La prenda terminada sale sola hacia un cofre o tolva de ese lado. |
 
-Con tolva, la prenda **arranca sola** si hay un diseño fijado. Desde la interfaz, cada máquina arranca a su manera (ver cada sección): la Modeladora al cerrar la interfaz, la Estación de Tintes con el botón Teñir y la Sublimadora al cerrar la interfaz con la prenda y la foto cargadas. *(La cadena completa de máquinas todavía no se probó a fondo.)*
+Con tolva, la prenda **arranca sola** si hay un diseño fijado. Desde la interfaz, cada máquina arranca a su manera (ver cada sección): la Modeladora al cerrar la interfaz, la Estación de Tintes con el botón Teñir y la Sublimadora con el botón Prensar (o cerrando la tapa). *(La cadena completa de máquinas todavía no se probó a fondo.)*
 
 ## 6. Mesa de Modelado
 
@@ -260,12 +260,32 @@ Ejemplos: corazones rojos y rosas alternados con contorno negro (3 colores, Cont
 
 ## 8. Sublimadora
 
-La Sublimadora **imprime fotos** del mod Camerapture sobre remeras, pantalones, medias y calientabrazos (la pollera todavía no).
+La Sublimadora **imprime fotos** del mod Camerapture sobre remeras, pantalones, medias y calientabrazos. La pollera todavía no se puede estampar: su geometría en abanico no encaja con el mapeo de estampas.
+
+> *Captura pendiente: la interfaz se rehízo el 2026-09-28 con el mismo estilo que Tintes y la Modeladora.*
+
+**La interfaz** tiene el mismo esqueleto que sus hermanas:
+
+| Zona | Qué hay |
+|---|---|
+| **Izquierda** | Vista previa 3D, botón Vista, nombre y **Guardar diseño**. |
+| **Centro** | **Categoría**; el dibujo de la prenda dos veces, **Frente** y **Espalda**, cada una con su slot de foto y su chincheta; el cinturón **Entrada → Salida** con **Prensar** sobre la flecha; los 8 casilleros de diseño; y los controles de la cara elegida: **Escala**, **Posición X**, **Posición Y**, **Ángulo** y **Cara**. |
+| **Derecha** | Los tanques de tinta **C, M, Y, K** y el de **papel** con su nivel (n/64), la guía de pasos y el **almacén** de 9 fotos. |
+
+El dibujo muestra la prenda que está en la Entrada, con su color. Si no hay ninguna, muestra la prenda terminada de la Salida, y si tampoco, una de la categoría elegida.
+
+**Cómo se usa:**
+
+1. Elegí la prenda con **Categoría** (o poné una en la Entrada: la categoría la sigue sola).
+2. Poné una foto en el slot de **Frente** o de **Espalda**. **Tocar un slot de foto elige esa cara**: los controles de abajo editan esa cara, que queda con marco dorado.
+3. Ajustá **Escala**, **X**, **Y** y **Ángulo**. A escala mínima la foto queda chica y centrada, tipo logo; a escala máxima cubre la prenda entera (full print), recortada a la silueta.
+4. Clavá la **chincheta** de cada cara que quieras imprimir. **Solo se estampan las caras fijadas que tienen foto**. La vista previa muestra lo fijado más la cara que estás editando; la línea "Editando" dice si esa cara está fijada.
+5. Poné la prenda en la **Entrada** y apretá **Prensar**: la tapa baja y arranca. Cerrar la tapa a mano también arranca.
+
+**Detalles:**
 
 - **Insumos:** tinta CMYK (tintes vanilla, hasta 64 por tanque) y **papel** (hasta 64). Cada cara estampada gasta una dosis de cada color; cada prensado gasta una hoja de papel. Las fotos **no se consumen**: quedan cargadas para reimprimir.
-- **Fotos:** se cargan en los slots de **Frente** y **Espalda**. Hay un almacén de 9 fotos.
-- **Ajustes por cara:** botón **Cara** (frente o espalda), **Escala**, **Posición X**, **Posición Y** y **Ángulo**. A escala mínima la foto queda chica y centrada, tipo logo; a escala máxima cubre la prenda entera (full print), recortada a la silueta.
-- **Fijar:** guarda el ajuste como preset (hasta 8 por prenda).
+- **Diseños guardados:** como en las otras máquinas, nombre + Guardar diseño y 8 casilleros por categoría: guardan el ajuste de las dos caras y cuáles están fijadas. Click carga, click derecho borra. Las "fijadas" de la versión anterior pasaron a ser diseños "#1", "#2"...
 - **Prensado:** 15 segundos, con vapor, pitidos y LED rojo; al terminar, LED verde y campanita.
 - Frente y espalda se pueden estampar en una sola pasada. No pisa una cara ya estampada: una prenda con el frente hecho puede volver a entrar para imprimirle la espalda.
 - Las fotos con transparencia (PNG) funcionan.
@@ -388,4 +408,5 @@ Al componer, cada pixel parte del color base de la tela y cada capa se **funde**
 
 - `gradlew build` genera el `.jar` en `build/libs/`.
 - Para probar: copiar el `.jar` a la carpeta `mods` del perfil **con el juego cerrado**.
+- Los fondos de interfaz de pergamino se generan con `tools/generar_textura_modelado.py`, `generar_textura_tinturas.py` y `generar_textura_sublimadora.py` (este último reusa las funciones del de Tintes).
 - Este manual se genera con `python tools/generar_manual.py`, que arma las imágenes y convierte `docs/manual/MANUAL.md` en `docs/manual/FemClothes_Manual.docx`.

@@ -32,7 +32,7 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 - `tinturas/TinturasBlockEntity` — cuadraditos (`Casilla`: mezcla CMYK+T de 21 niveles, hasta 3 colores, modo, opacidad, repetición, variación...), región por cuadradito (`regionDe`), diseños guardados. Las capas aplicadas van en el componente `femclothes:capas_tinte` (`RegionResolver.CapaPatron`).
 - `region/RegionPintura` — zonas (cuello = borde real del escote vía `ClothingTextureCache.mascaraBordeCuello`, pecho, mangas, sup/inf...).
 - `modelado/` — Modeladora: pines por rol (`ModeladoBlockEntity.ROLES`, `ModeladoScreenHandler.PIN_POS` con Y absoluta), `ComboCorte`, `PrendaModelado`.
-- `sublimadora/` — Sublimadora, remera y su `Variante`, estampas.
+- `sublimadora/` — Sublimadora, remera y su `Variante`, estampas. `SublimadoraBlockEntity.caraFijada` (chincheta por cara) y `DisenoEstampa` (diseños con nombre).
 
 ## Trampas conocidas
 
@@ -51,6 +51,10 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 - **Fase C:** rotar el motivo, girar la grilla, espejo, distancia horizontal/vertical independiente del tamaño, desplazamiento X/Y, más escalones de tamaño.
 - **Fase D:** secuencia de alternancia escrita (ej. `1 1 2`), dirección de la alternancia, aleatorio con pesos, degradé con dirección y bandas, hasta 4 colores, paleta guardada y cuentagotas.
 - Reorganizar la interfaz en pestañas (Color / Patrón / Mezcla / Capas) para que entre todo.
+
+**Máquinas — sintonía y pulido** (2026-09-28, "cambiemos la gui de la sublimadora para hacerla sintonizar con sus bloques hermanos y que recien ahi revisemos y pulamos las 3"):
+- Sublimadora rehecha al estilo de Tintes (hecha, falta probar en el juego): 560×408 pergamino, fotos sobre el dibujo de la prenda (el ítem real agrandado, Frente | Espalda) con chincheta por cara (solo se estampan las fijadas), diseños con nombre (`GuardarDisenoSublimadoraPayload`), botón Prensar, tanques CMYK + papel.
+- **Siguiente:** revisar y pulir las tres máquinas juntas.
 
 **Otros, sin empezar:**
 - Volumen 3D real en la ropa con 3D Skin Layers.

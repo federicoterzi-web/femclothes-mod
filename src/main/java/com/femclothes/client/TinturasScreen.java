@@ -768,7 +768,7 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
      * {@code ModeladoScreen.BotonChincheta}: hueca = no fijado, llena =
      * fijado (entra al diseño que se aplica).
      */
-    private static class BotonChincheta extends ButtonWidget {
+    static class BotonChincheta extends ButtonWidget {
         private boolean fijado;
         private long cambioMs = -1000;
 
