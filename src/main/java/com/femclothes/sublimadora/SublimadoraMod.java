@@ -1,8 +1,6 @@
 package com.femclothes.sublimadora;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
-import net.minecraft.item.ItemGroups;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,16 +19,7 @@ public class SublimadoraMod implements ModInitializer {
 
         ModBlocks.register();
         ModItems.register();
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL)
-                .register(entries -> {
-                    entries.add(ModBlocks.SUBLIMADORA_ITEM);
-                    entries.add(ModItems.REMERA);
-                    entries.add(ModItems.MOLDE_LARGO_CROP);
-                    entries.add(ModItems.MOLDE_LARGO_NORMAL);
-                    entries.add(ModItems.MOLDE_LARGO_LARGO);
-                    entries.add(ModItems.MOLDE_MANGA);
-                    entries.add(ModItems.MOLDE_CUELLO);
-                });
+        // Sus ítems van en la pestaña propia del mod (Femclothes.PESTANA, 2026-09-28).
     }
 
     private static String sello() {

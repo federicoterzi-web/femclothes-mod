@@ -1,0 +1,140 @@
+package noppes.mpm.client;
+
+import java.util.HashMap;
+import net.minecraft.nbt.CompoundTag;
+import noppes.mpm.ModelData;
+import noppes.mpm.constants.EnumParts;
+
+public class Preset {
+   public ModelData data = new ModelData();
+   public String name;
+   public boolean menu = false;
+
+   public CompoundTag writeToNBT() {
+      CompoundTag compound = new CompoundTag();
+      compound.m_128359_("PresetName", this.name);
+      compound.m_128365_("PresetData", this.data.writeToNBT());
+      compound.m_128379_("PresetMenu", this.menu);
+      return compound;
+   }
+
+   public void readFromNBT(CompoundTag compound) {
+      this.name = compound.m_128461_("PresetName");
+      this.data.readFromNBT(compound.m_128469_("PresetData"));
+      this.menu = compound.m_128471_("PresetMenu");
+   }
+
+   public static HashMap<String, Preset> GetDefault() {
+      HashMap<String, Preset> presets = new HashMap<>();
+      new Preset();
+      ModelData data = new ModelData();
+      Preset preset = new Preset();
+      preset.name = "Normal";
+      preset.data = data;
+      preset.menu = true;
+      presets.put("normal", preset);
+      data = new ModelData();
+      preset = new Preset();
+      preset.name = "Elf Male";
+      preset.data = data;
+      data.getPartConfig(EnumParts.LEG_LEFT).setScale(0.85F, 1.15F);
+      data.getPartConfig(EnumParts.ARM_LEFT).setScale(0.85F, 1.15F);
+      data.getPartConfig(EnumParts.BODY).setScale(0.85F, 1.15F);
+      data.getPartConfig(EnumParts.HEAD).setScale(0.85F, 0.95F);
+      presets.put("elf male", preset);
+      data = new ModelData();
+      preset = new Preset();
+      preset.name = "Elf Female";
+      preset.data = data;
+      data.getPartConfig(EnumParts.LEG_LEFT).setScale(0.8F, 1.05F);
+      data.getPartConfig(EnumParts.ARM_LEFT).setScale(0.8F, 1.05F);
+      data.getPartConfig(EnumParts.BODY).setScale(0.8F, 1.05F);
+      data.getPartConfig(EnumParts.HEAD).setScale(0.8F, 0.85F);
+      presets.put("elf female", preset);
+      data = new ModelData();
+      preset = new Preset();
+      preset.name = "Dwarf Male";
+      preset.data = data;
+      data.getPartConfig(EnumParts.LEG_LEFT).setScale(1.1F, 0.7F, 0.9F);
+      data.getPartConfig(EnumParts.ARM_LEFT).setScale(0.9F, 0.7F);
+      data.getPartConfig(EnumParts.BODY).setScale(1.2F, 0.7F, 1.5F);
+      data.getPartConfig(EnumParts.HEAD).setScale(0.85F, 0.85F);
+      presets.put("dwarf male", preset);
+      data = new ModelData();
+      preset = new Preset();
+      preset.name = "Dwarf Female";
+      preset.data = data;
+      data.getPartConfig(EnumParts.LEG_LEFT).setScale(0.9F, 0.65F);
+      data.getPartConfig(EnumParts.ARM_LEFT).setScale(0.9F, 0.65F);
+      data.getPartConfig(EnumParts.BODY).setScale(1.0F, 0.65F, 1.1F);
+      data.getPartConfig(EnumParts.HEAD).setScale(0.85F, 0.85F);
+      presets.put("dwarf female", preset);
+      data = new ModelData();
+      preset = new Preset();
+      preset.name = "Orc Male";
+      preset.data = data;
+      data.getPartConfig(EnumParts.LEG_LEFT).setScale(1.2F, 1.05F);
+      data.getPartConfig(EnumParts.ARM_LEFT).setScale(1.2F, 1.05F);
+      data.getPartConfig(EnumParts.BODY).setScale(1.4F, 1.1F, 1.5F);
+      data.getPartConfig(EnumParts.HEAD).setScale(1.2F, 1.1F);
+      presets.put("orc male", preset);
+      data = new ModelData();
+      preset = new Preset();
+      preset.name = "Orc Female";
+      preset.data = data;
+      data.getPartConfig(EnumParts.LEG_LEFT).setScale(1.1F, 1.0F);
+      data.getPartConfig(EnumParts.ARM_LEFT).setScale(1.1F, 1.0F);
+      data.getPartConfig(EnumParts.BODY).setScale(1.1F, 1.0F, 1.25F);
+      presets.put("orc female", preset);
+      data = new ModelData();
+      preset = new Preset();
+      preset.name = "Human Male";
+      preset.data = data;
+      presets.put("human male", preset);
+      data = new ModelData();
+      preset = new Preset();
+      preset.name = "Human Female";
+      preset.data = data;
+      data.getPartConfig(EnumParts.LEG_LEFT).setScale(0.92F, 0.92F);
+      data.getPartConfig(EnumParts.HEAD).setScale(0.95F, 0.95F);
+      data.getPartConfig(EnumParts.ARM_LEFT).setScale(0.8F, 0.92F);
+      data.getPartConfig(EnumParts.BODY).setScale(0.92F, 0.92F);
+      presets.put("human female", preset);
+      data = new ModelData();
+      preset = new Preset();
+      preset.name = "Cat Male";
+      preset.data = data;
+      presets.put("cat male", preset);
+      data = new ModelData();
+      preset = new Preset();
+      preset.name = "Cat Female";
+      preset.data = data;
+      data.getPartConfig(EnumParts.HEAD).setScale(0.95F, 0.95F);
+      data.getPartConfig(EnumParts.LEG_LEFT).setScale(0.92F, 0.92F);
+      data.getPartConfig(EnumParts.ARM_LEFT).setScale(0.8F, 0.92F);
+      data.getPartConfig(EnumParts.BODY).setScale(0.92F, 0.92F);
+      presets.put("cat female", preset);
+      data = new ModelData();
+      preset = new Preset();
+      preset.name = "Wolf Male";
+      preset.data = data;
+      presets.put("wolf male", preset);
+      data = new ModelData();
+      preset = new Preset();
+      preset.name = "Wolf Female";
+      preset.data = data;
+      data.getPartConfig(EnumParts.HEAD).setScale(0.95F, 0.95F);
+      data.getPartConfig(EnumParts.LEG_LEFT).setScale(0.92F, 0.92F);
+      data.getPartConfig(EnumParts.ARM_LEFT).setScale(0.8F, 0.92F);
+      data.getPartConfig(EnumParts.BODY).setScale(0.92F, 0.92F);
+      presets.put("wolf female", preset);
+      data = new ModelData();
+      preset = new Preset();
+      preset.name = "Enderchibi";
+      preset.data = data;
+      data.getPartConfig(EnumParts.LEG_LEFT).setScale(0.65F, 0.75F);
+      data.getPartConfig(EnumParts.ARM_LEFT).setScale(0.5F, 1.45F);
+      presets.put("enderchibi", preset);
+      return presets;
+   }
+}

@@ -1,0 +1,633 @@
+package com.femclothes.client;
+
+import com.femclothes.item.ClothingPatternItem;
+import com.femclothes.render.GarmentFeatureRenderer;
+import com.femclothes.tinturas.TinturasBlockEntity;
+import com.femclothes.tinturas.TinturasScreenHandler;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.gui.tooltip.Tooltip;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.SliderWidget;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Pantalla de la Estación de Tintes — v5 (2026-09-27, capas por
+ * cuadradito: "poner un color y patron al cuello otro a la manga otro al
+ * pecho", "concretizar los colores seleccionados", "aplicar un patron a
+ * toda la prenda pudiendo controlar como se mezclan las capas"). Mismo
+ * esqueleto que {@code ModeladoScreen}:
+ * <ul>
+ *   <li>Izquierda: visor 3D + Vista + Nombre + Guardar diseño.</li>
+ *   <li>Centro: Categoría, esquema con un slot de molde + chincheta por
+ *   cuadradito (cada uno una capa: región propia, o prenda entera en los
+ *   de Materiales/Personalización), cinturón Entrada->Salida, casilleros de
+ *   Diseño, y los controles del cuadradito SELECCIONADO: modo de mezcla,
+ *   opacidad, orden, tamaño/ángulo/posición/forma/invertir.</li>
+ *   <li>Derecha: los 4 sliders CMYK del cuadradito seleccionado + su
+ *   muestra de color + almacén de moldes.</li>
+ * </ul>
+ * Click en un cuadradito lo selecciona; su chincheta lo fija (entra al
+ * diseño que se aplica) — sin molde queda como color liso.
+ */
+public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
+
+    private static final Identifier TEXTURE = Identifier.of("femclothes", "textures/gui/container/tinturas.png");
+    private static final int ANCHO = 560;
+    private static final int ALTO = 408;
+    private static final int M_MEDIO = TinturasScreenHandler.M_MEDIO;
+    private static final int M_DERECHA = TinturasScreenHandler.M_DERECHA;
+    /** Etiquetas de los 5 sliders — el quinto es la Transparencia de la tinta (2026-09-28). */
+    private static final String[] NOMBRE_CANAL = { "Cyan", "Magenta", "Yellow", "Key", "Transp." };
+
+    /** Mismos esquemas que la Modeladora (reusados tal cual) — Pollera no tiene. */
+    private static final Identifier[] TEXTURE_ESQUEMA = {
+            Identifier.of("femclothes", "textures/gui/container/esquema_remera.png"),
+            Identifier.of("femclothes", "textures/gui/container/esquema_pantalon.png"),
+            Identifier.of("femclothes", "textures/gui/container/esquema_medias.png"),
+            Identifier.of("femclothes", "textures/gui/container/esquema_calientabrazos.png"),
+    };
+    private static final int ESQUEMA_Y = TinturasScreenHandler.ESQUEMA_Y;
+    private static final int ESQUEMA_ANCHO = 240, ESQUEMA_ALTO = 136;
+    /** Misma chincheta que la Modeladora — 0 sin fijar, 1 animando, 2 fijada. */
+    private static final Identifier[] TEXTURE_CHINCHETA = {
+            Identifier.of("femclothes", "textures/gui/container/chincheta_0.png"),
+            Identifier.of("femclothes", "textures/gui/container/chincheta_1.png"),
+            Identifier.of("femclothes", "textures/gui/container/chincheta_2.png"),
+    };
+
+    private ButtonWidget btnCategoria;
+    private ButtonWidget btnModo;
+    private ButtonWidget btnOpacidad;
+    private ButtonWidget btnOrden;
+    private ButtonWidget btnTamano;
+    private ButtonWidget btnAngulo;
+    private ButtonWidget btnPosicion;
+    private ButtonWidget btnForma;
+    private ButtonWidget btnSemilla;
+    private ButtonWidget btnColores;
+    private ButtonWidget btnContorno;
+    private ButtonWidget btnVariacion;
+    private final BotonMuestra[] btnMuestras = new BotonMuestra[3];
+    private ButtonWidget btnInvertir;
+    private ButtonWidget btnVista;
+    private ButtonWidget btnTenir;
+    private final BotonChincheta[] btnChinchetas = new BotonChincheta[TinturasBlockEntity.CASILLAS];
+    private ButtonWidget btnGuardarDiseno;
+    private net.minecraft.client.gui.widget.TextFieldWidget txtNombreDiseno;
+    private final BotonDiseno[] btnDisenos = new BotonDiseno[TinturasBlockEntity.DISENOS_MAXIMO];
+    private final CanalSlider[] sliders = new CanalSlider[TinturasBlockEntity.CANALES];
+    /** Qué cuadradito (y de qué categoría) mostraban los sliders el frame pasado — si cambió, se reposicionan. */
+    private int casillaMostradaEnSliders = -1;
+    private TinturasBlockEntity.Categoria categoriaMostradaEnSliders = null;
+    /** Qué color (1..3) editaban los sliders el frame pasado. */
+    private int editandoMostrado = -1;
+
+    public TinturasScreen(TinturasScreenHandler handler, PlayerInventory inventory, Text title) {
+        super(handler, inventory, title);
+        this.backgroundWidth = ANCHO;
+        this.backgroundHeight = ALTO;
+        this.titleX = M_MEDIO;
+        this.titleY = 9;
+        this.playerInventoryTitleX = M_MEDIO;
+        this.playerInventoryTitleY = 314;
+    }
+
+    /** Botón pergamino chico con tooltip, ya agregado a la pantalla. */
+    private ButtonWidget boton(int x, int y, int w, Text texto, String tooltip, int id) {
+        ButtonWidget b = new EstiloPergamino.BotonPergamino(this.x + x, this.y + y, w, 16, texto, btn -> clickBoton(id));
+        b.setTooltip(Tooltip.of(Text.translatable(tooltip)));
+        this.addDrawableChild(b);
+        return b;
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+
+        btnCategoria = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 20, TinturasScreenHandler.M_MEDIO_ANCHO, 14, Text.literal(""), b -> clickBoton(TinturasBlockEntity.BTN_CATEGORIA));
+        btnCategoria.setTooltip(Tooltip.of(Text.translatable("femclothes.tinturas.tooltip.categoria")));
+        this.addDrawableChild(btnCategoria);
+
+        btnVista = new EstiloPergamino.BotonPergamino(this.x + PREVIEW_X1_LOCAL, this.y + 218, 86, 16, Text.literal(""),
+                b -> anguloVista = Math.floorMod(Math.round(anguloVista) + 90, 360));
+        btnVista.setTooltip(Tooltip.of(Text.translatable("femclothes.preview.tooltip.vista")));
+        this.addDrawableChild(btnVista);
+
+        txtNombreDiseno = new net.minecraft.client.gui.widget.TextFieldWidget(
+                this.textRenderer, this.x + 8, this.y + 238, 86, 14, Text.translatable("femclothes.tinturas.nombre_diseno"));
+        txtNombreDiseno.setMaxLength(24);
+        txtNombreDiseno.setPlaceholder(Text.translatable("femclothes.tinturas.nombre_diseno"));
+        this.addDrawableChild(txtNombreDiseno);
+
+        btnGuardarDiseno = new EstiloPergamino.BotonPergamino(this.x + 8, this.y + 256, 86, 16, Text.translatable("femclothes.tinturas.boton.guardar_diseno"), b -> {
+            net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+                    new com.femclothes.tinturas.GuardarDisenoTinturasPayload(this.handler.be.getPos(), txtNombreDiseno.getText()));
+            txtNombreDiseno.setText("");
+        });
+        btnGuardarDiseno.setTooltip(Tooltip.of(Text.translatable("femclothes.tinturas.tooltip.guardar_diseno")));
+        this.addDrawableChild(btnGuardarDiseno);
+
+        // CMYK del cuadradito seleccionado, columna DERECHA.
+        for (int canal = 0; canal < TinturasBlockEntity.CANALES; canal++) {
+            sliders[canal] = new CanalSlider(this.x + M_DERECHA + 6, this.y + 18 + canal * 18, 150, 14,
+                    canal, handler.be.nivelBorrador(canal));
+            this.addDrawableChild(sliders[canal]);
+        }
+        casillaMostradaEnSliders = handler.be.seleccionada();
+        categoriaMostradaEnSliders = handler.be.categoria();
+        editandoMostrado = handler.be.casilla(handler.be.seleccionada()).editando;
+
+        // Fase 2 (2026-09-28): los 3 colores de la capa, arriba de la
+        // muestra grande — click elige cuál editan los sliders (y prende
+        // uno apagado).
+        for (int i = 0; i < btnMuestras.length; i++) {
+            int idx = i;
+            btnMuestras[i] = new BotonMuestra(idx, this.x + M_DERECHA + 6 + i * 51, this.y + 108,
+                    b -> clickBoton(TinturasBlockEntity.BTN_EDITAR_COLOR_BASE + idx));
+            btnMuestras[i].setTooltip(Tooltip.of(Text.translatable("femclothes.tinturas.tooltip.muestra", idx + 1)));
+            this.addDrawableChild(btnMuestras[i]);
+        }
+        // Debajo del almacén: cuántos colores, contorno y variación.
+        btnColores = boton(M_DERECHA + 6, 226, 74, Text.empty(), "femclothes.tinturas.tooltip.colores", TinturasBlockEntity.BTN_COLORES);
+        btnContorno = boton(M_DERECHA + 82, 226, 74, Text.empty(), "femclothes.tinturas.tooltip.contorno", TinturasBlockEntity.BTN_CONTORNO);
+        btnVariacion = boton(M_DERECHA + 6, 246, 150, Text.empty(), "femclothes.tinturas.tooltip.variacion", TinturasBlockEntity.BTN_VARIACION);
+
+        // Diseños guardados: mismo Y=214 que la Modeladora.
+        for (int i = 0; i < btnDisenos.length; i++) {
+            int idx = i;
+            btnDisenos[i] = new BotonDiseno(idx, this.x + M_MEDIO + i * 20, this.y + 214, 18, 14,
+                    b -> clickBoton(TinturasBlockEntity.BTN_CARGAR_DISENO_BASE + idx),
+                    () -> clickBoton(TinturasBlockEntity.BTN_BORRAR_DISENO_BASE + idx));
+            this.addDrawableChild(btnDisenos[i]);
+        }
+
+        // Fila 1: cómo se funde la capa — modo, opacidad, orden.
+        btnModo = boton(0 + M_MEDIO, 232, 76, Text.empty(), "femclothes.tinturas.tooltip.modo", TinturasBlockEntity.BTN_MODO);
+        boton(M_MEDIO + 78, 232, 14, Text.literal("<"), "femclothes.tinturas.tooltip.opacidad", TinturasBlockEntity.BTN_OPACIDAD_ATRAS);
+        btnOpacidad = boton(M_MEDIO + 93, 232, 44, Text.empty(), "femclothes.tinturas.tooltip.opacidad", TinturasBlockEntity.BTN_OPACIDAD);
+        boton(M_MEDIO + 138, 232, 14, Text.literal(">"), "femclothes.tinturas.tooltip.opacidad", TinturasBlockEntity.BTN_OPACIDAD);
+        boton(M_MEDIO + 156, 232, 14, Text.literal("▼"), "femclothes.tinturas.tooltip.bajar", TinturasBlockEntity.BTN_BAJAR);
+        btnOrden = boton(M_MEDIO + 171, 232, 50, Text.empty(), "femclothes.tinturas.tooltip.orden", TinturasBlockEntity.BTN_SUBIR);
+        boton(M_MEDIO + 222, 232, 14, Text.literal("▲"), "femclothes.tinturas.tooltip.subir", TinturasBlockEntity.BTN_SUBIR);
+
+        // Fila 2: tamaño, ángulo, posición del patrón.
+        btnTamano = boton(M_MEDIO, 252, 60, Text.empty(), "femclothes.tinturas.tooltip.tamano", TinturasBlockEntity.BTN_TAMANO);
+        boton(M_MEDIO + 62, 252, 14, Text.literal("<"), "femclothes.tinturas.tooltip.angulo", TinturasBlockEntity.BTN_ANGULO_ATRAS);
+        btnAngulo = boton(M_MEDIO + 77, 252, 50, Text.empty(), "femclothes.tinturas.tooltip.angulo", TinturasBlockEntity.BTN_ANGULO);
+        boton(M_MEDIO + 128, 252, 14, Text.literal(">"), "femclothes.tinturas.tooltip.angulo", TinturasBlockEntity.BTN_ANGULO);
+        boton(M_MEDIO + 144, 252, 14, Text.literal("<"), "femclothes.tinturas.tooltip.posicion", TinturasBlockEntity.BTN_POSICION_ATRAS);
+        btnPosicion = boton(M_MEDIO + 159, 252, 62, Text.empty(), "femclothes.tinturas.tooltip.posicion", TinturasBlockEntity.BTN_POSICION);
+        boton(M_MEDIO + 222, 252, 14, Text.literal(">"), "femclothes.tinturas.tooltip.posicion", TinturasBlockEntity.BTN_POSICION);
+
+        // Fila 3: forma e invertir.
+        btnForma = boton(M_MEDIO, 272, 84, Text.empty(), "femclothes.tinturas.tooltip.forma", TinturasBlockEntity.BTN_FORMA);
+        // Otra semilla para Repetición: Disperso (2026-09-28, motivos).
+        btnSemilla = boton(M_MEDIO + 86, 272, 32, Text.translatable("femclothes.tinturas.boton.semilla"),
+                "femclothes.tinturas.tooltip.semilla", TinturasBlockEntity.BTN_SEMILLA);
+        btnInvertir = boton(M_MEDIO + 120, 272, 116, Text.empty(), "femclothes.tinturas.tooltip.invertir", TinturasBlockEntity.BTN_INVERTIR);
+
+        // Teñir, ENCIMA de la flecha Entrada->Salida (2026-09-28, "la unica
+        // forma de activacion de la maquina es saliendo de la gui o
+        // poniendo la prenda arriba"): arranca la prenda que ya está en la
+        // Entrada, p. ej. si se puso antes de fijar el diseño.
+        btnTenir = boton(M_MEDIO + 96, 184, 48, Text.translatable("femclothes.tinturas.boton.tenir"),
+                "femclothes.tinturas.tooltip.tenir", TinturasBlockEntity.BTN_TENIR);
+
+        // Una chincheta por cuadradito — se dibujan a mano en render(),
+        // encima del ícono fantasma (mismo criterio que ModeladoScreen).
+        for (int i = 0; i < btnChinchetas.length; i++) {
+            int idx = i;
+            btnChinchetas[i] = new BotonChincheta(b -> clickBoton(TinturasBlockEntity.BTN_CHINCHETA_BASE + idx));
+            this.addSelectableChild(btnChinchetas[i]);
+        }
+    }
+
+    private void clickBoton(int id) {
+        this.client.interactionManager.clickButton(this.handler.syncId, id);
+    }
+
+    // ── visor 3D: arrastrar para girar, ruedita para zoom ──
+    private static final int PREVIEW_X1_LOCAL = 8, PREVIEW_Y1_LOCAL = 18, PREVIEW_X2_LOCAL = 94, PREVIEW_Y2_LOCAL = 214;
+    private float anguloVista = 0f;
+    private float zoomVista = 1f;
+    private static final float ZOOM_MIN = 0.5f, ZOOM_MAX = 2.5f;
+    private boolean arrastrandoPreview = false;
+
+    private boolean dentroDePreview(double mouseX, double mouseY) {
+        int x1 = this.x + PREVIEW_X1_LOCAL, y1 = this.y + PREVIEW_Y1_LOCAL;
+        int x2 = this.x + PREVIEW_X2_LOCAL, y2 = this.y + PREVIEW_Y2_LOCAL;
+        return mouseX >= x1 && mouseX < x2 && mouseY >= y1 && mouseY < y2;
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && dentroDePreview(mouseX, mouseY)) {
+            arrastrandoPreview = true;
+        }
+        // Click (cualquier botón) sobre un cuadradito lo SELECCIONA, además
+        // de lo que haga el slot con el molde (poner/sacar) — así elegir qué
+        // capa editan los sliders es tocar el cuadradito, sin botón aparte.
+        net.minecraft.screen.slot.Slot slot = this.focusedSlot;
+        if (slot instanceof TinturasScreenHandler.CasillaSlot casilla && casilla.isEnabled()
+                && casilla.casilla != handler.be.seleccionada()) {
+            clickBoton(TinturasBlockEntity.BTN_SELECCIONAR_BASE + casilla.casilla);
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0) arrastrandoPreview = false;
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (arrastrandoPreview) {
+            anguloVista = Math.floorMod(Math.round(anguloVista + (float) deltaX * 1.15f), 360);
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (dentroDePreview(mouseX, mouseY)) {
+            zoomVista = net.minecraft.util.math.MathHelper.clamp(
+                    zoomVista + (float) verticalAmount * 0.1f, ZOOM_MIN, ZOOM_MAX);
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+    }
+
+    /** Mismo motivo que {@code ModeladoScreen#keyPressed}: sin esto, escribir una "e" en {@link #txtNombreDiseno} cierra la pantalla. */
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        return (!txtNombreDiseno.keyPressed(keyCode, scanCode, modifiers) && !txtNombreDiseno.isActive())
+                ? super.keyPressed(keyCode, scanCode, modifiers) : true;
+    }
+
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        refrescar();
+        super.render(context, mouseX, mouseY, delta);
+        dibujarPreview(context, mouseX, mouseY);
+        // Chinchetas a mano, DESPUÉS de los slots/ítems/fantasmas (z=400
+        // adentro de su renderWidget) — mismo criterio que ModeladoScreen.
+        for (BotonChincheta b : btnChinchetas) {
+            if (b.visible) b.render(context, mouseX, mouseY, delta);
+        }
+        drawMouseoverTooltip(context, mouseX, mouseY);
+    }
+
+    private void dibujarPreview(DrawContext context, int mouseX, int mouseY) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        PlayerEntity jugador = client.player;
+        if (jugador == null) return;
+
+        ItemStack prenda = handler.be.prendaDeVistaPrevia();
+        List<ItemStack> prendas = new ArrayList<>(GarmentFeatureRenderer.equipadas(jugador));
+        if (!prenda.isEmpty()) {
+            prendas.removeIf(s -> s.getItem().getClass() == prenda.getItem().getClass());
+            prendas.add(prenda);
+        }
+
+        GarmentFeatureRenderer.previewOverride = prendas;
+        try {
+            int x1 = this.x + PREVIEW_X1_LOCAL, y1 = this.y + PREVIEW_Y1_LOCAL;
+            int x2 = this.x + PREVIEW_X2_LOCAL, y2 = this.y + PREVIEW_Y2_LOCAL;
+            PreviewJugador.dibujar(context, jugador, x1, y1, x2, y2, Math.round(35 * zoomVista), anguloVista, (float) mouseY);
+        } finally {
+            GarmentFeatureRenderer.previewOverride = null;
+        }
+    }
+
+    private void refrescar() {
+        TinturasBlockEntity be = handler.be;
+        TinturasBlockEntity.Categoria cat = be.categoria();
+        int sel = be.seleccionada();
+        TinturasBlockEntity.Casilla casilla = be.casilla(sel);
+
+        btnCategoria.setMessage(Text.translatable("femclothes.modelado.categoria",
+                Text.translatable("femclothes.modelado.categoria." + cat.name().toLowerCase(java.util.Locale.ROOT))));
+        btnModo.setMessage(Text.translatable(casilla.modo.traduccion()));
+        btnOpacidad.setMessage(Text.literal(casilla.opacidad + "%"));
+        int pos = be.posicionEnOrden(sel);
+        btnOrden.setMessage(Text.translatable("femclothes.tinturas.orden", pos, be.capasEnBorrador()));
+        btnTamano.setMessage(Text.translatable(casilla.tamano.traduccion()));
+        btnAngulo.setMessage(Text.translatable("femclothes.tinturas.angulo", Math.round(casilla.angulo)));
+        btnPosicion.setMessage(Text.translatable("femclothes.tinturas.posicion", Math.round(casilla.posicion * 100)));
+        // Molde de motivo: el botón muestra/cicla la Repetición; de rayas, la Forma.
+        com.femclothes.render.Motivo motivo = be.motivoSeleccionado();
+        if (motivo != null) {
+            btnForma.setMessage(Text.translatable(casilla.repeticion.traduccion()));
+            btnForma.setTooltip(Tooltip.of(Text.translatable("femclothes.tinturas.tooltip.repeticion")));
+        } else {
+            btnForma.setMessage(Text.translatable(be.formaBorrador().traduccion()));
+            btnForma.setTooltip(Tooltip.of(Text.translatable("femclothes.tinturas.tooltip.forma")));
+        }
+        // Azar también sirve para Variación: Aleatorio (re-sortea los colores).
+        btnSemilla.active = (motivo != null && casilla.repeticion == com.femclothes.render.Repeticion.DISPERSO)
+                || (casilla.variacion == com.femclothes.render.Variacion.ALEATORIO && casilla.colores > 1);
+
+        for (int i = 0; i < btnMuestras.length; i++) {
+            btnMuestras[i].color = casilla.colorDe(i);
+            btnMuestras[i].prendida = i < casilla.colores;
+            btnMuestras[i].editando = i == casilla.editando;
+            btnMuestras[i].contorno = casilla.contorno && casilla.colores > 1 && i == casilla.colores - 1;
+        }
+        btnColores.setMessage(Text.translatable("femclothes.tinturas.colores", casilla.colores));
+        btnContorno.setMessage(Text.translatable("femclothes.tinturas.contorno",
+                Text.translatable(casilla.contorno ? "femclothes.si" : "femclothes.no")));
+        btnContorno.active = casilla.colores > 1;
+        btnVariacion.setMessage(Text.translatable(casilla.variacion.traduccion()));
+        btnInvertir.setMessage(Text.translatable("femclothes.tinturas.invertir",
+                Text.translatable(casilla.invertido ? "femclothes.si" : "femclothes.no")));
+        btnVista.setMessage(Text.translatable("femclothes.preview.vista",
+                Text.translatable(PreviewJugador.nombreVista(anguloVista))));
+
+        // Los sliders muestran la mezcla del cuadradito SELECCIONADO — si
+        // cambió (otro cuadradito u otra categoría), se reposicionan a mano.
+        if (sel != casillaMostradaEnSliders || cat != categoriaMostradaEnSliders || casilla.editando != editandoMostrado) {
+            casillaMostradaEnSliders = sel;
+            categoriaMostradaEnSliders = cat;
+            editandoMostrado = casilla.editando;
+            for (int canal = 0; canal < TinturasBlockEntity.CANALES; canal++) {
+                sliders[canal].sincronizarDesdeServidor(be.nivelBorrador(canal));
+            }
+        }
+
+        for (int i = 0; i < btnChinchetas.length; i++) {
+            BotonChincheta b = btnChinchetas[i];
+            com.femclothes.region.RegionPintura region = TinturasBlockEntity.regionDe(cat, i);
+            b.visible = region != null;
+            b.active = region != null;
+            if (region == null) continue;
+            int[] c = TinturasScreenHandler.posChincheta(cat, i);
+            b.setPosition(this.x + c[0] - 8, this.y + c[1] - 8);
+            TinturasBlockEntity.Casilla cas = be.casilla(i);
+            b.actualizar(cas.fijada);
+            boolean conMolde = !be.getStack(TinturasBlockEntity.casillaSlot(cat, i)).isEmpty();
+            String clave = conMolde ? "femclothes.tinturas.tooltip.chincheta_molde"
+                    : cas.fijada ? "femclothes.tinturas.tooltip.chincheta_quitar"
+                    : "femclothes.tinturas.tooltip.chincheta_liso";
+            b.setTooltip(Tooltip.of(Text.translatable(clave, Text.translatable(region.traduccion()))));
+        }
+
+        btnTenir.active = be.puedeReintentar();
+
+        int guardados = be.disenosGuardados();
+        btnGuardarDiseno.active = be.hayFijadas() && guardados < TinturasBlockEntity.DISENOS_MAXIMO;
+        for (int i = 0; i < btnDisenos.length; i++) {
+            String nombre = be.nombreDiseno(i);
+            btnDisenos[i].active = nombre != null;
+            btnDisenos[i].setTooltip(nombre == null ? null : Tooltip.of(Text.translatable(
+                    "femclothes.tinturas.tooltip.casillero_diseno", nombre)));
+        }
+    }
+
+    @Override
+    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+        context.drawText(this.textRenderer, this.title, this.titleX, this.titleY, EstiloPergamino.TEXTO, false);
+        context.drawText(this.textRenderer, this.playerInventoryTitle, this.playerInventoryTitleX,
+                this.playerInventoryTitleY, EstiloPergamino.TEXTO, false);
+
+        dibujarCasillas(context);
+
+        TinturasBlockEntity be = handler.be;
+        // Qué se está editando: región del cuadradito seleccionado y su estado.
+        com.femclothes.region.RegionPintura region = TinturasBlockEntity.regionDe(be.categoria(), be.seleccionada());
+        if (region != null) {
+            Text estado = Text.translatable(be.casilla(be.seleccionada()).fijada
+                    ? "femclothes.tinturas.estado.fijada" : "femclothes.tinturas.estado.borrador");
+            context.drawText(this.textRenderer, Text.translatable("femclothes.tinturas.editando",
+                    Text.translatable(region.traduccion()), estado), M_MEDIO, 296, EstiloPergamino.TEXTO, false);
+        }
+
+        // Muestra del color CRUDO del cuadradito seleccionado.
+        int x0 = M_DERECHA + 6, y0 = 132, x1 = M_DERECHA + 156, y1 = 180;
+        dibujarMuestra(context, x0, y0, x1, y1, be.colorBorrador());
+        context.drawBorder(x0 - 1, y0 - 1, x1 - x0 + 2, y1 - y0 + 2, 0xFF2A180C);
+
+        context.drawText(this.textRenderer, hint(), M_DERECHA + 6, 190, EstiloPergamino.TEXTO, false);
+    }
+
+    /**
+     * Estado de cada cuadradito sobre el esquema (coordenadas locales):
+     * marco del color de su capa si entra en la vista previa, marco dorado
+     * grueso en el SELECCIONADO, e ícono fantasma del patrón fijado cuando
+     * el molde ya volvió al almacén (mismo velo que la Modeladora).
+     */
+    private void dibujarCasillas(DrawContext context) {
+        TinturasBlockEntity be = handler.be;
+        TinturasBlockEntity.Categoria cat = be.categoria();
+        for (int i = 0; i < TinturasBlockEntity.CASILLAS; i++) {
+            if (TinturasBlockEntity.regionDe(cat, i) == null) continue;
+            int[] p = TinturasScreenHandler.posCasilla(cat, i);
+            int x = p[0], y = p[1];
+            TinturasBlockEntity.Casilla cas = be.casilla(i);
+            if (be.enBorrador(cat, i)) {
+                // Tira del color de la capa debajo del slot: se lee de un
+                // vistazo qué color va en cada parte del dibujo.
+                int c = 0xFF000000 | cas.color();
+                context.fill(x - 1, y + 17, x + 17, y + 20, c);
+                context.drawBorder(x - 2, y + 16, 20, 5, 0xFF2A180C);
+            }
+            if (i == be.seleccionada()) {
+                context.drawBorder(x - 2, y - 2, 20, 20, 0xFFFFD24C);
+                context.drawBorder(x - 3, y - 3, 22, 22, 0xFF6B4E2A);
+            }
+            if (cas.fijada && cas.patronFijado != null && be.getStack(TinturasBlockEntity.casillaSlot(cat, i)).isEmpty()) {
+                ClothingPatternItem item = ClothingPatternItem.porId(cas.patronFijado);
+                if (item != null) {
+                    context.drawItem(new ItemStack(item), x, y);
+                    context.getMatrices().push();
+                    context.getMatrices().translate(0, 0, 200);
+                    context.fill(x, y, x + 16, y + 16, 0x5CD9B98A);
+                    context.getMatrices().pop();
+                }
+            }
+        }
+    }
+
+    /**
+     * Rellena una muestra con un color de la mezcla: si tiene
+     * Transparencia (byte alto, 2026-09-28), primero un fondo a cuadros y
+     * encima el color con ese alfa — así se ve cuánto calará la tela.
+     */
+    static void dibujarMuestra(DrawContext c, int x0, int y0, int x1, int y1, int color) {
+        int t = (color >>> 24) & 0xFF;
+        if (t > 0) {
+            for (int y = y0; y < y1; y += 4) {
+                for (int x = x0; x < x1; x += 4) {
+                    boolean claro = ((x - x0) / 4 + (y - y0) / 4) % 2 == 0;
+                    c.fill(x, y, Math.min(x + 4, x1), Math.min(y + 4, y1), claro ? 0xFFE0E0E0 : 0xFF9A9A9A);
+                }
+            }
+        }
+        c.fill(x0, y0, x1, y1, ((255 - t) << 24) | (color & 0xFFFFFF));
+    }
+
+    private Text hint() {
+        TinturasBlockEntity be = handler.be;
+        if (be.estado() == TinturasBlockEntity.Estado.TINIENDO) {
+            return Text.translatable("femclothes.tinturas.hint.tiniendo");
+        }
+        if (!be.getSalida().isEmpty()) {
+            return Text.translatable("femclothes.tinturas.hint.listo");
+        }
+        if (!be.hayFijadas()) {
+            return Text.translatable("femclothes.tinturas.hint.vacio");
+        }
+        return Text.translatable("femclothes.tinturas.hint.fijado");
+    }
+
+    @Override
+    protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
+        context.drawTexture(TEXTURE, this.x, this.y, 0, 0,
+                this.backgroundWidth, this.backgroundHeight, this.backgroundWidth, this.backgroundHeight);
+        dibujarEsquema(context);
+    }
+
+    /** Esquema de la prenda actual — mismos PNG y coordenadas que {@code ModeladoScreen#dibujarEsquema}. Pollera no tiene. */
+    private void dibujarEsquema(DrawContext context) {
+        int cat = this.handler.be.categoria().ordinal();
+        if (cat >= TEXTURE_ESQUEMA.length) return;
+        int ex = this.x + M_MEDIO, ey = this.y + ESQUEMA_Y;
+        context.drawTexture(TEXTURE_ESQUEMA[cat], ex, ey, 0, 0, ESQUEMA_ANCHO, ESQUEMA_ALTO, ESQUEMA_ANCHO, ESQUEMA_ALTO);
+    }
+
+    /** Entrada/Salida grandes: mismo truco de escala 1.5x que {@code ModeladoScreen#esSlotGrande}. */
+    private static boolean esSlotGrande(int localX, int localY) {
+        return localY == TinturasScreenHandler.SLOT_Y_IO
+                && (localX == M_MEDIO + TinturasScreenHandler.ENTRADA_X || localX == M_MEDIO + TinturasScreenHandler.SALIDA_X);
+    }
+
+    @Override
+    protected void drawSlot(DrawContext context, net.minecraft.screen.slot.Slot slot) {
+        if (!esSlotGrande(slot.x, slot.y)) {
+            super.drawSlot(context, slot);
+            return;
+        }
+        context.getMatrices().push();
+        context.getMatrices().translate(slot.x + 8, slot.y + 8, 0);
+        context.getMatrices().scale(1.5f, 1.5f, 1f);
+        context.getMatrices().translate(-(slot.x + 8), -(slot.y + 8), 0);
+        super.drawSlot(context, slot);
+        context.getMatrices().pop();
+    }
+
+    @Override
+    protected boolean isPointWithinBounds(int x, int y, int width, int height, double pointX, double pointY) {
+        if (width == 16 && height == 16 && esSlotGrande(x, y)) {
+            return super.isPointWithinBounds(x - 8, y - 8, 32, 32, pointX, pointY);
+        }
+        return super.isPointWithinBounds(x, y, width, height, pointX, pointY);
+    }
+
+    /** Un slider C/M/Y/K — cuantiza a NIVELES_MEZCLA pasos y solo manda el click cuando ese nivel cambia. */
+    private class CanalSlider extends SliderWidget {
+        private final int canal;
+        private int ultimoNivelEnviado;
+
+        CanalSlider(int x, int y, int width, int height, int canal, int nivelInicial) {
+            super(x, y, width, height, Text.empty(), nivelInicial / (double) (TinturasBlockEntity.NIVELES_MEZCLA - 1));
+            this.canal = canal;
+            this.ultimoNivelEnviado = nivelInicial;
+            updateMessage();
+        }
+
+        @Override
+        protected void updateMessage() {
+            int nivel = Math.round((float) (this.value * (TinturasBlockEntity.NIVELES_MEZCLA - 1)));
+            int porcentaje = Math.round(nivel * 100f / (TinturasBlockEntity.NIVELES_MEZCLA - 1));
+            this.setMessage(Text.literal(NOMBRE_CANAL[canal] + ": " + porcentaje + "%"));
+        }
+
+        @Override
+        protected void applyValue() {
+            int nivel = Math.round((float) (this.value * (TinturasBlockEntity.NIVELES_MEZCLA - 1)));
+            if (nivel == ultimoNivelEnviado) return;
+            ultimoNivelEnviado = nivel;
+            clickBoton(handler.be.botonMezcla(canal, nivel));
+        }
+
+        /** Refleja el nivel del cuadradito recién seleccionado SIN mandar un click. */
+        void sincronizarDesdeServidor(int nivel) {
+            this.value = nivel / (double) (TinturasBlockEntity.NIVELES_MEZCLA - 1);
+            this.ultimoNivelEnviado = nivel;
+            updateMessage();
+        }
+    }
+
+    /**
+     * Una de las 3 muestras de color de la capa (Fase 2, 2026-09-28):
+     * rellena con su color si está prendida (tachada si no), marco dorado
+     * si es la que editan los sliders, y una "C" si es la del contorno.
+     */
+    private static class BotonMuestra extends ButtonWidget {
+        int color;
+        boolean prendida, editando, contorno;
+
+        BotonMuestra(int indice, int x, int y, PressAction accion) {
+            super(x, y, 48, 20, Text.literal(String.valueOf(indice + 1)), accion, DEFAULT_NARRATION_SUPPLIER);
+        }
+
+        @Override
+        protected void renderWidget(DrawContext c, int mouseX, int mouseY, float delta) {
+            int x = getX(), y = getY(), w = getWidth(), h = getHeight();
+            if (prendida) {
+                dibujarMuestra(c, x + 1, y + 1, x + w - 1, y + h - 1, color);
+            } else {
+                c.fill(x + 1, y + 1, x + w - 1, y + h - 1, 0xFFB9A27A);
+                for (int i = 0; i < w - 2; i++) c.fill(x + 1 + i, y + 1 + i * (h - 2) / (w - 2), x + 2 + i, y + 2 + i * (h - 2) / (w - 2), 0xFF6B4E2A);
+            }
+            c.drawBorder(x, y, w, h, editando ? 0xFFFFD24C : (isHovered() ? 0xFFC79A4B : 0xFF2A180C));
+            if (editando) c.drawBorder(x + 1, y + 1, w - 2, h - 2, 0xFFFFD24C);
+            var fuente = MinecraftClient.getInstance().textRenderer;
+            // Texto con sombra, se lee sobre cualquier color.
+            c.drawTextWithShadow(fuente, getMessage().getString() + (contorno ? " C" : ""), x + 4, y + 6, 0xFFFFFFFF);
+        }
+    }
+
+    /**
+     * Chincheta de un cuadradito — misma arte y animación que
+     * {@code ModeladoScreen.BotonChincheta}: hueca = no fijado, llena =
+     * fijado (entra al diseño que se aplica).
+     */
+    private static class BotonChincheta extends ButtonWidget {
+        private boolean fijado;
+        private long cambioMs = -1000;
+
+        BotonChincheta(PressAction accion) {
+            super(0, 0, 16, 16, Text.empty(), accion, DEFAULT_NARRATION_SUPPLIER);
+        }
+
+        void actualizar(boolean nuevo) {
+            if (nuevo != fijado) cambioMs = net.minecraft.util.Util.getMeasuringTimeMs();
+            fijado = nuevo;
+        }
+
+        @Override
+        protected void renderWidget(DrawContext c, int mouseX, int mouseY, float delta) {
+            boolean animando = net.minecraft.util.Util.getMeasuringTimeMs() - cambioMs < 160;
+            int cuadro = animando ? 1 : fijado ? 2 : 0;
+            int x = getX(), y = getY();
+            c.getMatrices().push();
+            c.getMatrices().translate(0, 0, 400);
+            if (isHovered() && active) c.fill(x + 2, y + 2, x + 14, y + 14, 0x33FFFFFF);
+            com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+            c.drawTexture(TEXTURE_CHINCHETA[cuadro], x + 2, y + 2, 0, 0, 12, 12, 12, 12);
+            c.getMatrices().pop();
+        }
+    }
+}

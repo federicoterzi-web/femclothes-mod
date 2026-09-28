@@ -21,12 +21,31 @@ public class FemclothesClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // Pantalla del clothing_loom. HandledScreens.register es privado en
-        // vanilla; lo abre el accesswidener de fabric-screen-handler-api-v1,
-        // que Loom aplica en tiempo de compilacion.
-        HandledScreens.register(FemclothesScreenHandlers.CLOTHING_LOOM, ClothingLoomScreen::new);
+        HandledScreens.register(FemclothesScreenHandlers.MODELADO, ModeladoScreen::new);
+        HandledScreens.register(FemclothesScreenHandlers.TINTURAS, TinturasScreen::new);
+        HandledScreens.register(FemclothesScreenHandlers.SUBLIMADORA, SublimadoraScreen::new);
+        HandledScreens.register(FemclothesScreenHandlers.GUARDARROPAS, GuardarropasScreen::new);
+
+        // El render de la Mesa de Modelado lo hace GeckoLib desde el block
+        // entity (modelo garment_shaper) — mismo patrón que la sublimadora.
+        net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(
+                com.femclothes.modelado.ModeladoMod.MODELADO_BLOCK_ENTITY,
+                ctx -> new com.femclothes.modelado.ModeladoRenderer());
+        // garment_shaper_atlas.png tiene alfa (huecos reales entre piezas del
+        // modelo) — sin cutout el recorte se rellena y queda un cuadrado.
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(
+                com.femclothes.modelado.ModeladoMod.MODELADO_BLOCK, net.minecraft.client.render.RenderLayer.getCutout());
+
+        // El render de la Estación de Tintes lo hace GeckoLib desde el block
+        // entity (modelo dye_station, assets reales bajados por el usuario).
+        net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(
+                com.femclothes.tinturas.TinturasMod.TINTURAS_BLOCK_ENTITY,
+                ctx -> new com.femclothes.tinturas.TinturasRenderer());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(
+                com.femclothes.tinturas.TinturasMod.TINTURAS_BLOCK, net.minecraft.client.render.RenderLayer.getCutout());
 
         PiezasDelMod.init();
+        DebugApariencia.init();
 
         // TODA la ropa del mod se dibuja desde un solo feature renderer.
         //

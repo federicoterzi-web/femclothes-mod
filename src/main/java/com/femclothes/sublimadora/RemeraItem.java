@@ -45,6 +45,41 @@ public class RemeraItem extends Item {
     }
 
     /**
+     * Largo de manga POR LADO (2026-09-24, "vamos con mangas distintas") —
+     * la izquierda sigue siendo la del {@link Variante} de siempre (sin
+     * componente nuevo); la derecha es un override aparte
+     * ({@code FemclothesComponents.RIGHT_REMERA_MANGA}), ausente = hereda
+     * la izquierda — mismo criterio primario/override que
+     * {@code RegionResolver#colorBase}, no el par Superior/Inferior que
+     * usan pantalón/medias/calientabrazos (acá no hay dos anclajes, un
+     * solo valor por lado).
+     */
+    public static Variante.Manga manga(ItemStack stack, com.femclothes.region.Lado lado) {
+        Variante.Manga izq = variante(stack).manga();
+        if (lado == com.femclothes.region.Lado.IZQUIERDA) return izq;
+        Variante.Manga der = stack.get(com.femclothes.item.FemclothesComponents.RIGHT_REMERA_MANGA);
+        return der != null ? der : izq;
+    }
+
+    /**
+     * Escribe el largo de manga del lado pedido. {@code AMBAS} escribe la
+     * izquierda (el {@link Variante} real) Y borra el override derecho —
+     * así vuelve a heredar en vez de quedar un valor viejo pisando si
+     * antes se había fijado asimétrica.
+     */
+    public static void setManga(ItemStack stack, com.femclothes.region.Lado lado, Variante.Manga valor) {
+        if (lado != com.femclothes.region.Lado.DERECHA) {
+            Variante actual = variante(stack);
+            stack.set(ModItems.VARIANTE, new Variante(actual.largo(), valor, actual.cuello()));
+        }
+        if (lado == com.femclothes.region.Lado.AMBAS) {
+            stack.remove(com.femclothes.item.FemclothesComponents.RIGHT_REMERA_MANGA);
+        } else if (lado == com.femclothes.region.Lado.DERECHA) {
+            stack.set(com.femclothes.item.FemclothesComponents.RIGHT_REMERA_MANGA, valor);
+        }
+    }
+
+    /**
      * El nombre cambia con el corte. Un solo item que se llama siempre igual
      * dejaria prendas muy distintas indistinguibles en el inventario.
      *

@@ -40,52 +40,11 @@ public final class FemclothesItems {
     public static final PantalonItem PANTALON = register("pantalon", new PantalonItem(new Item.Settings().maxCount(16)));
 
     /**
-     * Un molde de largo POR VALOR (7), no uno que cicla. Se probó ciclico y
-     * se cambio de inmediato: con siete pasos, ciclar significa clickear
-     * hasta seis veces para llegar a "tanga" — siete items con nombre propio
-     * es mejor que un dial de siete posiciones.
+     * Pollera — primera pasada (2026-09-16), solo forma, sin eje todavía.
+     * Comparte slot con PANTALON (piernas/exterior): alternativa, no
+     * simultánea. Ver {@link PolleraItem}.
      */
-    public static final MoldePantalonItem MOLDE_PANTALON_PANTALON =
-            moldePantalon("molde_pantalon_pantalon", PantalonLargo.PANTALON);
-    public static final MoldePantalonItem MOLDE_PANTALON_TRES_CUARTOS =
-            moldePantalon("molde_pantalon_tres_cuartos", PantalonLargo.TRES_CUARTOS);
-    public static final MoldePantalonItem MOLDE_PANTALON_BERMUDAS =
-            moldePantalon("molde_pantalon_bermudas", PantalonLargo.BERMUDAS);
-    public static final MoldePantalonItem MOLDE_PANTALON_SHORTS =
-            moldePantalon("molde_pantalon_shorts", PantalonLargo.SHORTS);
-    // Calzoncillos, slip y tanga se fusionaron en un solo valor: ver
-    // PantalonLargo.ROPA_INTERIOR.
-    public static final MoldePantalonItem MOLDE_PANTALON_ROPA_INTERIOR =
-            moldePantalon("molde_pantalon_ropa_interior", PantalonLargo.ROPA_INTERIOR);
-
-    /** Molde de tiro, uno por valor (3) — mismo criterio que el de largo. */
-    public static final MoldeTiroItem MOLDE_TIRO_CORTO = moldeTiro("molde_tiro_corto", PantalonTiro.CORTO);
-    public static final MoldeTiroItem MOLDE_TIRO_MEDIO = moldeTiro("molde_tiro_medio", PantalonTiro.MEDIO);
-    public static final MoldeTiroItem MOLDE_TIRO_LARGO = moldeTiro("molde_tiro_largo", PantalonTiro.LARGO);
-
-    /**
-     * Molde de largo de MEDIAS, uno por valor (5) — eje nuevo, medias no
-     * tenían ninguno. CANCAN es el default (sin componente): el largo que
-     * ya tenían las medias antes de este eje.
-     */
-    public static final MoldeMediaItem MOLDE_MEDIA_ZOQUETES = moldeMedia("molde_media_zoquetes", MediasLargo.ZOQUETES);
-    public static final MoldeMediaItem MOLDE_MEDIA_MEDIAS = moldeMedia("molde_media_medias", MediasLargo.MEDIAS);
-    public static final MoldeMediaItem MOLDE_MEDIA_RODILLA = moldeMedia("molde_media_rodilla", MediasLargo.RODILLA);
-    public static final MoldeMediaItem MOLDE_MEDIA_TRES_CUARTOS =
-            moldeMedia("molde_media_tres_cuartos", MediasLargo.TRES_CUARTOS);
-    public static final MoldeMediaItem MOLDE_MEDIA_CANCAN = moldeMedia("molde_media_cancan", MediasLargo.CANCAN);
-
-    private static MoldePantalonItem moldePantalon(String id, PantalonLargo valor) {
-        return register(id, new MoldePantalonItem(new Item.Settings().maxCount(1), valor));
-    }
-
-    private static MoldeTiroItem moldeTiro(String id, PantalonTiro valor) {
-        return register(id, new MoldeTiroItem(new Item.Settings().maxCount(1), valor));
-    }
-
-    private static MoldeMediaItem moldeMedia(String id, MediasLargo valor) {
-        return register(id, new MoldeMediaItem(new Item.Settings().maxCount(1), valor));
-    }
+    public static final PolleraItem POLLERA = register("pollera", new PolleraItem(new Item.Settings().maxCount(16)));
 
     // El croptop de FemClothes se retiro: era un chestplate del pipeline
     // viejo, nunca se le dibujo el arte -salia en damero- y desde que la
@@ -111,17 +70,47 @@ public final class FemclothesItems {
             new CalientabrazosItem(new Item.Settings().maxCount(16)));
 
     // --- Patrones reusables para la estación de personalización ---
+    // Grosor base (escala 8x, tamaño GRANDE) de cada uno — Mediano/Chico
+    // lo escalan en tiempo real (ver PatronGenerador/TamanoPatron), no
+    // hay archivo por tamaño.
+    // SUPERIOR y no ALTERNADO (2026-09-18, "top stripe es una linea en la
+    // parte superior de la prenda"): una sola banda pegada arriba, no
+    // repetida — coherente con el nombre, a diferencia de los otros dos
+    // que sí son un ritmo de rayas de punta a punta.
     public static final ClothingPatternItem PATTERN_STRIPE_TOP = register("pattern_stripe_top",
             new ClothingPatternItem(new Item.Settings().maxCount(1),
-                    Identifier.of("femclothes", "stripe_top")));
+                    Identifier.of("femclothes", "stripe_top"),
+                    com.femclothes.render.PatronGenerador.Forma.ARRIBA, 8));
 
     public static final ClothingPatternItem PATTERN_STRIPE_ALT = register("pattern_stripe_alt",
             new ClothingPatternItem(new Item.Settings().maxCount(1),
-                    Identifier.of("femclothes", "stripe_alt")));
+                    Identifier.of("femclothes", "stripe_alt"),
+                    com.femclothes.render.PatronGenerador.Forma.ALTERNADO, 16));
 
+    // TRES_RAYAS y no ALTERNADO (2026-09-19, "las tres rayitas son solo
+    // tres, no se repiten"): antes tapizaba toda la prenda como stripe_alt;
+    // ahora es un bloque fijo de 3 rayas que además se puede reposicionar
+    // (eje "posicion" en RegionResolver.CapaPatron).
     public static final ClothingPatternItem PATTERN_TRIPLE_STRIPE = register("pattern_triple_stripe",
             new ClothingPatternItem(new Item.Settings().maxCount(1),
-                    Identifier.of("femclothes", "triple_stripe")));
+                    Identifier.of("femclothes", "triple_stripe"),
+                    com.femclothes.render.PatronGenerador.Forma.TRES_RAYAS, 12));
+
+    // Moldes de MOTIVO (2026-09-28, Fase 1 de la propuesta de patrones):
+    // el último número es la escala del sprite en tamaño GRANDE (px del
+    // atlas por px del dibujo), ver PatronGenerador#mascaraMotivo.
+    public static final ClothingPatternItem PATTERN_CORAZONES = register("pattern_corazones",
+            new ClothingPatternItem(new Item.Settings().maxCount(1),
+                    Identifier.of("femclothes", "corazones"), com.femclothes.render.Motivo.CORAZONES, 2));
+    public static final ClothingPatternItem PATTERN_ESTRELLAS = register("pattern_estrellas",
+            new ClothingPatternItem(new Item.Settings().maxCount(1),
+                    Identifier.of("femclothes", "estrellas"), com.femclothes.render.Motivo.ESTRELLAS, 2));
+    public static final ClothingPatternItem PATTERN_LUNARES = register("pattern_lunares",
+            new ClothingPatternItem(new Item.Settings().maxCount(1),
+                    Identifier.of("femclothes", "lunares"), com.femclothes.render.Motivo.LUNARES, 2));
+    public static final ClothingPatternItem PATTERN_VICHY = register("pattern_vichy",
+            new ClothingPatternItem(new Item.Settings().maxCount(1),
+                    Identifier.of("femclothes", "vichy"), com.femclothes.render.Motivo.VICHY, 1));
 
     private static ClothingArmorItem registerArmor(String path, ClothingArmorItem item) {
         return Registry.register(Registries.ITEM, Identifier.of("femclothes", path), item);

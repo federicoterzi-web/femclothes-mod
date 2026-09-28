@@ -1,6 +1,7 @@
 package com.femclothes.sublimadora;
 
 import com.femclothes.Femclothes;
+import com.femclothes.item.PatronRed;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
@@ -248,11 +249,32 @@ public final class EstampaTextures {
                 LIENZO_PIERNA, MEDIA_ALTO, 0, MEDIA_ALTO, todas.toArray(new Cara[0]));
     }
 
+    /**
+     * El brazo del calientabrazos: MISMO layout que una pierna de media
+     * (deUnaPierna ya toma u/v como parámetro, y el cuboide de brazo tiene
+     * el mismo ancho/alto/profundidad que el de pierna) — solo cambia el
+     * UV de origen: BRAZO_DER en uv(40,16), BRAZO_IZQ en uv(32,48) (mismos
+     * v que pierna, coincidencia real del layout de skin, no aproximación).
+     * A pedido (2026-09-19, "hace todas las prendas sublimables").
+     */
+    private static final Prenda BRAZO;
+    static {
+        java.util.List<Cara> todas = new java.util.ArrayList<>();
+        todas.addAll(java.util.Arrays.asList(deUnaPierna(40, 16)));
+        todas.addAll(java.util.Arrays.asList(deUnaPierna(32, 48)));
+        BRAZO = new Prenda(com.femclothes.render.CuerpoGeometria.ESCALA_TELA,
+                LIENZO_PIERNA, MEDIA_ALTO, 0, MEDIA_ALTO, todas.toArray(new Cara[0]));
+    }
+
     /** Que prenda estampable es este stack, o null si no lo es. */
     @Nullable
     private static Prenda prendaDe(ItemStack stack) {
         if (stack.getItem() == ModItems.REMERA) return deLaRemera(RemeraItem.variante(stack));
         if (stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID) return MEDIAS;
+        // Pantalón usa el mismo UV de pierna que las medias (misma Parte.
+        // PIERNA_*) — el mapeo de caras es idéntico, se reusa tal cual.
+        if (stack.getItem() == com.femclothes.item.FemclothesItems.PANTALON) return MEDIAS;
+        if (stack.getItem() == com.femclothes.item.FemclothesItems.CALIENTABRAZOS) return BRAZO;
         return null;   // ModItems.esEstampable tiene que decir lo mismo
     }
 
@@ -299,6 +321,7 @@ public final class EstampaTextures {
                     "estampada/" + variante.clave() + "_" + id);
             MinecraftClient.getInstance().getTextureManager()
                     .registerTexture(destino, new NativeImageBackedTexture(compuesta));
+            com.femclothes.render.ClothingTextureCache.registrarImagenCompuesta(destino, compuesta);
             CACHE.put(clave, destino);
             return destino;
         } catch (Throwable e) {
@@ -360,13 +383,44 @@ public final class EstampaTextures {
     public static Identifier cuerpoEstampado(Variante variante, @Nullable Estampa frente,
                                       @Nullable Estampa espalda, int color,
                                       @Nullable Identifier patronId, int patronColor) {
-        // Sin estampas, sin patron y sin tenir no hay nada que componer: se
-        // usa la textura del pack tal cual.
-        if (frente == null && espalda == null && patronId == null && color == RemeraItem.BLANCO) {
+        com.femclothes.item.ClothingPatternItem item = patronId == null ? null : com.femclothes.item.ClothingPatternItem.porId(patronId);
+        com.femclothes.render.PatronGenerador.Forma forma = item != null ? item.forma : com.femclothes.render.PatronGenerador.Forma.ALTERNADO;
+        return cuerpoEstampado(variante, frente, espalda, color,
+                patronId == null ? java.util.List.of() : java.util.List.of(new com.femclothes.region.RegionResolver.CapaPatron(
+                        patronId, patronColor, com.femclothes.item.TamanoPatron.GRANDE, 0f, 0.5f, forma, false)),
+                null);
+    }
+
+    /**
+     * Hasta {@code CAPAS_MAXIMO} capas apiladas, CADA UNA con su propio
+     * color, tamaño Y orientación (ya vienen en cada {@code CapaPatron})
+     * — a pedido (2026-09-18 "dale mandale 3" y "orden y cambio de
+     * color", 2026-09-19 "variar orientacion y tamaño entre cada capa").
+     */
+    @Nullable
+    public static Identifier cuerpoEstampado(Variante variante, @Nullable Estampa frente,
+                                      @Nullable Estampa espalda, int color,
+                                      java.util.List<com.femclothes.region.RegionResolver.CapaPatron> capas) {
+        return cuerpoEstampado(variante, frente, espalda, color, capas, null);
+    }
+
+    /**
+     * Como el de arriba, con el molde de red (§{@link PatronRed}) opcional
+     * — a pedido (2026-09-20). Perfora DESPUÉS de teñir/patronar/estampar,
+     * mismo orden que {@link com.femclothes.render.ClothingTextureCache#perforarRed}
+     * documenta para el resto de las prendas.
+     */
+    @Nullable
+    public static Identifier cuerpoEstampado(Variante variante, @Nullable Estampa frente,
+                                      @Nullable Estampa espalda, int color,
+                                      java.util.List<com.femclothes.region.RegionResolver.CapaPatron> capas,
+                                      @Nullable PatronRed red) {
+        // Sin estampas, sin patron, sin red y sin tenir no hay nada que
+        // componer: se usa la textura del pack tal cual.
+        if (frente == null && espalda == null && capas.isEmpty() && red == null && color == RemeraItem.BLANCO) {
             return null;
         }
-        String clave = variante.clave() + "|" + frente + "|" + espalda + "|" + color
-                + "|" + patronId + "|" + patronColor;
+        String clave = variante.clave() + "|" + frente + "|" + espalda + "|" + color + "|" + capas + "|" + red;
         Identifier hecha = CACHE_CUERPO.get(clave);
         if (hecha != null) return hecha;
         if (FALLADAS.containsKey(clave)) return null;
@@ -380,17 +434,38 @@ public final class EstampaTextures {
                 base.getWidth(), base.getHeight(), false);
         salida.copyFrom(base);
         if (color != RemeraItem.BLANCO) tenir(salida, color);
-        if (patronId != null) aplicarPatron(salida, patronId, patronColor);
+        if (!capas.isEmpty()) aplicarPatron(salida, base, capas);
 
         if (!estampar(salida, deLaRemera(variante), frente, espalda)) {
             salida.close();
             return null;
         }
 
+        if (red != null) {
+            // Solo TORSO acá: el largo de torso se recorta por geometría
+            // (rango de filas de la Pieza, 0..variante.largo().filas),
+            // nunca borra alpha de la textura — por eso hace falta pasarle
+            // ese rango a mano (el "corte virtual" que documenta
+            // ClothingTextureCache#perforarRed) para que el dobladillo de
+            // verdad quede reforzado ("inferior de remera"). Los BRAZOS en
+            // cambio se recortan a su largo real DESPUÉS de esto, en una
+            // copia aparte (ver PiezasDelMod#recortarMangaYCachear) — así
+            // que se perforan ahí, no acá, para que el refuerzo de borde
+            // se calcule contra el puño de verdad y no contra la manga
+            // LARGA que se usa como base (bug real: "ni bordes de mangas").
+            com.femclothes.render.ClothingTextureCache.perforarRed(salida, red,
+                    com.femclothes.garment.Parte.TORSO, 0, variante.largo().filas);
+        }
+
         Identifier destino = Identifier.of(Femclothes.MOD_ID,
                 "cuerpo/" + Long.toHexString(clave.hashCode() & 0xFFFFFFFFL));
         MinecraftClient.getInstance().getTextureManager()
                 .registerTexture(destino, new NativeImageBackedTexture(salida));
+        // Sin esto, ClothingTextureCache#imagenBase (que lee del resource
+        // pack) nunca encuentra esta textura -- y el recorte de manga en
+        // runtime cae silenciosamente a "sin recortar" para cualquier
+        // remera teñida. Ver el javadoc de registrarImagenCompuesta.
+        com.femclothes.render.ClothingTextureCache.registrarImagenCompuesta(destino, salida);
         CACHE_CUERPO.put(clave, destino);
         return destino;
     }
@@ -424,13 +499,28 @@ public final class EstampaTextures {
                 + "|" + RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA);
     }
 
+    /**
+     * A pedido (2026-09-19, "tamaño 95 a 100 pega un salto"): antes esto
+     * ramificaba entre {@code pintar} (logo/centrada, achica dentro del
+     * panel de una sola cara) y {@code pintarDelLienzo} (full print, cubre
+     * TODO el lienzo desenrollado) — dos algoritmos distintos, con un
+     * salto real entre los dos en vez de una curva. Ahora es UNA sola
+     * función ({@link #pintarLienzo}) para las dos, y lo que cambia
+     * continuo con la escala es el TAMAÑO del diseño sobre el mismo
+     * lienzo: chico y centrado en el cuerpo a escala mínima, tapando todo
+     * el lienzo a escala máxima — sin ninguna rama.
+     */
     private static boolean estampar(NativeImage salida, Prenda prenda,
                                     @Nullable Estampa frente, @Nullable Estampa espalda) {
-        // El full print se lleva ademas las caras sin lado propio -el ruedo de
-        // la remera, la planta del pie-. Se prefiere el de adelante nada mas
-        // que por desempatar.
-        Estampa cubreCompartidas = frente != null && frente.cubrir() ? frente
-                : (espalda != null && espalda.cubrir() ? espalda : null);
+        // El ruedo/la planta (caras sin lado propio) los pinta el que
+        // tenga la escala MAS GRANDE de los dos lados — el chico no llega
+        // ahí de todos modos, así que en la práctica se resuelve solo por
+        // los límites de volcar(); esto es solo el desempate cuando los
+        // dos llegan.
+        Estampa compartida;
+        if (frente == null) compartida = espalda;
+        else if (espalda == null) compartida = frente;
+        else compartida = frente.escala() >= espalda.escala() ? frente : espalda;
 
         // Si alguna foto todavia no esta lista se abandona SIN cachear: en el
         // proximo frame puede estar, y cachear a medias dejaria una prenda con
@@ -440,22 +530,10 @@ public final class EstampaTextures {
             // Cada cara la pinta la estampa de SU lado. Antes un full print
             // en el frente pintaba tambien la espalda, porque el bucle usaba
             // la misma estampa para todas.
-            Estampa suya = cara.compartida() ? cubreCompartidas
+            Estampa suya = cara.compartida() ? compartida
                     : (cara.atras() ? espalda : frente);
             if (suya == null) continue;
-
-            if (suya.cubrir()) {
-                listo &= pintarDelLienzo(salida, suya, cara, prenda);
-            } else if (cara.principal()) {
-                // El logo y la centrada van SOLO en el panel grande de cada
-                // lado. Antes la condicion era "cualquier cara no
-                // compartida", que funcionaba de casualidad mientras los
-                // costados y las mangas estaban marcados como compartidos; al
-                // partirlos en mitades dejaron de estarlo y una centrada
-                // empezo a repetirse en cada manga. Ahora lo dice la cara y
-                // no sus coordenadas.
-                listo &= pintar(salida, suya, prenda.escalar(cara.rect()));
-            }
+            listo &= pintarLienzo(salida, suya, cara, prenda);
         }
         return listo;
     }
@@ -504,35 +582,79 @@ public final class EstampaTextures {
      * alfa — un croptop nunca ve el patron mas alla de su propio ruedo,
      * porque ahi la base ya es transparente.
      *
-     * Si el PNG todavia no existe cae a la prenda tenida lisa, igual que
-     * cualquier mascara de patron del mod.
+     * Si la prenda todavía no tiene caja mapeada en {@code PatronGenerador}
+     * cae a la prenda tenida lisa, igual que cualquier patrón del mod.
      */
-    private static void aplicarPatron(NativeImage tela, Identifier patronId, int patronColor) {
-        NativeImage mascara = com.femclothes.render.ClothingTextureCache
-                .imagenBase(com.femclothes.render.ClothingTextureCache.patternMaskFor("remera", patronId));
-        if (mascara == null) return;
-
-        for (int y = 0; y < Math.min(tela.getHeight(), mascara.getHeight()); y++) {
-            for (int x = 0; x < Math.min(tela.getWidth(), mascara.getWidth()); x++) {
-                int maskPx = mascara.getColor(x, y);
-                if (((maskPx >>> 24) & 0xFF) == 0) continue;
-                // Sin tela de ESTE corte en este pixel, no hay donde pintar
-                // patron: es el recorte gratis contra el ruedo del corte.
-                if (((tela.getColor(x, y) >>> 24) & 0xFF) == 0) continue;
-                tela.setColor(x, y, com.femclothes.render.ClothingTextureCache.tintPixel(maskPx, patronColor));
+    private static void aplicarPatron(NativeImage tela, NativeImage cruda,
+                                      java.util.List<com.femclothes.region.RegionResolver.CapaPatron> capas) {
+        for (com.femclothes.region.RegionResolver.CapaPatron capa : capas) {
+            // Sin molde = capa lisa (2026-09-27, cuadradito de Tinturas):
+            // máscara null, cubre toda su región.
+            NativeImage mascara = com.femclothes.render.PatronGenerador.mascaraDeCapa("remera", capa);
+            if (!capa.lisa() && mascara == null) continue;
+            // Región (2026-09-27, "pintar por región"): esta es la ÚNICA
+            // prenda cuya composición NO pasa por
+            // ClothingTextureCache#composeGarmentCapas (torso+mangas viven
+            // en el MISMO atlas acá), así que el recorte se repite a mano —
+            // null (TODO) no recorta nada.
+            java.util.List<com.femclothes.render.CajaSkin.Rect> region = capa.region() == com.femclothes.region.RegionPintura.TODO
+                    ? null : capa.region().rects(com.femclothes.tinturas.TinturasBlockEntity.Categoria.REMERA,
+                            com.femclothes.render.CuerpoGeometria.ESCALA_TELA);
+            // Capas en orden: cada una pinta ENCIMA de la anterior donde su
+            // máscara sea opaca — a pedido, "orden y cambio de color".
+            // Mismo criterio de cobertura (región + máscara + invertido) y de
+            // fundido (modo + opacidad) que ClothingTextureCache#composeGarmentCapas.
+            // Cuello: además de su zona, solo el borde real del escote de ESTE corte.
+            NativeImage bordeCuello = capa.region().requiereBordeCuello()
+                    ? com.femclothes.render.ClothingTextureCache.mascaraBordeCuello(cruda) : null;
+            com.femclothes.render.ClothingTextureCache.CapaMascara cm =
+                    com.femclothes.render.ClothingTextureCache.CapaMascara.de(capa, mascara, region, bordeCuello);
+            int alto = mascara == null ? tela.getHeight() : Math.min(tela.getHeight(), mascara.getHeight());
+            int ancho = mascara == null ? tela.getWidth() : Math.min(tela.getWidth(), mascara.getWidth());
+            for (int y = 0; y < alto; y++) {
+                for (int x = 0; x < ancho; x++) {
+                    // Sin tela de ESTE corte en este pixel, no hay donde pintar
+                    // patron: es el recorte gratis contra el ruedo del corte.
+                    int px = tela.getColor(x, y);
+                    if (((px >>> 24) & 0xFF) == 0) continue;
+                    int op = cm.opacidadEn(x, y);
+                    if (op <= 0) continue;
+                    int crudo = x < cruda.getWidth() && y < cruda.getHeight() ? cruda.getColor(x, y) : 0xFFFFFFFF;
+                    tela.setColor(x, y, com.femclothes.render.ClothingTextureCache.tramar(
+                            com.femclothes.render.ClothingTextureCache.mezclar(px, crudo, cm.colorEn(x, y), capa.modo(), op), x, y));
+                }
             }
         }
     }
 
     /**
-     * Pinta el pedazo de foto que le toca a una cara segun el lienzo.
-     *
-     * La foto se coloca UNA sola vez sobre el lienzo entero -no cara por
-     * cara- y de esa colocacion cada cara toma su ventana. Es lo que hace
-     * que el dibujo continue de una cara a la otra en vez de repetirse.
+     * Cuanto mide (relativo al cuerpo) el diseño a la escala MINIMA — un
+     * sello/logo chico centrado. A la escala MAXIMA el diseño llega a
+     * cubrir el lienzo entero (ver más abajo) — todo lo de en medio es
+     * una interpolación lineal entre las dos puntas, a pedido (2026-09-19,
+     * "tamaño 95 a 100 pega un salto"): antes eran dos algoritmos
+     * distintos con un salto real en vez de una curva.
      */
-    private static boolean pintarDelLienzo(NativeImage salida, Estampa estampa, Cara cara,
-                                           Prenda prenda) {
+    private static final float ALTO_CHICO_REL = 0.35f;
+
+    /**
+     * Pinta el pedazo de foto que le toca a una cara, con el diseño
+     * colocado sobre el lienzo entero al tamaño que le toca según la
+     * escala — chico y centrado sobre el CUERPO a escala mínima, cubriendo
+     * el lienzo entero (hombros incluidos) a escala máxima. Reemplaza a
+     * los viejos {@code pintar}/{@code pintarDelLienzo}: eran dos
+     * algoritmos separados (logo-en-un-panel vs full-print-en-todo-el-
+     * lienzo) con un salto real entre los dos; ahora es uno solo, y lo
+     * único que cambia con la escala es el tamaño.
+     *
+     * <p>La foto se coloca UNA sola vez -no cara por cara- y de esa
+     * colocación cada cara toma su ventana (ver {@link #volcar}). Es lo
+     * que hace que el dibujo continúe de una cara a la otra en vez de
+     * repetirse, y lo que hace que un diseño chico simplemente no
+     * alcance el ruedo/la manga sin necesidad de una rama aparte.
+     */
+    private static boolean pintarLienzo(NativeImage salida, Estampa estampa, Cara cara,
+                                        Prenda prenda) {
         CameraptureClientCompat.Foto info = fotoDe(estampa.foto());
         if (info == null) return false;
         NativeImage foto = leerDeLaGpu(info.textura(), info.ancho(), info.alto());
@@ -540,36 +662,46 @@ public final class EstampaTextures {
 
         try {
             float relFoto = (float) foto.getWidth() / foto.getHeight();
-            float relLienzo = (float) prenda.lienzoAncho() / prenda.lienzoAlto();
-            float ancho, alto;
-
-            float y0;
+            float altoChico = prenda.cuerpoAlto() * ALTO_CHICO_REL;
+            float altoGrande;
             if (tieneTransparencia(foto)) {
-                // Un diseno con fondo transparente se pone ENTERO y un poco
-                // mas chico que la prenda. Recortarlo como a una foto le
-                // comeria justo los bordes, que en un logo es donde vive la
-                // forma; y como el fondo no pinta nada, lo que sobra queda de
-                // tela lisa en vez de quedar vacio.
-                //
-                // Se centra sobre el CUERPO y no sobre el lienzo entero: las
-                // dos filas de arriba son la banda del hombro, y centrar
-                // sobre ellas subia el diseno un renglon.
-                float caben = Math.min(prenda.lienzoAncho() / relFoto, (float) prenda.cuerpoAlto());
-                alto = caben * MARGEN_DISENO;
-                ancho = alto * relFoto;
-                y0 = prenda.cuerpoY() + (prenda.cuerpoAlto() - alto) / 2f;
+                // Un diseno con fondo transparente se pone ENTERO, sin
+                // recortar: recortarlo como a una foto le comeria justo
+                // los bordes, que en un logo es donde vive la forma.
+                altoGrande = Math.min(prenda.lienzoAncho() / relFoto, (float) prenda.cuerpoAlto()) * MARGEN_DISENO;
             } else {
-                // Una foto opaca se recorta para llenar, y llena el lienzo
-                // ENTERO: si solo cubriera el cuerpo, los hombros quedarian
-                // sin estampar.
-                float necesario = Math.max(prenda.lienzoAncho() / relFoto, (float) prenda.lienzoAlto());
-                alto = necesario;
-                ancho = alto * relFoto;
-                y0 = (prenda.lienzoAlto() - alto) / 2f;
+                // Una foto opaca se recorta para llenar, y a escala 100%
+                // llena el lienzo ENTERO: si solo cubriera el cuerpo, los
+                // hombros quedarian sin estampar.
+                altoGrande = Math.max(prenda.lienzoAncho() / relFoto, (float) prenda.lienzoAlto());
             }
-            float x0 = (prenda.lienzoAncho() - ancho) / 2f;
 
-            volcar(salida, foto, prenda.escalar(cara.rect()), cara, x0, y0, ancho, alto);
+            float alto;
+            if (estampa.escala() <= Estampa.ESCALA_CUBRIR) {
+                // Tramo de siempre: de un logo chico (ESCALA_MINIMA) a
+                // cubrir el lienzo entero (ESCALA_CUBRIR = 100%), curva
+                // continua sin salto (2026-09-19).
+                float t = (estampa.escala() - Estampa.ESCALA_MINIMA)
+                        / (Estampa.ESCALA_CUBRIR - Estampa.ESCALA_MINIMA);
+                alto = altoChico + (altoGrande - altoChico) * t;
+            } else {
+                // Tramo nuevo (2026-09-20, "el limite maximo... mas
+                // grande"): mas alla de cubrir, la escala es directamente
+                // un multiplicador de sobre-tamaño — 150% es 1.5x el
+                // diseño a "cubrir todo".
+                alto = altoGrande * estampa.escala();
+            }
+            float ancho = alto * relFoto;
+
+            // Centro: sobre el CUERPO y no el lienzo entero -las filas de
+            // arriba son la banda del hombro, no el cuerpo-, corrido por
+            // x()/y() de la Estampa (antes solo importaban en el logo).
+            float cx = prenda.lienzoAncho() / 2f + estampa.x() * prenda.lienzoAncho();
+            float cy = prenda.cuerpoY() + prenda.cuerpoAlto() / 2f - estampa.y() * prenda.cuerpoAlto();
+            float x0 = cx - ancho / 2f;
+            float y0 = cy - alto / 2f;
+
+            volcar(salida, foto, prenda.escalar(cara.rect()), cara, x0, y0, ancho, alto, estampa.angulo());
             return true;
         } finally {
             foto.close();
@@ -602,11 +734,20 @@ public final class EstampaTextures {
      * cara calcula donde cae en el lienzo, y de ahi donde cae en la foto. Los
      * que caen fuera de la foto se dejan como estan, que es lo que permite
      * que un diseno mas chico que la prenda deje tela lisa alrededor.
+     *
+     * <p>{@code anguloGrados} (2026-09-20, "posibilidad de rotarla") gira el
+     * diseño alrededor del centro de su propia caja: en vez de rotar la
+     * foto en sí, cada pixel de SALIDA se rota en sentido inverso antes de
+     * buscar su color en la foto — el resultado es el mismo (la foto se ve
+     * rotada) sin tener que generar una copia rotada de la imagen fuente.
      */
     private static void volcar(NativeImage salida, NativeImage foto, int[] r, Cara cara,
-                               float fx0, float fy0, float fAncho, float fAlto) {
+                               float fx0, float fy0, float fAncho, float fAlto, float anguloGrados) {
         int rx = r[0], ry = r[1], rw = r[2], rh = r[3];
         int[] l = cara.lienzo();
+        float fcx = fx0 + fAncho / 2f, fcy = fy0 + fAlto / 2f;
+        double rad = Math.toRadians(-anguloGrados);
+        float cos = (float) Math.cos(rad), sin = (float) Math.sin(rad);
 
         for (int y = 0; y < rh; y++) {
             for (int x = 0; x < rw; x++) {
@@ -619,9 +760,16 @@ public final class EstampaTextures {
                 if (cara.espejar()) px = 1f - px;
                 if (cara.espejarV()) py = 1f - py;
 
-                // Donde cae este pixel en el lienzo, y de ahi en la foto.
-                float u = (l[0] + l[2] * px - fx0) / fAncho;
-                float v = (l[1] + l[3] * py - fy0) / fAlto;
+                // Donde cae este pixel en el lienzo...
+                float lx = l[0] + l[2] * px;
+                float ly = l[1] + l[3] * py;
+                // ...rotado alrededor del centro de la caja, en sentido
+                // inverso al ángulo pedido, y de ahi a la foto.
+                float dx = lx - fcx, dy = ly - fcy;
+                float rx2 = dx * cos - dy * sin;
+                float ry2 = dx * sin + dy * cos;
+                float u = (rx2 + fAncho / 2f) / fAncho;
+                float v = (ry2 + fAlto / 2f) / fAlto;
                 if (u < 0f || u >= 1f || v < 0f || v >= 1f) continue;
 
                 int sx = Math.min((int) (u * foto.getWidth()), foto.getWidth() - 1);
@@ -631,80 +779,6 @@ public final class EstampaTextures {
                 if (alfaFoto == 0) continue;
                 salida.setColor(rx + x, ry + y, (alfaPrenda << 24) | sobre(fondo, pixel, alfaFoto));
             }
-        }
-    }
-
-    /**
-     * Pinta una estampa adentro de su rectangulo respetando el alfa de la
-     * prenda. Devuelve false si la foto todavia no se pudo leer.
-     */
-    private static boolean pintar(NativeImage salida, @Nullable Estampa estampa, int[] rect) {
-        if (estampa == null) return true;
-        CameraptureClientCompat.Foto info = fotoDe(estampa.foto());
-        if (info == null) return false;
-        NativeImage foto = leerDeLaGpu(info.textura(), info.ancho(), info.alto());
-        if (foto == null) return false;
-
-        try {
-            int rx = rect[0], ry = rect[1], rw = rect[2], rh = rect[3];
-            int cajaW, cajaH;
-            float u0 = 0f, v0 = 0f, u1 = 1f, v1 = 1f;
-            if (estampa.cubrir()) {
-                // Cubrir: la caja es la cara entera y lo que se achica es el
-                // pedazo de foto que se muestra, recortado desde el centro.
-                cajaW = rw;
-                cajaH = rh;
-                float relFoto = (float) foto.getWidth() / foto.getHeight();
-                float relCaja = (float) rw / rh;
-                if (relFoto > relCaja) {
-                    float visible = relCaja / relFoto;
-                    u0 = (1f - visible) / 2f;
-                    u1 = u0 + visible;
-                } else if (relFoto < relCaja) {
-                    float visible = relFoto / relCaja;
-                    v0 = (1f - visible) / 2f;
-                    v1 = v0 + visible;
-                }
-            } else {
-                // Contener: la foto entra ENTERA y conserva su relacion de
-                // aspecto. Antes la caja era cuadrada y la foto se deformaba
-                // para llenarla, que es lo que se veia mal en la centrada.
-                float lado = rw * estampa.escala();
-                // Las medidas salen de la TEXTURA y no de las que reporta
-                // Camerapture: se muestrea sobre la textura, y si alguna vez
-                // difieren -por padding, por ejemplo- mezclar las dos fuentes
-                // descuadra la imagen.
-                float relFoto = (float) foto.getWidth() / foto.getHeight();
-                cajaW = Math.max(1, Math.round(relFoto >= 1f ? lado : lado * relFoto));
-                cajaH = Math.max(1, Math.round(relFoto >= 1f ? lado / relFoto : lado));
-            }
-            // La y de la Estampa crece hacia ARRIBA y la de la textura hacia
-            // abajo: de ahi el signo cambiado.
-            int cx = Math.round(rx + rw / 2f + estampa.x() * rw);
-            int cy = Math.round(ry + rh / 2f - estampa.y() * rh);
-            int x0 = cx - cajaW / 2, y0 = cy - cajaH / 2;
-
-            for (int y = 0; y < cajaH; y++) {
-                for (int x = 0; x < cajaW; x++) {
-                    int px = x0 + x, py = y0 + y;
-                    if (px < rx || px >= rx + rw || py < ry || py >= ry + rh) continue;
-                    int fondo = salida.getColor(px, py);
-                    int alfaPrenda = (fondo >>> 24) & 0xFF;
-                    if (alfaPrenda == 0) continue;   // fuera de la tela
-
-                    int fx = (int) ((u0 + (u1 - u0) * x / cajaW) * foto.getWidth());
-                    int fy = (int) ((v0 + (v1 - v0) * y / cajaH) * foto.getHeight());
-                    fx = Math.min(fx, foto.getWidth() - 1);
-                    fy = Math.min(fy, foto.getHeight() - 1);
-                    int pixel = foto.getColor(fx, fy);
-                    int alfaFoto = (pixel >>> 24) & 0xFF;
-                    if (alfaFoto == 0) continue;
-                    salida.setColor(px, py, (alfaPrenda << 24) | sobre(fondo, pixel, alfaFoto));
-                }
-            }
-            return true;
-        } finally {
-            foto.close();
         }
     }
 
@@ -794,5 +868,83 @@ public final class EstampaTextures {
         } catch (Throwable e) {
             return null;
         }
+    }
+
+    /**
+     * Ícono 2D de la remera para {@code PantallaMaquina} (2026-09-21,
+     * "quiero un preview real de la prenda... solo muestra colores"): la
+     * SILUETA REAL del corte puesto (el mismo sprite {@code item/corte_*}
+     * que ya se ve en el inventario, con cuello/mangas/dobladillo — no un
+     * recorte del wrap de piel), teñida al color real, con la estampa
+     * full-print pegada encima si corresponde. El recorte de "solo un
+     * cuadrado de color" que hacía antes {@code PantallaMaquina} salía de
+     * la textura de piel (layout de skin, sin forma reconocible a la
+     * distancia); este sprite en cambio SÍ tiene la silueta recortada de
+     * verdad, como cualquier ícono de prenda de Minecraft.
+     *
+     * <p>Devuelve una copia SIEMPRE nueva y de propiedad del que llama
+     * (nunca la instancia compartida de {@link com.femclothes.render.ClothingTextureCache#imagenBase}):
+     * {@code PantallaMaquina} cierra todo lo que le llega de acá con
+     * {@code close()}, así que devolver la compartida la corrompería para
+     * el resto del mod la próxima vez que se usara (mismo tipo de bug que
+     * causó el crash real de memoria nativa de este mismo día).
+     *
+     * <p>Devuelve {@code null} si no hay nada dibujable todavía (ej. la
+     * foto del full print no terminó de bajar) — el llamador cae al
+     * estado "apagada".
+     */
+    @Nullable
+    public static NativeImage iconoParaPantalla(ItemStack stack) {
+        Variante variante = RemeraItem.variante(stack);
+        Estampa estampaFrente = RemeraItem.estampaDe(stack, Estampa.Cara.FRENTE);
+        if (estampaFrente != null && estampaFrente.cubrir()) {
+            CameraptureClientCompat.Foto foto = fotoSegura(estampaFrente.foto());
+            if (foto != null) {
+                Identifier compuesta = fullPrint(variante, estampaFrente.foto(),
+                        foto.textura(), foto.ancho(), foto.alto());
+                if (compuesta != null) {
+                    NativeImage compartida = com.femclothes.render.ClothingTextureCache.imagenBase(compuesta);
+                    if (compartida != null) return copiar(compartida);
+                }
+            }
+        }
+        Identifier iconoBase = Identifier.of(Femclothes.MOD_ID, "textures/item/corte_" + variante.clave() + ".png");
+        NativeImage base = com.femclothes.render.ClothingTextureCache.imagenBase(iconoBase);
+        if (base == null) return null;
+        return teñida(base, RemeraItem.color(stack));
+    }
+
+    /** Mismo guardia que usa {@code RemeraItemRenderer.fotoDe}: sin Camerapture, o si tira, ninguna foto. */
+    @Nullable
+    private static CameraptureClientCompat.Foto fotoSegura(UUID id) {
+        if (!net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("camerapture")) return null;
+        try {
+            return CameraptureClientCompat.foto(id);
+        } catch (Throwable ignorado) {
+            return null;
+        }
+    }
+
+    private static NativeImage copiar(NativeImage origen) {
+        NativeImage copia = new NativeImage(origen.getWidth(), origen.getHeight(), true);
+        copia.copyFrom(origen);
+        return copia;
+    }
+
+    /** Multiplica {@code base} (gris, pensada para teñir) por {@code rgb} — mismo cálculo que {@code ClothingTextureCache.tinted}. */
+    private static NativeImage teñida(NativeImage base, int rgb) {
+        NativeImage salida = new NativeImage(base.getWidth(), base.getHeight(), true);
+        int dr = (rgb >> 16) & 0xFF, dg = (rgb >> 8) & 0xFF, db = rgb & 0xFF;
+        for (int y = 0; y < base.getHeight(); y++) {
+            for (int x = 0; x < base.getWidth(); x++) {
+                int px = base.getColor(x, y);
+                int a = (px >>> 24) & 0xFF;
+                if (a == 0) { salida.setColor(x, y, 0); continue; }
+                int b = (px >> 16) & 0xFF, g = (px >> 8) & 0xFF, r = px & 0xFF;
+                int tr = (r * dr) / 255, tg = (g * dg) / 255, tb = (b * db) / 255;
+                salida.setColor(x, y, (a << 24) | (tb << 16) | (tg << 8) | tr);
+            }
+        }
+        return salida;
     }
 }

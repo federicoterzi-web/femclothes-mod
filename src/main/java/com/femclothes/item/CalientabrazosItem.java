@@ -1,5 +1,6 @@
 package com.femclothes.item;
 
+import com.femclothes.region.Lado;
 import com.femclothes.sublimadora.Variante;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
@@ -10,19 +11,15 @@ import java.util.List;
 
 /**
  * Calentadores de brazo: prenda base del BRAZO, análoga a las medias en la
- * pierna — se pone debajo de la manga de la remera. Reemplaza al viejo
- * {@code ArmWarmerItem} (nunca enganchado al sistema de capas: ni color por
- * lado, ni Garment, ni Pieza — un cascarón inerte).
+ * pierna — se pone debajo de la manga de la remera.
  *
- * Un solo eje, el molde reusado de remera (a pedido del dueño: no se
- * craftean moldes nuevos): cobertura ({@link Variante.Manga}, molde de
- * manga), cuánto brazo tapa la tela, contado desde la MUÑECA hacia arriba.
+ * Cobertura de extremidad con dos anclajes que se intersecan (mismo modelo
+ * que {@link PantalonItem}/{@link MediasLargo}): SUPERIOR (hombro hacia
+ * abajo, el que ya existía — reusa el molde de manga de remera,
+ * {@code MoldeItem.Eje.MANGA}) e INFERIOR (muñeca hacia arriba, eje nuevo).
  *
- * NO tiene tiro. Se probó en la sesión del 2026-09-08 (ver docs/CANAL.md
- * v14-v15) y se retiró: según la arquitectura definitiva de
- * docs/MAQUINAS.md §"Categorías de patrones de modelado", tiro es
- * exclusivo de prendas inferiores (pantalón/calza) — nunca de medias ni
- * de cubrebrazos. Mismo criterio que {@link MediasLargo}: cobertura sola.
+ * NO tiene tiro — sigue sin tenerlo, tiro es exclusivo de prendas
+ * inferiores (ver docs/MAQUINAS.md §"Categorías de patrones de modelado").
  */
 public class CalientabrazosItem extends ClothingTrinketItem {
 
@@ -30,22 +27,55 @@ public class CalientabrazosItem extends ClothingTrinketItem {
         super(settings, true);
     }
 
-    /** La cobertura actual. Sin componente, LARGA (cobertura completa). */
-    public static Variante.Manga cobertura(ItemStack stack) {
-        Variante.Manga v = stack.get(FemclothesComponents.CALIENTABRAZOS_COBERTURA);
-        return v == null ? Variante.Manga.LARGA : v;
+    // ── anclaje SUPERIOR: hombro hacia abajo (el que ya existía) ────────
+
+    public static Variante.Manga coberturaSuperior(ItemStack stack, Lado lado) {
+        return EjeBilateral.leer(stack, lado, FemclothesComponents.CALIENTABRAZOS_COBERTURA_SUPERIOR,
+                FemclothesComponents.RIGHT_CALIENTABRAZOS_COBERTURA_SUPERIOR, Variante.Manga.LARGA);
     }
 
-    public static void setCobertura(ItemStack stack, Variante.Manga cobertura) {
-        if (cobertura == Variante.Manga.LARGA) stack.remove(FemclothesComponents.CALIENTABRAZOS_COBERTURA);
-        else stack.set(FemclothesComponents.CALIENTABRAZOS_COBERTURA, cobertura);
+    public static void setCoberturaSuperior(ItemStack stack, Lado lado, Variante.Manga valor) {
+        EjeBilateral.escribir(stack, lado, FemclothesComponents.CALIENTABRAZOS_COBERTURA_SUPERIOR,
+                FemclothesComponents.RIGHT_CALIENTABRAZOS_COBERTURA_SUPERIOR, Variante.Manga.LARGA, valor);
+    }
+
+    // ── anclaje INFERIOR: muñeca hacia arriba (nuevo) ───────────────────
+
+    public static Variante.Manga coberturaInferior(ItemStack stack, Lado lado) {
+        return EjeBilateral.leer(stack, lado, FemclothesComponents.CALIENTABRAZOS_COBERTURA_INFERIOR,
+                FemclothesComponents.RIGHT_CALIENTABRAZOS_COBERTURA_INFERIOR, Variante.Manga.LARGA);
+    }
+
+    public static void setCoberturaInferior(ItemStack stack, Lado lado, Variante.Manga valor) {
+        EjeBilateral.escribir(stack, lado, FemclothesComponents.CALIENTABRAZOS_COBERTURA_INFERIOR,
+                FemclothesComponents.RIGHT_CALIENTABRAZOS_COBERTURA_INFERIOR, Variante.Manga.LARGA, valor);
+    }
+
+    /** Filas [desde,hasta) con tela — intersección de los dos anclajes. */
+    public static int[] filasVisibles(ItemStack stack, Lado lado) {
+        boolean supAusente = !EjeBilateral.presente(stack, lado,
+                FemclothesComponents.CALIENTABRAZOS_COBERTURA_SUPERIOR, FemclothesComponents.RIGHT_CALIENTABRAZOS_COBERTURA_SUPERIOR);
+        boolean infAusente = !EjeBilateral.presente(stack, lado,
+                FemclothesComponents.CALIENTABRAZOS_COBERTURA_INFERIOR, FemclothesComponents.RIGHT_CALIENTABRAZOS_COBERTURA_INFERIOR);
+        int filasSup = supAusente ? 12 : coberturaSuperior(stack, lado).filas;
+        int filasInf = infAusente ? 12 : coberturaInferior(stack, lado).filas;
+        return EjeBilateral.interseccion(filasSup, filasInf);
     }
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        tooltip.add(Text.translatable("femclothes.calientabrazos.cobertura",
-                        Text.translatable("femclothes.sublimadora.manga." + cobertura(stack).clave))
-                .formatted(Formatting.GRAY));
+        Variante.Manga sup = coberturaSuperior(stack, Lado.IZQUIERDA);
+        if (sup != Variante.Manga.LARGA) {
+            tooltip.add(Text.translatable("femclothes.cobertura.superior",
+                            Text.translatable("femclothes.sublimadora.manga." + sup.clave))
+                    .formatted(Formatting.GRAY));
+        }
+        Variante.Manga inf = coberturaInferior(stack, Lado.IZQUIERDA);
+        if (inf != Variante.Manga.LARGA) {
+            tooltip.add(Text.translatable("femclothes.cobertura.inferior",
+                            Text.translatable("femclothes.sublimadora.manga." + inf.clave))
+                    .formatted(Formatting.GRAY));
+        }
     }
 }

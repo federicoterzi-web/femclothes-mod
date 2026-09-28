@@ -1,0 +1,28 @@
+{
+  "required": true,
+  "package": "noppes.mpm.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "moreplayermodels.refmap.json",
+  "mixins": [
+    "EntityMixin",
+    "LivingEntityMixin",
+    "PackRepositoryMixin"
+  ],
+  "minVersion": "0.8",
+  "client": [
+    "AbstractClientPlayerEntityMixin",
+    "ArmorLayerMixin",
+    "BipedBodyMixin",
+    "CameraMixin",
+    "EntityRenderDispatcherMixin",
+    "LivingRenderer2Mixin",
+    "LivingRendererMixin",
+    "ModelPartMixin",
+    "ModelRendererMixin",
+    "MouseHelperMixin",
+    "MultiBufferSourceMixin",
+    "PartDefinitionMixin",
+    "ParticleManagerMixin",
+    "PlayerRendererMixin"
+  ]
+}

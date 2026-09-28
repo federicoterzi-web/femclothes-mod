@@ -1,0 +1,112 @@
+package com.femclothes.modelado;
+
+import com.femclothes.Femclothes;
+import net.minecraft.util.Identifier;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.cache.object.GeoBone;
+import software.bernie.geckolib.model.GeoModel;
+
+/**
+ * Ata el block entity de la Mesa de Modelado a su geometría/textura/
+ * animación (modelo "garment_shaper" v2, `bloques de moda 2.0/HUESOS.md`).
+ * Clips vía {@link ModeladoBlockEntity#registerControllers}; acá solo lo que
+ * no es keyframe: el hueso "progress" escala en X desde su borde izquierdo
+ * según {@code progreso/TICKS_PROCESO}, igual criterio que las barras de
+ * tinta de la sublimadora (pivote en la base, `setScaleX`, oculto en 0).
+ *
+ * <p>{@link #getTextureResource} devuelve una textura COMPUESTA en vez de
+ * {@link #TEX} directo — a pedido (2026-09-21, "haceme la pantallita"),
+ * ver {@link com.femclothes.render.PantallaMaquina}.
+ */
+public class ModeladoGeoModel extends GeoModel<ModeladoBlockEntity> {
+    private static final Identifier GEO =
+            Identifier.of(Femclothes.MOD_ID, "geo/garment_shaper.geo.json");
+    /** No privado a propósito: {@link ModeladoRenderer} lo necesita para el atlas real detrás de los LEDs. */
+    static final Identifier TEX =
+            Identifier.of(Femclothes.MOD_ID, "textures/block/garment_shaper_atlas.png");
+    private static final Identifier ANIM =
+            Identifier.of(Femclothes.MOD_ID, "animations/garment_shaper.animation.json");
+
+    /**
+     * Los 3 "LEDs falsos" del panel — cubos decorativos sin lógica que
+     * ya traía el modelo de Blockbench, ahora conectados de verdad
+     * (2026-09-21, "que brillen de verdad, tipo lucecitas geckolib").
+     * Rects UV reales del atlas (relevados a mano con Python), mismo
+     * orden que en Sublimadora (comparten panel-plantilla): verde,
+     * rojo, amarillo.
+     */
+    static final int ANCHO_ATLAS = 128, ALTO_ATLAS = 128;
+    static final com.femclothes.render.PantallaLed.Rect[] LEDS = {
+            new com.femclothes.render.PantallaLed.Rect(96, 16, 1, 1),  // verde
+            new com.femclothes.render.PantallaLed.Rect(112, 16, 1, 1), // rojo
+            new com.femclothes.render.PantallaLed.Rect(0, 32, 1, 1),   // amarillo
+    };
+    private static final int VERDE = 0xFF00FF00, ROJO = 0xFF0000FF;
+
+    /**
+     * Verde fijo cuando la prenda está lista, rojo titilando (medio
+     * segundo prendido/apagado, igual ritmo que el código muerto viejo
+     * de Sublimadora) mientras procesa. El amarillo queda apagado a
+     * propósito — sin lógica confirmada todavía (2026-09-21, "del
+     * amarillo no se opine").
+     */
+    static int[] coloresLed(ModeladoBlockEntity be) {
+        int verde = 0, rojo = 0, amarillo = 0;
+        if (be.estado() == ModeladoBlockEntity.Estado.LISTO) {
+            verde = VERDE;
+        } else if (be.estado() == ModeladoBlockEntity.Estado.PROCESANDO) {
+            long t = be.getWorld() == null ? 0 : be.getWorld().getTime();
+            if (t % 20 < 10) rojo = ROJO;
+        }
+        return new int[]{verde, rojo, amarillo};
+    }
+
+    /**
+     * Mismo bug que {@code SublimadoraGeoModel.FACTOR_PROGRESO} (2026-09-21,
+     * "la barrita de progreso... se llena hasta la mitad"): el cubo
+     * "progress" mide 2.6371 de ancho (tamaño DEMO) pero el marco
+     * estático detrás (mismo cubo compartido de "base", X≈0.95→5.35, ancho
+     * 4.4 — este modelo comparte la misma geometría base que Sublimadora)
+     * mide 4.4. Sin este factor llegaba solo al ~60%.
+     */
+    private static final float FACTOR_PROGRESO = 4.4f / 2.6371f;
+
+    @Override public Identifier getModelResource(ModeladoBlockEntity be) { return GEO; }
+
+    @Override
+    public Identifier getTextureResource(ModeladoBlockEntity be) {
+        // La VISTA PREVIA (con las fijadas ya aplicadas), no la prenda
+        // cruda del slot — a pedido (2026-09-21, "que muestre el preview
+        // del setting de la ultima prenda seteada").
+        return com.femclothes.render.PantallaMaquina.con(TEX, com.femclothes.render.PantallaMaquina.PANEL_128, be.vistaPreviaPersistente(), be.getPos());
+    }
+
+    @Override public Identifier getAnimationResource(ModeladoBlockEntity be) { return ANIM; }
+
+    @Override
+    public void setCustomAnimations(ModeladoBlockEntity be, long instanceId, AnimationState<ModeladoBlockEntity> state) {
+        super.setCustomAnimations(be, instanceId, state);
+
+        GeoBone progreso = getAnimationProcessor().getBone("progress");
+        if (progreso != null) {
+            float nivel = be.estado() == ModeladoBlockEntity.Estado.PROCESANDO
+                    ? be.progreso() / (float) ModeladoBlockEntity.TICKS_PROCESO : 0f;
+            progreso.setScaleX(Math.max(0.001f, nivel * FACTOR_PROGRESO));
+            progreso.setHidden(nivel <= 0.001f);
+        }
+
+        // La remera YA modelada en 3D que traía "base" (2026-09-23,
+        // agrupada y nombrada "REMERA" a mano en Blockbench por el
+        // usuario — no era un hueso propio, eran cubos sueltos mezclados
+        // con el resto de la carcasa) + las otras 3 categorías armadas en
+        // cubos simples con el mismo criterio ("no aparecen las otras
+        // prendas") — solo una visible a la vez, según la prenda cargada.
+        ModeladoBlockEntity.Categoria categoria = be.categoriaPrenda();
+        for (String huesoCat : HUESOS_CATEGORIA) {
+            GeoBone hueso = getAnimationProcessor().getBone(huesoCat);
+            if (hueso != null) hueso.setHidden(categoria == null || !huesoCat.equals(categoria.name()));
+        }
+    }
+
+    private static final String[] HUESOS_CATEGORIA = { "REMERA", "PANTALON", "MEDIAS", "CALIENTABRAZOS" };
+}

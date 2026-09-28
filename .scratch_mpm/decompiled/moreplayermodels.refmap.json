@@ -1,0 +1,134 @@
+{
+  "mappings": {
+    "noppes/mpm/mixin/AbstractClientPlayerEntityMixin": {
+      "getSkinTextureLocation": "Lnet/minecraft/client/player/AbstractClientPlayer;m_108560_()Lnet/minecraft/resources/ResourceLocation;",
+      "getModelName": "Lnet/minecraft/client/player/AbstractClientPlayer;m_108564_()Ljava/lang/String;"
+    },
+    "noppes/mpm/mixin/CameraMixin": {
+      "getMaxZoom": "Lnet/minecraft/client/Camera;m_90566_(D)D"
+    },
+    "noppes/mpm/mixin/LivingRendererMixin": {
+      "getRenderType": "Lnet/minecraft/client/renderer/entity/LivingEntityRenderer;m_7225_(Lnet/minecraft/world/entity/LivingEntity;ZZZ)Lnet/minecraft/client/renderer/RenderType;",
+      "render": "Lnet/minecraft/client/renderer/entity/LivingEntityRenderer;m_7392_(Lnet/minecraft/world/entity/LivingEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V"
+    },
+    "noppes/mpm/mixin/ModelPartMixin": {
+      "children": "f_104213_:Ljava/util/Map;"
+    },
+    "noppes/mpm/mixin/BipedBodyMixin": {
+      "setupAnim": "Lnet/minecraft/client/model/HumanoidModel;m_6973_(Lnet/minecraft/world/entity/LivingEntity;FFFFF)V"
+    },
+    "noppes/mpm/mixin/PackRepositoryMixin": {
+      "openAllSelected": "Lnet/minecraft/server/packs/repository/PackRepository;m_10525_()Ljava/util/List;"
+    },
+    "noppes/mpm/mixin/ArmorLayerMixin": {
+      "innerModel": "f_117071_:Lnet/minecraft/client/model/HumanoidModel;",
+      "outerModel": "f_117072_:Lnet/minecraft/client/model/HumanoidModel;"
+    },
+    "noppes/mpm/mixin/LivingRenderer2Mixin": {
+      "layers": "f_115291_:Ljava/util/List;"
+    },
+    "noppes/mpm/mixin/PlayerRendererMixin": {
+      "setupRotations": "Lnet/minecraft/client/renderer/entity/player/PlayerRenderer;m_7523_(Lnet/minecraft/client/player/AbstractClientPlayer;Lcom/mojang/blaze3d/vertex/PoseStack;FFF)V",
+      "renderNameTag": "Lnet/minecraft/client/renderer/entity/player/PlayerRenderer;m_7649_(Lnet/minecraft/client/player/AbstractClientPlayer;Lnet/minecraft/network/chat/Component;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V"
+    },
+    "noppes/mpm/mixin/MouseHelperMixin": {
+      "ypos": "f_91508_:D",
+      "xpos": "f_91507_:D",
+      "activeButton": "f_91510_:I",
+      "mouseGrabbed": "f_91520_:Z"
+    },
+    "noppes/mpm/mixin/LivingEntityMixin": {
+      "jumping": "f_20899_:Z",
+      "animStepO": "f_20895_:F",
+      "dead": "f_20890_:Z",
+      "animStep": "f_20894_:F"
+    },
+    "noppes/mpm/mixin/MultiBufferSourceMixin": {
+      "getBuffer": "Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;m_6299_(Lnet/minecraft/client/renderer/RenderType;)Lcom/mojang/blaze3d/vertex/VertexConsumer;"
+    },
+    "noppes/mpm/mixin/PartDefinitionMixin": {
+      "partPose": "f_171578_:Lnet/minecraft/client/model/geom/PartPose;"
+    },
+    "noppes/mpm/mixin/ModelRendererMixin": {
+      "translateAndRotate": "Lnet/minecraft/client/model/geom/ModelPart;m_104299_(Lcom/mojang/blaze3d/vertex/PoseStack;)V"
+    },
+    "noppes/mpm/mixin/EntityMixin": {
+      "eyeHeight": "f_19816_:F",
+      "vehicle": "f_19824_:Lnet/minecraft/world/entity/Entity;",
+      "dimensions": "f_19815_:Lnet/minecraft/world/entity/EntityDimensions;"
+    },
+    "noppes/mpm/mixin/EntityRenderDispatcherMixin": {
+      "onResourceManagerReload": "Lnet/minecraft/client/renderer/entity/EntityRenderDispatcher;m_6213_(Lnet/minecraft/server/packs/resources/ResourceManager;)V"
+    },
+    "noppes/mpm/mixin/ParticleManagerMixin": {
+      "spriteSets": "f_107295_:Ljava/util/Map;"
+    }
+  },
+  "data": {
+    "searge": {
+      "noppes/mpm/mixin/AbstractClientPlayerEntityMixin": {
+        "getSkinTextureLocation": "Lnet/minecraft/client/player/AbstractClientPlayer;m_108560_()Lnet/minecraft/resources/ResourceLocation;",
+        "getModelName": "Lnet/minecraft/client/player/AbstractClientPlayer;m_108564_()Ljava/lang/String;"
+      },
+      "noppes/mpm/mixin/CameraMixin": {
+        "getMaxZoom": "Lnet/minecraft/client/Camera;m_90566_(D)D"
+      },
+      "noppes/mpm/mixin/LivingRendererMixin": {
+        "getRenderType": "Lnet/minecraft/client/renderer/entity/LivingEntityRenderer;m_7225_(Lnet/minecraft/world/entity/LivingEntity;ZZZ)Lnet/minecraft/client/renderer/RenderType;",
+        "render": "Lnet/minecraft/client/renderer/entity/LivingEntityRenderer;m_7392_(Lnet/minecraft/world/entity/LivingEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V"
+      },
+      "noppes/mpm/mixin/ModelPartMixin": {
+        "children": "f_104213_:Ljava/util/Map;"
+      },
+      "noppes/mpm/mixin/BipedBodyMixin": {
+        "setupAnim": "Lnet/minecraft/client/model/HumanoidModel;m_6973_(Lnet/minecraft/world/entity/LivingEntity;FFFFF)V"
+      },
+      "noppes/mpm/mixin/PackRepositoryMixin": {
+        "openAllSelected": "Lnet/minecraft/server/packs/repository/PackRepository;m_10525_()Ljava/util/List;"
+      },
+      "noppes/mpm/mixin/ArmorLayerMixin": {
+        "innerModel": "f_117071_:Lnet/minecraft/client/model/HumanoidModel;",
+        "outerModel": "f_117072_:Lnet/minecraft/client/model/HumanoidModel;"
+      },
+      "noppes/mpm/mixin/LivingRenderer2Mixin": {
+        "layers": "f_115291_:Ljava/util/List;"
+      },
+      "noppes/mpm/mixin/PlayerRendererMixin": {
+        "setupRotations": "Lnet/minecraft/client/renderer/entity/player/PlayerRenderer;m_7523_(Lnet/minecraft/client/player/AbstractClientPlayer;Lcom/mojang/blaze3d/vertex/PoseStack;FFF)V",
+        "renderNameTag": "Lnet/minecraft/client/renderer/entity/player/PlayerRenderer;m_7649_(Lnet/minecraft/client/player/AbstractClientPlayer;Lnet/minecraft/network/chat/Component;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V"
+      },
+      "noppes/mpm/mixin/MouseHelperMixin": {
+        "ypos": "f_91508_:D",
+        "xpos": "f_91507_:D",
+        "activeButton": "f_91510_:I",
+        "mouseGrabbed": "f_91520_:Z"
+      },
+      "noppes/mpm/mixin/LivingEntityMixin": {
+        "jumping": "f_20899_:Z",
+        "animStepO": "f_20895_:F",
+        "dead": "f_20890_:Z",
+        "animStep": "f_20894_:F"
+      },
+      "noppes/mpm/mixin/MultiBufferSourceMixin": {
+        "getBuffer": "Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;m_6299_(Lnet/minecraft/client/renderer/RenderType;)Lcom/mojang/blaze3d/vertex/VertexConsumer;"
+      },
+      "noppes/mpm/mixin/PartDefinitionMixin": {
+        "partPose": "f_171578_:Lnet/minecraft/client/model/geom/PartPose;"
+      },
+      "noppes/mpm/mixin/ModelRendererMixin": {
+        "translateAndRotate": "Lnet/minecraft/client/model/geom/ModelPart;m_104299_(Lcom/mojang/blaze3d/vertex/PoseStack;)V"
+      },
+      "noppes/mpm/mixin/EntityMixin": {
+        "eyeHeight": "f_19816_:F",
+        "vehicle": "f_19824_:Lnet/minecraft/world/entity/Entity;",
+        "dimensions": "f_19815_:Lnet/minecraft/world/entity/EntityDimensions;"
+      },
+      "noppes/mpm/mixin/EntityRenderDispatcherMixin": {
+        "onResourceManagerReload": "Lnet/minecraft/client/renderer/entity/EntityRenderDispatcher;m_6213_(Lnet/minecraft/server/packs/resources/ResourceManager;)V"
+      },
+      "noppes/mpm/mixin/ParticleManagerMixin": {
+        "spriteSets": "f_107295_:Ljava/util/Map;"
+      }
+    }
+  }
+}

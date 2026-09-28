@@ -1,5 +1,6 @@
 {
-  "_comment": "Un solo slot de torso, compartido con la remera estampada de la sublimadora. Que compartan slot es a proposito: dos prendas dibujadas sobre el mismo pedazo de cuerpo se pisarian, asi que en vez de resolver el solapamiento se vuelven mutuamente excluyentes.",
+  "_comment": "4 slots de torso (amount) a pedido del Guardarropas (2026-09-20, 'combinar un croptop con un remeron largo'): antes era 1 solo compartido y mutuamente excluyente. El orden de dibujo entre las prendas puestas a la vez lo sigue decidiendo Capa, no el indice de Trinkets.",
   "icon": "femclothes:gui/slot/torso",
-  "order": 0
+  "order": 0,
+  "amount": 4
 }

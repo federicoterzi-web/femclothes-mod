@@ -1,0 +1,2170 @@
+{
+  "meta": {
+    "format_version": "4.10",
+    "model_format": "free",
+    "box_uv": false
+  },
+  "name": "pollera_referencia",
+  "model_identifier": "",
+  "visible_box": [
+    8,
+    8,
+    0
+  ],
+  "variable_placeholders": "",
+  "variable_placeholder_buttons": [],
+  "unhandled_root_fields": {},
+  "resolution": {
+    "width": 64,
+    "height": 64
+  },
+  "elements": [
+    {
+      "name": "gajo0_recto",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        4.246,
+        8.8,
+        0.0
+      ],
+      "to": [
+        4.346,
+        17.8,
+        3.58
+      ],
+      "autouv": 0,
+      "color": 1,
+      "origin": [
+        4.296,
+        8.8,
+        0.0
+      ],
+      "rotation": [
+        17.180000000000003,
+        -11.5,
+        -11.500000000000002
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "9bc7c08c-7b0e-4fad-91c0-24ac2f7b2fe8"
+    },
+    {
+      "name": "gajo0_plegado",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        7.8260000000000005,
+        8.8,
+        0.0
+      ],
+      "to": [
+        7.926,
+        17.8,
+        3.58
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        4.296,
+        8.8,
+        0.0
+      ],
+      "rotation": [
+        124.55884577912028,
+        -69.42320549901918,
+        -134.31596621474674
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "50aa77ad-2224-4ea3-afe2-8c6f5cc50343"
+    },
+    {
+      "name": "gajo1_recto",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        3.4255370078347744,
+        8.8,
+        -2.5251254438484647
+      ],
+      "to": [
+        3.525537007834774,
+        17.8,
+        1.0548745561515354
+      ],
+      "autouv": 0,
+      "color": 1,
+      "origin": [
+        3.4755370078347743,
+        8.8,
+        -2.5251254438484647
+      ],
+      "rotation": [
+        9.822980563240586,
+        23.77400679555672,
+        -12.326425931766403
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "7ed70a7f-fd02-4c69-ba81-d6768cef7ec0"
+    },
+    {
+      "name": "gajo1_plegado",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        7.005537007834775,
+        8.8,
+        -2.5251254438484647
+      ],
+      "to": [
+        7.105537007834775,
+        17.8,
+        1.0548745561515354
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        3.4755370078347743,
+        8.8,
+        -2.5251254438484647
+      ],
+      "rotation": [
+        21.17080985925789,
+        -64.3859105730519,
+        -35.56978898865554
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "29a6aa1b-6065-4fd7-ae5b-48029f5b0b7a"
+    },
+    {
+      "name": "gajo2_recto",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        1.2775370078347743,
+        8.8,
+        -4.08573879400398
+      ],
+      "to": [
+        1.3775370078347744,
+        17.8,
+        -0.5057387940039799
+      ],
+      "autouv": 0,
+      "color": 1,
+      "origin": [
+        1.3275370078347744,
+        8.8,
+        -4.08573879400398
+      ],
+      "rotation": [
+        -4.028978993624823,
+        58.39117837875098,
+        -21.885427783636903
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "e106ac26-1c8c-4523-aaee-5f00e8a53c27"
+    },
+    {
+      "name": "gajo2_plegado",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        4.857537007834774,
+        8.8,
+        -4.08573879400398
+      ],
+      "to": [
+        4.957537007834774,
+        17.8,
+        -0.5057387940039799
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        1.3275370078347744,
+        8.8,
+        -4.08573879400398
+      ],
+      "rotation": [
+        -2.4759144015670254,
+        -31.521720345779173,
+        -17.157561961396713
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "70c3b6ed-5423-408e-b8a4-f720ef6676eb"
+    },
+    {
+      "name": "gajo3_recto",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        -1.377537007834774,
+        8.8,
+        -4.08573879400398
+      ],
+      "to": [
+        -1.2775370078347739,
+        17.8,
+        -0.5057387940039799
+      ],
+      "autouv": 0,
+      "color": 1,
+      "origin": [
+        -1.327537007834774,
+        8.8,
+        -4.08573879400398
+      ],
+      "rotation": [
+        -104.49901031435539,
+        77.12600156344422,
+        -118.73713265214015
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "41ba3b1a-59b2-4247-82d4-872c3ee0478b"
+    },
+    {
+      "name": "gajo3_plegado",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        2.202462992165226,
+        8.8,
+        -4.08573879400398
+      ],
+      "to": [
+        2.3024629921652258,
+        17.8,
+        -0.5057387940039799
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -1.327537007834774,
+        8.8,
+        -4.08573879400398
+      ],
+      "rotation": [
+        -12.47702715511108,
+        3.19778322539879,
+        -14.587777488848529
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "42b2328e-fcec-49ea-be98-395af69858c7"
+    },
+    {
+      "name": "gajo4_recto",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.5255370078347736,
+        8.8,
+        -2.525125443848465
+      ],
+      "to": [
+        -3.425537007834774,
+        17.8,
+        1.054874556151535
+      ],
+      "autouv": 0,
+      "color": 1,
+      "origin": [
+        -3.475537007834774,
+        8.8,
+        -2.525125443848465
+      ],
+      "rotation": [
+        -153.01306668001897,
+        46.528298479954394,
+        -163.50311998405476
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "d5036ccd-ab09-4d42-8e16-f824239b191a"
+    },
+    {
+      "name": "gajo4_plegado",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        0.05446299216522643,
+        8.8,
+        -2.525125443848465
+      ],
+      "to": [
+        0.15446299216522608,
+        17.8,
+        1.054874556151535
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -3.475537007834774,
+        8.8,
+        -2.525125443848465
+      ],
+      "rotation": [
+        -23.27748615804447,
+        37.81256671241141,
+        -18.560698206704302
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "466d077c-a21b-46a6-b525-0812f8b42b71"
+    },
+    {
+      "name": "gajo5_recto",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        -4.346,
+        8.8,
+        -5.26108264913703e-16
+      ],
+      "to": [
+        -4.246,
+        17.8,
+        3.5799999999999996
+      ],
+      "autouv": 0,
+      "color": 1,
+      "origin": [
+        -4.296,
+        8.8,
+        -5.26108264913703e-16
+      ],
+      "rotation": [
+        -162.82,
+        11.500000000000007,
+        -168.5
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "dbbe379d-e73b-48cb-be26-2bce7c120f08"
+    },
+    {
+      "name": "gajo5_plegado",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        -0.766,
+        8.8,
+        -5.26108264913703e-16
+      ],
+      "to": [
+        -0.6660000000000004,
+        17.8,
+        3.5799999999999996
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -4.296,
+        8.8,
+        -5.26108264913703e-16
+      ],
+      "rotation": [
+        -55.44115422087972,
+        69.42320549901918,
+        -45.68403378525325
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "53ccef3e-d375-43b8-850d-6285ab8cd434"
+    },
+    {
+      "name": "gajo6_recto",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.525537007834774,
+        8.8,
+        2.5251254438484643
+      ],
+      "to": [
+        -3.4255370078347744,
+        17.8,
+        6.105125443848465
+      ],
+      "autouv": 0,
+      "color": 1,
+      "origin": [
+        -3.4755370078347743,
+        8.8,
+        2.5251254438484643
+      ],
+      "rotation": [
+        -170.17701943675942,
+        -23.774006795556716,
+        -167.6735740682336
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "30bc24d8-4888-4f55-baee-7e32fc6cd0d8"
+    },
+    {
+      "name": "gajo6_plegado",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        0.05446299216522599,
+        8.8,
+        2.5251254438484643
+      ],
+      "to": [
+        0.15446299216522563,
+        17.8,
+        6.105125443848465
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -3.4755370078347743,
+        8.8,
+        2.5251254438484643
+      ],
+      "rotation": [
+        -158.8291901407421,
+        64.3859105730519,
+        -144.43021101134445
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "0edb97db-2cca-483c-a063-e4370512a096"
+    },
+    {
+      "name": "gajo7_recto",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        -1.3775370078347748,
+        8.8,
+        4.08573879400398
+      ],
+      "to": [
+        -1.2775370078347748,
+        17.8,
+        7.66573879400398
+      ],
+      "autouv": 0,
+      "color": 1,
+      "origin": [
+        -1.3275370078347748,
+        8.8,
+        4.08573879400398
+      ],
+      "rotation": [
+        175.9710210063752,
+        -58.39117837875098,
+        -158.11457221636311
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "d8017ed7-1899-499d-9916-42e0fb626d65"
+    },
+    {
+      "name": "gajo7_plegado",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        2.2024629921652252,
+        8.8,
+        4.08573879400398
+      ],
+      "to": [
+        2.302462992165225,
+        17.8,
+        7.66573879400398
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -1.3275370078347748,
+        8.8,
+        4.08573879400398
+      ],
+      "rotation": [
+        177.52408559843298,
+        31.521720345779187,
+        -162.8424380386033
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "b3fa6494-e7e3-4b53-a5a8-9c160334c4a6"
+    },
+    {
+      "name": "gajo8_recto",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        1.2775370078347734,
+        8.8,
+        4.08573879400398
+      ],
+      "to": [
+        1.3775370078347735,
+        17.8,
+        7.66573879400398
+      ],
+      "autouv": 0,
+      "color": 1,
+      "origin": [
+        1.3275370078347735,
+        8.8,
+        4.08573879400398
+      ],
+      "rotation": [
+        75.50098968564465,
+        -77.12600156344418,
+        -61.26286734785988
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "e6f546ea-9d30-429d-b630-6feb61c8f17b"
+    },
+    {
+      "name": "gajo8_plegado",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        4.8575370078347735,
+        8.8,
+        4.08573879400398
+      ],
+      "to": [
+        4.957537007834773,
+        17.8,
+        7.66573879400398
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        1.3275370078347735,
+        8.8,
+        4.08573879400398
+      ],
+      "rotation": [
+        167.52297284488893,
+        -3.1977832253987835,
+        -165.41222251115147
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "62ff1d50-f803-42eb-af8e-873ca1c38d1e"
+    },
+    {
+      "name": "gajo9_recto",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        3.425537007834774,
+        8.8,
+        2.5251254438484656
+      ],
+      "to": [
+        3.5255370078347736,
+        17.8,
+        6.105125443848466
+      ],
+      "autouv": 0,
+      "color": 1,
+      "origin": [
+        3.475537007834774,
+        8.8,
+        2.5251254438484656
+      ],
+      "rotation": [
+        26.98693331998105,
+        -46.528298479954394,
+        -16.496880015945248
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "00c91708-a18f-4a83-85c1-bc77b01922c9"
+    },
+    {
+      "name": "gajo9_plegado",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        7.005537007834774,
+        8.8,
+        2.5251254438484656
+      ],
+      "to": [
+        7.105537007834774,
+        17.8,
+        6.105125443848466
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        3.475537007834774,
+        8.8,
+        2.5251254438484656
+      ],
+      "rotation": [
+        156.72251384195553,
+        -37.81256671241141,
+        -161.4393017932957
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "7c30a5a7-f790-47e4-bdf7-4e340026ccae"
+    },
+    {
+      "name": "torso_referencia",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "light_emission": 0,
+      "render_order": "default",
+      "allow_mirror_modeling": true,
+      "from": [
+        -4,
+        0,
+        -2
+      ],
+      "to": [
+        4,
+        12,
+        2
+      ],
+      "autouv": 0,
+      "color": 5,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "uv_offset": [
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": null
+        }
+      },
+      "type": "cube",
+      "uuid": "6a86ec76-9e9e-4498-b260-a9b1043e2b94"
+    }
+  ],
+  "outliner": [
+    {
+      "name": "gajo0",
+      "origin": [
+        4.296,
+        8.8,
+        0.0
+      ],
+      "color": 0,
+      "uuid": "b6ce2367-6a56-4029-a0e0-b213a5fd8503",
+      "export": true,
+      "isOpen": false,
+      "locked": false,
+      "visibility": true,
+      "autouv": 0,
+      "children": [
+        "9bc7c08c-7b0e-4fad-91c0-24ac2f7b2fe8",
+        "50aa77ad-2224-4ea3-afe2-8c6f5cc50343"
+      ]
+    },
+    {
+      "name": "gajo1",
+      "origin": [
+        3.4755370078347743,
+        8.8,
+        -2.5251254438484647
+      ],
+      "color": 0,
+      "uuid": "f7e6ecdc-0b82-4c76-ab45-0bbfbfba0bb6",
+      "export": true,
+      "isOpen": false,
+      "locked": false,
+      "visibility": true,
+      "autouv": 0,
+      "children": [
+        "7ed70a7f-fd02-4c69-ba81-d6768cef7ec0",
+        "29a6aa1b-6065-4fd7-ae5b-48029f5b0b7a"
+      ]
+    },
+    {
+      "name": "gajo2",
+      "origin": [
+        1.3275370078347744,
+        8.8,
+        -4.08573879400398
+      ],
+      "color": 0,
+      "uuid": "de9b3177-8aa3-4588-860b-aefd0a53fde9",
+      "export": true,
+      "isOpen": false,
+      "locked": false,
+      "visibility": true,
+      "autouv": 0,
+      "children": [
+        "e106ac26-1c8c-4523-aaee-5f00e8a53c27",
+        "70c3b6ed-5423-408e-b8a4-f720ef6676eb"
+      ]
+    },
+    {
+      "name": "gajo3",
+      "origin": [
+        -1.327537007834774,
+        8.8,
+        -4.08573879400398
+      ],
+      "color": 0,
+      "uuid": "4337c8b6-1c97-467c-8ad4-09aefcc05d2f",
+      "export": true,
+      "isOpen": false,
+      "locked": false,
+      "visibility": true,
+      "autouv": 0,
+      "children": [
+        "41ba3b1a-59b2-4247-82d4-872c3ee0478b",
+        "42b2328e-fcec-49ea-be98-395af69858c7"
+      ]
+    },
+    {
+      "name": "gajo4",
+      "origin": [
+        -3.475537007834774,
+        8.8,
+        -2.525125443848465
+      ],
+      "color": 0,
+      "uuid": "7dc155d4-6227-4cfb-9bc3-cf189425cf94",
+      "export": true,
+      "isOpen": false,
+      "locked": false,
+      "visibility": true,
+      "autouv": 0,
+      "children": [
+        "d5036ccd-ab09-4d42-8e16-f824239b191a",
+        "466d077c-a21b-46a6-b525-0812f8b42b71"
+      ]
+    },
+    {
+      "name": "gajo5",
+      "origin": [
+        -4.296,
+        8.8,
+        -5.26108264913703e-16
+      ],
+      "color": 0,
+      "uuid": "6d2790a6-5c50-437b-9abf-dfc9d128ae04",
+      "export": true,
+      "isOpen": false,
+      "locked": false,
+      "visibility": true,
+      "autouv": 0,
+      "children": [
+        "dbbe379d-e73b-48cb-be26-2bce7c120f08",
+        "53ccef3e-d375-43b8-850d-6285ab8cd434"
+      ]
+    },
+    {
+      "name": "gajo6",
+      "origin": [
+        -3.4755370078347743,
+        8.8,
+        2.5251254438484643
+      ],
+      "color": 0,
+      "uuid": "b7da7d7a-bf15-4d8d-ae05-b4232c33bc0b",
+      "export": true,
+      "isOpen": false,
+      "locked": false,
+      "visibility": true,
+      "autouv": 0,
+      "children": [
+        "30bc24d8-4888-4f55-baee-7e32fc6cd0d8",
+        "0edb97db-2cca-483c-a063-e4370512a096"
+      ]
+    },
+    {
+      "name": "gajo7",
+      "origin": [
+        -1.3275370078347748,
+        8.8,
+        4.08573879400398
+      ],
+      "color": 0,
+      "uuid": "6a59830c-9020-4c5a-91cb-f75d172fac2c",
+      "export": true,
+      "isOpen": false,
+      "locked": false,
+      "visibility": true,
+      "autouv": 0,
+      "children": [
+        "d8017ed7-1899-499d-9916-42e0fb626d65",
+        "b3fa6494-e7e3-4b53-a5a8-9c160334c4a6"
+      ]
+    },
+    {
+      "name": "gajo8",
+      "origin": [
+        1.3275370078347735,
+        8.8,
+        4.08573879400398
+      ],
+      "color": 0,
+      "uuid": "6c0834dc-36b6-4e34-81f4-4437984ab8c0",
+      "export": true,
+      "isOpen": false,
+      "locked": false,
+      "visibility": true,
+      "autouv": 0,
+      "children": [
+        "e6f546ea-9d30-429d-b630-6feb61c8f17b",
+        "62ff1d50-f803-42eb-af8e-873ca1c38d1e"
+      ]
+    },
+    {
+      "name": "gajo9",
+      "origin": [
+        3.475537007834774,
+        8.8,
+        2.5251254438484656
+      ],
+      "color": 0,
+      "uuid": "00e54d0a-7f6a-496e-8840-6bc11fa3daf2",
+      "export": true,
+      "isOpen": false,
+      "locked": false,
+      "visibility": true,
+      "autouv": 0,
+      "children": [
+        "00c91708-a18f-4a83-85c1-bc77b01922c9",
+        "7c30a5a7-f790-47e4-bdf7-4e340026ccae"
+      ]
+    },
+    "6a86ec76-9e9e-4498-b260-a9b1043e2b94"
+  ],
+  "textures": []
+}

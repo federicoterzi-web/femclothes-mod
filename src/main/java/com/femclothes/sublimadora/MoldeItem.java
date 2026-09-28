@@ -15,7 +15,7 @@ import java.util.List;
  * Va en el slot de patron del telar y NO se consume, igual que un patron de
  * estandarte. Cicla su eje, en vez de fijar un valor.
  *
- * El eje LARGO se fue de aca: pasó a {@link MoldeLargoRemeraItem}, uno por
+ * El eje LARGO se fue de aca: pasó a MoldeLargoRemeraItem (ya retirado, hoy es el molde de torso), uno por
  * valor (crop/normal/largo) en vez de uno que cicla — a pedido del dueño,
  * mismo cambio que ya tenía el molde de pantalón. MANGA y CUELLO siguen
  * cíclicos: con 36 combinaciones entre los tres ejes, un item por valor de

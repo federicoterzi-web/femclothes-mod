@@ -171,6 +171,33 @@ prenda/región, igual que hoy `Variante.Manga` (remera, ancla arriba) y
 abajo/arriba según corresponda) son el mismo concepto de "cobertura" con
 direcciones fijas distintas por código, no por elección del jugador.
 
+> **Actualizado 2026-09-15 — YA IMPLEMENTADO, esta nota queda como
+> historial.** `docs/PRODUCCION_TEXTIL.md` pedía lo contrario a lo de
+> arriba — el jugador SÍ elige el anclaje en la Mesa de Modelado — y ese
+> punto ganó. Terminó siendo más que un selector Superior/Inferior: cada
+> eje de extremidad (pantalón-pierna, medias, calientabrazos/manga) tiene
+> **DOS anclajes simultáneos** (superior e inferior) que se INTERSECAN —
+> ver `ModeladoBlockEntity.Anclaje`, `PantalonItem#filasVisibles`/
+> `MediasLargo#filasVisibles`/`CalientabrazosItem#filasVisibles`, y el
+> recorte en runtime de `PiezasDelMod#recortarFilas`. El render por
+> anclaje opuesto (lo que esta nota decía que faltaba) se resolvió
+> recortando en runtime el archivo de cobertura COMPLETA en vez de
+> pre-generar un PNG por combinación — no hicieron falta "más filas de
+> tela distintas por dirección" como se especulaba acá.
+>
+> La Mesa de Modelado (`com.femclothes.modelado`) tiene: un botón de
+> **Categoría** que cicla entre las 4 prendas de extremidad + remera
+> (reemplaza "el molde define el eje" por "el botón define el eje, el
+> molde aporta el valor"), botones de **Anclaje** y **Lateralidad**
+> (izquierda/derecha/ambas, mismo patrón bilateral que el color), un
+> **Molde de Rango** unificado de 5 valores (Mínimo/Corto/Medio/Largo/
+> Máximo) que sirve para las 4 categorías de extremidad a la vez
+> traduciéndose a la escala real de cada una, un visor 3D en vivo del
+> jugador vistiendo la prenda en construcción, y storage partido en
+> compartido (27) + por-categoría (12, cicla con el mismo botón). Detalle
+> completo de la implementación y de los bugs reales que costó encontrar
+> en el camino: `docs/CANAL.md` v17.
+
 #### Tiro
 
 Altura de una prenda INFERIOR respecto de la cintura/cadera. Niveles:

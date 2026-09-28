@@ -99,6 +99,13 @@ public final class CuerpoBaseTextures {
         MinecraftClient.getInstance().getTextureManager()
                 .registerTexture(id, new NativeImageBackedTexture(img));
         CACHE.put(clave, id);
+        if (com.femclothes.render.ClothingTextureCache.DEBUG_DUMP) {
+            try {
+                java.nio.file.Path dir = java.nio.file.Paths.get("femclothes_debug");
+                java.nio.file.Files.createDirectories(dir);
+                img.writeTo(dir.resolve("cuerpobase_" + Integer.toHexString(clave.hashCode()) + ".png"));
+            } catch (java.io.IOException ignored) {}
+        }
         return id;
     }
 
@@ -132,7 +139,6 @@ public final class CuerpoBaseTextures {
             for (int x = 0; x < lado; x++) img.setColor(x, y, 0);
         }
 
-        boolean propio = perfil.cuerpo() == CuerpoBase.SKIN_REAL;
         for (Parte parte : Parte.values()) {
             // La cabeza NO lleva cuerpo base: es la cara del jugador y
             // taparla con un tono plano le borraria los ojos. Solo se dibuja
@@ -140,8 +146,7 @@ public final class CuerpoBaseTextures {
             // trae su propia tela.
             if (parte == Parte.CABEZA) continue;
             CajaSkin caja = LayoutSkin.base(parte, slim).escalada(S);
-            if (propio && parte == Parte.TORSO) pintarTorsoHastaLaCintura(img, caja, tonoRgb, S);
-            else pintarCuerpo(img, caja, tonoRgb);
+            pintarCuerpo(img, caja, tonoRgb, parte);
         }
 
         multiplicar(img, perfil.cuerpo() == CuerpoBase.SKIN_REAL ? null : perfil.cuerpo().textura());
@@ -150,39 +155,21 @@ public final class CuerpoBaseTextures {
     }
 
     /**
-     * De las 12 filas del torso, las ultimas tres son la cintura.
+     * Cada cara del cuboide con su nivel de luz.
      *
-     * En una skin, la cintura del pantalon va pintada en las ultimas filas
-     * del TORSO y no en las piernas. La regla vieja del mod —la prenda manda
-     * de los hombros a la cintura, el pantalon de ahi abajo— sigue valiendo
-     * mientras el cuerpo salga de la propia skin del jugador: pintar el torso
-     * entero le borraria la cintura y le dejaria una costura visible contra
-     * unas piernas que si conservan su pantalon.
-     *
-     * Con un cuerpo CURADO no aplica: ese cuerpo es dueño de su cintura y
-     * trae su propia ropa interior, asi que se pinta completo.
+     * 2026-09-16, probado en juego: la tapa de abajo del BRAZO es la
+     * muñeca, no una zona lógicamente en sombra como la entrepierna del
+     * torso o la planta del pie — con el mismo ABAJO=0.15 que esas dos
+     * quedaba un cuadrado bien oscuro pegado directo contra el lateral
+     * (LADO=0.32, mucho más claro), y esa diferencia tan brusca en un
+     * área tan chica se leía como una línea recta de color, no un
+     * sombreado suave. En el brazo se pinta la tapa de abajo al mismo
+     * nivel que el lateral: mismo tono, sin costura.
      */
-    private static final int CINTURA = 9;
-
-    private static void pintarTorsoHastaLaCintura(NativeImage img, CajaSkin caja,
-                                                  int tonoRgb, int escala) {
-        int corte = caja.v() + caja.prof() + CINTURA * escala;
+    private static void pintarCuerpo(NativeImage img, CajaSkin caja, int tonoRgb, Parte parte) {
+        boolean brazo = parte == Parte.BRAZO_DER || parte == Parte.BRAZO_IZQ;
         pintar(img, caja.arriba(), tonoRgb, ARRIBA);
-        // La tapa de abajo tampoco: esta a la altura de la cintura.
-        pintar(img, recortar(caja.derecha(), corte), tonoRgb, LADO);
-        pintar(img, recortar(caja.frente(), corte), tonoRgb, FRENTE);
-        pintar(img, recortar(caja.izquierda(), corte), tonoRgb, LADO);
-        pintar(img, recortar(caja.atras(), corte), tonoRgb, ATRAS);
-    }
-
-    private static CajaSkin.Rect recortar(CajaSkin.Rect r, int hasta) {
-        return new CajaSkin.Rect(r.x0(), r.y0(), r.x1(), Math.min(r.y1(), hasta));
-    }
-
-    /** Cada cara del cuboide con su nivel de luz. */
-    private static void pintarCuerpo(NativeImage img, CajaSkin caja, int tonoRgb) {
-        pintar(img, caja.arriba(), tonoRgb, ARRIBA);
-        pintar(img, caja.abajo(), tonoRgb, ABAJO);
+        pintar(img, caja.abajo(), tonoRgb, brazo ? LADO : ABAJO);
         pintar(img, caja.derecha(), tonoRgb, LADO);
         pintar(img, caja.frente(), tonoRgb, FRENTE);
         pintar(img, caja.izquierda(), tonoRgb, LADO);

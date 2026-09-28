@@ -94,6 +94,15 @@ public class SublimadoraBlock extends BlockWithEntity {
             sonar(world, pos, SoundEvents.ITEM_BUCKET_FILL, 0.8f);
             return ItemActionResult.CONSUME;
         }
+        // Papel — a pedido (2026-09-19, "usa papel y ya no consume la
+        // imagen"): tanque tipo tinta, se gasta 1 por prensado en vez de la
+        // foto misma.
+        if (stack.isOf(net.minecraft.item.Items.PAPER)) {
+            if (!be.cargarPapel(1)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            if (!player.isCreative()) stack.decrement(1);
+            sonar(world, pos, SoundEvents.ITEM_BOOK_PAGE_TURN, 1.0f);
+            return ItemActionResult.CONSUME;
+        }
         // Se acepta mientras le quede alguna cara sin estampar: una remera
         // con el frente hecho vuelve a entrar para imprimirle la espalda.
         if (ModItems.esEstampable(stack) && !tieneLasDosCaras(stack)) {
@@ -102,18 +111,10 @@ public class SublimadoraBlock extends BlockWithEntity {
             sonar(world, pos, SoundEvents.BLOCK_WOOL_PLACE, 1.0f);
             return ItemActionResult.CONSUME;
         }
-        if (esFoto(stack)) {
-            if (!be.ponerFoto(stack, uuidDeFoto(stack))) {
-                return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-            }
-            if (!player.isCreative()) stack.decrement(1);
-            sonar(world, pos, SoundEvents.ITEM_BOOK_PAGE_TURN, 1.0f);
-            player.sendMessage(net.minecraft.text.Text.translatable(
-                    "femclothes.sublimadora.aviso.cara",
-                    net.minecraft.text.Text.translatable(
-                            "femclothes.sublimadora.cara." + be.getSeleccion().clave)), true);
-            return ItemActionResult.CONSUME;
-        }
+        // La foto YA NO se carga con click derecho acá (2026-09-19, "las
+        // imagenes deberian agregarse aqui no en la estampadora") — tiene
+        // sus propios 2 slots (Frente/Espalda) en la pantalla nueva, ver
+        // SublimadoraScreenHandler.
         return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
@@ -124,25 +125,22 @@ public class SublimadoraBlock extends BlockWithEntity {
         if (world.isClient) return ActionResult.SUCCESS;
         if (!(world.getBlockEntity(pos) instanceof SublimadoraBlockEntity be)) return ActionResult.PASS;
 
-        // La palanca del frente, abajo de la linea de la tapa. Va primero
-        // que todo lo demas: es la unica interaccion anclada a una parte
-        // concreta del bloque, y esa parte es de la BASE, que no se mueve
-        // cuando la tapa se abre.
-        int control = queControl(state, pos, hit);
-        if (control != 0) {
-            boolean cambio = control > 0 ? be.cambiarModo() : be.cambiarSeleccion();
-            if (cambio) {
-                sonar(world, pos, SoundEvents.BLOCK_LEVER_CLICK, control > 0 ? 1.0f : 0.8f);
-                // Los dos avisos nombran SIEMPRE la cara y el modo juntos: con
-                // dos caras configurables por separado, saber que se movio sin
-                // saber de cual es inutil.
-                player.sendMessage(net.minecraft.text.Text.translatable(
-                        "femclothes.sublimadora.aviso.control",
-                        net.minecraft.text.Text.translatable(
-                                "femclothes.sublimadora.cara." + be.getSeleccion().clave),
-                        net.minecraft.text.Text.translatable(
-                                "femclothes.sublimadora.modo." + be.getModo().clave)), true);
+        // La parte de abajo del frente (la BASE, que no se mueve cuando la
+        // tapa se abre) abre la pantalla de escala/posición/cara — a pedido
+        // (2026-09-19, "hace gui con preview... sacamos los controles del
+        // frente"): antes esta misma zona tenía dos controles físicos
+        // (palanca de modo + selector de cara), que ya no existen en el
+        // modelo nuevo. Va primero que todo lo demás: es la única
+        // interacción anclada a una parte concreta del bloque.
+        if (queControl(state, pos, hit) != 0) {
+            // A pedido (2026-09-21, "mientras la maquina funciona no se
+            // puede abrir la gui... te prende fuego"): antes este botón
+            // abría la config SIN importar el estado, incluso prensando.
+            if (be.getEstado() == SublimadoraBlockEntity.Estado.PRENSANDO) {
+                quemarPorInterrumpir(world, pos, player);
+                return ActionResult.CONSUME;
             }
+            player.openHandledScreen(be);
             return ActionResult.CONSUME;
         }
 
@@ -168,9 +166,7 @@ public class SublimadoraBlock extends BlockWithEntity {
         // termine. Sin esto se podia abrir en medio del ciclo y ver la remera
         // flotando con el prensado corriendo igual por debajo.
         if (abriendo && be.getEstado() == SublimadoraBlockEntity.Estado.PRENSANDO) {
-            sonar(world, pos, SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE, 0.6f);
-            player.sendMessage(net.minecraft.text.Text.translatable("femclothes.sublimadora.aviso.trabada")
-                    .formatted(net.minecraft.util.Formatting.GOLD), true);
+            quemarPorInterrumpir(world, pos, player);
             return ActionResult.CONSUME;
         }
 
@@ -219,7 +215,8 @@ public class SublimadoraBlock extends BlockWithEntity {
         return lateral > 0.5 ? -1 : 1;
     }
 
-    private static boolean tieneLasDosCaras(ItemStack stack) {
+    /** Package-private: reusado por SublimadoraBlockEntity para el slot de hopper de remera. */
+    static boolean tieneLasDosCaras(ItemStack stack) {
         return RemeraItem.estampaDe(stack, Estampa.Cara.FRENTE) != null
                 && RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA) != null;
     }
@@ -250,8 +247,33 @@ public class SublimadoraBlock extends BlockWithEntity {
         world.playSound(null, pos, ev, SoundCategory.BLOCKS, 0.6f, tono);
     }
 
-    /** Canal CMYK del tinte que se tenga en la mano, o -1. */
-    private static int canalDeTinte(ItemStack stack) {
+    /**
+     * Consecuencia de meter mano en la prensa mientras está caliente
+     * (2026-09-21, "la sublimadora te prende fuego") — reemplaza el
+     * viejo mensaje "trabada" (que solo avisaba, sin costo) en los dos
+     * lugares donde antes se podía interrumpir: abrir la tapa a mitad de
+     * prensado, y el botón de config. Mismo espíritu que
+     * {@code ModeladoBlock}/{@code TinturasBlock}, cada una con su
+     * propio sabor de peligro.
+     */
+    private static void quemarPorInterrumpir(World world, BlockPos pos, PlayerEntity player) {
+        player.setOnFireFor(4);
+        world.playSound(null, pos, net.minecraft.sound.SoundEvents.ENTITY_GENERIC_BURN, SoundCategory.BLOCKS, 1.0f, 1.0f);
+        player.sendMessage(net.minecraft.text.Text.translatable("femclothes.sublimadora.aviso.procesando")
+                .formatted(net.minecraft.util.Formatting.RED), true);
+    }
+
+    /**
+     * Los 4 tintes vanilla, en el mismo orden que {@code SublimadoraBlockEntity.C/M/Y/K}
+     * — reusado por {@link SublimadoraBlockEntity} para exponer el tanque
+     * como slot de hopper (2026-09-20, "que carguen por hopper atrás").
+     */
+    static final net.minecraft.item.Item[] TINTES = {
+            net.minecraft.item.Items.CYAN_DYE, net.minecraft.item.Items.MAGENTA_DYE,
+            net.minecraft.item.Items.YELLOW_DYE, net.minecraft.item.Items.BLACK_DYE };
+
+    /** Canal CMYK del tinte que se tenga en la mano, o -1. Package-private: reusado por SublimadoraBlockEntity. */
+    static int canalDeTinte(ItemStack stack) {
         if (stack.getItem() == net.minecraft.item.Items.CYAN_DYE) return SublimadoraBlockEntity.C;
         if (stack.getItem() == net.minecraft.item.Items.MAGENTA_DYE) return SublimadoraBlockEntity.M;
         if (stack.getItem() == net.minecraft.item.Items.YELLOW_DYE) return SublimadoraBlockEntity.Y;
@@ -264,7 +286,10 @@ public class SublimadoraBlock extends BlockWithEntity {
      * registrado. Asi la sublimadora compila y corre igual si Camerapture no
      * esta instalado — simplemente no vas a tener fotos que poner.
      */
-    private static boolean esFoto(ItemStack stack) {
+    // Package-private (no "private") — SublimadoraBlockEntity los reusa
+    // para el slot de foto de la pantalla nueva (2026-09-19, "las imagenes
+    // deberian agregarse aqui no en la estampadora").
+    static boolean esFoto(ItemStack stack) {
         return net.minecraft.registry.Registries.ITEM.getId(stack.getItem())
                 .toString().equals("camerapture:picture");
     }
@@ -276,7 +301,7 @@ public class SublimadoraBlock extends BlockWithEntity {
      * Camerapture no esta instalado — mismo patron que el puente con 3D Skin
      * Layers en femclothes.
      */
-    private static java.util.UUID uuidDeFoto(ItemStack stack) {
+    static java.util.UUID uuidDeFoto(ItemStack stack) {
         if (!net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("camerapture")) return null;
         try {
             return CameraptureCompat.uuidDe(stack);

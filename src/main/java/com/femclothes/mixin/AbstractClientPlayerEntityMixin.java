@@ -1,6 +1,8 @@
 package com.femclothes.mixin;
 
+import com.femclothes.client.DebugApariencia;
 import com.femclothes.render.ComposedSkin;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.util.SkinTextures;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,10 +27,14 @@ public abstract class AbstractClientPlayerEntityMixin {
 
     @Inject(method = "getSkinTextures", at = @At("RETURN"), cancellable = true)
     private void femclothes$vestirSkin(CallbackInfoReturnable<SkinTextures> cir) {
-        SkinTextures original = cir.getReturnValue();
-        SkinTextures compuesta = ComposedSkin.forPlayer(
-                (AbstractClientPlayerEntity) (Object) this, original);
-        if (compuesta != original) {
+        SkinTextures real = cir.getReturnValue();
+        AbstractClientPlayerEntity jugador = (AbstractClientPlayerEntity) (Object) this;
+        // El override de debug (skin de prueba / slim-ancho forzado) es
+        // SOLO para el jugador local — ver DebugApariencia.
+        SkinTextures base = jugador == MinecraftClient.getInstance().player
+                ? DebugApariencia.aplicar(real) : real;
+        SkinTextures compuesta = ComposedSkin.forPlayer(jugador, base);
+        if (compuesta != real) {
             cir.setReturnValue(compuesta);
         }
     }

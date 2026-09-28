@@ -4,7 +4,7 @@ import net.minecraft.util.StringIdentifiable;
 
 /**
  * El tiro del pantalón: cuánto sube la cintura sobre el cuboide de TORSO,
- * en filas de las 12 (misma unidad que {@link PantalonLargo}, otra región de
+ * en filas de las 12 (misma unidad que {@link Botamanga}, otra región de
  * UV — ver {@code PiezasDelMod.pantalon}).
  *
  * Es un eje aparte de {@code largo} y no un valor más de largo: largo

@@ -1,0 +1,19 @@
+modLoader="javafml" #mandatory
+loaderVersion="[47,)"
+license="CC BY-NC"
+
+
+# A URL to refer people to when problems occur with this mod
+#issueTrackerURL="http://my.issue.tracker/" #optional
+
+# A list of mods - how many allowed here is determined by the individual mod loader
+[[mods]] #mandatory
+    modId="moreplayermodels" #mandatory
+    version="1.20.1.20240409" #mandatory
+    displayName="More Player Models" #mandatory
+    #updateJSONURL="" #optional
+    displayURL="http://www.kodevelopment.nl/minecraft/moreplayermodels/" #optional
+    #logoFile="" #optional
+    #credits="" #optional
+    authors="Noppes" #optional
+    description='''Allows the player to change various aspects of their model'''

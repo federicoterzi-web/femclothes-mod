@@ -3,6 +3,7 @@ package com.femclothes.client;
 import com.femclothes.Femclothes;
 import com.femclothes.garment.Capa;
 import com.femclothes.garment.Parte;
+import com.femclothes.item.Calce;
 import com.femclothes.item.CalientabrazosItem;
 import com.femclothes.item.FemclothesItems;
 import com.femclothes.item.MediasLargo;
@@ -23,6 +24,7 @@ import com.femclothes.sublimadora.Variante;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +50,7 @@ public final class PiezasDelMod {
         PiezasDePrenda.registrar(FemclothesItems.PANTALON, PiezasDelMod::pantalon);
         PiezasDePrenda.registrar(ModItems.REMERA, PiezasDelMod::remera);
         PiezasDePrenda.registrar(FemclothesItems.CALIENTABRAZOS, PiezasDelMod::calientabrazos);
+        PiezasDePrenda.registrar(FemclothesItems.POLLERA, PiezasDelMod::pollera);
     }
 
     /**
@@ -62,77 +65,185 @@ public final class PiezasDelMod {
      * disparejo (una hasta la rodilla, la otra zoquete) no es un caso real
      * que hiciera falta cubrir, a diferencia del color.
      */
+    /**
+     * Muslos/pantorrillas/pie con volumen en las medias — SUSPENDIDO hasta la v2
+     * (2026-09-26): la versión por franjas era provisional; la definitiva es la
+     * malla redondeada del prototipo (ver memoria muslos-malla-v2), como opción
+     * "vanilla / redondeado". El código de {@code CuerpoGeometria} y el render
+     * quedan armados: prender esto los reactiva.
+     */
+    private static final boolean VOLUMEN_MEDIAS = false;
+
     private static List<Pieza> medias(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
-        Identifier base = MediasLargo.de(stack).texturaCuerpo();
+        // Siempre el archivo COMPLETO (CANCAN): cobertura de extremidad son
+        // dos anclajes que se intersecan, recortados en runtime — ver
+        // MediasLargo#filasVisibles.
+        Identifier base = MediasLargo.TEXTURA_BASE;
+        float dilatacion = Calce.dilatacionEfectiva(stack);
+        int[] filasIzq = MediasLargo.filasVisibles(stack, Lado.IZQUIERDA);
+        int[] filasDer = MediasLargo.filasVisibles(stack, Lado.DERECHA);
         return List.of(
-                new Pieza(Parte.PIERNA_IZQ, Capa.MEDIA, texturaMedia(base, stack, Lado.IZQUIERDA)),
-                new Pieza(Parte.PIERNA_DER, Capa.MEDIA, texturaMedia(base, stack, Lado.DERECHA)));
+                new Pieza(Parte.PIERNA_IZQ, Capa.MEDIA, texturaMedia(base, stack, Lado.IZQUIERDA), dilatacion, filasIzq[0], filasIzq[1], VOLUMEN_MEDIAS),
+                new Pieza(Parte.PIERNA_DER, Capa.MEDIA, texturaMedia(base, stack, Lado.DERECHA), dilatacion, filasDer[0], filasDer[1], VOLUMEN_MEDIAS));
+    }
+
+    /**
+     * Resuelve las hasta 3 capas de patrón puestas en {@code lado} a su
+     * lista de {@link ClothingTextureCache.CapaMascara} (máscara + SU
+     * PROPIO color, en orden de pintado) para {@code prenda} — vacía si
+     * no hay ningún patrón, o si esa prenda no tiene caja mapeada
+     * todavía (cae a lisa, no rompe nada).
+     */
+    private static List<ClothingTextureCache.CapaMascara> capasDePatron(
+            String prenda, com.femclothes.tinturas.TinturasBlockEntity.Categoria categoria, ItemStack stack, Lado lado) {
+        List<RegionResolver.CapaPatron> capas = RegionResolver.capasTinte(stack, lado);
+        if (capas.isEmpty()) return List.of();
+        List<ClothingTextureCache.CapaMascara> resultado = new ArrayList<>(capas.size());
+        for (RegionResolver.CapaPatron capa : capas) {
+            // Rayas o motivo con tamaño/orientación/repetición PROPIOS de
+            // esta capa; lisa = null (cubre toda su región) o el degradé.
+            NativeImage mascara = com.femclothes.render.PatronGenerador.mascaraDeCapa(prenda, capa);
+            // Molde sin caja mapeada para esta prenda: el patrón no se ve
+            // (no lo convierte en liso — null significa "liso").
+            if (!capa.lisa() && mascara == null) continue;
+            // Región (2026-09-27, "pintar por región"): null (TODO) no recorta nada.
+            java.util.List<CajaSkin.Rect> region = capa.region() == com.femclothes.region.RegionPintura.TODO
+                    ? null : capa.region().rects(categoria, CuerpoGeometria.ESCALA_TELA);
+            resultado.add(ClothingTextureCache.CapaMascara.de(capa, mascara, region));
+        }
+        return resultado;
     }
 
     private static Identifier texturaMedia(Identifier base, ItemStack stack, Lado lado) {
         int colorBase = RegionResolver.colorBase(stack, lado);
-        Identifier patron = RegionResolver.patronId(stack, lado);
-        Identifier mascara = patron == null ? null
-                : ClothingTextureCache.patternMaskFor("socks", patron);
+        List<ClothingTextureCache.CapaMascara> capas = capasDePatron("socks", com.femclothes.tinturas.TinturasBlockEntity.Categoria.MEDIAS, stack, lado);
+        int[] filas = MediasLargo.filasVisibles(stack, lado);
+        Parte piernaParte = lado == Lado.DERECHA ? Parte.PIERNA_DER : Parte.PIERNA_IZQ;
 
-        // Las medias tambien se subliman: la foto se pinta sobre la media ya
-        // tenida y con su patron, que es el orden de una sublimadora de
-        // verdad. Sin estampa el gancho no hace nada.
-        ClothingTextureCache.Encima estampa = EstampaTextures.tieneEstampa(stack)
-                ? new ClothingTextureCache.Encima() {
-                    @Override
-                    public String clave() {
-                        return EstampaTextures.claveEstampas(stack);
-                    }
-                    @Override
-                    public boolean aplicar(NativeImage destino) {
-                        return EstampaTextures.estampar(destino, stack);
-                    }
-                }
-                : null;
+        com.femclothes.item.PatronRed red = com.femclothes.item.PatronRed.leer(stack);
 
-        return ClothingTextureCache.composeGarment(base, colorBase, mascara,
-                RegionResolver.colorPatron(stack, lado),
-                ClothingTextureCache.Shading.LEGS, estampa);
+        // Recorte de cobertura SIEMPRE; la estampa (sublimado sobre la
+        // media) es opcional, encadenada en el mismo Encima.
+        ClothingTextureCache.Encima ajustes = new ClothingTextureCache.Encima() {
+            @Override
+            public String clave() {
+                // piernaParte va SÍ o SÍ en la clave: sin esto, cuando las
+                // dos piernas dan el mismo rango de filas (el caso más
+                // común, "Ambas" simétrico) la clave quedaba idéntica y la
+                // segunda pierna reutilizaba la textura ya recortada de la
+                // primera SIN aplicarle su propio recorte — bug real
+                // reportado jugando ("una queda hasta la rodilla, la otra
+                // 3/4" con Ambas puesto).
+                String base = "media" + piernaParte + filas[0] + "_" + filas[1] + "_" + red;
+                return EstampaTextures.tieneEstampa(stack) ? base + "_" + EstampaTextures.claveEstampas(stack) : base;
+            }
+            @Override
+            public boolean aplicar(NativeImage destino) {
+                if (EstampaTextures.tieneEstampa(stack)) EstampaTextures.estampar(destino, stack);
+                recortarFilas(destino, piernaParte, filas[0], filas[1]);
+                if (red != null) ClothingTextureCache.perforarRed(destino, red, piernaParte, filas[0], filas[1]);
+                return true;
+            }
+        };
+
+        return ClothingTextureCache.composeGarmentCapas(base, colorBase, capas,
+                ClothingTextureCache.Shading.LEGS, ajustes);
     }
 
     /**
      * Torso, mas un brazo por manga.
      *
-     * La textura es UNA sola para las tres piezas: los 36 cortes se generan
-     * como una imagen en layout de skin donde ya estan el torso y las dos
-     * mangas. Que sean tres piezas y no una es lo que deja que el renderer
-     * las ordene por separado y, mas adelante, que un remeron sume una cuarta
-     * en el muslo.
+     * La textura de TORSO sale de un archivo horneado por combinación
+     * (largo+manga+cuello), como siempre — pero SIEMPRE con
+     * {@code manga=LARGA}, sin importar la manga real elegida: manga de
+     * remera tiene un solo anclaje (Superior, hombro hacia abajo, sin
+     * intersección de dos anclajes como pantalón/medias/calientabrazos),
+     * así que en vez de hornear un archivo por cada uno de los 7 valores
+     * de manga (36→63 combos) se recorta el BRAZO en runtime desde el
+     * archivo de manga completa — mismo mecanismo que ya usan las otras 3
+     * prendas, aplicado nada más que al brazo (ver
+     * {@link #recortarMangaYCachear}). El TORSO usa esa misma textura SIN
+     * recortar (el largo de torso es un eje aparte, no se toca acá).
      *
      * La estampa no va como pieza aparte: se pinta ADENTRO de la textura, asi
      * sigue al cuerpo sin geometria extra y queda recortada a la tela sola.
      */
     private static List<Pieza> remera(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
         Variante variante = RemeraItem.variante(stack);
+        Variante varianteBase = new Variante(variante.largo(), Variante.Manga.LARGA, variante.cuello());
         // La remera es Lado.AMBAS siempre para PATRON (un solo color, un
         // solo patron para toda la prenda): ver Garment.regionesDe en
         // PrendasDelMod.
-        Identifier textura = EstampaTextures.cuerpoEstampado(variante,
+        Identifier textura = EstampaTextures.cuerpoEstampado(varianteBase,
                 RemeraItem.estampaDe(stack, Estampa.Cara.FRENTE),
                 RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA),
                 RemeraItem.color(stack),
-                RegionResolver.patronId(stack, Lado.AMBAS),
-                RegionResolver.colorPatron(stack, Lado.AMBAS));
+                RegionResolver.capasTinte(stack, Lado.AMBAS),
+                com.femclothes.item.PatronRed.leer(stack));
         // Si todavia no se pudo componer -la foto no bajo- se usa la lisa,
         // que es lo correcto mientras tanto.
-        if (textura == null) textura = variante.texturaCuerpo();
+        if (textura == null) textura = varianteBase.texturaCuerpo();
 
+        float dilatacion = Calce.dilatacionEfectiva(stack);
         List<Pieza> piezas = new ArrayList<>(3);
-        piezas.add(new Pieza(Parte.TORSO, Capa.TORSO_EXTERIOR, textura));
-        // La musculosa no dibuja los brazos. No alcanza con que la textura
-        // tenga esa zona vacia: dibujar dos cajas transparentes por frame y
-        // por jugador es trabajo tirado.
-        if (variante.tieneMangas()) {
-            piezas.add(new Pieza(Parte.BRAZO_IZQ, Capa.TORSO_EXTERIOR, textura));
-            piezas.add(new Pieza(Parte.BRAZO_DER, Capa.TORSO_EXTERIOR, textura));
+        piezas.add(new Pieza(Parte.TORSO, Capa.TORSO_EXTERIOR, textura, dilatacion, 0, variante.largo().filas));
+        // Mangas POR LADO (2026-09-24, "vamos con mangas distintas") — cada
+        // brazo lee su propio valor (RemeraItem#manga, izquierda vive en
+        // Variante, derecha es un override aparte) y se recorta
+        // independiente. La musculosa de ESE lado no dibuja el brazo: no
+        // alcanza con que la textura tenga esa zona vacía, dibujar una caja
+        // transparente por frame y por jugador es trabajo tirado.
+        com.femclothes.item.PatronRed red = com.femclothes.item.PatronRed.leer(stack);
+        int filasIzq = RemeraItem.manga(stack, Lado.IZQUIERDA).filas;
+        if (filasIzq > 0) {
+            piezas.add(new Pieza(Parte.BRAZO_IZQ, Capa.TORSO_EXTERIOR, recortarMangaYCachear(textura, Parte.BRAZO_IZQ, filasIzq, red), dilatacion, 0, filasIzq));
+        }
+        int filasDer = RemeraItem.manga(stack, Lado.DERECHA).filas;
+        if (filasDer > 0) {
+            piezas.add(new Pieza(Parte.BRAZO_DER, Capa.TORSO_EXTERIOR, recortarMangaYCachear(textura, Parte.BRAZO_DER, filasDer, red), dilatacion, 0, filasDer));
         }
         return piezas;
+    }
+
+    private static final java.util.Map<String, Identifier> CACHE_MANGA = new java.util.HashMap<>();
+
+    /**
+     * Copia {@code base} y le recorta el brazo a {@code [0,hasta)} —
+     * anclaje único (Superior), no hace falta intersección. No pasa por
+     * {@link ClothingTextureCache#composeGarment} porque esa función
+     * SIEMPRE tiñe (asume un origen en escala de grises); la textura de
+     * remera ya viene a full color (con estampa/patrón si corresponde), un
+     * segundo tinte la arruinaría.
+     *
+     * <p>La red (§{@link com.femclothes.item.PatronRed}) se perfora ACÁ,
+     * DESPUÉS de {@link #recortarFilas} — no en {@code cuerpoEstampado},
+     * que solo conoce la manga LARGA de base — para que el refuerzo de
+     * borde del puño se calcule contra el largo real de manga elegido
+     * (bug real, 2026-09-20: "ni bordes de mangas").
+     */
+    private static Identifier recortarMangaYCachear(Identifier base, Parte brazoParte, int hasta,
+                                                      com.femclothes.item.PatronRed red) {
+        String key = base + "#manga" + brazoParte + hasta;
+        Identifier cacheada = CACHE_MANGA.get(key);
+        if (cacheada != null) return cacheada;
+        NativeImage origen = ClothingTextureCache.imagenBase(base);
+        if (origen == null) return base;
+        NativeImage copia = new NativeImage(origen.getWidth(), origen.getHeight(), true);
+        copia.copyFrom(origen);
+        recortarFilas(copia, brazoParte, 0, hasta);
+        if (red != null) ClothingTextureCache.perforarRed(copia, red, brazoParte, 0, hasta);
+        if (ClothingTextureCache.DEBUG_DUMP) {
+            try {
+                java.nio.file.Path dir = java.nio.file.Paths.get("femclothes_debug");
+                java.nio.file.Files.createDirectories(dir);
+                copia.writeTo(dir.resolve("manga_" + brazoParte + "_" + hasta + ".png"));
+            } catch (java.io.IOException ignored) {}
+        }
+        Identifier id = Identifier.of(Femclothes.MOD_ID, "dynamic/manga_" + Integer.toHexString(key.hashCode()));
+        net.minecraft.client.MinecraftClient.getInstance().getTextureManager()
+                .registerTexture(id, new net.minecraft.client.texture.NativeImageBackedTexture(copia));
+        CACHE_MANGA.put(key, id);
+        return id;
     }
 
     /**
@@ -163,47 +274,146 @@ public final class PiezasDelMod {
      * lado como las piernas.
      */
     private static List<Pieza> pantalon(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
-        Identifier base = PantalonItem.largo(stack).texturaCuerpo();
+        // Siempre el archivo COMPLETO ahora: la cobertura de pierna es dos
+        // anclajes que se intersecan (ver PantalonItem#filasVisibles), no
+        // un valor con un archivo pre-generado por combinación — el recorte
+        // se hace en runtime, mismo lugar que ya pintaba la cintura.
+        Identifier base = PantalonItem.TEXTURA_BASE;
+        float dilatacion = Calce.dilatacionEfectiva(stack);
+        int[] filasIzq = PantalonItem.filasVisibles(stack, Lado.IZQUIERDA);
+        int[] filasDer = PantalonItem.filasVisibles(stack, Lado.DERECHA);
+        int filasTiro = PantalonItem.tiro(stack).filas;
         return List.of(
-                new Pieza(Parte.PIERNA_IZQ, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA)),
-                new Pieza(Parte.PIERNA_DER, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.DERECHA)),
-                new Pieza(Parte.TORSO, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA)));
+                new Pieza(Parte.PIERNA_IZQ, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA), dilatacion, filasIzq[0], filasIzq[1]),
+                new Pieza(Parte.PIERNA_DER, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.DERECHA), dilatacion, filasDer[0], filasDer[1]),
+                // La banda de cintura pinta las últimas filasTiro filas del torso (ver pintarCintura).
+                new Pieza(Parte.TORSO, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA), dilatacion, 12 - filasTiro, 12));
     }
 
     private static Identifier texturaPantalon(Identifier base, ItemStack stack, Lado lado) {
         int colorBase = RegionResolver.colorBase(stack, lado);
+        // Mismo UV de pierna que las medias (Parte.PIERNA_*), así que
+        // PatronGenerador usa la misma caja para las dos — a pedido
+        // (2026-09-18, "todas las prendas compatibles con los patrones").
+        List<ClothingTextureCache.CapaMascara> capas = capasDePatron("pantalon", com.femclothes.tinturas.TinturasBlockEntity.Categoria.PANTALON, stack, lado);
         int filasTiro = PantalonItem.tiro(stack).filas;
+        int[] filasPierna = PantalonItem.filasVisibles(stack, lado);
+        Parte piernaParte = lado == Lado.DERECHA ? Parte.PIERNA_DER : Parte.PIERNA_IZQ;
+        com.femclothes.item.PatronRed red = com.femclothes.item.PatronRed.leer(stack);
         // Nota: usar Encima acá hace que reducirSiHaceFalta trate al
         // pantalón como si tuviera estampa (8x, sin achicar). Es una
         // sobra chica -12 filas de torso- frente a complicar esa deteccion
         // para distinguir "encima real" de "banda de cintura".
-        ClothingTextureCache.Encima cintura = new ClothingTextureCache.Encima() {
-            @Override public String clave() { return "cintura" + filasTiro; }
+        ClothingTextureCache.Encima ajustes = new ClothingTextureCache.Encima() {
+            @Override public String clave() {
+                // piernaParte en la clave (mismo bug/fix que en medias): si
+                // no, las dos piernas con el mismo largo comparten cache y
+                // solo una se recorta de verdad. La pieza de TORSO reusa a
+                // propósito la clave de IZQUIERDA (mismo Lado.IZQUIERDA en
+                // su llamada), eso sigue igual.
+                String base = "pantalon" + piernaParte + filasTiro + "_" + filasPierna[0] + "_" + filasPierna[1] + "_" + red;
+                return EstampaTextures.tieneEstampa(stack) ? base + "_" + EstampaTextures.claveEstampas(stack) : base;
+            }
             @Override public boolean aplicar(NativeImage destino) {
-                pintarCintura(destino, colorBase, filasTiro);
+                if (EstampaTextures.tieneEstampa(stack)) EstampaTextures.estampar(destino, stack);
+                pintarCintura(destino, colorBase, filasTiro, capas);
+                recortarFilas(destino, piernaParte, filasPierna[0], filasPierna[1]);
+                if (red != null) ClothingTextureCache.perforarRed(destino, red, piernaParte, filasPierna[0], filasPierna[1]);
                 return true;
             }
         };
-        return ClothingTextureCache.composeGarment(base, colorBase, null, 0,
-                ClothingTextureCache.Shading.LEGS, cintura);
+        return ClothingTextureCache.composeGarmentCapas(base, colorBase, capas,
+                ClothingTextureCache.Shading.LEGS, ajustes);
     }
 
-    /** Pinta una banda lisa en las últimas {@code filas} del cuboide de TORSO. */
-    private static void pintarCintura(NativeImage img, int colorRgb, int filas) {
+    /**
+     * Deja transparentes (alfa 0) las filas de {@code parte} que quedan
+     * FUERA de {@code [desde,hasta)} (de las 12 del cuboide) — el recorte
+     * en runtime que reemplaza a "elegir un archivo por valor de largo"
+     * ahora que la cobertura de extremidad son dos anclajes que se
+     * intersecan. Mismo mecanismo fila-por-fila que {@link #pintarCintura},
+     * pero borrando en vez de pintando.
+     */
+    private static void recortarFilas(NativeImage img, Parte parte, int desde, int hasta) {
+        int escala = CuerpoGeometria.ESCALA_TELA;
+        CajaSkin caja = LayoutSkin.base(parte, false).escalada(escala);
+        for (CajaSkin.Rect cara : new CajaSkin.Rect[]{
+                caja.derecha(), caja.frente(), caja.izquierda(), caja.atras()}) {
+            int yDesde = cara.y0() + desde * escala;
+            int yHasta = cara.y0() + hasta * escala;
+            for (int y = cara.y0(); y < cara.y1(); y++) {
+                if (y >= yDesde && y < yHasta) continue;
+                for (int x = cara.x0(); x < cara.x1(); x++) {
+                    img.setColor(x, y, 0);
+                }
+            }
+        }
+    }
+
+    /**
+     * Pinta una banda en las últimas {@code filas} del cuboide de TORSO —
+     * lisa si no hay patrón, o con el patrón encima (donde la máscara sea
+     * opaca) igual que el resto de la prenda, a pedido (2026-09-18,
+     * "sigo sin entender porque la parte del torso del pantalon no se
+     * pinta"): antes esta banda era SIEMPRE lisa, sin importar el patrón
+     * elegido, porque {@code PatronGenerador} no tenía una caja para el
+     * TORSO de pantalón — ya se sumó (ver {@code PatronGenerador
+     * #CAJAS_POR_PRENDA}).
+     */
+    private static void pintarCintura(NativeImage img, int colorRgb, int filas,
+                                       List<ClothingTextureCache.CapaMascara> capas) {
         int escala = CuerpoGeometria.ESCALA_TELA;
         CajaSkin torso = LayoutSkin.base(Parte.TORSO, false).escalada(escala);
         int alto = filas * escala;
         int blanco = 0xFFFFFFFF; // ABGR: blanco es el mismo valor en cualquier orden de canales
+        int colorBase = ClothingTextureCache.tintPixel(blanco, colorRgb);
         for (CajaSkin.Rect cara : new CajaSkin.Rect[]{
                 torso.derecha(), torso.frente(), torso.izquierda(), torso.atras()}) {
             int y0 = Math.max(cara.y0(), cara.y1() - alto);
-            int color = ClothingTextureCache.tintPixel(blanco, colorRgb);
             for (int y = y0; y < cara.y1(); y++) {
                 for (int x = cara.x0(); x < cara.x1(); x++) {
-                    img.setColor(x, y, color);
+                    // Capas en orden, fundidas con su modo/opacidad y
+                    // recortadas a su región — mismo criterio que
+                    // composeGarmentCapas (ver CapaMascara#cubre).
+                    int acumulado = colorBase;
+                    for (ClothingTextureCache.CapaMascara capa : capas) {
+                        int op = capa.opacidadEn(x, y);
+                        if (op <= 0) continue;
+                        acumulado = ClothingTextureCache.mezclar(acumulado, blanco, capa.colorEn(x, y), capa.modo(), op);
+                    }
+                    img.setColor(x, y, ClothingTextureCache.tramar(acumulado, x, y));
                 }
             }
         }
+    }
+
+    /**
+     * Cinto de la pollera: una banda lisa en las últimas filas del TORSO,
+     * mismo mecanismo que la banda de cintura del pantalón ({@link
+     * #pintarCintura}) — a pedido (2026-09-17), "para que una la pollera
+     * con la cintura": sin esto la geometría de la pollera (que arranca en
+     * {@code PolleraGeometria#OFFSET_ABAJO}, fila ~9 de las 12 del torso)
+     * nacía de golpe contra la remera/piel de arriba, sin nada que tape la
+     * costura. {@code Capa.POLLERA}=30, arriba de {@code TORSO_EXTERIOR}
+     * (25): el cinto se ve incluso con una remera puesta.
+     */
+    private static List<Pieza> pollera(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
+        float dilatacion = Calce.dilatacionEfectiva(stack);
+        return List.of(new Pieza(Parte.TORSO, Capa.POLLERA, texturaCintoPollera(stack), dilatacion, 9, 12));
+    }
+
+    private static Identifier texturaCintoPollera(ItemStack stack) {
+        int colorBase = RegionResolver.colorBase(stack, Lado.IZQUIERDA);
+        Identifier base = PantalonItem.TEXTURA_BASE;
+        ClothingTextureCache.Encima ajustes = new ClothingTextureCache.Encima() {
+            @Override public String clave() { return "pollera_cinto"; }
+            @Override public boolean aplicar(NativeImage destino) {
+                pintarCintura(destino, colorBase, 3, List.of());
+                return true;
+            }
+        };
+        return ClothingTextureCache.composeGarment(base, colorBase, null, 0,
+                ClothingTextureCache.Shading.LEGS, ajustes);
     }
 
     /**
@@ -218,15 +428,19 @@ public final class PiezasDelMod {
      * hay nada que dibujar.
      */
     private static List<Pieza> calientabrazos(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
-        Variante.Manga cobertura = CalientabrazosItem.cobertura(stack);
-        if (cobertura == Variante.Manga.SIN) return List.of();
-
-        Identifier base = texturaBaseCalientabrazos(cobertura);
+        // Siempre el archivo COMPLETO (LARGA): cobertura de extremidad son
+        // dos anclajes que se intersecan, recortados en runtime. Si los dos
+        // anclajes no llegan a tocarse el recorte deja el brazo entero
+        // transparente — no hace falta un caso especial "SIN" aparte.
+        Identifier base = texturaBaseCalientabrazos(Variante.Manga.LARGA);
+        float dilatacion = Calce.dilatacionEfectiva(stack);
+        int[] filasIzq = CalientabrazosItem.filasVisibles(stack, Lado.IZQUIERDA);
+        int[] filasDer = CalientabrazosItem.filasVisibles(stack, Lado.DERECHA);
         return List.of(
                 new Pieza(Parte.BRAZO_IZQ, Capa.MANGA_INTERIOR,
-                        texturaCalientabrazos(base, stack, Lado.IZQUIERDA)),
+                        texturaCalientabrazos(base, stack, Lado.IZQUIERDA), dilatacion, filasIzq[0], filasIzq[1]),
                 new Pieza(Parte.BRAZO_DER, Capa.MANGA_INTERIOR,
-                        texturaCalientabrazos(base, stack, Lado.DERECHA)));
+                        texturaCalientabrazos(base, stack, Lado.DERECHA), dilatacion, filasDer[0], filasDer[1]));
     }
 
     private static Identifier texturaBaseCalientabrazos(Variante.Manga cobertura) {
@@ -236,7 +450,27 @@ public final class PiezasDelMod {
 
     private static Identifier texturaCalientabrazos(Identifier base, ItemStack stack, Lado lado) {
         int colorBase = RegionResolver.colorBase(stack, lado);
-        return ClothingTextureCache.composeGarment(base, colorBase, null, 0,
-                ClothingTextureCache.Shading.NONE);
+        // Caja de brazo propia en PatronGenerador (BRAZO_DER/IZQ) — a
+        // pedido (2026-09-18, "todas las prendas compatibles con los
+        // patrones").
+        List<ClothingTextureCache.CapaMascara> capas = capasDePatron("calientabrazos", com.femclothes.tinturas.TinturasBlockEntity.Categoria.CALIENTABRAZOS, stack, lado);
+        int[] filas = CalientabrazosItem.filasVisibles(stack, lado);
+        Parte brazoParte = lado == Lado.DERECHA ? Parte.BRAZO_DER : Parte.BRAZO_IZQ;
+        com.femclothes.item.PatronRed red = com.femclothes.item.PatronRed.leer(stack);
+        ClothingTextureCache.Encima recorte = new ClothingTextureCache.Encima() {
+            // brazoParte en la clave — mismo bug/fix que medias/pantalón.
+            @Override public String clave() {
+                String base = "brazo" + brazoParte + filas[0] + "_" + filas[1] + "_" + red;
+                return EstampaTextures.tieneEstampa(stack) ? base + "_" + EstampaTextures.claveEstampas(stack) : base;
+            }
+            @Override public boolean aplicar(NativeImage destino) {
+                if (EstampaTextures.tieneEstampa(stack)) EstampaTextures.estampar(destino, stack);
+                recortarFilas(destino, brazoParte, filas[0], filas[1]);
+                if (red != null) ClothingTextureCache.perforarRed(destino, red, brazoParte, filas[0], filas[1]);
+                return true;
+            }
+        };
+        return ClothingTextureCache.composeGarmentCapas(base, colorBase, capas,
+                ClothingTextureCache.Shading.NONE, recorte);
     }
 }

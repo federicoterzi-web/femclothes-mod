@@ -26,6 +26,7 @@ public final class PrendasDelMod {
         Garments.registrar(FemclothesItems.PANTALON, PANTALON);
         Garments.registrar(ModItems.REMERA, REMERA);
         Garments.registrar(FemclothesItems.CALIENTABRAZOS, CALIENTABRAZOS);
+        Garments.registrar(FemclothesItems.POLLERA, POLLERA);
     }
 
     /**
@@ -75,9 +76,13 @@ public final class PrendasDelMod {
         @Override
         public Set<Region> regionesDe(Operacion op) {
             return switch (op) {
-                case TENIR -> BILATERAL;
+                // PATRON habilitado a pedido (2026-09-18): "todas las
+                // prendas compatibles con los patrones" — antes vacío
+                // "por diseño" (ver el tooltip viejo de ClothingPatternItem,
+                // que hay que actualizar).
+                case TENIR, PATRON -> BILATERAL;
                 case CORTE -> ENTERA;
-                case PATRON, ESTAMPAR -> Set.of();
+                case ESTAMPAR -> Set.of();
             };
         }
 
@@ -104,15 +109,44 @@ public final class PrendasDelMod {
         @Override
         public Set<Region> regionesDe(Operacion op) {
             return switch (op) {
-                case TENIR -> BILATERAL;
+                // PATRON habilitado a pedido (2026-09-18), ver PANTALON.
+                case TENIR, PATRON -> BILATERAL;
                 case CORTE -> ENTERA;
-                case PATRON, ESTAMPAR -> Set.of();
+                case ESTAMPAR -> Set.of();
             };
         }
 
         @Override
         public Set<Parte> partes(ItemStack stack) {
             return EnumSet.of(Parte.BRAZO_IZQ, Parte.BRAZO_DER);
+        }
+    };
+
+    /**
+     * Pollera — segunda pasada (2026-09-16): NO declara partes. A
+     * diferencia del pantalón (que cubre la pierna entera y por eso apaga
+     * la skin/CUERPO ahí), la pollera es un tubo-campana que abraza y
+     * puede colisionar con la pierna pero no la tapa por completo en toda
+     * su superficie — apagar {@code PIERNA_IZQ}/{@code PIERNA_DER} dejaría
+     * huecos de skin faltante donde la geometría de la pollera no llega.
+     * Se dibuja puramente ENCIMA (ver {@code GarmentFeatureRenderer
+     * #dibujarPollera}), sin gobernar ninguna parte del cuerpo. Comparte
+     * slot con pantalón igual (alternativas — ver {@code
+     * piernas/exterior.json}). Sin eje de corte todavía, `CORTE` vacío.
+     */
+    private static final Garment POLLERA = new Garment() {
+        @Override
+        public Set<Region> regionesDe(Operacion op) {
+            return switch (op) {
+                // PATRON habilitado a pedido (2026-09-18), ver PANTALON.
+                case TENIR, PATRON -> BILATERAL;
+                case CORTE, ESTAMPAR -> Set.of();
+            };
+        }
+
+        @Override
+        public Set<Parte> partes(ItemStack stack) {
+            return Set.of();
         }
     };
 

@@ -42,10 +42,20 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
         @Override public String asString() { return clave; }
     }
 
-    /** Cuanto baja la manga sobre las 12 filas del brazo. */
+    /**
+     * Cuanto baja la manga sobre las 12 filas del brazo.
+     *
+     * <p><b>2026-09-15</b>: {@link #MINIMA} y {@link #MEDIA} se agregaron
+     * para cerrar el escalón parejo 0/2/4/6/8/10/12 que usa el Molde de
+     * Rango (calientabrazos usa las 6 de punta a punta; manga de remera
+     * usa 0..10 desde su único anclaje, Superior — ver
+     * {@code ModeladoBlockEntity#mangaRemeraDeRango}).
+     */
     public enum Manga implements StringIdentifiable {
         SIN("sin", 0),
+        MINIMA("minima", 2),
         CORTA("corta", 4),
+        MEDIA("media", 6),
         TRES_CUARTOS("tres_cuartos", 8),
         SIETE_OCTAVOS("siete_octavos", 10),
         LARGA("larga", 12);
@@ -83,8 +93,12 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
         @Override public String asString() { return clave; }
     }
 
-    /** Lo que sale de la mesa de crafteo antes de pasar por el telar. */
-    public static final Variante BASE = new Variante(Largo.NORMAL, Manga.CORTA, Cuello.REDONDO);
+    /**
+     * Lo que sale de la mesa de crafteo antes de pasar por el telar —
+     * sin mangas por defecto (2026-09-23, "de hecho la default tiene
+     * que venir sin mangas").
+     */
+    public static final Variante BASE = new Variante(Largo.NORMAL, Manga.SIN, Cuello.REDONDO);
 
     public static final Codec<Variante> CODEC = RecordCodecBuilder.create(i -> i.group(
             StringIdentifiable.createCodec(Largo::values).optionalFieldOf("largo", Largo.NORMAL)

@@ -1,0 +1,1456 @@
+package com.femclothes.modelado;
+
+import com.femclothes.item.Botamanga;
+import com.femclothes.item.ClothingPatternItem;
+import com.femclothes.item.PantalonTiro;
+import com.femclothes.region.Lado;
+import com.femclothes.sublimadora.MoldeCuelloItem;
+import com.femclothes.sublimadora.MoldeItem;
+import com.femclothes.sublimadora.Variante;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventories;
+import net.minecraft.inventory.SidedInventory;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import org.jetbrains.annotations.Nullable;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.particle.DustParticleEffect;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.screen.PropertyDelegate;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockPos;
+import software.bernie.geckolib.animatable.GeoBlockEntity;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.util.GeckoLibUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Mesa de Modelado — "máquina industrial" (docs/PRODUCCION_TEXTIL.md):
+ * apagada = configurable (almacén, borrador, lista de fijadas); encendida =
+ * config bloqueada, procesa sola cualquier prenda que reciba.
+ *
+ * Storage en dos niveles (a pedido, "storage compartido y storage por
+ * prenda"): {@link #ALMACEN_INICIO}..{@link #ALMACEN_FIN} (27, compartido
+ * entre las 4 categorías) y {@link #PORPRENDA_INICIO}..{@link #PORPRENDA_FIN}
+ * (48 = 12 por {@link Categoria}, aunque en pantalla solo se ve el banco de
+ * la categoría actual — el botón de categoría cicla cuál). Un molde ACTIVO
+ * por categoría ({@link #ACTIVO_INICIO}, 4 slots, uno por
+ * {@code Categoria.ordinal()}), también con el mismo truco: solo el de la
+ * categoría actual se ve/usa. {@link #PRENDA} (1, física) y {@link #SALIDA}
+ * (1, resultado) son genéricos, no por categoría.
+ */
+public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
+        net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity {
+
+    public static final int ALMACEN_INICIO = 0;
+    public static final int ALMACEN_TAMANO = 27; // 3 filas x 9
+    public static final int ALMACEN_FIN = ALMACEN_INICIO + ALMACEN_TAMANO; // exclusivo
+
+    public static final int ACTIVO_INICIO = ALMACEN_FIN;
+    public static final int ACTIVO_TAMANO = 4; // uno por Categoria
+    public static final int ACTIVO_FIN = ACTIVO_INICIO + ACTIVO_TAMANO;
+
+    public static final int PORPRENDA_INICIO = ACTIVO_INICIO + ACTIVO_TAMANO;
+    public static final int PORPRENDA_POR_CATEGORIA = 12;
+    public static final int PORPRENDA_TAMANO = PORPRENDA_POR_CATEGORIA * 4; // 48
+    public static final int PORPRENDA_FIN = PORPRENDA_INICIO + PORPRENDA_TAMANO;
+
+    public static final int PRENDA = PORPRENDA_FIN;
+    public static final int SALIDA = PRENDA + 1;
+
+    // Pines del esquema de remera (2026-09-24, "lo que pones ahi desaparece
+    // en vez de quedar para pinear y q se vea que tiene"): slots REALES del
+    // inventario, al final de la lista (así los índices de las partidas
+    // viejas no se corren) — el molde se queda en el pin y se ve.
+    public static final int PINES_INICIO = SALIDA + 1;
+    /** 12 pines por categoría (la remera ocupa los primeros 8, así las partidas viejas no se corren). */
+    public static final int PINES_POR_CATEGORIA = 12;
+    public static final int PINES_TAMANO = PINES_POR_CATEGORIA * 4;
+    public static final int PINES_FIN = PINES_INICIO + PINES_TAMANO;
+    public static final int TAMANO = PINES_FIN;
+
+    /** Qué prenda está configurando ahora el jugador — cicla con {@link #BTN_CATEGORIA}. */
+    public enum Categoria { REMERA, PANTALON, MEDIAS, CALIENTABRAZOS }
+
+    /** Qué hace cada pin del esquema (2026-09-26, pines para las 4 prendas). NINGUNO = pin sin usar en esa categoría. */
+    public enum Rol { CUELLO, MAT1, MAT2, MAT3, MANGA_IZQ, MANGA_DER, CALCE, TORSO, TIRO, BOTA_IZQ, BOTA_DER,
+        SUP_IZQ, SUP_DER, INF_IZQ, INF_DER,
+        PERS_IZQ1, PERS_IZQ2, PERS_IZQ3, PERS_DER1, PERS_DER2, PERS_DER3, NINGUNO }
+
+    /** Rol de cada uno de los 8 pines por categoría — MISMO orden que {@code ModeladoScreenHandler#PIN_POS}. */
+    public static final Rol[][] ROLES = {
+            {Rol.CUELLO, Rol.MAT1, Rol.MAT2, Rol.MANGA_IZQ, Rol.MAT3, Rol.MANGA_DER, Rol.CALCE, Rol.TORSO,
+                    Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
+            {Rol.TIRO, Rol.MAT1, Rol.MAT2, Rol.MAT3, Rol.CALCE, Rol.BOTA_IZQ, Rol.BOTA_DER, Rol.NINGUNO,
+                    Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
+            {Rol.SUP_IZQ, Rol.SUP_DER, Rol.INF_IZQ, Rol.INF_DER, Rol.CALCE, Rol.PERS_IZQ1, Rol.PERS_IZQ2,
+                    Rol.PERS_IZQ3, Rol.PERS_DER1, Rol.PERS_DER2, Rol.PERS_DER3, Rol.NINGUNO},
+            {Rol.SUP_IZQ, Rol.SUP_DER, Rol.INF_IZQ, Rol.INF_DER, Rol.CALCE, Rol.PERS_IZQ1, Rol.PERS_IZQ2,
+                    Rol.PERS_IZQ3, Rol.PERS_DER1, Rol.PERS_DER2, Rol.PERS_DER3, Rol.NINGUNO},
+    };
+
+    /** 15s a 20 ticks — a pedido (2026-09-21, "que cada maquina tome su tiempo... 15 la modeladora"). */
+    public static final int TICKS_PROCESO = 300;
+
+    public enum Estado { REPOSO, PROCESANDO, LISTO }
+
+    /**
+     * A qué anclaje apunta el borrador de un eje de EXTREMIDAD (pantalón-
+     * pierna, medias, calientabrazos) al fijar — ver
+     * docs sesión "cobertura de extremidad: dos anclajes que se
+     * intersecan". No aplica a remera (torso, sigue entero) ni a tiro
+     * (torso, un solo valor).
+     */
+    public enum Anclaje { SUPERIOR, INFERIOR }
+
+    private static final Logger LOG = LoggerFactory.getLogger("femclothes-modelado");
+
+    // Modelo "garment_shaper" v2 (bloques de moda 2.0, ver HUESOS.md): dos
+    // controladores independientes, no un solo reposo/trabajo — "trabajo"
+    // mueve guillotine/needle/cargo (solo mientras PROCESANDO), "en_marcha"
+    // hace girar el ventilador (mientras la máquina está encendida, prenda o
+    // no prenda adentro — es la señal de "tiene corriente").
+    private static final RawAnimation TRABAJO_ANIM = RawAnimation.begin().thenLoop("animation.garment_shaper.trabajo");
+    private static final RawAnimation EN_MARCHA_ANIM = RawAnimation.begin().thenLoop("animation.garment_shaper.en_marcha");
+
+    private final DefaultedList<ItemStack> items = DefaultedList.ofSize(TAMANO, ItemStack.EMPTY);
+    private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
+
+    private boolean encendida = false;
+    /** Cuántos jugadores tienen la GUI abierta ahora (solo servidor, no se guarda). */
+    private int guiAbiertas = 0;
+    private Estado estado = Estado.REPOSO;
+    private int progreso = 0;
+
+    /**
+     * Fijadas por categoría — a pedido (2026-09-16): "quiero que cada
+     * prenda tenga sus 8 slots porque hay moldes que sirven para varias
+     * prendas". Antes era UNA sola lista compartida entre las 4
+     * categorías (tope 8 total): armar una configuración completa que
+     * cubriera remera+pantalón+medias+calientabrazos a la vez —el caso de
+     * uso real, "una vez seteada la máquina sabe qué hacer con lo que le
+     * entre"— se quedaba sin lugar (remera sola ya puede pedir 3 fijadas
+     * — largo/manga/cuello — y pantalón otras 2 —superior/inferior—).
+     * Ahora cada {@link Categoria} tiene su propia lista de hasta 8: 32
+     * fijadas en total, ninguna categoría le saca lugar a otra.
+     * {@link #procesar} las aplica TODAS (las 4 listas), filtradas por
+     * tipo de ítem como siempre — así que da igual qué prenda física
+     * entre en el slot {@link #PRENDA}, cada una recibe la config de SU
+     * categoría automáticamente sin tocar nada más.
+     */
+    private final Map<Categoria, List<ComboCorte>> fijadasPorCategoria = new EnumMap<>(Categoria.class);
+    {
+        for (Categoria c : Categoria.values()) fijadasPorCategoria.put(c, new ArrayList<>());
+    }
+
+    /**
+     * Diseños guardados por categoría (2026-09-27, "que los slots donde se
+     * fijaban sirvan para guardar el diseño completo de todos los pines
+     * como 1 2 etc"): cada uno es una copia con nombre de la lista de
+     * fijadas de ese momento — reemplaza la fila vieja de "fijadas
+     * individuales con botón de quitar" (redundante: el corte del pin ya se
+     * ve en el propio esquema, y la chincheta ya lo quita).
+     */
+    public static final int DISENOS_MAXIMO = 8;
+    public record DisenoGuardado(String nombre, List<ComboCorte> combos) {}
+    private final Map<Categoria, List<DisenoGuardado>> disenosPorCategoria = new EnumMap<>(Categoria.class);
+    {
+        for (Categoria c : Categoria.values()) disenosPorCategoria.put(c, new ArrayList<>());
+    }
+
+    // ── borrador: valor actual de cada eje que el molde ACTIVO permite tocar ─
+    private Variante.Largo remeraLargo = Variante.Largo.NORMAL;
+    private Variante.Manga remeraManga = Variante.Manga.SIN;
+    private Variante.Cuello remeraCuello = Variante.Cuello.REDONDO;
+    private Variante.Manga calientabrazosCobertura = Variante.Manga.LARGA;
+    /** Anclaje y lado del borrador — solo importan para los 3 ejes de extremidad. */
+    private Anclaje anclaje = Anclaje.SUPERIOR;
+    private Lado ladoBorrador = Lado.AMBAS;
+    /** Qué categoría se está configurando ahora — ver {@link #BTN_CATEGORIA}. */
+    private Categoria categoria = Categoria.REMERA;
+    /**
+     * Simetría de manga (2026-09-24, "agreguemos un boton de simetria") —
+     * true (default): soltar un molde en CUALQUIERA de los dos pines de
+     * manga del esquema pinea las DOS mangas iguales (Lado.AMBAS). false:
+     * cada pin pinea solo su lado.
+     */
+    private boolean remeraSimetria = true;
+
+    public ModeladoBlockEntity(BlockPos pos, net.minecraft.block.BlockState state) {
+        super(ModeladoMod.MODELADO_BLOCK_ENTITY, pos, state);
+    }
+
+    // ── slots por categoría ─────────────────────────────────────────────
+
+    public Categoria categoria() { return categoria; }
+
+    /** El slot Activo dedicado de esa categoría (de los 4 en {@link #ACTIVO_INICIO}). */
+    public ItemStack activoStack(Categoria cat) { return items.get(ACTIVO_INICIO + cat.ordinal()); }
+
+    private ItemStack activoActual() { return activoStack(categoria); }
+
+    public boolean activoVacio() { return activoActual().isEmpty(); }
+
+    /**
+     * Si el molde puesto es un molde de corte DIRECTO (ya trae sus anclajes
+     * horneados de fábrica, ver {@link MoldeDeCorteItem}) — para la GUI:
+     * Anclaje/Lado no tienen ningún efecto sobre este tipo de molde, así
+     * que se apagan cuando está puesto (bug reportado jugando: "no
+     * funciona" cuando en realidad el ítem puesto los ignora a propósito).
+     */
+    public boolean activoEsComboDirecto() {
+        return activoActual().getItem() instanceof MoldeDeCorteItem;
+    }
+
+    /** Primer slot del banco de storage-por-prenda de esa categoría (12 slots desde ahí). */
+    public static int porPrendaInicio(Categoria cat) { return PORPRENDA_INICIO + cat.ordinal() * PORPRENDA_POR_CATEGORIA; }
+
+    /**
+     * Qué moldes acepta el Activo (o el storage-por-prenda) de esta
+     * categoría — un molde de corte directo sirve para cualquiera (ya trae
+     * sus propios ejes horneados), el resto son los moldes viejos por-eje,
+     * cada uno atado a UNA categoría salvo el de manga (remera Y
+     * calientabrazos comparten el mismo ítem físico — antes eso generaba
+     * ambigüedad de a qué eje aplicaba; ahora la resuelve el slot en el que
+     * lo pusiste, no el ítem).
+     */
+    public static boolean esMoldeDeCategoria(ItemStack stack, Categoria cat) {
+        Item item = stack.getItem();
+        if (item instanceof MoldeDeCorteItem) return true;
+        // Molde de rango unificado (a pedido): sirve para las 4 categorías
+        // de extremidad, cada una lo traduce a su propia escala (ver fijar()).
+        if (item instanceof MoldeRangoItem) return true;
+        // Molde de torso unificado (a pedido): sirve para remera (largo) y
+        // pantalón (tiro), mismo criterio.
+        if (item instanceof MoldeTorsoItem) return cat == Categoria.REMERA || cat == Categoria.PANTALON;
+        // Molde de calce (a pedido): transversal a las 4, sin anclaje ni lado.
+        if (item instanceof MoldeCalceItem) return true;
+        // Molde de red (a pedido): mismo criterio que calce.
+        if (item instanceof MoldeRedItem) return true;
+        // Materiales/capas de patrón (2026-09-24): transversal a las 4,
+        // igual que Calce/Red — arregla un gap real (el ítem ya declaraba
+        // en su tooltip que sirve para las 5 prendas, y PiezasDelMod ya lee
+        // sus capas en las 4 categorías vía RegionResolver.capasAplicadas,
+        // pero acá no estaba wireado a ninguna). La GUI (pines) hoy solo lo
+        // ofrece para REMERA — esto es aparte, la categorización para
+        // storage/isValid, no cambia qué pines existen.
+        if (item instanceof ClothingPatternItem) return true;
+        return switch (cat) {
+            case REMERA -> item instanceof MoldeCuelloItem
+                    || (item instanceof MoldeItem m && m.eje == MoldeItem.Eje.MANGA);
+            case PANTALON, MEDIAS -> false;
+            case CALIENTABRAZOS -> item instanceof MoldeItem m && m.eje == MoldeItem.Eje.MANGA;
+        };
+    }
+
+    // ── categorización de moldes para storage (2026-09-24, "en los slots
+    // de moldes de remera solo entran moldes que sirvan solo para la
+    // remera... en el almacen de prendas van los moldes que sirven para
+    // mas de una prenda") — separado de esMoldeDeCategoria de arriba, que
+    // sigue siendo "¿sirve ACÁ?" (usado por Activo, sin cambios); esto es
+    // "¿sirve SOLO acá, o en varias?", para decidir en QUÉ banco guardarlo.
+
+    private static java.util.EnumSet<Categoria> categoriasDe(ItemStack stack) {
+        var set = java.util.EnumSet.noneOf(Categoria.class);
+        for (Categoria c : Categoria.values()) if (esMoldeDeCategoria(stack, c)) set.add(c);
+        return set;
+    }
+
+    /** True si este molde sirve para {@code cat} y NINGUNA otra categoría. */
+    public static boolean esMoldeExclusivoDe(ItemStack stack, Categoria cat) {
+        var cats = categoriasDe(stack);
+        return cats.size() == 1 && cats.contains(cat);
+    }
+
+    /** True si este molde sirve para 2 o más categorías — va al almacén general, no al banco por-prenda. */
+    public static boolean esMoldeCompartido(ItemStack stack) {
+        return categoriasDe(stack).size() >= 2;
+    }
+
+    /**
+     * La prenda TERMINADA de esa categoría, o un molde EXCLUSIVO de esa
+     * categoría — lo que puebla el banco "Moldes de {@code <Categoria>}".
+     * Null si es una prenda de otra categoría (no vale acá), un molde
+     * compartido (va al almacén general) o ninguna de las dos cosas.
+     */
+    @Nullable
+    public static Categoria categoriaExclusivaDe(ItemStack stack) {
+        Categoria prenda = categoriaDe(stack);
+        if (prenda != null) return prenda;
+        var cats = categoriasDe(stack);
+        return cats.size() == 1 ? cats.iterator().next() : null;
+    }
+
+    // ── traducción de rango abstracto a la escala real de cada prenda ───
+
+    /**
+     * Pantalón: 6 escalones parejos 2/4/6/8/10/12 — mismo criterio que
+     * medias. Ya NO recibe {@code anclaje} (2026-09-23, "pantalones se
+     * fija solo el corte inferior") — el pantalón perdió el anclaje
+     * Superior, este método siempre devuelve la escala Inferior.
+     */
+    private static Botamanga pantalonDeRango(MoldeRangoItem.Rango r) {
+        return switch (r) {
+            case MINIMO -> Botamanga.MUSLO;
+            case CORTO -> Botamanga.RODILLA;
+            case MEDIO -> Botamanga.PANTORRILLA;
+            case MEDIOLARGO -> Botamanga.TOBILLO_ALTO;
+            case LARGO -> Botamanga.TOBILLO;
+            case MAXIMO -> Botamanga.PIE;
+        };
+    }
+
+    /**
+     * Los 6 escalones parejos que pidió el dueño, 2/4/6/8/10/12 — a
+     * pedido, "largo... tiene que llegar adonde antes llegaba máximo, y
+     * así corremos todas" + "mediolargo... para que tengamos 2 4 6 8 10
+     * 12". Misma escala que {@link #pantalonDeRango} desde que pantalón y
+     * medias comparten el eje {@link Botamanga} (2026-09-23).
+     */
+    private static Botamanga mediasDeRango(MoldeRangoItem.Rango r) {
+        return switch (r) {
+            case MINIMO -> Botamanga.MUSLO;
+            case CORTO -> Botamanga.RODILLA;
+            case MEDIO -> Botamanga.PANTORRILLA;
+            case MEDIOLARGO -> Botamanga.TOBILLO_ALTO;
+            case LARGO -> Botamanga.TOBILLO;
+            case MAXIMO -> Botamanga.PIE;
+        };
+    }
+
+    /** Calientabrazos: parejo 2/4/6/8/10/12, sin importar anclaje (ya tiene los dos, como medias). */
+    private static Variante.Manga mangaCalientabrazosDeRango(MoldeRangoItem.Rango r) {
+        return switch (r) {
+            case MINIMO -> Variante.Manga.MINIMA;
+            case CORTO -> Variante.Manga.CORTA;
+            case MEDIO -> Variante.Manga.MEDIA;
+            case MEDIOLARGO -> Variante.Manga.TRES_CUARTOS;
+            case LARGO -> Variante.Manga.SIETE_OCTAVOS;
+            case MAXIMO -> Variante.Manga.LARGA;
+        };
+    }
+
+    /**
+     * Manga de remera: UN SOLO anclaje (Superior, hombro hacia abajo) — a
+     * pedido, "manga tranquilamente puede tener solo anclaje superior".
+     * 0/2/4/6/8/10 — Larga(12) queda afuera del rango unificado por ahora
+     * (se puede seguir poniendo con el molde cíclico viejo si hace falta).
+     * Sin {@code private} a propósito: {@link ModeladoScreenHandler}
+     * (mismo paquete) la reusa para el slot del esquema visual.
+     */
+    static Variante.Manga mangaRemeraDeRango(MoldeRangoItem.Rango r) {
+        return switch (r) {
+            case MINIMO -> Variante.Manga.SIN;
+            case CORTO -> Variante.Manga.MINIMA;
+            case MEDIO -> Variante.Manga.CORTA;
+            case MEDIOLARGO -> Variante.Manga.MEDIA;
+            case LARGO -> Variante.Manga.TRES_CUARTOS;
+            case MAXIMO -> Variante.Manga.SIETE_OCTAVOS;
+        };
+    }
+
+    private static Variante.Largo largoDeRango(MoldeTorsoItem.Rango r) {
+        return switch (r) {
+            case CORTO -> Variante.Largo.CROP;
+            case MEDIO -> Variante.Largo.NORMAL;
+            case LARGO -> Variante.Largo.LARGO;
+        };
+    }
+
+    private static PantalonTiro tiroDeRango(MoldeTorsoItem.Rango r) {
+        return switch (r) {
+            case CORTO -> PantalonTiro.CORTO;
+            case MEDIO -> PantalonTiro.MEDIO;
+            case LARGO -> PantalonTiro.LARGO;
+        };
+    }
+
+    // ── getters de estado, para la GUI ──────────────────────────────────
+
+    public boolean encendida() { return encendida; }
+
+    public void guiAbierta() { guiAbiertas++; }
+    public void guiCerrada() { guiAbiertas = Math.max(0, guiAbiertas - 1); }
+
+    private boolean hayFijadas() {
+        for (List<ComboCorte> l : fijadasPorCategoria.values()) if (!l.isEmpty()) return true;
+        return false;
+    }
+
+    /** A qué categoría pertenece la prenda cargada AHORA (null si no hay nada) — para el hueso "REMERA" de {@link ModeladoGeoModel}. */
+    @Nullable
+    public Categoria categoriaPrenda() {
+        // La de la ranura PRENDA y, cuando la máquina la terminó y pasó a
+        // SALIDA, la del resultado: la prenda se ve arriba hasta que se
+        // retira (2026-09-26) y no solo mientras está sin procesar.
+        Categoria cat = categoriaDe(items.get(PRENDA));
+        return cat != null ? cat : categoriaDe(items.get(SALIDA));
+    }
+
+    /**
+     * Sin botón de Encender en la GUI (a pedido): se prende sola al cerrar
+     * la pantalla — ver {@code ModeladoScreenHandler#onClosed} — y se apaga
+     * sola al terminar de procesar (ver {@link #tick}), así el jugador
+     * puede volver a abrirla para retirar el resultado y cargar la
+     * siguiente prenda sin un paso manual de más.
+     */
+    public void encenderAlCerrar() {
+        // Sin esto prendía aunque la GUI se cerrara con el slot PRENDA
+        // vacío (2026-09-22, "se esta encendiendo... sin que haya prenda
+        // puesta eso esta mal") — el ventilador ("en_marcha") arrancaba
+        // sin nada para procesar.
+        if (encendida || items.get(PRENDA).isEmpty()) return;
+        encendida = true;
+        // Mismo bug que las transiciones de tick() (ver #sincronizar): sin
+        // esto, "en_marcha" (el ventilador) nunca se enteraba del lado
+        // cliente de que la máquina se prendió sola al cerrar la GUI.
+        sincronizar();
+    }
+
+    public Estado estado() { return estado; }
+    public int progreso() { return progreso; }
+    /** Las fijadas de la categoría ACTUAL — ver {@link #fijadasPorCategoria}. */
+    public List<ComboCorte> fijadas() { return fijadasPorCategoria.get(categoria); }
+    public Variante.Largo remeraLargo() { return remeraLargo; }
+    public Variante.Manga remeraManga() { return remeraManga; }
+    public Variante.Cuello remeraCuello() { return remeraCuello; }
+    public Variante.Manga calientabrazosCobertura() { return calientabrazosCobertura; }
+    public Anclaje anclaje() { return anclaje; }
+    public Lado ladoBorrador() { return ladoBorrador; }
+
+    // ── botones ──────────────────────────────────────────────────────
+
+    public static final int BTN_FIJAR = 4;
+    public static final int BTN_ENCENDER = 6;
+    /** Cicla Superior/Inferior — solo importa para pantalón-largo/medias/calientabrazos. */
+    public static final int BTN_ANCLAJE = 7;
+    /** Cicla Izquierda/Derecha/Ambas — ídem. */
+    public static final int BTN_LADO = 8;
+    /** Cicla Remera -> Pantalón -> Medias -> Calientabrazos -> Remera. */
+    public static final int BTN_CATEGORIA = 9;
+    /** Togglea {@link #remeraSimetria} — solo el esquema de REMERA lo usa. */
+    public static final int BTN_SIMETRIA = 10;
+    public static final int BTN_DESFIJAR_BASE = 100; // + índice en fijadas
+    /** + índice de pin (0..7): la chincheta de cada slot de corte de remera. */
+    public static final int BTN_PIN_BASE = 200;
+    /** + índice de diseño (0..{@link #DISENOS_MAXIMO}-1): click directo en el casillero numerado carga ese diseño. */
+    public static final int BTN_CARGAR_DISENO_BASE = 300;
+    /** + índice de diseño: click derecho en el casillero lo borra. */
+    public static final int BTN_BORRAR_DISENO_BASE = 320;
+
+    public boolean onButtonClick(int id) {
+        LOG.info("onButtonClick(id={}) side={}", id, world != null && world.isClient ? "CLIENTE" : "SERVIDOR");
+        if (encendida && id != BTN_ENCENDER) return false; // config bloqueada mientras produce
+        boolean cambio;
+        switch (id) {
+            case BTN_FIJAR -> cambio = fijar();
+            case BTN_ENCENDER -> {
+                encendida = !encendida;
+                cambio = true;
+            }
+            case BTN_ANCLAJE -> {
+                anclaje = anclaje == Anclaje.SUPERIOR ? Anclaje.INFERIOR : Anclaje.SUPERIOR;
+                cambio = true;
+            }
+            case BTN_LADO -> {
+                ladoBorrador = siguiente(Lado.values(), ladoBorrador);
+                cambio = true;
+            }
+            case BTN_CATEGORIA -> {
+                categoria = siguiente(Categoria.values(), categoria);
+                cambio = true;
+            }
+            case BTN_SIMETRIA -> {
+                remeraSimetria = !remeraSimetria;
+                cambio = true;
+            }
+            default -> {
+                if (id >= BTN_PIN_BASE && id < BTN_PIN_BASE + PINES_TAMANO) {
+                    cambio = chinchetaPin(id - BTN_PIN_BASE);
+                    if (!cambio) return false;
+                } else if (id >= BTN_CARGAR_DISENO_BASE && id < BTN_CARGAR_DISENO_BASE + DISENOS_MAXIMO) {
+                    cambio = cargarDiseno(id - BTN_CARGAR_DISENO_BASE);
+                    if (!cambio) return false;
+                } else if (id >= BTN_BORRAR_DISENO_BASE && id < BTN_BORRAR_DISENO_BASE + DISENOS_MAXIMO) {
+                    cambio = borrarDiseno(id - BTN_BORRAR_DISENO_BASE);
+                    if (!cambio) return false;
+                } else if (id >= BTN_DESFIJAR_BASE && id < BTN_PIN_BASE) {
+                    int idx = id - BTN_DESFIJAR_BASE;
+                    List<ComboCorte> lista = fijadasPorCategoria.get(categoria);
+                    if (idx < 0 || idx >= lista.size()) return false;
+                    ComboCorte quitada = lista.remove(idx);
+                    soltarPinDeFijada(categoria, quitada);
+                    cambio = true;
+                } else {
+                    return false;
+                }
+            }
+        }
+        if (!cambio) return false;
+        // markDirty() sola no manda el paquete al cliente (solo marca el
+        // chunk para GUARDAR) — sin esto, la lista de fijadas y el resto
+        // del estado nunca llegaban en vivo (bug jugando: "no hace pin",
+        // "no lo desfija"). Mismo mecanismo que ya usa
+        // SublimadoraBlockEntity para sus barras de tinta.
+        markDirty();
+        if (world != null) world.updateListeners(pos, getCachedState(), getCachedState(), 3);
+        return true;
+    }
+
+    private static <T> T siguiente(T[] valores, T actual) {
+        int i = 0;
+        for (; i < valores.length; i++) if (valores[i] == actual) break;
+        return valores[(i + 1) % valores.length];
+    }
+
+    /**
+     * Junta el borrador de la categoría actual (según qué molde hay en su
+     * slot Activo dedicado) en un ComboCorte y lo agrega a la lista fijada.
+     * Un solo botón FIJAR para las 4 categorías: cuál molde vale para cuál
+     * eje ya no lo decide el TIPO de ítem en ambigüedad (antes MOLDE_MANGA
+     * servía a la vez para remera y calientabrazos) sino en QUÉ slot
+     * Activo lo pusiste, uno por categoría.
+     */
+    private boolean fijar() {
+        ItemStack activo = activoActual();
+        LOG.info("fijar(): categoria={} anclaje={} lado={} activo={}",
+                categoria, anclaje, ladoBorrador, activo.isEmpty() ? "VACIO" : activo.getItem());
+        if (activo.isEmpty()) return false;
+        // A pedido (2026-09-16): la GUI (ModeladoScreen) muestra el ícono
+        // del molde que produjo cada fijada en vez de un código de texto
+        // — se guarda ACÁ, una sola vez, y se le pega a cualquier combo
+        // que salga de este método (ver ComboCorte#iconoOrigen).
+        Identifier icono = net.minecraft.registry.Registries.ITEM.getId(activo.getItem());
+        if (activo.getItem() instanceof MoldeDeCorteItem) {
+            return agregarFijada(MoldeDeCorteItem.combo(activo).conIcono(icono));
+        }
+        // Calce: transversal a las 4 categorías, sin anclaje ni lado — se
+        // resuelve ACÁ, antes del switch por categoría, en vez de
+        // duplicarlo en las 4 ramas.
+        if (activo.getItem() instanceof MoldeCalceItem m) {
+            return agregarFijada(ComboCorte.calce(m.valor).conIcono(icono));
+        }
+        // Red: mismo criterio que calce — transversal, antes del switch por categoría.
+        if (activo.getItem() instanceof MoldeRedItem m) {
+            return agregarFijada(ComboCorte.red(m.valor).conIcono(icono));
+        }
+        ComboCorte combo = switch (categoria) {
+            case REMERA -> {
+                // Cada eje es una fijada INDEPENDIENTE (largo/manga/cuello
+                // por separado) — ver PrendaModelado#aplicar: cada una
+                // parchea solo su eje sobre el Variante actual, no pisa a
+                // las demás.
+                if (activo.getItem() instanceof MoldeRangoItem m) yield ComboCorte.remeraManga(mangaRemeraDeRango(m.rango));
+                if (activo.getItem() instanceof MoldeTorsoItem m) yield ComboCorte.remeraLargo(largoDeRango(m.rango));
+                if (activo.getItem() instanceof MoldeCuelloItem m) yield ComboCorte.remeraCuello(m.valor);
+                yield ComboCorte.VACIO;
+            }
+            case PANTALON -> {
+                // Solo el corte INFERIOR (2026-09-23, "pantalones se fija
+                // solo el corte inferior") — el pantalón perdió el anclaje
+                // Superior, ya no mira "anclaje" para decidir a cuál de
+                // los dos escribir.
+                if (activo.getItem() instanceof MoldeRangoItem m) yield ComboCorte.pantalonInferior(pantalonDeRango(m.rango), ladoBorrador);
+                if (activo.getItem() instanceof MoldeTorsoItem m) yield ComboCorte.tiro(tiroDeRango(m.rango));
+                yield ComboCorte.VACIO;
+            }
+            case MEDIAS -> {
+                if (!(activo.getItem() instanceof MoldeRangoItem m)) yield ComboCorte.VACIO;
+                Botamanga v = mediasDeRango(m.rango);
+                yield anclaje == Anclaje.SUPERIOR
+                        ? ComboCorte.mediasSuperior(v, ladoBorrador)
+                        : ComboCorte.mediasInferior(v, ladoBorrador);
+            }
+            case CALIENTABRAZOS -> {
+                Variante.Manga v = activo.getItem() instanceof MoldeRangoItem m ? mangaCalientabrazosDeRango(m.rango) : calientabrazosCobertura;
+                yield anclaje == Anclaje.SUPERIOR
+                        ? ComboCorte.calientabrazosSuperior(v, ladoBorrador)
+                        : ComboCorte.calientabrazosInferior(v, ladoBorrador);
+            }
+        };
+        return agregarFijada(combo.conIcono(icono));
+    }
+
+    private boolean agregarFijada(ComboCorte combo) {
+        if (combo.estaVacio()) {
+            LOG.info("agregarFijada(): RECHAZADA, combo vacio");
+            return false;
+        }
+        List<ComboCorte> lista = fijadasPorCategoria.get(categoria);
+        if (lista.size() >= 12) {
+            LOG.info("agregarFijada(): RECHAZADA, lista llena (12) categoria={} combo={}", categoria, combo);
+            return false;
+        }
+        lista.add(combo);
+        LOG.info("agregarFijada(): agregada categoria={} combo={} (total ahora {})", categoria, combo, lista.size());
+        return true;
+    }
+
+    // ── pines del esquema visual de remera (2026-09-24) ──────────────────
+    // Un pin por eje, cada uno arma su ComboCorte y lo fija DIRECTO al
+    // soltar el molde — sin pasar por Activo+Fijar (a diferencia del resto
+    // de las categorías, que siguen con ese flujo). Solo tienen efecto con
+    // REMERA activa: si el jugador cambió de pestaña sin cerrar la GUI y
+    // de algún modo el click llega igual, no hay que fijarlo en la lista
+    // de OTRA categoría por error.
+
+    /**
+     * El combo que representa {@code molde} puesto en el pin {@code i} de la
+     * categoría {@code cat}, o null si ese pin no acepta ese ítem.
+     * {@code lado}: el lado que aplica un pin de lado (con simetría activa
+     * se pasa AMBAS sin importar en cuál de los dos se soltó).
+     */
+    private static ComboCorte comboDePin(Categoria cat, int i, ItemStack molde, Lado lado) {
+        Rol rol = ROLES[cat.ordinal()][i];
+        Item item = molde.getItem();
+        ComboCorte c = null;
+        switch (rol) {
+            case CUELLO -> {
+                if (item instanceof MoldeCuelloItem m) c = ComboCorte.remeraCuello(m.valor);
+            }
+            case MAT1, MAT2, MAT3 -> {
+                // Medias de red/calado (2026-09-25): un solo eje, cualquiera
+                // de los 3 pines la acepta. Los patrones son capas apiladas.
+                if (item instanceof MoldeRedItem m) c = ComboCorte.red(m.valor);
+                else if (item instanceof ClothingPatternItem m) {
+                    c = ComboCorte.capaPatron(rol == Rol.MAT1 ? 0 : rol == Rol.MAT2 ? 1 : 2, m.patternId);
+                }
+            }
+            case PERS_IZQ1, PERS_IZQ2, PERS_IZQ3, PERS_DER1, PERS_DER2, PERS_DER3 -> {
+                int capa = rol == Rol.PERS_IZQ1 || rol == Rol.PERS_DER1 ? 0
+                        : rol == Rol.PERS_IZQ2 || rol == Rol.PERS_DER2 ? 1 : 2;
+                if (item instanceof MoldeRedItem m) c = ComboCorte.red(m.valor);
+                else if (item instanceof ClothingPatternItem m) c = ComboCorte.capaPatron(capa, m.patternId, lado);
+            }
+            case MANGA_IZQ, MANGA_DER -> {
+                if (item instanceof MoldeRangoItem m) c = ComboCorte.remeraManga(mangaRemeraDeRango(m.rango), lado);
+            }
+            case CALCE -> {
+                if (item instanceof MoldeCalceItem m) c = ComboCorte.calce(m.valor);
+            }
+            case TORSO -> {
+                if (item instanceof MoldeTorsoItem m) c = ComboCorte.remeraLargo(largoDeRango(m.rango));
+            }
+            case TIRO -> {
+                if (item instanceof MoldeTorsoItem m) c = ComboCorte.tiro(tiroDeRango(m.rango));
+            }
+            case BOTA_IZQ, BOTA_DER -> {
+                if (item instanceof MoldeRangoItem m) c = ComboCorte.pantalonInferior(pantalonDeRango(m.rango), lado);
+            }
+            case SUP_IZQ, SUP_DER, INF_IZQ, INF_DER -> {
+                // El pin de ARRIBA del esquema controla el borde de arriba de la prenda, que es el
+                // anclaje INFERIOR (crece desde el tobillo/muñeca hacia arriba); el de abajo, el borde
+                // de abajo = anclaje SUPERIOR. Antes estaba cruzado: "Corte Superior" movía el borde de abajo.
+                boolean sup = rol == Rol.INF_IZQ || rol == Rol.INF_DER;
+                if (cat == Categoria.MEDIAS) {
+                    if (item instanceof MoldeRangoItem m) {
+                        Botamanga v = mediasDeRango(m.rango);
+                        c = sup ? ComboCorte.mediasSuperior(v, lado) : ComboCorte.mediasInferior(v, lado);
+                    }
+                } else if (cat == Categoria.CALIENTABRAZOS && item instanceof MoldeRangoItem m) {
+                    Variante.Manga v = mangaCalientabrazosDeRango(m.rango);
+                    c = sup ? ComboCorte.calientabrazosSuperior(v, lado) : ComboCorte.calientabrazosInferior(v, lado);
+                }
+            }
+            default -> { }
+        }
+        return c == null ? null : c.conIcono(net.minecraft.registry.Registries.ITEM.getId(item));
+    }
+
+    /** El lado que le toca a un pin de lado; con simetría activa (o en pines sin lado) es AMBAS. */
+    private Lado ladoDePin(Categoria cat, int i) {
+        if (remeraSimetria) return Lado.AMBAS;
+        Lado lado = switch (ROLES[cat.ordinal()][i]) {
+            case MANGA_IZQ, BOTA_IZQ, SUP_IZQ, INF_IZQ, PERS_IZQ1, PERS_IZQ2, PERS_IZQ3 -> Lado.IZQUIERDA;
+            case MANGA_DER, BOTA_DER, SUP_DER, INF_DER, PERS_DER1, PERS_DER2, PERS_DER3 -> Lado.DERECHA;
+            default -> Lado.AMBAS;
+        };
+        // El esquema de medias y calientabrazos se lee "de frente" (izquierda del dibujo = izquierda de
+        // pantalla), pero la Izq. anatómica del jugador queda a la derecha en el visor: se cruzan.
+        if (cat == Categoria.MEDIAS || cat == Categoria.CALIENTABRAZOS) {
+            if (lado == Lado.IZQUIERDA) return Lado.DERECHA;
+            if (lado == Lado.DERECHA) return Lado.IZQUIERDA;
+        }
+        return lado;
+    }
+
+    public boolean remeraSimetria() { return remeraSimetria; }
+
+    /** ¿Acepta este pin este ítem? (independiente de la categoría activa/encendida — eso lo chequea {@link #isValid}). */
+    public static boolean pinAcepta(Categoria cat, int i, ItemStack molde) {
+        return comboDePin(cat, i, molde, Lado.AMBAS) != null;
+    }
+
+    // Estado por pin (2026-09-24, "una chincheta en cada slot de corte...
+    // fijarlo con la chincheta y el molde vuelve al almacen"): el pin tiene
+    // el molde puesto (se aplica de una, para verlo en el visor) y con la
+    // CHINCHETA se fija: el corte queda aplicado y el molde vuelve al
+    // almacén, así el mismo molde sirve para el otro lado. pinCombo = el
+    // corte que aplica ese pin ahora; pinFijado = si ya se chinchó.
+    private final ComboCorte[] pinCombo = new ComboCorte[PINES_TAMANO];
+    private final boolean[] pinFijado = new boolean[PINES_TAMANO];
+
+    public boolean pinFijado(int i) { return pinFijado[i]; }
+    public ComboCorte pinCombo(int i) { return pinCombo[i]; }
+
+    /**
+     * Un pin cambió de contenido: el corte anterior de ese pin (si había)
+     * deja de aplicarse, y el molde nuevo (si hay) se aplica sin fijar.
+     * Solo corre del lado SERVIDOR — el cliente se entera por el sync de
+     * NBT y por el de slots; correrlo también allá pisaba el estado
+     * recién sincronizado (ej. el molde que la chincheta devuelve al
+     * almacén hace vaciar el pin del lado cliente).
+     */
+    private void pinCambio(int idx, ItemStack viejo, ItemStack nuevo) {
+        if (world == null || world.isClient) return;
+        Categoria cat = Categoria.values()[idx / PINES_POR_CATEGORIA];
+        List<ComboCorte> lista = fijadasPorCategoria.get(cat);
+        if (pinCombo[idx] != null) {
+            lista.remove(pinCombo[idx]);
+            pinCombo[idx] = null;
+        }
+        pinFijado[idx] = false;
+        if (!nuevo.isEmpty()) {
+            int i = idx % PINES_POR_CATEGORIA;
+            ComboCorte c = comboDePin(cat, i, nuevo, ladoDePin(cat, i));
+            if (c != null && lista.size() < 12) {
+                lista.add(c);
+                pinCombo[idx] = c;
+            }
+        }
+        sincronizar();
+    }
+
+    /**
+     * Botón chincheta del pin {@code idx}: con molde puesto, FIJA el corte
+     * y manda el molde de vuelta al almacén; con el corte ya fijado (pin
+     * vacío), lo QUITA. Falso si no hay lugar donde devolver el molde
+     * (no se pierde nada, queda en el pin).
+     */
+    private boolean chinchetaPin(int idx) {
+        if (idx < 0 || idx >= PINES_TAMANO || idx / PINES_POR_CATEGORIA != categoria.ordinal()) return false;
+        int slot = PINES_INICIO + idx;
+        ItemStack molde = items.get(slot);
+        List<ComboCorte> lista = fijadasPorCategoria.get(categoria);
+        if (!molde.isEmpty()) {
+            if (pinCombo[idx] == null) return false;
+            if (!guardarMolde(categoria, molde.copyWithCount(1))) return false;
+            items.set(slot, ItemStack.EMPTY);
+            pinFijado[idx] = true;
+            return true;
+        }
+        if (pinFijado[idx]) {
+            if (pinCombo[idx] != null) lista.remove(pinCombo[idx]);
+            pinCombo[idx] = null;
+            pinFijado[idx] = false;
+            return true;
+        }
+        return false;
+    }
+
+    public int disenosGuardados() { return disenosPorCategoria.get(categoria).size(); }
+
+    /** Nombre del diseño guardado en ese casillero (para el hover), o null si está vacío. */
+    @Nullable
+    public String nombreDiseno(int idx) {
+        List<DisenoGuardado> lista = disenosPorCategoria.get(categoria);
+        return idx >= 0 && idx < lista.size() ? lista.get(idx).nombre() : null;
+    }
+
+    /**
+     * Recibido desde {@link GuardarDisenoPayload} (el nombre lo escribe el
+     * jugador en un {@code TextFieldWidget}, no entra en un
+     * {@code clickButton(int)} común) — guarda TODAS las fijadas de la
+     * categoría actual (todos los pines juntos) como un diseño con nombre,
+     * en el próximo casillero libre.
+     */
+    public boolean guardarDiseno(String nombreCrudo) {
+        List<ComboCorte> actual = fijadasPorCategoria.get(categoria);
+        List<DisenoGuardado> lista = disenosPorCategoria.get(categoria);
+        if (actual.isEmpty() || lista.size() >= DISENOS_MAXIMO) return false;
+        String nombre = nombreCrudo == null || nombreCrudo.isBlank()
+                ? "#" + (lista.size() + 1) : nombreCrudo.trim();
+        if (nombre.length() > 24) nombre = nombre.substring(0, 24);
+        lista.add(new DisenoGuardado(nombre, new ArrayList<>(actual)));
+        markDirty();
+        if (world != null) world.updateListeners(pos, getCachedState(), getCachedState(), 3);
+        return true;
+    }
+
+    /** Carga el diseño {@code idx} de la categoría actual: reemplaza TODAS las fijadas y suelta los pines. */
+    private boolean cargarDiseno(int idx) {
+        List<DisenoGuardado> lista = disenosPorCategoria.get(categoria);
+        if (idx < 0 || idx >= lista.size()) return false;
+        // Los pines de la categoría se sueltan: sus moldes vuelven al almacén (o al mundo si no hay lugar).
+        for (int i = categoria.ordinal() * PINES_POR_CATEGORIA; i < (categoria.ordinal() + 1) * PINES_POR_CATEGORIA; i++) {
+            pinCombo[i] = null;
+            pinFijado[i] = false;
+            ItemStack en = items.get(PINES_INICIO + i);
+            if (en.isEmpty()) continue;
+            items.set(PINES_INICIO + i, ItemStack.EMPTY);
+            if (!guardarMolde(categoria, en.copyWithCount(1)) && world != null && !world.isClient) {
+                net.minecraft.util.ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, en);
+            }
+        }
+        List<ComboCorte> fijadas = fijadasPorCategoria.get(categoria);
+        fijadas.clear();
+        fijadas.addAll(lista.get(idx).combos());
+        return true;
+    }
+
+    private boolean borrarDiseno(int idx) {
+        List<DisenoGuardado> lista = disenosPorCategoria.get(categoria);
+        if (idx < 0 || idx >= lista.size()) return false;
+        lista.remove(idx);
+        return true;
+    }
+
+    /** Devuelve un molde al storage que le corresponde (mismas reglas que isValid: compartido -> almacén general, exclusivo de remera -> su banco). */
+    private boolean guardarMolde(Categoria cat, ItemStack molde) {
+        int desde, hasta;
+        if (esMoldeCompartido(molde)) {
+            desde = ALMACEN_INICIO; hasta = ALMACEN_FIN;
+        } else if (esMoldeExclusivoDe(molde, cat)) {
+            desde = porPrendaInicio(cat); hasta = desde + PORPRENDA_POR_CATEGORIA;
+        } else {
+            return false;
+        }
+        for (int i = desde; i < hasta; i++) {
+            ItemStack en = items.get(i);
+            if (!en.isEmpty() && ItemStack.areItemsAndComponentsEqual(en, molde) && en.getCount() < en.getMaxCount()) {
+                en.increment(1);
+                return true;
+            }
+        }
+        for (int i = desde; i < hasta; i++) {
+            if (items.get(i).isEmpty()) {
+                items.set(i, molde);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Al des-fijar a mano una fijada de remera, el pin que la produjo se limpia (y el molde, si todavía estaba puesto, vuelve al mundo). */
+    private void soltarPinDeFijada(Categoria cat, ComboCorte quitada) {
+        for (int i = cat.ordinal() * PINES_POR_CATEGORIA; i < (cat.ordinal() + 1) * PINES_POR_CATEGORIA; i++) {
+            if (!quitada.equals(pinCombo[i])) continue;
+            pinCombo[i] = null;
+            pinFijado[i] = false;
+            ItemStack en = items.get(PINES_INICIO + i);
+            if (!en.isEmpty()) {
+                items.set(PINES_INICIO + i, ItemStack.EMPTY);
+                if (world != null && !world.isClient) {
+                    net.minecraft.util.ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, en);
+                }
+            }
+            return;
+        }
+    }
+
+    /**
+     * Aplica las fijadas de la categoría de la PRENDA (no la que esté
+     * mostrando la GUI en ese momento, ni las otras 3).
+     *
+     * <p><b>2026-09-20, bug real jugando</b>: "sigue cortandose la remera
+     * en crop top y en media red" — antes esto aplicaba las fijadas de
+     * las 4 categorías a CUALQUIER prenda, confiando en que
+     * {@link PrendaModelado#aplicar} filtrara por tipo de ítem. Eso
+     * funciona para los ejes propios de cada categoría (remeraLargo,
+     * pantalonTiro, etc. — cada uno ya chequea el tipo adentro), pero NO
+     * para los transversales (Calce y {@link com.femclothes.item.PatronRed}):
+     * esos aplican a CUALQUIER prenda reconocida sin importar bajo qué
+     * categoría se guardó la fijada. Una fijada "red fina" guardada
+     * mientras la GUI mostraba MEDIAS se colaba en cualquier remera
+     * procesada después, aunque el jugador ya hubiera borrado esa fijada
+     * de la pestaña que estaba mirando — porque en realidad estaba
+     * pisando la remera desde la lista de OTRA categoría. Limitar esto a
+     * la categoría real de la prenda que entra es la forma correcta de
+     * que "sin fijada de esa categoría" signifique de verdad "sin
+     * cambios" (vuelve a whatever el ítem ya traía — largo normal, sin
+     * red, tela completa).
+     */
+    private ItemStack procesar(ItemStack prenda) {
+        Categoria cat = categoriaDe(prenda);
+        if (cat == null) return prenda;
+        ItemStack out = prenda;
+        for (ComboCorte combo : fijadasPorCategoria.get(cat)) out = PrendaModelado.aplicar(out, combo);
+        return out;
+    }
+
+    /** A qué categoría pertenece esta prenda de verdad — mismo chequeo de tipo que {@link PrendaModelado#aplicar}. */
+    @Nullable
+    private static Categoria categoriaDe(ItemStack stack) {
+        if (stack.getItem() instanceof com.femclothes.sublimadora.RemeraItem) return Categoria.REMERA;
+        if (stack.getItem() instanceof com.femclothes.item.PantalonItem) return Categoria.PANTALON;
+        if (stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID) return Categoria.MEDIAS;
+        if (stack.getItem() instanceof com.femclothes.item.CalientabrazosItem) return Categoria.CALIENTABRAZOS;
+        return null;
+    }
+
+    /**
+     * La prenda física del slot {@link #PRENDA} con todas las fijadas ya
+     * aplicadas, para el visor 3D — {@link #procesar} no muta el slot real
+     * (cada {@code PrendaModelado.aplicar} devuelve una copia), así que
+     * llamar esto todos los frames del lado del cliente es seguro.
+     */
+    public ItemStack previsualizar() {
+        return procesar(items.get(PRENDA));
+    }
+
+    /**
+     * La ÚLTIMA vista previa no vacía — a pedido (2026-09-21, "quiero
+     * que las 3 muestren la ultima prenda con preview del ultimo
+     * seteado"): {@link #previsualizar} solo tiene algo mientras hay una
+     * prenda física en el slot; la pantallita del bloque
+     * ({@code ModeladoGeoModel}) usa ESTO en cambio, así que sigue
+     * mostrando el último corte hecho aunque ya hayas retirado el
+     * resultado. No persiste en NBT a propósito (es solo para la
+     * pantalla, se resetea si se descarga el chunk — aceptable).
+     */
+    private ItemStack ultimaVistaPrevia = ItemStack.EMPTY;
+
+    public ItemStack vistaPreviaPersistente() {
+        ItemStack actual = previsualizar();
+        if (!actual.isEmpty()) ultimaVistaPrevia = actual;
+        return ultimaVistaPrevia;
+    }
+
+    // ── animación + ticker ──────────────────────────────────────────────
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>(this, "trabajo", 0, state -> estado == Estado.PROCESANDO
+                ? state.setAndContinue(TRABAJO_ANIM)
+                : software.bernie.geckolib.animation.PlayState.STOP));
+        controllers.add(new AnimationController<>(this, "en_marcha", 0, state -> encendida
+                ? state.setAndContinue(EN_MARCHA_ANIM)
+                : software.bernie.geckolib.animation.PlayState.STOP));
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() { return cache; }
+
+    public static void tick(net.minecraft.world.World world, BlockPos pos, net.minecraft.block.BlockState state, ModeladoBlockEntity be) {
+        if (world.isClient) return;
+
+        // Ráfaga del ventilador (2026-09-22, "unos efectos visuales como
+        // de carga de viento") — atada a "encendida", igual que la
+        // animación "en_marcha" del hueso "fan" (no solo mientras
+        // PROCESANDO: la idea es que se sienta que la máquina está
+        // prendida, no solo trabajando).
+        if (be.encendida && world instanceof ServerWorld servidor && world.getTime() % 12 == 0) {
+            rafaga(servidor, pos);
+        }
+
+        switch (be.estado) {
+            case REPOSO -> {
+                boolean prendaOk = !be.items.get(PRENDA).isEmpty();
+                boolean salidaOk = be.items.get(SALIDA).isEmpty();
+                boolean fijadaOk = be.fijadasPorCategoria.values().stream().anyMatch(l -> !l.isEmpty());
+                if (be.encendida && prendaOk && salidaOk && fijadaOk) {
+                    be.estado = Estado.PROCESANDO;
+                    be.progreso = 0;
+                    be.sincronizar();
+                }
+            }
+            case PROCESANDO -> {
+                be.progreso++;
+                // Diseño sonoro (2026-09-22, "aplica los mismos [sonidos]
+                // a las otras dos" — clon del de SublimadoraBlockEntity —
+                // + "sonido de tijeras y maquinas de coser"): pitido en
+                // cada flanco del LED rojo, tijera de la guillotina cada
+                // tanto, clic-clic rápido de la aguja/máquina de coser.
+                if (world.getTime() % 20 == 0) be.sonar(SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), 0.25f, 2.0f);
+                if (be.progreso % 32 == 0) {
+                    be.sonar(SoundEvents.ENTITY_SHEEP_SHEAR, 0.5f, 0.9f + world.getRandom().nextFloat() * 0.2f);
+                }
+                if (be.progreso % 4 == 0) {
+                    be.sonar(SoundEvents.BLOCK_BAMBOO_WOOD_HIT, 0.3f, 1.6f + (world.getRandom().nextFloat() - 0.5f) * 0.3f);
+                }
+                // Partículas de las partes móviles de arriba (2026-09-23,
+                // "mas particulas arriba de la modeladora en la guillotina
+                // y la maquina de coser"): un tijeretazo de polvo cada
+                // corte, hilo de color (el de la prenda) en cada puntada.
+                if (world instanceof ServerWorld servidor) {
+                    if (be.progreso % 32 == 0) tijeretazo(servidor, pos);
+                    if (be.progreso % 8 == 0) hilada(servidor, pos, be.items.get(PRENDA));
+                }
+                // Sync periódica para que la barra de progreso (y el resto
+                // de lo que depende de estado()/progreso() del lado
+                // cliente) se vea avanzar en vivo, no solo al terminar —
+                // mismo intervalo que TinturasBlockEntity#tick.
+                if (be.progreso % 20 == 0) be.sincronizar();
+                if (be.progreso >= com.femclothes.util.DebugMaquinas.duracion(TICKS_PROCESO)) {
+                    ItemStack resultado = be.procesar(be.items.get(PRENDA));
+                    be.items.set(SALIDA, resultado);
+                    be.items.set(PRENDA, ItemStack.EMPTY);
+                    be.estado = Estado.LISTO;
+                    // Se apaga sola al terminar — sin esto, con el botón de
+                    // Encender ya sacado de la GUI, no habría forma de
+                    // volver a abrirla para cargar la siguiente prenda.
+                    be.encendida = false;
+                    // Campanita + carrillón juntos, igual que el LED verde
+                    // de Sublimadora — clon exacto de su combo de "listo".
+                    be.sonar(SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.0f, 1.5f);
+                    be.sonar(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 1.4f);
+                    be.sincronizar();
+                }
+            }
+            case LISTO -> {
+                if (!be.items.get(SALIDA).isEmpty()) {
+                    be.empujarSalida(world, pos);
+                }
+                if (be.items.get(SALIDA).isEmpty()) {
+                    be.estado = Estado.REPOSO;
+                    be.sincronizar();
+                }
+            }
+        }
+    }
+
+    /**
+     * Ráfaga de viento cerca del ventilador (2026-09-22, "efectos
+     * visuales como de carga de viento") — punto de salida relevado a
+     * mano desde el pivote real del hueso "fan" en
+     * {@code garment_shaper.geo.json} (X≈-1.5, Y≈5.8, Z≈7.71 en espacio
+     * de modelo Blockbench, /16 + centro de bloque). Mismo criterio de
+     * spawnParticles que {@code SublimadoraBlockEntity#vapor}.
+     */
+    private static void rafaga(ServerWorld world, BlockPos pos) {
+        // Arriba del bloque (2026-09-22, "las particulas de la modeladora
+        // que aparezcan arriba") — no en la posición real del ventilador
+        // (que queda pegado al costado, poco visible); centrado en X/Z,
+        // justo por encima de la máquina (su modelo llega a Y≈1 real).
+        double cx = pos.getX() + 0.5, cy = pos.getY() + 1.15, cz = pos.getZ() + 0.5;
+        world.spawnParticles(ParticleTypes.SMALL_GUST, cx, cy, cz, 0, 0, 0.02, 0, 1.0);
+    }
+
+    /**
+     * Tijeretazo de polvo en la guillotina — punto relevado a mano desde
+     * su pivote real ({@code garment_shaper.geo.json}, X≈-6.4, Y≈13.1,
+     * Z≈0 en espacio de modelo, /16 + centro de bloque).
+     */
+    private static void tijeretazo(ServerWorld world, BlockPos pos) {
+        double x = pos.getX() + 0.1, y = pos.getY() + 0.82, z = pos.getZ() + 0.5;
+        world.spawnParticles(ParticleTypes.CLOUD, x, y, z, 4, 0.15, 0.08, 0.15, 0.02);
+    }
+
+    /**
+     * Puntada de hilo de color en la aguja — mismo punto relevado que
+     * {@link #tijeretazo} pero del lado de "needle" (X≈6.4, Y≈11.6,
+     * Z≈-3.4). El color es el de la prenda que se está cosiendo, no uno
+     * fijo — mismo criterio que {@code TinturasGeoModel#colorDePrenda}.
+     */
+    private static void hilada(ServerWorld world, BlockPos pos, ItemStack prenda) {
+        int rgb = colorDeHilo(prenda);
+        float r = ((rgb >> 16) & 0xFF) / 255f, g = ((rgb >> 8) & 0xFF) / 255f, b = (rgb & 0xFF) / 255f;
+        DustParticleEffect efecto = new DustParticleEffect(new org.joml.Vector3f(r, g, b), 0.8f);
+        double x = pos.getX() + 0.9, y = pos.getY() + 0.73, z = pos.getZ() + 0.29;
+        world.spawnParticles(efecto, x, y, z, 2, 0.05, 0.05, 0.05, 0.01);
+    }
+
+    /** Color plano de la prenda para el hilo — mismos tipos que {@link #categoriaDe}, blanco si no hay ninguna reconocida. */
+    private static int colorDeHilo(ItemStack stack) {
+        if (stack.isEmpty()) return 0xFFFFFF;
+        if (stack.getItem() instanceof com.femclothes.sublimadora.RemeraItem) {
+            return com.femclothes.sublimadora.RemeraItem.color(stack);
+        }
+        return com.femclothes.region.RegionResolver.colorBase(stack, com.femclothes.region.Lado.IZQUIERDA);
+    }
+
+    private void sonar(SoundEvent evento, float volumen, float tono) {
+        if (world != null) world.playSound(null, pos, evento, SoundCategory.BLOCKS, volumen, tono);
+    }
+
+    /**
+     * {@code markDirty()} sola NO manda el paquete de sync al cliente
+     * (solo marca el chunk para guardar) — bug real (2026-09-22, "no
+     * prende los leds"/"no anima la guillotina"): las 3 transiciones de
+     * {@link #tick} solo llamaban {@code markDirty()}, así que el
+     * cliente nunca se enteraba del cambio de {@code estado} fuera de
+     * cuando la GUI estaba abierta (el {@code PropertyDelegate} la
+     * sincroniza aparte) — ni el LED ({@link ModeladoGeoModel#coloresLed})
+     * ni el controlador de animación de guillotina/aguja (que leen
+     * {@code estado()} del lado cliente) veían nunca PROCESANDO. Mismo
+     * mecanismo que {@code TinturasBlockEntity#sincronizar}.
+     */
+    private void sincronizar() {
+        markDirty();
+        if (world != null && !world.isClient) {
+            world.updateListeners(pos, getCachedState(), getCachedState(), 3);
+        }
+    }
+
+    // ── Inventory ────────────────────────────────────────────────────
+
+    @Override
+    public int size() { return TAMANO; }
+
+    @Override
+    public boolean isEmpty() {
+        for (ItemStack s : items) if (!s.isEmpty()) return false;
+        return true;
+    }
+
+    @Override
+    public ItemStack getStack(int slot) { return items.get(slot); }
+
+    @Override
+    public ItemStack removeStack(int slot, int amount) {
+        ItemStack antes = items.get(slot).copy();
+        ItemStack r = Inventories.splitStack(items, slot, amount);
+        if (!r.isEmpty()) {
+            markDirty();
+            if (slot == PRENDA || slot == SALIDA) sincronizar();
+            if (slot >= PINES_INICIO && slot < PINES_FIN) pinCambio(slot - PINES_INICIO, antes, items.get(slot));
+        }
+        return r;
+    }
+
+    @Override
+    public ItemStack removeStack(int slot) {
+        ItemStack antes = items.get(slot).copy();
+        ItemStack r = Inventories.removeStack(items, slot);
+        if ((slot == PRENDA || slot == SALIDA) && !antes.isEmpty()) sincronizar();
+        if (slot >= PINES_INICIO && slot < PINES_FIN && !antes.isEmpty()) pinCambio(slot - PINES_INICIO, antes, ItemStack.EMPTY);
+        return r;
+    }
+
+    @Override
+    public void setStack(int slot, ItemStack stack) {
+        ItemStack antesPin = slot >= PINES_INICIO && slot < PINES_FIN ? items.get(slot).copy() : ItemStack.EMPTY;
+        items.set(slot, stack);
+        if (slot >= PINES_INICIO && slot < PINES_FIN) {
+            if (stack.getCount() > 1) stack.setCount(1);
+            pinCambio(slot - PINES_INICIO, antesPin, stack);
+        }
+        if (stack.getCount() > getMaxCountPerStack()) stack.setCount(getMaxCountPerStack());
+        if (slot == PRENDA && !stack.isEmpty() && guiAbiertas == 0 && hayFijadas()) {
+            // Arranca sola al cargar la prenda POR ARRIBA (hopper/bloque) con
+            // algo fijado (2026-09-22, "que arranque cuando le ponen prenda").
+            // NUNCA con la GUI abierta (2026-09-26): ahí se prendía sola al
+            // apoyar la remera en el slot y, ya "encendida", la config quedaba
+            // bloqueada (isValid/botones devuelven false) — el "despineo
+            // trabado" y el molde de red que no entraba. Con la GUI abierta
+            // arranca recién al cerrarla (ver encenderAlCerrar).
+            encenderAlCerrar();
+        }
+        markDirty();
+        if (slot == PRENDA || slot == SALIDA) sincronizar();
+    }
+
+    @Override
+    public boolean isValid(int slot, ItemStack stack) {
+        if (encendida) return false; // apagada para tocar el inventario, salvo la prenda física (ver ModeladoBlock)
+        if (slot == SALIDA) return false;
+        if (slot == PRENDA) return com.femclothes.item.FemclothesDye.isClothing(stack);
+        if (slot >= PINES_INICIO && slot < PINES_FIN) {
+            int p = slot - PINES_INICIO;
+            Categoria cat = Categoria.values()[p / PINES_POR_CATEGORIA];
+            boolean ok = categoria == cat && pinAcepta(cat, p % PINES_POR_CATEGORIA, stack);
+            if (!ok) LOG.info("isValid(pin) RECHAZADO: item={} clase={} pin={} cat={} categoriaActual={} rol={}",
+                    stack.getItem(), stack.getItem().getClass().getSimpleName(), p % PINES_POR_CATEGORIA, cat, categoria,
+                    ROLES[cat.ordinal()][p % PINES_POR_CATEGORIA]);
+            return ok;
+        }
+        if (slot >= ACTIVO_INICIO && slot < ACTIVO_FIN) {
+            Categoria cat = Categoria.values()[slot - ACTIVO_INICIO];
+            // El Activo de REMERA quedó sin uso (2026-09-24, esquema de
+            // pines) — se rechaza cualquier cosa ahí para que no quede un
+            // molde invisible atrás del diagrama sin ninguna pista visual.
+            if (cat != null) return false;
+            return esMoldeDeCategoria(stack, cat);
+        }
+        if (slot >= PORPRENDA_INICIO && slot < PORPRENDA_FIN) {
+            Categoria cat = Categoria.values()[(slot - PORPRENDA_INICIO) / PORPRENDA_POR_CATEGORIA];
+            // Banco "Moldes de <Categoria>" (2026-09-24, a pedido): solo
+            // moldes EXCLUSIVOS de esta categoría + la prenda terminada de
+            // esta categoría — los compartidos (Rango/Calce/Red/Torso/
+            // Corte/Materiales) van al almacén general, no acá.
+            return esMoldeExclusivoDe(stack, cat) || categoriaDe(stack) == cat;
+        }
+        // Almacén general: moldes que sirven para 2+ categorías (2026-09-24,
+        // "en el almacen de prendas van los moldes que sirven para mas de una prenda").
+        return esMoldeCompartido(stack);
+    }
+
+    // ── SidedInventory: la prenda física por ARRIBA (2026-09-21, "que las
+    // tres carguen por arriba" — reemplaza el costado izquierdo de
+    // 2026-09-20). Nada más se expone: ni almacén ni activo ni salida son
+    // alcanzables por hopper todavía (a propósito, fuera de alcance de
+    // este pedido).
+    private net.minecraft.util.math.Direction ladoIzquierdo() {
+        return getCachedState().get(ModeladoBlock.FACING).getOpposite().rotateYCounterclockwise();
+    }
+
+    /** El lado opuesto al de carga — hacia ahí se empuja el resultado (ver {@link #tick}, caso LISTO). */
+    private net.minecraft.util.math.Direction ladoDerecho() {
+        return ladoIzquierdo().getOpposite();
+    }
+
+    /**
+     * Empuja el resultado hacia la derecha — a pedido (2026-09-20, "las 3
+     * maquinas hacen como el crafter..."), mismo mecanismo que
+     * {@code SublimadoraBlockEntity#empujarSalida}.
+     */
+    private void empujarSalida(net.minecraft.world.World world, BlockPos pos) {
+        ItemStack actual = items.get(SALIDA);
+        if (actual.isEmpty()) return;
+        net.minecraft.util.math.Direction derecha = ladoDerecho();
+        ItemStack sobrante = com.femclothes.util.InventarioUtil.empujarA(
+                world, pos.offset(derecha), derecha.getOpposite(), actual);
+        if (sobrante.getCount() != actual.getCount()) {
+            items.set(SALIDA, sobrante);
+            markDirty();
+        }
+    }
+
+    @Override
+    public int[] getAvailableSlots(net.minecraft.util.math.Direction side) {
+        return side == net.minecraft.util.math.Direction.UP ? new int[]{PRENDA} : new int[0];
+    }
+
+    @Override
+    public boolean canInsert(int slot, ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.util.math.Direction dir) {
+        return isValid(slot, stack);
+    }
+
+    @Override
+    public boolean canExtract(int slot, ItemStack stack, net.minecraft.util.math.Direction dir) {
+        return false;
+    }
+
+    /**
+     * Cualquier tipo de molde reconocido, exclusivo o compartido — antes
+     * (2026-09-24) le faltaban Rango/Torso/Calce/Red/Cuello/
+     * ClothingPatternItem, así que esos 6 tipos no se detectaban como
+     * molde en absoluto para el almacén general ni el shift-click (bug de
+     * paso, arreglado junto con las reglas nuevas de storage). Ver
+     * {@link #esMoldeExclusivoDe}/{@link #esMoldeCompartido} para el
+     * detalle de EN QUÉ banco va cada uno.
+     */
+    public static boolean esMolde(ItemStack stack) {
+        Item item = stack.getItem();
+        return item instanceof MoldeItem || item instanceof MoldeDeCorteItem
+                || item instanceof MoldeRangoItem || item instanceof MoldeTorsoItem
+                || item instanceof MoldeCalceItem || item instanceof MoldeRedItem
+                || item instanceof MoldeCuelloItem || item instanceof ClothingPatternItem;
+    }
+
+    @Override
+    public boolean canPlayerUse(PlayerEntity player) {
+        return world != null && world.getBlockEntity(pos) == this
+                && player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64.0;
+    }
+
+    @Override
+    public void clear() { items.clear(); }
+
+    // ── persistencia ─────────────────────────────────────────────────
+
+    @Override
+    protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
+        super.readNbt(nbt, lookup);
+        items.clear();
+        Inventories.readNbt(nbt, items, lookup);
+        encendida = nbt.getBoolean("encendida");
+        estado = Estado.values()[nbt.getInt("estado")];
+        progreso = nbt.getInt("progreso");
+        remeraLargo = Variante.Largo.values()[nbt.getInt("remera_largo")];
+        remeraManga = Variante.Manga.values()[nbt.getInt("remera_manga")];
+        remeraCuello = Variante.Cuello.values()[nbt.getInt("remera_cuello")];
+        calientabrazosCobertura = Variante.Manga.values()[nbt.getInt("calientabrazos_cobertura")];
+        anclaje = Anclaje.values()[nbt.getInt("anclaje")];
+        ladoBorrador = Lado.values()[nbt.getInt("lado_borrador")];
+        categoria = Categoria.values()[nbt.getInt("categoria")];
+        remeraSimetria = !nbt.contains("remera_simetria") || nbt.getBoolean("remera_simetria");
+
+        for (Categoria cat : Categoria.values()) {
+            List<ComboCorte> destino = fijadasPorCategoria.get(cat);
+            destino.clear();
+            NbtList lista = nbt.getList("fijadas_" + cat.name(), NbtElement.COMPOUND_TYPE);
+            for (int i = 0; i < lista.size(); i++) {
+                ComboCorte.CODEC.parse(NbtOps.INSTANCE, lista.getCompound(i))
+                        .result().ifPresent(destino::add);
+            }
+        }
+
+        for (Categoria cat : Categoria.values()) {
+            List<DisenoGuardado> destino = disenosPorCategoria.get(cat);
+            destino.clear();
+            NbtList disenos = nbt.getList("disenos_" + cat.name(), NbtElement.COMPOUND_TYPE);
+            for (int d = 0; d < disenos.size(); d++) {
+                NbtCompound uno = disenos.getCompound(d);
+                String nombre = uno.getString("nombre");
+                NbtList combosNbt = uno.getList("combos", NbtElement.COMPOUND_TYPE);
+                List<ComboCorte> combos = new ArrayList<>();
+                for (int i = 0; i < combosNbt.size(); i++) {
+                    ComboCorte.CODEC.parse(NbtOps.INSTANCE, combosNbt.getCompound(i)).result().ifPresent(combos::add);
+                }
+                destino.add(new DisenoGuardado(nombre, combos));
+            }
+        }
+
+        for (int i = 0; i < PINES_TAMANO; i++) {
+            pinCombo[i] = null;
+            pinFijado[i] = nbt.getBoolean("pin_fijado_" + i);
+            if (nbt.contains("pin_combo_" + i)) {
+                int idx = i;
+                ComboCorte.CODEC.parse(NbtOps.INSTANCE, nbt.get("pin_combo_" + i))
+                        .result().ifPresent(c -> pinCombo[idx] = c);
+            }
+            // Un pin que en el layout actual no existe (NINGUNO) pudo quedar fijado de un layout viejo:
+            // se descarta, si no dibuja un ícono fantasma en (0,0) y deja un corte huérfano.
+            if (ROLES[i / PINES_POR_CATEGORIA][i % PINES_POR_CATEGORIA] == Rol.NINGUNO) {
+                if (pinCombo[i] != null) fijadasPorCategoria.get(Categoria.values()[i / PINES_POR_CATEGORIA]).remove(pinCombo[i]);
+                pinCombo[i] = null;
+                pinFijado[i] = false;
+            }
+        }
+    }
+
+    @Override
+    protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
+        super.writeNbt(nbt, lookup);
+        Inventories.writeNbt(nbt, items, lookup);
+        nbt.putBoolean("encendida", encendida);
+        nbt.putInt("estado", estado.ordinal());
+        nbt.putInt("progreso", progreso);
+        nbt.putInt("remera_largo", remeraLargo.ordinal());
+        nbt.putInt("remera_manga", remeraManga.ordinal());
+        nbt.putInt("remera_cuello", remeraCuello.ordinal());
+        nbt.putInt("calientabrazos_cobertura", calientabrazosCobertura.ordinal());
+        nbt.putInt("anclaje", anclaje.ordinal());
+        nbt.putInt("lado_borrador", ladoBorrador.ordinal());
+        nbt.putInt("categoria", categoria.ordinal());
+        nbt.putBoolean("remera_simetria", remeraSimetria);
+
+        for (Categoria cat : Categoria.values()) {
+            NbtList lista = new NbtList();
+            for (ComboCorte combo : fijadasPorCategoria.get(cat)) {
+                ComboCorte.CODEC.encodeStart(NbtOps.INSTANCE, combo).result().ifPresent(lista::add);
+            }
+            nbt.put("fijadas_" + cat.name(), lista);
+        }
+
+        for (Categoria cat : Categoria.values()) {
+            NbtList disenos = new NbtList();
+            for (DisenoGuardado uno : disenosPorCategoria.get(cat)) {
+                NbtList combosNbt = new NbtList();
+                for (ComboCorte combo : uno.combos()) {
+                    ComboCorte.CODEC.encodeStart(NbtOps.INSTANCE, combo).result().ifPresent(combosNbt::add);
+                }
+                NbtCompound unoNbt = new NbtCompound();
+                unoNbt.putString("nombre", uno.nombre());
+                unoNbt.put("combos", combosNbt);
+                disenos.add(unoNbt);
+            }
+            nbt.put("disenos_" + cat.name(), disenos);
+        }
+
+        for (int i = 0; i < PINES_TAMANO; i++) {
+            nbt.putBoolean("pin_fijado_" + i, pinFijado[i]);
+            if (pinCombo[i] != null) {
+                int idx = i;
+                ComboCorte.CODEC.encodeStart(NbtOps.INSTANCE, pinCombo[i]).result()
+                        .ifPresent(e -> nbt.put("pin_combo_" + idx, e));
+            }
+        }
+    }
+
+    @Override
+    public Text getDisplayName() {
+        return Text.translatable("block.femclothes.modelado");
+    }
+
+    /**
+     * Sin esto la lista de fijadas (y el resto del NBT) nunca llega al
+     * cliente en vivo — el PropertyDelegate solo cubre los campos escalares
+     * del borrador, no una lista de tamaño variable. Mismo mecanismo que ya
+     * usa {@code SublimadoraBlockEntity} para sus barras de tinta.
+     */
+    @Override
+    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
+        return createNbt(registries);
+    }
+
+    @Override
+    public net.minecraft.network.packet.Packet<net.minecraft.network.listener.ClientPlayPacketListener> toUpdatePacket() {
+        return net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket.create(this);
+    }
+
+    private final PropertyDelegate propertyDelegate = new PropertyDelegate() {
+        @Override
+        public int get(int index) {
+            return switch (index) {
+                case 0 -> encendida ? 1 : 0;
+                case 1 -> estado.ordinal();
+                case 2 -> progreso;
+                case 3 -> remeraLargo.ordinal();
+                case 4 -> remeraManga.ordinal();
+                case 5 -> remeraCuello.ordinal();
+                case 6 -> calientabrazosCobertura.ordinal();
+                case 7 -> anclaje.ordinal();
+                case 8 -> ladoBorrador.ordinal();
+                case 9 -> categoria.ordinal();
+                case 10 -> remeraSimetria ? 1 : 0;
+                default -> 0;
+            };
+        }
+
+        @Override
+        public void set(int index, int value) {
+            switch (index) {
+                case 0 -> encendida = value != 0;
+                case 1 -> estado = Estado.values()[value];
+                case 2 -> progreso = value;
+                case 3 -> remeraLargo = Variante.Largo.values()[value];
+                case 4 -> remeraManga = Variante.Manga.values()[value];
+                case 5 -> remeraCuello = Variante.Cuello.values()[value];
+                case 6 -> calientabrazosCobertura = Variante.Manga.values()[value];
+                case 7 -> anclaje = Anclaje.values()[value];
+                case 8 -> ladoBorrador = Lado.values()[value];
+                case 9 -> categoria = Categoria.values()[value];
+                case 10 -> remeraSimetria = value != 0;
+                default -> {}
+            }
+        }
+
+        @Override
+        public int size() { return 11; }
+    };
+
+    public PropertyDelegate getPropertyDelegate() { return propertyDelegate; }
+
+    @Override
+    public ScreenHandler createMenu(int syncId, net.minecraft.entity.player.PlayerInventory inv, PlayerEntity player) {
+        return new ModeladoScreenHandler(syncId, inv, this);
+    }
+
+    @Override
+    public BlockPos getScreenOpeningData(net.minecraft.server.network.ServerPlayerEntity player) {
+        return this.pos;
+    }
+}

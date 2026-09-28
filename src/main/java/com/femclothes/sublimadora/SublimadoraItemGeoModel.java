@@ -13,12 +13,13 @@ import software.bernie.geckolib.model.GeoModel;
  */
 public class SublimadoraItemGeoModel extends GeoModel<SublimadoraBlockItem> {
 
+    // Modelo nuevo (2026-09-19) — ver SublimadoraGeoModel.
     private static final Identifier GEO =
-        Identifier.of(Femclothes.MOD_ID, "geo/sublimadora.geo.json");
+        Identifier.of(Femclothes.MOD_ID, "geo/sublimator.geo.json");
     private static final Identifier TEX =
-        Identifier.of(Femclothes.MOD_ID, "textures/block/sublimadora_atlas.png");
+        Identifier.of(Femclothes.MOD_ID, "textures/block/sublimator_atlas.png");
     private static final Identifier ANIM =
-        Identifier.of(Femclothes.MOD_ID, "animations/sublimadora.animation.json");
+        Identifier.of(Femclothes.MOD_ID, "animations/sublimator.animation.json");
 
     @Override public Identifier getModelResource(SublimadoraBlockItem item) { return GEO; }
     @Override public Identifier getTextureResource(SublimadoraBlockItem item) { return TEX; }
@@ -33,13 +34,19 @@ public class SublimadoraItemGeoModel extends GeoModel<SublimadoraBlockItem> {
         // que es cerrada. Lo unico que hay que apagar a mano son las piezas
         // que dependen del estado de una maquina que aca no existe: el item
         // es una maquina vacia y apagada.
+        //
+        // OJO (2026-09-19): "remera"/"led_rojo"/"led_verde" eran huesos del
+        // modelo VIEJO — el nuevo (sublimator.geo.json) no los tiene (tiene
+        // "paper"/"progress"/"design"/"cargo" en su lugar, sin mapear
+        // todavia). esconder() no rompe nada si el hueso no existe, pero
+        // hasta que se mapeen bien estas piezas del icono no se apagan solas.
         esconder("remera");
         esconder("led_rojo");
         esconder("led_verde");
 
         // Los tanques del icono se ven llenos. Es mentira -sale vacia- pero
         // sin esto las cuatro barras desaparecen y el frente queda muerto.
-        for (String barra : new String[] { "ink_c", "ink_m", "ink_y", "ink_k" }) {
+        for (String barra : new String[] { "ink_cyan", "ink_magenta", "ink_yellow", "ink_key" }) {
             GeoBone hueso = getAnimationProcessor().getBone(barra);
             if (hueso != null) {
                 hueso.setScaleY(1f);

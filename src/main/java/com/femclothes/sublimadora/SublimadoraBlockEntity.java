@@ -1,11 +1,18 @@
 package com.femclothes.sublimadora;
 
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.SidedInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.Direction;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
@@ -18,6 +25,7 @@ import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
@@ -29,14 +37,17 @@ import software.bernie.geckolib.util.GeckoLibUtil;
  * sino escala de hueso aplicada en SublimadoraGeoModel#setCustomAnimations.
  * Aca solo vive el dato: cuanta tinta queda, y su suavizado por tick.
  */
-public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntity {
+public class SublimadoraBlockEntity extends BlockEntity
+        implements GeoBlockEntity, ExtendedScreenHandlerFactory<BlockPos>, SidedInventory {
 
     public static final int C = 0, M = 1, Y = 2, K = 3;
 
+    // 64 y no 16 (2026-09-18, "subime la capacidad de tinta") — un stack
+    // entero de tinte llena el tanque justo.
     /** Cuantas cargas entran por color. Una carga = un tinte. */
-    public static final int CARGA_MAXIMA = 16;
-    /** 20 segundos a 20 ticks. */
-    public static final int TICKS_PRENSADO = 400;
+    public static final int CARGA_MAXIMA = 64;
+    /** 15 segundos a 20 ticks — a pedido (2026-09-21, "que cada maquina tome su tiempo... 15 la sublimadora"). */
+    public static final int TICKS_PRENSADO = 300;
     /** Lo que tarda la tapa en bajar: 0.3 s del archivo de animacion. */
     private static final int TICKS_CIERRE = 6;
 
@@ -44,21 +55,27 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
 
     private static final String[] CLAVES = { "TintaC", "TintaM", "TintaY", "TintaK" };
 
+    // Nombres "sublimator" y no "sublimadora" — modelo nuevo (2026-09-19,
+    // ver SublimadoraGeoModel), mismo hueso "lid" que el viejo llamaba tapa.
     private static final RawAnimation ABRIR = RawAnimation.begin()
-            .thenPlay("animation.sublimadora.abrir")
-            .thenLoop("animation.sublimadora.abierta");
+            .thenPlay("animation.sublimator.abrir")
+            .thenLoop("animation.sublimator.abierta");
     private static final RawAnimation CERRAR = RawAnimation.begin()
-            .thenPlay("animation.sublimadora.cerrar")
-            .thenLoop("animation.sublimadora.cerrada");
+            .thenPlay("animation.sublimator.cerrar")
+            .thenLoop("animation.sublimator.cerrada");
 
     // Poses estaticas, sin transicion: son las que hay que usar al cargar el
     // chunk. ABRIR y CERRAR arrancan desde la pose CONTRARIA, asi que usarlas
     // al cargar hacia que un bloque cerrado apareciera abierto y se cerrara
     // solo delante del jugador.
     private static final RawAnimation ABIERTA = RawAnimation.begin()
-            .thenLoop("animation.sublimadora.abierta");
+            .thenLoop("animation.sublimator.abierta");
     private static final RawAnimation CERRADA = RawAnimation.begin()
-            .thenLoop("animation.sublimadora.cerrada");
+            .thenLoop("animation.sublimator.cerrada");
+
+    /** Ventilador de atras — gira SOLO mientras prensa (hueso "fan", 2026-09-19). */
+    private static final RawAnimation EN_MARCHA = RawAnimation.begin()
+            .thenLoop("animation.sublimator.en_marcha");
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private boolean ultimoEstado = false;
@@ -78,6 +95,40 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
 
     /** Cargas 0..16 por canal. El nivel de la barra sale de aca. */
     private final int[] cargas = new int[4];
+    /**
+     * Tanque de papel — a pedido (2026-09-19, "usa papel y ya no consume la
+     * imagen"): la foto queda cargada para reimprimir, y esto es lo que de
+     * verdad se gasta por cada prensado (1 papel). Mismo tope que la tinta.
+     */
+    private int papelCargado = 0;
+
+    /**
+     * "Vista" de {@code papelCargado}/{@code cargas[]} como ItemStack real,
+     * para el Inventory de hopper (2026-09-20) — bug real jugando: "el item
+     * se vacia del hopper pero el indicador nunca sube". Causa: un hopper
+     * vanilla, cuando el slot destino YA tiene algo, no vuelve a llamar
+     * {@code setStack} — agarra el ItemStack que le devuelve {@code getStack},
+     * lo incrementa EN MEMORIA, y listo llama {@code markDirty()} (ver
+     * {@code HopperBlockEntity#transfer}). Devolver un ItemStack nuevo y
+     * descartable en cada {@code getStack} (como hacía antes) hace que ese
+     * incremento se pierda en el aire — nunca vuelve a nuestro lado. Estos
+     * dos campos son la MISMA instancia entre llamadas (identidad estable),
+     * así que la mutación del hopper cae adentro de un objeto real: se
+     * "empuja" (autoridad→vista) cada vez que ESTE código cambia
+     * papelCargado/cargas[], y se "tira" de vuelta (vista→autoridad) en
+     * {@link #markDirty()} — así se captura tanto nuestros cambios propios
+     * como los que un hopper haga directo sobre el objeto.
+     */
+    private ItemStack papelSlotView = ItemStack.EMPTY;
+    private final ItemStack[] tintaSlotView = { ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY };
+
+    /** Autoridad → vista: llamar después de cualquier cambio directo a papelCargado/cargas[]. */
+    private void sincronizarVistaTanques() {
+        papelSlotView = papelCargado <= 0 ? ItemStack.EMPTY : new ItemStack(net.minecraft.item.Items.PAPER, papelCargado);
+        for (int i = 0; i < 4; i++) {
+            tintaSlotView[i] = cargas[i] <= 0 ? ItemStack.EMPTY : new ItemStack(SublimadoraBlock.TINTES[i], cargas[i]);
+        }
+    }
 
     private Estado estado = Estado.REPOSO;
     private int progreso = 0;
@@ -86,13 +137,63 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
     private ItemStack remera = ItemStack.EMPTY;
     private ItemStack salida = ItemStack.EMPTY;
 
-    // Una foto y un modo POR CARA: la maquina estampa el frente y la espalda
-    // en la misma pasada. Todo esto va indexado por Cara.ordinal().
+    // Una foto y un ajuste de escala/posicion POR CARA: la maquina estampa
+    // el frente y la espalda en la misma pasada. Todo esto va indexado por
+    // Cara.ordinal().
     private final ItemStack[] fotos = { ItemStack.EMPTY, ItemStack.EMPTY };
     private final java.util.UUID[] pendientes = new java.util.UUID[2];
-    private final Estampa.Modo[] modos = { Estampa.Modo.COMPLETO, Estampa.Modo.COMPLETO };
-    /** Que cara estan configurando los controles del frente de la maquina. */
+    /**
+     * Escala/posicion libres, POR CARA — a pedido (2026-09-19, "hace gui
+     * con preview con escalado y flechitas para posicion... sacamos los
+     * controles del frente"): reemplaza los 3 presets viejos (Logo/
+     * Centrada/Completo) por control fino de verdad, como ya preveia el
+     * comentario de {@link Estampa.Modo} ("agregar control fino despues
+     * no rompe nada de esto").
+     */
+    private final float[] escalaBorrador = { Estampa.ESCALA_DEFECTO, Estampa.ESCALA_DEFECTO };
+    private final float[] xBorrador = { 0f, 0f };
+    private final float[] yBorrador = { 0f, 0f };
+    /** Rotación libre, POR CARA — a pedido (2026-09-20, "posibilidad de rotarla"). */
+    private final float[] anguloBorrador = { 0f, 0f };
+    private static final float PASO_ESCALA = 0.05f;
+    private static final float PASO_POSICION = 0.05f;
+    private static final float PASO_ANGULO = 15f;
+    /** Que cara esta configurando la pantalla ahora mismo. */
     private Estampa.Cara seleccion = Estampa.Cara.FRENTE;
+
+    /**
+     * "Save por cada prenda" (a pedido, 2026-09-19): una combinación
+     * escala/x/y de las DOS caras, guardada — la lista es POR ÍTEM (todos
+     * los cortes de remera comparten lista, igual que categoriza
+     * {@code TinturasBlockEntity.Categoria.REMERA}; medias/pantalón/
+     * calientabrazos tienen la suya propia, un solo ítem cada una).
+     */
+    public record EstampaFijada(float escalaFrente, float xFrente, float yFrente, float anguloFrente,
+                                 float escalaEspalda, float xEspalda, float yEspalda, float anguloEspalda) {}
+
+    public static final int FIJADAS_MAXIMO = 8;
+    private final java.util.Map<net.minecraft.item.Item, java.util.List<EstampaFijada>> fijadasPorItem = new java.util.HashMap<>();
+    private final java.util.Map<net.minecraft.item.Item, Integer> seleccionadaPorItem = new java.util.HashMap<>();
+
+    /**
+     * Qué "categoría" (en realidad el ÍTEM representativo — acá cada
+     * categoría es un solo ítem, ver {@link ModItems#esEstampable})
+     * muestra/edita la fila de fijadas ahora mismo — a pedido (2026-09-21,
+     * "le falta el boton de ciclado de settings de las distintas
+     * prendas en la gui que guarde el seteo"): antes {@link #fijadas()}
+     * necesitaba una remera FÍSICA puesta para mostrar algo (devolvía
+     * vacío si no), así que no había forma de ver/guardar el seteo de
+     * "pantalón" sin tener un pantalón en la mano en ese momento. Ahora
+     * sigue lo cargado automáticamente ({@link #ponerRemera}) pero
+     * también se puede cambiar a mano con {@link #BTN_CATEGORIA}.
+     */
+    private static final net.minecraft.item.Item[] CATEGORIAS = {
+            ModItems.REMERA,
+            com.femclothes.item.FemclothesItems.SOCKS_SOLID,
+            com.femclothes.item.FemclothesItems.PANTALON,
+            com.femclothes.item.FemclothesItems.CALIENTABRAZOS,
+    };
+    private net.minecraft.item.Item categoria = ModItems.REMERA;
 
     // Solo para dibujar, no se guardan: hacen que la foto siga a la vista
     // mientras la tapa baja, en vez de evaporarse antes de que la cubra.
@@ -123,6 +224,13 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         })
         .triggerableAnim("abrir", ABRIR)
         .triggerableAnim("cerrar", CERRAR));
+
+        // Ventilador de atras: gira SOLO mientras prensa, quieto el resto
+        // del tiempo (sin animacion pedida, GeckoLib deja el hueso en su
+        // pose de reposo del modelo) — a pedido (2026-09-19, "fan es el
+        // ventilador de atras").
+        controllers.add(new AnimationController<>(this, "ventilador", 0, state ->
+                estado == Estado.PRENSANDO ? state.setAndContinue(EN_MARCHA) : PlayState.STOP));
     }
 
     @Override
@@ -165,6 +273,10 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         // lo que le sincroniza el NBT.
         if (world.isClient) return;
 
+        if (be.estado == Estado.LISTO) {
+            be.empujarSalida(world, pos);
+        }
+
         if (be.estado != Estado.PRENSANDO) return;
 
         be.progreso++;
@@ -200,15 +312,26 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
             if (world.getTime() % 20 == 0) be.sonar(SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), 0.25f, 2.0f);
         }
 
-        if (be.progreso >= TICKS_PRENSADO) {
+        if (be.progreso >= com.femclothes.util.DebugMaquinas.duracion(TICKS_PRENSADO)) {
             be.progreso = 0;
             be.estado = Estado.LISTO;
             ItemStack hecha = be.remera;
+            // pendientes[] NO se borra al terminar (2026-09-19, "ya no
+            // consume la imagen") — la foto queda lista para reimprimir en
+            // la proxima remera sin volver a cargarla.
             for (Estampa.Cara cara : Estampa.Cara.values()) {
                 java.util.UUID id = be.pendientes[cara.ordinal()];
                 if (id == null) continue;
-                hecha = RemeraItem.estampar(hecha, cara, be.modos[cara.ordinal()].aplicar(id));
-                be.pendientes[cara.ordinal()] = null;
+                int ci = cara.ordinal();
+                // "Cubrir" (full print, recorta en vez de encoger) se
+                // deriva de la escala en vez de ser un toggle aparte: a
+                // ESCALA_CUBRIR (100%) es exactamente lo que hacia el viejo
+                // preset COMPLETO — por ENCIMA de eso ya es sobre-escala
+                // (ver Estampa.ESCALA_MAXIMA), sigue siendo "cubrir".
+                boolean cubrir = be.escalaBorrador[ci] >= Estampa.ESCALA_CUBRIR - 0.001f;
+                hecha = RemeraItem.estampar(hecha, cara,
+                        new Estampa(id, be.escalaBorrador[ci], be.xBorrador[ci], be.yBorrador[ci],
+                                be.anguloBorrador[ci], cubrir));
             }
             be.salida = hecha;
             be.remera = ItemStack.EMPTY;
@@ -299,6 +422,47 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         return salida;
     }
 
+    /**
+     * La remera de {@link #remera} con la estampa del borrador YA
+     * aplicada (escala/posición/ángulo de las dos caras, en vivo) — a
+     * pedido (2026-09-21, "que muestre el preview del setting de la
+     * ultima prenda seteada"). Antes esto vivía SOLO adentro de
+     * {@code SublimadoraScreen#dibujarPreview}; ahora también lo usa
+     * {@link com.femclothes.sublimadora.SublimadoraGeoModel} para la
+     * pantallita del bloque, así que se comparte acá — mismo criterio
+     * de nombre que {@code TinturasBlockEntity#prendaDeVistaPrevia}.
+     */
+    public ItemStack prendaDeVistaPrevia() {
+        if (!remera.isEmpty()) {
+            ItemStack copia = remera.copy();
+            for (Estampa.Cara cara : Estampa.Cara.values()) {
+                java.util.UUID id = getFotoCargada(cara);
+                if (id == null) continue;
+                boolean cubrir = getEscala(cara) >= Estampa.ESCALA_CUBRIR - 0.001f;
+                copia = RemeraItem.estampar(copia, cara,
+                        new Estampa(id, getEscala(cara), getX(cara), getY(cara), getAngulo(cara), cubrir));
+            }
+            return copia;
+        }
+        return salida;
+    }
+
+    /**
+     * La ÚLTIMA vista previa no vacía — mismo criterio que
+     * {@code ModeladoBlockEntity#vistaPreviaPersistente} (2026-09-21,
+     * "quiero que las 3 muestren la ultima prenda con preview del
+     * ultimo seteado"): la pantallita del bloque usa esto en vez de
+     * {@link #prendaDeVistaPrevia} directo, para seguir mostrando la
+     * última estampa aunque ya se haya retirado la remera.
+     */
+    private ItemStack ultimaVistaPrevia = ItemStack.EMPTY;
+
+    public ItemStack vistaPreviaPersistente() {
+        ItemStack actual = prendaDeVistaPrevia();
+        if (!actual.isEmpty()) ultimaVistaPrevia = actual;
+        return ultimaVistaPrevia;
+    }
+
     /** True si hay al menos una carga de cada color. */
     public boolean hayTinta() {
         for (int i = 0; i < 4; i++) if (cargas[i] <= 0) return false;
@@ -310,31 +474,389 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         if (cargas[canal] >= CARGA_MAXIMA) return false;
         cargas[canal] = Math.min(CARGA_MAXIMA, cargas[canal] + cantidad);
         tinta[canal] = cargas[canal] / (float) CARGA_MAXIMA;
+        sincronizarVistaTanques();
         sincronizar();
         return true;
+    }
+
+    /** Carga papel. Devuelve false si el tanque ya esta lleno. */
+    public boolean cargarPapel(int cantidad) {
+        if (papelCargado >= CARGA_MAXIMA) return false;
+        papelCargado = Math.min(CARGA_MAXIMA, papelCargado + cantidad);
+        sincronizarVistaTanques();
+        sincronizar();
+        return true;
+    }
+
+    public int getPapel() {
+        return papelCargado;
     }
 
     /** La prenda a estampar: la remera de cualquier corte, o las medias. */
     public boolean ponerRemera(ItemStack stack) {
         if (!remera.isEmpty() || estado != Estado.REPOSO) return false;
         remera = stack.copyWithCount(1);
+        // La categoría de fijadas sigue automáticamente lo que se carga
+        // — a pedido, ver el javadoc de {@link #categoria}.
+        categoria = remera.getItem();
         sincronizar();
         return true;
     }
 
-    /** Carga una foto en la cara que tenga elegida el selector. */
-    public boolean ponerFoto(ItemStack stack, java.util.UUID id) {
-        int i = seleccion.ordinal();
+    /**
+     * Carga una foto en una cara concreta — a pedido (2026-09-19, "las
+     * imagenes deberian agregarse aqui no en la estampadora"): antes iba
+     * a la cara que tuviera elegida el selector físico del bloque; ahora
+     * cada cara tiene su propio slot en la pantalla (ver
+     * {@link #isValid}/{@link #setStack}), así que la cara la dice el
+     * slot, no un selector aparte.
+     */
+    public boolean ponerFoto(Estampa.Cara cara, ItemStack stack, java.util.UUID id) {
+        int i = cara.ordinal();
         if (!fotos[i].isEmpty() || estado != Estado.REPOSO) return false;
         // Sin UUID no hay nada que estampar: se rechaza en vez de gastar
         // tinta para producir una remera en blanco.
         if (id == null) return false;
         // Esa cara ya estampada: rechazar en vez de pisarla en silencio.
-        if (!remera.isEmpty() && RemeraItem.estampaDe(remera, seleccion) != null) return false;
+        if (!remera.isEmpty() && RemeraItem.estampaDe(remera, cara) != null) return false;
         fotos[i] = stack.copyWithCount(1);
         pendientes[i] = id;
         sincronizar();
         return true;
+    }
+
+    // ── Inventory: los 2 slots de foto de la pantalla nueva (índice =
+    // Estampa.Cara.ordinal(), 0=FRENTE, 1=ESPALDA) — a pedido (2026-09-19,
+    // "las imagenes deberian agregarse aqui no en la estampadora"). Reusa
+    // el mismo array fotos[] que ya guardaba esto (antes invisible,
+    // cargado por click derecho sobre el bloque) como backing real.
+    //
+    // 2026-09-20, a pedido ("que carguen por hopper atrás [papel y
+    // tintas] y que las 3 carguen prenda por hopper del lado izquierdo"):
+    // se suman 6 slots más — remera, papel y las 4 tintas CMYK — cada uno
+    // como una "ventana" sobre un campo que YA existía (remera/
+    // papelCargado/cargas[]), no datos nuevos. Los tanques (papel/tinta)
+    // se exponen como si fueran un slot con un stack del ítem real y
+    // count=cantidad cargada — mismo truco que un tanque de combustible
+    // expuesto a hoppers: el hopper hace su merge normal vía
+    // getStack/setStack, sin que este código tenga que reimplementar esa
+    // lógica. Ver getAvailableSlots/canInsert más abajo para qué lado
+    // puede tocar qué slot — las fotos (0-1) siguen sin ser alcanzables
+    // por hopper, a propósito (se cargan desde la pantalla, no de afuera).
+    public static final int SLOT_REMERA = 2;
+    public static final int SLOT_PAPEL = 3;
+    public static final int SLOT_TINTA_BASE = 4; // .. +4 (C,M,Y,K, mismo orden que SublimadoraBlock.TINTES)
+    /**
+     * Salida visible — a pedido (2026-09-21, "que las tres tengan slot de
+     * entrada y de salida"): antes {@link #salida} vivía solo como campo
+     * (se sacaba con {@link #retirar()}, click derecho con la mano
+     * vacía), ahora también es un slot real de verdad en pantalla —
+     * mismo criterio que {@code SLOT_SALIDA} de Modeladora/Tinturas.
+     * {@code retirar()} sigue andando igual, las dos formas conviven.
+     */
+    public static final int SLOT_SALIDA = SLOT_TINTA_BASE + 4;
+    /**
+     * Almacén de fotos — a pedido (2026-09-21, "slots" tras "tambien
+     * podemos agregarle slots a la derecha para guardar imagenes"): antes
+     * Frente/Espalda eran los ÚNICOS lugares donde vivía una foto, así
+     * que cambiar de imagen significaba perder la anterior sin volver a
+     * cargarla de afuera. Estos 9 son guardado nomás, ninguno alimenta un
+     * prensado directo — se arrastran a Frente/Espalda como cualquier
+     * slot vanilla. Mismo tamaño que el almacén de Tinturas/Modeladora.
+     */
+    public static final int ALMACEN_TAMANO = 9;
+    public static final int SLOT_ALMACEN_INICIO = SLOT_SALIDA + 1;
+    private final net.minecraft.util.collection.DefaultedList<ItemStack> almacen =
+            net.minecraft.util.collection.DefaultedList.ofSize(ALMACEN_TAMANO, ItemStack.EMPTY);
+
+    @Override public int size() { return SLOT_ALMACEN_INICIO + ALMACEN_TAMANO; }
+
+    @Override
+    public boolean isEmpty() {
+        if (!fotos[0].isEmpty() || !fotos[1].isEmpty() || !remera.isEmpty() || !salida.isEmpty()) return false;
+        if (papelCargado > 0) return false;
+        for (int c : cargas) if (c > 0) return false;
+        for (ItemStack s : almacen) if (!s.isEmpty()) return false;
+        return true;
+    }
+
+    @Override
+    public ItemStack getStack(int slot) {
+        // Papel/tinta: se devuelve la MISMA instancia de vista entre
+        // llamadas (nunca una nueva) — ver el javadoc de papelSlotView/
+        // tintaSlotView, es lo que hace que un hopper mezclando de a uno
+        // no pierda el incremento.
+        if (slot >= SLOT_ALMACEN_INICIO) return almacen.get(slot - SLOT_ALMACEN_INICIO);
+        return switch (slot) {
+            case 0, 1 -> fotos[slot];
+            case SLOT_REMERA -> remera;
+            case SLOT_PAPEL -> papelSlotView;
+            case SLOT_SALIDA -> salida;
+            default -> tintaSlotView[slot - SLOT_TINTA_BASE];
+        };
+    }
+
+    @Override
+    public ItemStack removeStack(int slot, int amount) {
+        if (slot >= SLOT_ALMACEN_INICIO) {
+            ItemStack resultado = net.minecraft.inventory.Inventories.splitStack(almacen, slot - SLOT_ALMACEN_INICIO, amount);
+            if (!resultado.isEmpty()) sincronizar();
+            return resultado;
+        }
+        if (slot <= 1) {
+            ItemStack resultado = fotos[slot].split(amount);
+            if (!resultado.isEmpty()) {
+                if (fotos[slot].isEmpty()) pendientes[slot] = null;
+                sincronizar();
+            }
+            return resultado;
+        }
+        if (slot == SLOT_REMERA) {
+            ItemStack resultado = remera.split(amount);
+            if (!resultado.isEmpty()) sincronizar();
+            return resultado;
+        }
+        if (slot == SLOT_SALIDA) {
+            ItemStack resultado = salida.split(amount);
+            if (!resultado.isEmpty()) {
+                if (salida.isEmpty()) estado = Estado.REPOSO;
+                sincronizar();
+            }
+            return resultado;
+        }
+        // Papel/tinta: no hay un ItemStack de verdad guardado, se
+        // reconstruye a partir del contador — remover es simplemente
+        // bajar el contador y devolver un stack equivalente.
+        int actual = slot == SLOT_PAPEL ? papelCargado : cargas[slot - SLOT_TINTA_BASE];
+        int sacado = Math.min(actual, amount);
+        if (sacado <= 0) return ItemStack.EMPTY;
+        setCarga(slot, actual - sacado);
+        ItemStack resultado = getStackDeCarga(slot, sacado);
+        sincronizar();
+        return resultado;
+    }
+
+    @Override
+    public ItemStack removeStack(int slot) {
+        if (slot >= SLOT_ALMACEN_INICIO) {
+            ItemStack resultado = net.minecraft.inventory.Inventories.removeStack(almacen, slot - SLOT_ALMACEN_INICIO);
+            if (!resultado.isEmpty()) sincronizar();
+            return resultado;
+        }
+        if (slot <= 1) {
+            ItemStack resultado = fotos[slot];
+            fotos[slot] = ItemStack.EMPTY;
+            pendientes[slot] = null;
+            sincronizar();
+            return resultado;
+        }
+        if (slot == SLOT_REMERA) {
+            ItemStack resultado = remera;
+            remera = ItemStack.EMPTY;
+            sincronizar();
+            return resultado;
+        }
+        if (slot == SLOT_SALIDA) {
+            ItemStack resultado = salida;
+            salida = ItemStack.EMPTY;
+            estado = Estado.REPOSO;
+            sincronizar();
+            return resultado;
+        }
+        int actual = slot == SLOT_PAPEL ? papelCargado : cargas[slot - SLOT_TINTA_BASE];
+        ItemStack resultado = getStackDeCarga(slot, actual);
+        setCarga(slot, 0);
+        sincronizar();
+        return resultado;
+    }
+
+    @Override
+    public void setStack(int slot, ItemStack stack) {
+        if (slot >= SLOT_ALMACEN_INICIO) {
+            almacen.set(slot - SLOT_ALMACEN_INICIO, stack);
+            if (stack.getCount() > stack.getMaxCount()) stack.setCount(stack.getMaxCount());
+            sincronizar();
+            return;
+        }
+        switch (slot) {
+            case 0, 1 -> {
+                if (stack.isEmpty()) {
+                    fotos[slot] = ItemStack.EMPTY;
+                    pendientes[slot] = null;
+                } else {
+                    ponerFoto(Estampa.Cara.values()[slot], stack, SublimadoraBlock.uuidDeFoto(stack));
+                }
+            }
+            case SLOT_REMERA -> remera = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1);
+            case SLOT_SALIDA -> {
+                salida = stack;
+                if (salida.isEmpty() && estado == Estado.LISTO) estado = Estado.REPOSO;
+            }
+            default -> setCarga(slot, stack.isEmpty() ? 0
+                    : MathHelper.clamp(stack.getCount(), 0, CARGA_MAXIMA));
+        }
+        sincronizar();
+    }
+
+    /** El tanque (papel o el canal de tinta que corresponda) a {@code valor}, sin pasar por cargarTinta/cargarPapel (que solo suman). */
+    private void setCarga(int slot, int valor) {
+        if (slot == SLOT_PAPEL) {
+            papelCargado = valor;
+        } else {
+            int canal = slot - SLOT_TINTA_BASE;
+            cargas[canal] = valor;
+            tinta[canal] = cargas[canal] / (float) CARGA_MAXIMA;
+        }
+        sincronizarVistaTanques();
+    }
+
+    private ItemStack getStackDeCarga(int slot, int cantidad) {
+        if (cantidad <= 0) return ItemStack.EMPTY;
+        return slot == SLOT_PAPEL
+                ? new ItemStack(net.minecraft.item.Items.PAPER, cantidad)
+                : new ItemStack(SublimadoraBlock.TINTES[slot - SLOT_TINTA_BASE], cantidad);
+    }
+
+    /**
+     * OJO: NO llamar {@code sincronizar()} acá — esa función llama
+     * {@code markDirty()}, y como este método la pisa (override de
+     * {@code Inventory}), las dos se llamaban entre sí para siempre
+     * (StackOverflowError apenas se tocaba el bloque, 2026-09-20).
+     * {@code super.markDirty()} es la de {@code BlockEntity} de toda la
+     * vida, no la reimplementada acá.
+     */
+    @Override
+    public void markDirty() {
+        // Vista → autoridad, ANTES de todo lo demás (2026-09-20): si un
+        // hopper mutó papelSlotView/tintaSlotView[] directo en memoria
+        // (ver su javadoc), acá es donde se entera el resto del código.
+        // Si nada externo lo tocó, esto no cambia nada (sincronizarVistaTanques
+        // ya los había dejado iguales) — comparar antes de reasignar evita
+        // relecturas de tinta[]/sincronizar() de más en el camino normal.
+        int papelDeVista = papelSlotView.isEmpty() ? 0 : papelSlotView.getCount();
+        if (papelDeVista != papelCargado) papelCargado = MathHelper.clamp(papelDeVista, 0, CARGA_MAXIMA);
+        for (int i = 0; i < 4; i++) {
+            int deVista = tintaSlotView[i].isEmpty() ? 0 : tintaSlotView[i].getCount();
+            if (deVista != cargas[i]) {
+                cargas[i] = MathHelper.clamp(deVista, 0, CARGA_MAXIMA);
+                tinta[i] = cargas[i] / (float) CARGA_MAXIMA;
+            }
+        }
+        super.markDirty();
+        if (world != null && !world.isClient) {
+            world.updateListeners(pos, getCachedState(), getCachedState(), 3);
+        }
+    }
+
+    @Override
+    public void clear() {
+        for (int i = 0; i < 2; i++) { fotos[i] = ItemStack.EMPTY; pendientes[i] = null; }
+        remera = ItemStack.EMPTY;
+        salida = ItemStack.EMPTY;
+        papelCargado = 0;
+        java.util.Arrays.fill(cargas, 0);
+        java.util.Arrays.fill(tinta, 0f);
+        almacen.clear();
+        sincronizarVistaTanques();
+        sincronizar();
+    }
+
+    /**
+     * Solo fotos de Camerapture, y solo mientras se pueda cargar de
+     * verdad — mismos guardas que {@link #ponerFoto} (reposo, cara sin
+     * estampar todavía), para que un drag-and-drop rechazado rebote en
+     * vez de aceptarse en silencio y fallar después.
+     *
+     * <p>Los slots 2-7 (remera/papel/tinta, 2026-09-20) mismos guardas
+     * que ya usaban {@link #ponerRemera}/{@link #cargarPapel}/
+     * {@link #cargarTinta} desde el click derecho — un hopper entra por
+     * la misma puerta que un jugador, no una más permisiva.
+     */
+    @Override
+    public boolean isValid(int slot, ItemStack stack) {
+        // Almacén de fotos: guardado nomás, cualquier foto entra (2026-09-21,
+        // "slots"), sin las restricciones de reposo/cara-sin-estampar de
+        // Frente/Espalda (slot <= 1) porque no alimenta un prensado directo.
+        if (slot >= SLOT_ALMACEN_INICIO) return SublimadoraBlock.esFoto(stack);
+        if (slot <= 1) {
+            if (estado != Estado.REPOSO) return false;
+            if (!fotos[slot].isEmpty()) return false;
+            Estampa.Cara cara = Estampa.Cara.values()[slot];
+            if (!remera.isEmpty() && RemeraItem.estampaDe(remera, cara) != null) return false;
+            return SublimadoraBlock.esFoto(stack) && SublimadoraBlock.uuidDeFoto(stack) != null;
+        }
+        if (slot == SLOT_REMERA) {
+            return remera.isEmpty() && estado == Estado.REPOSO
+                    && ModItems.esEstampable(stack) && !SublimadoraBlock.tieneLasDosCaras(stack);
+        }
+        if (slot == SLOT_PAPEL) {
+            return stack.isOf(net.minecraft.item.Items.PAPER) && papelCargado < CARGA_MAXIMA;
+        }
+        // Salida: solo la máquina escribe acá, igual que en Modeladora/Tinturas.
+        if (slot == SLOT_SALIDA) return false;
+        int canal = slot - SLOT_TINTA_BASE;
+        return stack.isOf(SublimadoraBlock.TINTES[canal]) && cargas[canal] < CARGA_MAXIMA;
+    }
+
+    // ── SidedInventory: remera por ARRIBA (2026-09-21, "que las tres
+    // carguen por arriba" — reemplaza el costado izquierdo de
+    // 2026-09-20), papel/tinta siguen por ATRÁS, relativo a FACING como
+    // si un jugador estuviera parado frente al panel mirándolo. Las fotos
+    // (0-1) no aparecen en ningún lado: siguen siendo solo-GUI a propósito.
+    private Direction ladoIzquierdo() {
+        return getCachedState().get(SublimadoraBlock.FACING).getOpposite().rotateYCounterclockwise();
+    }
+
+    private Direction ladoAtras() {
+        return getCachedState().get(SublimadoraBlock.FACING).getOpposite();
+    }
+
+    /** El lado opuesto al de carga — hacia ahí se empuja el resultado (ver {@link #empujarSalida}). */
+    private Direction ladoDerecho() {
+        return ladoIzquierdo().getOpposite();
+    }
+
+    /**
+     * Empuja la remera lista hacia la derecha — a pedido (2026-09-20,
+     * "las 3 maquinas hacen como el crafter y depositan el resultado en
+     * el bloque siguiente si es una de las 3 maquinas o si es
+     * contenedor"): mismo mecanismo que un Crafter vanilla, ver
+     * {@link com.femclothes.util.InventarioUtil#empujarA}. Si no hay
+     * nada del otro lado (o está lleno) la remera simplemente se queda
+     * en {@code salida}, recuperable como siempre.
+     */
+    private void empujarSalida(net.minecraft.world.World world, BlockPos pos) {
+        if (salida.isEmpty()) return;
+        Direction derecha = ladoDerecho();
+        ItemStack sobrante = com.femclothes.util.InventarioUtil.empujarA(
+                world, pos.offset(derecha), derecha.getOpposite(), salida);
+        if (sobrante.getCount() != salida.getCount()) {
+            salida = sobrante;
+            if (salida.isEmpty()) estado = Estado.REPOSO;
+            sincronizar();
+        }
+    }
+
+    // La remera entra por ARRIBA (2026-09-21, "que las tres carguen por
+    // arriba") — reemplaza el costado izquierdo que usaba hasta ahora;
+    // papel/tinta siguen por atrás, sin cambios.
+    @Override
+    public int[] getAvailableSlots(Direction side) {
+        if (side == Direction.UP) return new int[]{SLOT_REMERA};
+        if (side == ladoAtras()) return new int[]{SLOT_PAPEL, SLOT_TINTA_BASE, SLOT_TINTA_BASE + 1, SLOT_TINTA_BASE + 2, SLOT_TINTA_BASE + 3};
+        return new int[0];
+    }
+
+    @Override
+    public boolean canInsert(int slot, ItemStack stack, @org.jetbrains.annotations.Nullable Direction dir) {
+        return isValid(slot, stack);
+    }
+
+    @Override
+    public boolean canExtract(int slot, ItemStack stack, Direction dir) {
+        // Solo inserción por ahora (2026-09-20) — extracción automática
+        // (ej. sacar la remera terminada) queda pendiente a propósito.
+        return false;
     }
 
     public Estampa.Cara getSeleccion() {
@@ -369,27 +891,167 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         return arrastre > 0 ? ultimasVistas[cara.ordinal()] : null;
     }
 
-    /** El modo de una cara concreta. */
-    public Estampa.Modo getModo(Estampa.Cara cara) {
-        return modos[cara.ordinal()];
+    public float getEscala(Estampa.Cara cara) { return escalaBorrador[cara.ordinal()]; }
+    public float getX(Estampa.Cara cara) { return xBorrador[cara.ordinal()]; }
+    public float getY(Estampa.Cara cara) { return yBorrador[cara.ordinal()]; }
+    public float getAngulo(Estampa.Cara cara) { return anguloBorrador[cara.ordinal()]; }
+
+    /** Escala/posicion/angulo de la cara elegida, que es la que muestra la pantalla. */
+    public float getEscalaBorrador() { return escalaBorrador[seleccion.ordinal()]; }
+    public float getXBorrador() { return xBorrador[seleccion.ordinal()]; }
+    public float getYBorrador() { return yBorrador[seleccion.ordinal()]; }
+    public float getAnguloBorrador() { return anguloBorrador[seleccion.ordinal()]; }
+
+    /**
+     * Ajustan escala/posicion/angulo de la cara elegida — mismo criterio
+     * que {@link #cambiarSeleccion()}: cambian SOLO la cara activa, no las
+     * dos. {@code direccion} es +1 o -1 (flechitas ‹ ›).
+     */
+    public boolean cambiarEscala(int direccion) {
+        if (estado == Estado.PRENSANDO) return false;
+        int i = seleccion.ordinal();
+        escalaBorrador[i] = MathHelper.clamp(escalaBorrador[i] + direccion * PASO_ESCALA,
+                Estampa.ESCALA_MINIMA, Estampa.ESCALA_MAXIMA);
+        sincronizar();
+        return true;
     }
 
-    /** El modo de la cara elegida, que es el que muestra el slider. */
-    public Estampa.Modo getModo() {
-        return modos[seleccion.ordinal()];
+    public boolean cambiarX(int direccion) {
+        if (estado == Estado.PRENSANDO) return false;
+        int i = seleccion.ordinal();
+        xBorrador[i] = MathHelper.clamp(xBorrador[i] + direccion * PASO_POSICION, -0.5f, 0.5f);
+        sincronizar();
+        return true;
+    }
+
+    public boolean cambiarY(int direccion) {
+        if (estado == Estado.PRENSANDO) return false;
+        int i = seleccion.ordinal();
+        yBorrador[i] = MathHelper.clamp(yBorrador[i] + direccion * PASO_POSICION, -0.5f, 0.5f);
+        sincronizar();
+        return true;
+    }
+
+    /** Wrappea 0-345, mismo criterio que {@code TinturasBlockEntity#cambiarAngulo}. */
+    public boolean cambiarAngulo(int direccion) {
+        if (estado == Estado.PRENSANDO) return false;
+        int i = seleccion.ordinal();
+        float actual = anguloBorrador[i];
+        anguloBorrador[i] = ((Math.round(actual) + 360 + direccion * (int) PASO_ANGULO) % 360);
+        sincronizar();
+        return true;
+    }
+
+    // ── botones de la pantalla (mismo mecanismo que TinturasBlockEntity) ──
+    public static final int BTN_SELECCION = 0;
+    public static final int BTN_ESCALA_MAS = 1;
+    public static final int BTN_ESCALA_MENOS = 2;
+    public static final int BTN_X_MAS = 3;
+    public static final int BTN_X_MENOS = 4;
+    public static final int BTN_Y_MAS = 5;
+    public static final int BTN_Y_MENOS = 6;
+    public static final int BTN_ANGULO_MAS = 7;
+    public static final int BTN_ANGULO_MENOS = 8;
+    public static final int BTN_FIJAR = 9;
+    /** Cicla la categoría de fijadas — ver el javadoc de {@link #categoria}. */
+    public static final int BTN_CATEGORIA = 10;
+    public static final int BTN_FIJADA_BASE = 11; // .. + FIJADAS_MAXIMO
+
+    public boolean onButtonClick(int id) {
+        if (id == BTN_FIJAR) {
+            fijar();
+            return true;
+        }
+        if (id == BTN_CATEGORIA) {
+            cambiarCategoria();
+            return true;
+        }
+        if (id >= BTN_FIJADA_BASE && id < BTN_FIJADA_BASE + FIJADAS_MAXIMO) {
+            return aplicarOQuitarFijada(id - BTN_FIJADA_BASE);
+        }
+        return switch (id) {
+            case BTN_SELECCION -> cambiarSeleccion();
+            case BTN_ESCALA_MAS -> cambiarEscala(1);
+            case BTN_ESCALA_MENOS -> cambiarEscala(-1);
+            case BTN_X_MAS -> cambiarX(1);
+            case BTN_X_MENOS -> cambiarX(-1);
+            case BTN_Y_MAS -> cambiarY(1);
+            case BTN_Y_MENOS -> cambiarY(-1);
+            case BTN_ANGULO_MAS -> cambiarAngulo(1);
+            case BTN_ANGULO_MENOS -> cambiarAngulo(-1);
+            default -> false;
+        };
+    }
+
+    /** La lista de fijadas de la categoría activa ahora mismo — ver {@link #categoria}. */
+    public java.util.List<EstampaFijada> fijadas() {
+        return fijadasPorItem.getOrDefault(categoria, java.util.List.of());
+    }
+
+    /** La seleccionada de la lista de arriba, o -1. */
+    public int fijadaSeleccionada() {
+        return seleccionadaPorItem.getOrDefault(categoria, -1);
+    }
+
+    public net.minecraft.item.Item categoria() { return categoria; }
+
+    /** Cicla la categoría de fijadas a mano — ver el javadoc de {@link #categoria}. */
+    private void cambiarCategoria() {
+        int i = java.util.Arrays.asList(CATEGORIAS).indexOf(categoria);
+        categoria = CATEGORIAS[(i + 1) % CATEGORIAS.length];
+        sincronizar();
+    }
+
+    /** Guarda el borrador actual (las dos caras) como una fijada nueva de la categoría activa. */
+    private void fijar() {
+        java.util.List<EstampaFijada> lista = fijadasPorItem.computeIfAbsent(categoria, k -> new java.util.ArrayList<>());
+        if (lista.size() >= FIJADAS_MAXIMO) return;
+        lista.add(new EstampaFijada(
+                escalaBorrador[0], xBorrador[0], yBorrador[0], anguloBorrador[0],
+                escalaBorrador[1], xBorrador[1], yBorrador[1], anguloBorrador[1]));
+        seleccionadaPorItem.put(categoria, lista.size() - 1);
+        sincronizar();
     }
 
     /**
-     * Corre el slider de modo. Cambia SOLO la cara elegida, que es todo el
-     * sentido de tener dos controles: uno dice de que cara hablamos y el otro
-     * que se le hace.
+     * Click en una fijada: si NO es la seleccionada, la aplica a las dos
+     * caras del borrador (mismo criterio que {@code TinturasBlockEntity}:
+     * clickear la ya seleccionada la borra en vez de reaplicarla).
      */
-    public boolean cambiarModo() {
-        if (estado == Estado.PRENSANDO) return false;
-        int i = seleccion.ordinal();
-        modos[i] = modos[i].siguiente();
+    private boolean aplicarOQuitarFijada(int idx) {
+        java.util.List<EstampaFijada> lista = fijadasPorItem.get(categoria);
+        if (lista == null || idx >= lista.size()) return false;
+        if (Integer.valueOf(idx).equals(seleccionadaPorItem.get(categoria))) {
+            lista.remove(idx);
+            seleccionadaPorItem.put(categoria, -1);
+        } else {
+            EstampaFijada f = lista.get(idx);
+            escalaBorrador[0] = f.escalaFrente(); xBorrador[0] = f.xFrente(); yBorrador[0] = f.yFrente(); anguloBorrador[0] = f.anguloFrente();
+            escalaBorrador[1] = f.escalaEspalda(); xBorrador[1] = f.xEspalda(); yBorrador[1] = f.yEspalda(); anguloBorrador[1] = f.anguloEspalda();
+            seleccionadaPorItem.put(categoria, idx);
+        }
         sincronizar();
         return true;
+    }
+
+    public boolean canPlayerUse(PlayerEntity player) {
+        if (world == null || world.getBlockEntity(pos) != this) return false;
+        return player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64.0;
+    }
+
+    @Override
+    public Text getDisplayName() {
+        return getCachedState().getBlock().getName();
+    }
+
+    @Override
+    public ScreenHandler createMenu(int syncId, PlayerInventory inv, PlayerEntity player) {
+        return new SublimadoraScreenHandler(syncId, inv, this);
+    }
+
+    @Override
+    public BlockPos getScreenOpeningData(ServerPlayerEntity player) {
+        return this.pos;
     }
 
     /**
@@ -445,13 +1107,19 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         // Una dosis de cada color POR CARA: hacer las dos en una pasada
         // ahorra el ciclo, no la tinta.
         for (int i = 0; i < 4; i++) if (cargas[i] < caras) return false;
+        // 1 papel por prensado (a las dos caras juntas, no una por cara —
+        // es UNA hoja de papel de sublimacion, no una por lado) — a pedido
+        // (2026-09-19, "usa papel y ya no consume la imagen").
+        if (papelCargado < 1) return false;
 
         for (int i = 0; i < 4; i++) {
             cargas[i] -= caras;
             tinta[i] = cargas[i] / (float) CARGA_MAXIMA;
         }
-        fotos[0] = ItemStack.EMPTY;   // las fotos se consumen al cerrar la tapa
-        fotos[1] = ItemStack.EMPTY;
+        papelCargado -= 1;
+        sincronizarVistaTanques();
+        // Las fotos YA NO se consumen al cerrar la tapa (2026-09-19): quedan
+        // cargadas para reimprimir la misma cara sin volver a subirla.
         estado = Estado.PRENSANDO;
         progreso = 0;
         sincronizar();
@@ -484,6 +1152,9 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
 
         if (remera.isEmpty() || (fotos[0].isEmpty() && fotos[1].isEmpty())) {
             return Text.translatable("femclothes.sublimadora.aviso.cargar");
+        }
+        if (papelCargado < 1) {
+            return Text.translatable("femclothes.sublimadora.aviso.papel");
         }
         if (!hayTinta()) {
             MutableText colores = Text.empty();
@@ -539,16 +1210,46 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
             nbt.putFloat(CLAVES[i], tinta[i]);
             nbt.putInt(CLAVES[i] + "Cargas", cargas[i]);
         }
+        nbt.putInt("PapelCargado", papelCargado);
         nbt.putString("Estado", estado.name());
         nbt.putInt("Progreso", progreso);
         if (!remera.isEmpty()) nbt.put("Remera", remera.encode(registries));
         for (int i = 0; i < 2; i++) {
             if (!fotos[i].isEmpty()) nbt.put("Foto" + i, fotos[i].encode(registries));
             if (pendientes[i] != null) nbt.putUuid("Pendiente" + i, pendientes[i]);
-            nbt.putString("Modo" + i, modos[i].name());
+            nbt.putFloat("Escala" + i, escalaBorrador[i]);
+            nbt.putFloat("X" + i, xBorrador[i]);
+            nbt.putFloat("Y" + i, yBorrador[i]);
+            nbt.putFloat("Angulo" + i, anguloBorrador[i]);
         }
         nbt.putString("Seleccion", seleccion.name());
+        nbt.putString("Categoria", net.minecraft.registry.Registries.ITEM.getId(categoria).toString());
         if (!salida.isEmpty()) nbt.put("Salida", salida.encode(registries));
+
+        net.minecraft.nbt.NbtList fijadasNbt = new net.minecraft.nbt.NbtList();
+        for (var entry : fijadasPorItem.entrySet()) {
+            String claveItem = net.minecraft.registry.Registries.ITEM.getId(entry.getKey()).toString();
+            for (EstampaFijada f : entry.getValue()) {
+                NbtCompound fc = new NbtCompound();
+                fc.putString("Item", claveItem);
+                fc.putFloat("EscalaF", f.escalaFrente());
+                fc.putFloat("XF", f.xFrente());
+                fc.putFloat("YF", f.yFrente());
+                fc.putFloat("AnguloF", f.anguloFrente());
+                fc.putFloat("EscalaE", f.escalaEspalda());
+                fc.putFloat("XE", f.xEspalda());
+                fc.putFloat("YE", f.yEspalda());
+                fc.putFloat("AnguloE", f.anguloEspalda());
+                fijadasNbt.add(fc);
+            }
+        }
+        nbt.put("EstampaFijadas", fijadasNbt);
+        NbtCompound seleccionadasNbt = new NbtCompound();
+        for (var entry : seleccionadaPorItem.entrySet()) {
+            seleccionadasNbt.putInt(net.minecraft.registry.Registries.ITEM.getId(entry.getKey()).toString(), entry.getValue());
+        }
+        nbt.put("EstampaFijadaSeleccionada", seleccionadasNbt);
+        net.minecraft.inventory.Inventories.writeNbt(nbt, almacen, registries);
     }
 
     @Override
@@ -566,6 +1267,8 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
             mostrado[i] = tinta[i];
             anterior[i] = tinta[i];
         }
+        papelCargado = MathHelper.clamp(nbt.getInt("PapelCargado"), 0, CARGA_MAXIMA);
+        sincronizarVistaTanques();
         estado = nbt.contains("Estado") ? Estado.valueOf(nbt.getString("Estado")) : Estado.REPOSO;
         progreso = nbt.getInt("Progreso");
         remera = nbt.contains("Remera") ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Remera")) : ItemStack.EMPTY;
@@ -574,10 +1277,58 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
                     ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Foto" + i))
                     : ItemStack.EMPTY;
             pendientes[i] = nbt.containsUuid("Pendiente" + i) ? nbt.getUuid("Pendiente" + i) : null;
-            if (nbt.contains("Modo" + i)) modos[i] = Estampa.Modo.valueOf(nbt.getString("Modo" + i));
+            if (nbt.contains("Escala" + i)) {
+                escalaBorrador[i] = nbt.getFloat("Escala" + i);
+                xBorrador[i] = nbt.getFloat("X" + i);
+                yBorrador[i] = nbt.getFloat("Y" + i);
+                // Angulo se agregó después (2026-09-20): ausente en
+                // guardados viejos, default 0 (como venía la foto).
+                anguloBorrador[i] = nbt.contains("Angulo" + i) ? nbt.getFloat("Angulo" + i) : 0f;
+            } else if (nbt.contains("Modo" + i)) {
+                // Compatibilidad con guardados de antes del control libre
+                // (2026-09-19, "sacamos los controles del frente"): los 3
+                // presets viejos (Logo/Centrada/Completo) pasan a ser su
+                // escala/posicion equivalente.
+                Estampa.Modo modoViejo = Estampa.Modo.valueOf(nbt.getString("Modo" + i));
+                escalaBorrador[i] = modoViejo.escala;
+                xBorrador[i] = modoViejo.x;
+                yBorrador[i] = modoViejo.y;
+                anguloBorrador[i] = 0f;
+            }
         }
         if (nbt.contains("Seleccion")) seleccion = Estampa.Cara.valueOf(nbt.getString("Seleccion"));
+        if (nbt.contains("Categoria")) {
+            net.minecraft.util.Identifier id = net.minecraft.util.Identifier.tryParse(nbt.getString("Categoria"));
+            net.minecraft.item.Item item = id == null ? null : net.minecraft.registry.Registries.ITEM.get(id);
+            if (item != null && item != net.minecraft.item.Items.AIR) categoria = item;
+        }
         salida = nbt.contains("Salida") ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Salida")) : ItemStack.EMPTY;
+
+        fijadasPorItem.clear();
+        if (nbt.contains("EstampaFijadas")) {
+            net.minecraft.nbt.NbtList fijadasNbt = nbt.getList("EstampaFijadas", net.minecraft.nbt.NbtElement.COMPOUND_TYPE);
+            for (int i = 0; i < fijadasNbt.size(); i++) {
+                NbtCompound fc = fijadasNbt.getCompound(i);
+                net.minecraft.util.Identifier id = net.minecraft.util.Identifier.tryParse(fc.getString("Item"));
+                net.minecraft.item.Item item = id == null ? null : net.minecraft.registry.Registries.ITEM.get(id);
+                if (item == null || item == net.minecraft.item.Items.AIR) continue;
+                fijadasPorItem.computeIfAbsent(item, k -> new java.util.ArrayList<>()).add(new EstampaFijada(
+                        fc.getFloat("EscalaF"), fc.getFloat("XF"), fc.getFloat("YF"), fc.getFloat("AnguloF"),
+                        fc.getFloat("EscalaE"), fc.getFloat("XE"), fc.getFloat("YE"), fc.getFloat("AnguloE")));
+            }
+        }
+        seleccionadaPorItem.clear();
+        if (nbt.contains("EstampaFijadaSeleccionada")) {
+            NbtCompound seleccionadasNbt = nbt.getCompound("EstampaFijadaSeleccionada");
+            for (String clave : seleccionadasNbt.getKeys()) {
+                net.minecraft.util.Identifier id = net.minecraft.util.Identifier.tryParse(clave);
+                net.minecraft.item.Item item = id == null ? null : net.minecraft.registry.Registries.ITEM.get(id);
+                if (item == null || item == net.minecraft.item.Items.AIR) continue;
+                seleccionadaPorItem.put(item, seleccionadasNbt.getInt(clave));
+            }
+        }
+        almacen.clear();
+        net.minecraft.inventory.Inventories.readNbt(nbt, almacen, registries);
     }
 
     // ── la tinta viaja adentro del item ──────────────────────────────
@@ -592,19 +1343,24 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
         java.util.List<Integer> lista = new java.util.ArrayList<>(4);
         for (int i = 0; i < 4; i++) lista.add(cargas[i]);
         builder.add(ModItems.CARGAS, lista);
+        builder.add(ModItems.PAPEL_CARGADO, papelCargado);
     }
 
     @Override
     protected void readComponents(BlockEntity.ComponentsAccess componentes) {
         super.readComponents(componentes);
         java.util.List<Integer> lista = componentes.get(ModItems.CARGAS);
-        if (lista == null) return;
-        for (int i = 0; i < 4 && i < lista.size(); i++) {
-            cargas[i] = MathHelper.clamp(lista.get(i), 0, CARGA_MAXIMA);
-            tinta[i] = cargas[i] / (float) CARGA_MAXIMA;
-            mostrado[i] = tinta[i];
-            anterior[i] = tinta[i];
+        if (lista != null) {
+            for (int i = 0; i < 4 && i < lista.size(); i++) {
+                cargas[i] = MathHelper.clamp(lista.get(i), 0, CARGA_MAXIMA);
+                tinta[i] = cargas[i] / (float) CARGA_MAXIMA;
+                mostrado[i] = tinta[i];
+                anterior[i] = tinta[i];
+            }
         }
+        Integer papel = componentes.get(ModItems.PAPEL_CARGADO);
+        if (papel != null) papelCargado = MathHelper.clamp(papel, 0, CARGA_MAXIMA);
+        sincronizarVistaTanques();
     }
 
     /**
@@ -616,6 +1372,7 @@ public class SublimadoraBlockEntity extends BlockEntity implements GeoBlockEntit
     public void removeFromCopiedStackNbt(NbtCompound nbt) {
         super.removeFromCopiedStackNbt(nbt);
         for (String clave : CLAVES) nbt.remove(clave + "Cargas");
+        nbt.remove("PapelCargado");
     }
 
     /** El cliente necesita los niveles para dibujar el display. */

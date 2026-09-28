@@ -30,6 +30,29 @@ public final class FemclothesComponents {
                     .packetCodec(Identifier.PACKET_CODEC)
                     .build());
 
+    /**
+     * Capas 2 y 3 del patrón (§{@code TinturasBlockEntity#CAPAS_MAXIMO})
+     * — a pedido (2026-09-18, "dale mandale 3": patrones apilados como
+     * estandartes). PATTERN_ID sigue siendo la capa 1 (compatibilidad
+     * con el Telar viejo y con guardados de antes de esta función, que
+     * solo conocían una capa); estas dos son opcionales, ausente = esa
+     * capa no existe.
+     */
+    private static ComponentType<Identifier> patternIdComponent(String nombre) {
+        return Registry.register(
+                Registries.DATA_COMPONENT_TYPE,
+                Identifier.of("femclothes", nombre),
+                ComponentType.<Identifier>builder()
+                        .codec(Identifier.CODEC)
+                        .packetCodec(Identifier.PACKET_CODEC)
+                        .build());
+    }
+
+    public static final ComponentType<Identifier> PATTERN_ID_2 = patternIdComponent("pattern_id_2");
+    public static final ComponentType<Identifier> PATTERN_ID_3 = patternIdComponent("pattern_id_3");
+    public static final ComponentType<Identifier> RIGHT_PATTERN_ID_2 = patternIdComponent("right_pattern_id_2");
+    public static final ComponentType<Identifier> RIGHT_PATTERN_ID_3 = patternIdComponent("right_pattern_id_3");
+
     public static final ComponentType<Integer> PATTERN_COLOR = Registry.register(
             Registries.DATA_COMPONENT_TYPE,
             Identifier.of("femclothes", "pattern_color"),
@@ -37,6 +60,191 @@ public final class FemclothesComponents {
                     .codec(Codec.INT)
                     .packetCodec(PacketCodecs.INTEGER)
                     .build());
+
+    /**
+     * Color de las capas 2 y 3 — a pedido (2026-09-18, "para los tres
+     * patrones necesitaria... cambio de color"): cada capa apilada tiene
+     * SU PROPIO color, no comparten uno solo como antes.
+     */
+    private static ComponentType<Integer> patternColorComponent(String nombre) {
+        return Registry.register(
+                Registries.DATA_COMPONENT_TYPE,
+                Identifier.of("femclothes", nombre),
+                ComponentType.<Integer>builder()
+                        .codec(Codec.INT)
+                        .packetCodec(PacketCodecs.INTEGER)
+                        .build());
+    }
+
+    public static final ComponentType<Integer> PATTERN_COLOR_2 = patternColorComponent("pattern_color_2");
+    public static final ComponentType<Integer> PATTERN_COLOR_3 = patternColorComponent("pattern_color_3");
+    public static final ComponentType<Integer> RIGHT_PATTERN_COLOR_2 = patternColorComponent("right_pattern_color_2");
+    public static final ComponentType<Integer> RIGHT_PATTERN_COLOR_3 = patternColorComponent("right_pattern_color_3");
+
+    /** Escala del patrón (§{@link TamanoPatron}) — ausente = GRANDE. */
+    public static final ComponentType<TamanoPatron> PATTERN_SIZE = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "pattern_size"),
+            ComponentType.<TamanoPatron>builder()
+                    .codec(StringIdentifiable.createCodec(TamanoPatron::values))
+                    .packetCodec(PacketCodecs.indexed(i -> TamanoPatron.values()[i], Enum::ordinal))
+                    .build());
+
+    /**
+     * Tamaño de las capas 2 y 3 — a pedido (2026-09-19, "tendria q poder
+     * variar orientacion y tamaño entre cada capa"): antes las 3
+     * compartían un solo tamaño, igual que pasaba con el color antes de
+     * {@link #PATTERN_COLOR_2}.
+     */
+    private static ComponentType<TamanoPatron> patternSizeComponent(String nombre) {
+        return Registry.register(
+                Registries.DATA_COMPONENT_TYPE,
+                Identifier.of("femclothes", nombre),
+                ComponentType.<TamanoPatron>builder()
+                        .codec(StringIdentifiable.createCodec(TamanoPatron::values))
+                        .packetCodec(PacketCodecs.indexed(i -> TamanoPatron.values()[i], Enum::ordinal))
+                        .build());
+    }
+
+    /**
+     * Ángulo del patrón en grados (0°=horizontal, 90°=vertical, cualquier
+     * valor es una diagonal) — ausente = 0°. Reemplaza a la vieja
+     * Horizontal/Vertical (2026-09-19, "girarlo en angulo" — "flechitas
+     * para posicionar... e incluso para girarlo en angulo"). Nombre
+     * completo para no chocar con {@link Orientacion} (esa es la de
+     * girado/espejado de la PRENDA, un concepto totalmente distinto).
+     */
+    private static ComponentType<Float> patternAngleComponent(String nombre) {
+        return Registry.register(
+                Registries.DATA_COMPONENT_TYPE,
+                Identifier.of("femclothes", nombre),
+                ComponentType.<Float>builder()
+                        .codec(Codec.FLOAT)
+                        .packetCodec(PacketCodecs.FLOAT)
+                        .build());
+    }
+
+    public static final ComponentType<Float> PATTERN_ANGLE = patternAngleComponent("pattern_angle");
+    public static final ComponentType<Float> PATTERN_ANGLE_2 = patternAngleComponent("pattern_angle_2");
+    public static final ComponentType<Float> PATTERN_ANGLE_3 = patternAngleComponent("pattern_angle_3");
+    public static final ComponentType<Float> RIGHT_PATTERN_ANGLE = patternAngleComponent("right_pattern_angle");
+    public static final ComponentType<Float> RIGHT_PATTERN_ANGLE_2 = patternAngleComponent("right_pattern_angle_2");
+    public static final ComponentType<Float> RIGHT_PATTERN_ANGLE_3 = patternAngleComponent("right_pattern_angle_3");
+
+    public static final ComponentType<TamanoPatron> PATTERN_SIZE_2 = patternSizeComponent("pattern_size_2");
+    public static final ComponentType<TamanoPatron> PATTERN_SIZE_3 = patternSizeComponent("pattern_size_3");
+    public static final ComponentType<TamanoPatron> RIGHT_PATTERN_SIZE_2 = patternSizeComponent("right_pattern_size_2");
+    public static final ComponentType<TamanoPatron> RIGHT_PATTERN_SIZE_3 = patternSizeComponent("right_pattern_size_3");
+
+    /**
+     * Posición del patrón a lo largo del eje "d" del generador (0.0..1.0)
+     * — ausente = 0.5 (medio). Solo la usa {@code Forma.TRES_RAYAS} por
+     * ahora; el resto de las formas la ignora — a pedido (2026-09-19,
+     * "quiero ver si le puedo cambiar la posicion" sobre triple_stripe).
+     */
+    private static ComponentType<Float> patternPositionComponent(String nombre) {
+        return Registry.register(
+                Registries.DATA_COMPONENT_TYPE,
+                Identifier.of("femclothes", nombre),
+                ComponentType.<Float>builder()
+                        .codec(Codec.FLOAT)
+                        .packetCodec(PacketCodecs.FLOAT)
+                        .build());
+    }
+
+    /**
+     * Forma del patrón (§{@link com.femclothes.render.PatronGenerador.Forma})
+     * — ausente = la del ítem (§{@code ClothingPatternItem#forma}). A
+     * pedido (2026-09-19, "que cualquier patron pueda elegir su forma"):
+     * antes venía pegada al ítem, ahora es un eje más por capa, igual que
+     * tamaño/orientación/posición.
+     */
+    private static ComponentType<com.femclothes.render.PatronGenerador.Forma> patternFormComponent(String nombre) {
+        return Registry.register(
+                Registries.DATA_COMPONENT_TYPE,
+                Identifier.of("femclothes", nombre),
+                ComponentType.<com.femclothes.render.PatronGenerador.Forma>builder()
+                        .codec(StringIdentifiable.createCodec(com.femclothes.render.PatronGenerador.Forma::values))
+                        .packetCodec(PacketCodecs.indexed(i -> com.femclothes.render.PatronGenerador.Forma.values()[i], Enum::ordinal))
+                        .build());
+    }
+
+    public static final ComponentType<com.femclothes.render.PatronGenerador.Forma> PATTERN_FORM = patternFormComponent("pattern_form");
+    public static final ComponentType<com.femclothes.render.PatronGenerador.Forma> PATTERN_FORM_2 = patternFormComponent("pattern_form_2");
+    public static final ComponentType<com.femclothes.render.PatronGenerador.Forma> PATTERN_FORM_3 = patternFormComponent("pattern_form_3");
+    public static final ComponentType<com.femclothes.render.PatronGenerador.Forma> RIGHT_PATTERN_FORM = patternFormComponent("right_pattern_form");
+    public static final ComponentType<com.femclothes.render.PatronGenerador.Forma> RIGHT_PATTERN_FORM_2 = patternFormComponent("right_pattern_form_2");
+    public static final ComponentType<com.femclothes.render.PatronGenerador.Forma> RIGHT_PATTERN_FORM_3 = patternFormComponent("right_pattern_form_3");
+
+    /**
+     * A qué región anatómica se restringe la capa (2026-09-27, "pintar por
+     * región" — mismo patrón bilateral que el resto de los ejes de capa).
+     */
+    private static ComponentType<com.femclothes.region.RegionPintura> patternRegionComponent(String nombre) {
+        return Registry.register(
+                Registries.DATA_COMPONENT_TYPE,
+                Identifier.of("femclothes", nombre),
+                ComponentType.<com.femclothes.region.RegionPintura>builder()
+                        .codec(StringIdentifiable.createCodec(com.femclothes.region.RegionPintura::values))
+                        .packetCodec(PacketCodecs.indexed(i -> com.femclothes.region.RegionPintura.values()[i], Enum::ordinal))
+                        .build());
+    }
+
+    /**
+     * Capas de color de la Estación de Tintes, una por cuadradito fijado
+     * (2026-09-27, "poner un color y patron al cuello otro a la manga otro
+     * al pecho" + modos de mezcla y opacidad): lista en orden de pintado,
+     * cada capa con su región, su molde opcional (sin molde = liso) y cómo
+     * se funde con lo de abajo. Reemplaza, para lo que tiñe Tinturas, a los
+     * 3 slots fijos PATTERN_* (que siguen existiendo para Telar/Modeladora).
+     */
+    public static final ComponentType<java.util.List<com.femclothes.region.RegionResolver.CapaPatron>> CAPAS_TINTE = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "capas_tinte"),
+            ComponentType.<java.util.List<com.femclothes.region.RegionResolver.CapaPatron>>builder()
+                    .codec(com.femclothes.region.RegionResolver.CapaPatron.CODEC.listOf())
+                    .packetCodec(PacketCodecs.codec(com.femclothes.region.RegionResolver.CapaPatron.CODEC.listOf()))
+                    .build());
+
+    public static final ComponentType<com.femclothes.region.RegionPintura> PATTERN_REGION = patternRegionComponent("pattern_region");
+    public static final ComponentType<com.femclothes.region.RegionPintura> PATTERN_REGION_2 = patternRegionComponent("pattern_region_2");
+    public static final ComponentType<com.femclothes.region.RegionPintura> PATTERN_REGION_3 = patternRegionComponent("pattern_region_3");
+    public static final ComponentType<com.femclothes.region.RegionPintura> RIGHT_PATTERN_REGION = patternRegionComponent("right_pattern_region");
+    public static final ComponentType<com.femclothes.region.RegionPintura> RIGHT_PATTERN_REGION_2 = patternRegionComponent("right_pattern_region_2");
+    public static final ComponentType<com.femclothes.region.RegionPintura> RIGHT_PATTERN_REGION_3 = patternRegionComponent("right_pattern_region_3");
+
+    public static final ComponentType<Float> PATTERN_POSITION = patternPositionComponent("pattern_position");
+    public static final ComponentType<Float> PATTERN_POSITION_2 = patternPositionComponent("pattern_position_2");
+    public static final ComponentType<Float> PATTERN_POSITION_3 = patternPositionComponent("pattern_position_3");
+    public static final ComponentType<Float> RIGHT_PATTERN_POSITION = patternPositionComponent("right_pattern_position");
+    public static final ComponentType<Float> RIGHT_PATTERN_POSITION_2 = patternPositionComponent("right_pattern_position_2");
+    public static final ComponentType<Float> RIGHT_PATTERN_POSITION_3 = patternPositionComponent("right_pattern_position_3");
+
+    /**
+     * "Negativo" de la máscara del patrón — a pedido (2026-09-20, "invertir
+     * los colores del patron"): donde la máscara pinta normalmente el
+     * color del PATRÓN, invertido pinta el color BASE, y viceversa. Solo
+     * presente cuando está prendido — ausente = false, mismo criterio que
+     * el resto de los ejes de esta capa (no ocupa data extra en el caso
+     * común). Es un booleano PROPIO por capa, no del patrón en sí: la
+     * misma máscara sirve invertida o no.
+     */
+    private static ComponentType<Boolean> patternInvertComponent(String nombre) {
+        return Registry.register(
+                Registries.DATA_COMPONENT_TYPE,
+                Identifier.of("femclothes", nombre),
+                ComponentType.<Boolean>builder()
+                        .codec(Codec.BOOL)
+                        .packetCodec(PacketCodecs.BOOL)
+                        .build());
+    }
+
+    public static final ComponentType<Boolean> PATTERN_INVERT = patternInvertComponent("pattern_invert");
+    public static final ComponentType<Boolean> PATTERN_INVERT_2 = patternInvertComponent("pattern_invert_2");
+    public static final ComponentType<Boolean> PATTERN_INVERT_3 = patternInvertComponent("pattern_invert_3");
+    public static final ComponentType<Boolean> RIGHT_PATTERN_INVERT = patternInvertComponent("right_pattern_invert");
+    public static final ComponentType<Boolean> RIGHT_PATTERN_INVERT_2 = patternInvertComponent("right_pattern_invert_2");
+    public static final ComponentType<Boolean> RIGHT_PATTERN_INVERT_3 = patternInvertComponent("right_pattern_invert_3");
 
     // --- Overrides de la pierna DERECHA ---
     // Ausentes = la derecha usa lo mismo que la izquierda, que es el caso
@@ -67,6 +275,14 @@ public final class FemclothesComponents {
                     .packetCodec(PacketCodecs.INTEGER)
                     .build());
 
+    public static final ComponentType<TamanoPatron> RIGHT_PATTERN_SIZE = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "right_pattern_size"),
+            ComponentType.<TamanoPatron>builder()
+                    .codec(StringIdentifiable.createCodec(TamanoPatron::values))
+                    .packetCodec(PacketCodecs.indexed(i -> TamanoPatron.values()[i], Enum::ordinal))
+                    .build());
+
     /**
      * Como esta puesta la prenda: girada (frente/espalda) y/o espejada
      * (izquierda/derecha).
@@ -86,18 +302,41 @@ public final class FemclothesComponents {
                     .packetCodec(Orientacion.PACKET_CODEC)
                     .build());
 
+    // PANTALON_LARGO (un solo valor) se retiró: la cobertura de extremidad
+    // ahora es DOS anclajes que se intersecan (ver PANTALON_LARGO_SUPERIOR/
+    // _INFERIOR más abajo) — mismo criterio de retiro que CALIENTABRAZOS_TIRO,
+    // un mundo viejo con el componente guardado lo ignora sin romperse.
+    //
+    // 2026-09-23: PantalonLargo (el TIPO del componente) se retiró también,
+    // reemplazado por Botamanga (compartido con MediasLargo, ver esa
+    // clase) — el pantalón deja de usar el anclaje SUPERIOR de acá en más
+    // (ver PantalonItem#filasVisibles), pero el componente queda
+    // registrado igual por si un mundo viejo lo tiene guardado.
+
+    private static ComponentType<Botamanga> botamangaComponent(String nombre) {
+        return Registry.register(
+                Registries.DATA_COMPONENT_TYPE,
+                Identifier.of("femclothes", nombre),
+                ComponentType.<Botamanga>builder()
+                        .codec(StringIdentifiable.createCodec(Botamanga::values))
+                        .packetCodec(PacketCodecs.indexed(i -> Botamanga.values()[i], Enum::ordinal))
+                        .build());
+    }
+
     /**
-     * El largo del pantalón (§{@link PantalonLargo}). Ausente = pantalón
-     * largo completo, que es lo que sale del crafteo — mismo default que
-     * remera con {@code Variante.BASE}.
+     * Anclaje SUPERIOR de cobertura del pantalón (cintura hacia abajo) y su
+     * override de la pierna derecha. Ausente = {@code PIE} (completo). Ya
+     * no se escribe desde la GUI (2026-09-23, "pantalones se fija solo el
+     * corte inferior") — queda registrado por compatibilidad de guardado.
+     * La tela final es la INTERSECCIÓN con {@link #PANTALON_LARGO_INFERIOR}
+     * — ver {@link PantalonItem#filasVisibles}.
      */
-    public static final ComponentType<PantalonLargo> PANTALON_LARGO = Registry.register(
-            Registries.DATA_COMPONENT_TYPE,
-            Identifier.of("femclothes", "pantalon_largo"),
-            ComponentType.<PantalonLargo>builder()
-                    .codec(StringIdentifiable.createCodec(PantalonLargo::values))
-                    .packetCodec(PacketCodecs.indexed(i -> PantalonLargo.values()[i], Enum::ordinal))
-                    .build());
+    public static final ComponentType<Botamanga> PANTALON_LARGO_SUPERIOR = botamangaComponent("pantalon_largo_superior");
+    public static final ComponentType<Botamanga> RIGHT_PANTALON_LARGO_SUPERIOR = botamangaComponent("right_pantalon_largo_superior");
+
+    /** Anclaje INFERIOR (tobillo hacia arriba). Ausente = {@code PIE} (completo). */
+    public static final ComponentType<Botamanga> PANTALON_LARGO_INFERIOR = botamangaComponent("pantalon_largo_inferior");
+    public static final ComponentType<Botamanga> RIGHT_PANTALON_LARGO_INFERIOR = botamangaComponent("right_pantalon_largo_inferior");
 
     /**
      * El tiro del pantalón (§{@link PantalonTiro}): cuánto sube la cintura
@@ -113,42 +352,105 @@ public final class FemclothesComponents {
                     .build());
 
     /**
-     * El largo de las medias (§{@link MediasLargo}). Ausente = CANCAN, el
-     * largo que ya tenían las medias antes de este eje (10 de 12 filas,
-     * verificado contra `socks_solid_layer_1.png`) — así una media vieja
-     * guardada sigue viéndose exactamente igual.
+     * Calce (§{@link Calce}): cuán ajustada/voluminosa se ve la prenda —
+     * transversal a las 4 (remera/pantalón/medias/calientabrazos), un solo
+     * componente compartido. Ausente = {@code NORMAL}.
      */
-    public static final ComponentType<MediasLargo> MEDIAS_LARGO = Registry.register(
+    public static final ComponentType<Calce> CALCE = Registry.register(
             Registries.DATA_COMPONENT_TYPE,
-            Identifier.of("femclothes", "medias_largo"),
-            ComponentType.<MediasLargo>builder()
-                    .codec(StringIdentifiable.createCodec(MediasLargo::values))
-                    .packetCodec(PacketCodecs.indexed(i -> MediasLargo.values()[i], Enum::ordinal))
+            Identifier.of("femclothes", "calce"),
+            ComponentType.<Calce>builder()
+                    .codec(StringIdentifiable.createCodec(Calce::values))
+                    .packetCodec(PacketCodecs.indexed(i -> Calce.values()[i], Enum::ordinal))
                     .build());
 
     /**
-     * La cobertura de calientabrazos (§{@link com.femclothes.sublimadora.Variante.Manga}):
-     * cuánto brazo tapa la tela, contado desde la MUÑECA hacia arriba — misma
-     * dirección invertida que ya existe entre {@code PANTALON_LARGO} (cintura
-     * hacia abajo) y {@code MEDIAS_LARGO} (tobillo hacia arriba). Reusa el
-     * MISMO molde cíclico que la manga de la remera (`MoldeItem.Eje.MANGA`),
-     * pero en un componente propio: la manga de una remera puesta y la
-     * cobertura de un calientabrazos puesto no se pisan entre sí. Ausente =
-     * {@code LARGA} (cobertura completa, el estado "recién crafteado").
+     * Corte de red (§{@link PatronRed}): agujerea la tela ya compuesta —
+     * transversal a las 4 prendas con corte, mismo criterio que
+     * {@code CALCE}. Ausente = sin red (tela lisa, sin agujeros).
      */
-    public static final ComponentType<Variante.Manga> CALIENTABRAZOS_COBERTURA = Registry.register(
+    public static final ComponentType<PatronRed> PATRON_RED = Registry.register(
             Registries.DATA_COMPONENT_TYPE,
-            Identifier.of("femclothes", "calientabrazos_cobertura"),
-            ComponentType.<Variante.Manga>builder()
-                    .codec(StringIdentifiable.createCodec(Variante.Manga::values))
-                    .packetCodec(PacketCodecs.indexed(i -> Variante.Manga.values()[i], Enum::ordinal))
+            Identifier.of("femclothes", "patron_red"),
+            ComponentType.<PatronRed>builder()
+                    .codec(StringIdentifiable.createCodec(PatronRed::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PatronRed.values()[i], Enum::ordinal))
                     .build());
+
+    // MEDIAS_LARGO (un solo valor) se retiró — mismo criterio que
+    // PANTALON_LARGO arriba: ahora son dos anclajes que se intersecan.
+    // 2026-09-23: el TIPO también pasó de MediasLargo a Botamanga
+    // (compartido con pantalón, ver esa clase) — medias sigue con los DOS
+    // anclajes, sin cambios de comportamiento acá.
+
+    /**
+     * Anclaje SUPERIOR de la media (muslo hacia abajo) — eje nuevo, las
+     * medias antes solo anclaban desde abajo. Ausente = {@code PIE}
+     * (completo, hasta el final del rango — el largo real de siempre).
+     */
+    public static final ComponentType<Botamanga> MEDIAS_LARGO_SUPERIOR = botamangaComponent("medias_largo_superior");
+    public static final ComponentType<Botamanga> RIGHT_MEDIAS_LARGO_SUPERIOR = botamangaComponent("right_medias_largo_superior");
+
+    /** Anclaje INFERIOR (tobillo hacia arriba, el que ya existía). Ausente = {@code PIE}. */
+    public static final ComponentType<Botamanga> MEDIAS_LARGO_INFERIOR = botamangaComponent("medias_largo_inferior");
+    public static final ComponentType<Botamanga> RIGHT_MEDIAS_LARGO_INFERIOR = botamangaComponent("right_medias_largo_inferior");
+
+    // CALIENTABRAZOS_COBERTURA (un solo valor) se retiró — mismo criterio.
+
+    private static ComponentType<Variante.Manga> calientabrazosCoberturaComponent(String nombre) {
+        return Registry.register(
+                Registries.DATA_COMPONENT_TYPE,
+                Identifier.of("femclothes", nombre),
+                ComponentType.<Variante.Manga>builder()
+                        .codec(StringIdentifiable.createCodec(Variante.Manga::values))
+                        .packetCodec(PacketCodecs.indexed(i -> Variante.Manga.values()[i], Enum::ordinal))
+                        .build());
+    }
+
+    /**
+     * Cobertura de calientabrazos (§{@link com.femclothes.sublimadora.Variante.Manga}),
+     * ahora dos anclajes que se intersecan igual que pantalón/medias.
+     * Anclaje SUPERIOR = hombro hacia abajo (el que ya existía, reusa el
+     * mismo molde cíclico que la manga de la remera, `MoldeItem.Eje.MANGA`,
+     * pero en un componente propio: no se pisa con la manga de una remera
+     * puesta). Ausente = {@code LARGA} (completo).
+     */
+    public static final ComponentType<Variante.Manga> CALIENTABRAZOS_COBERTURA_SUPERIOR = calientabrazosCoberturaComponent("calientabrazos_cobertura_superior");
+    public static final ComponentType<Variante.Manga> RIGHT_CALIENTABRAZOS_COBERTURA_SUPERIOR = calientabrazosCoberturaComponent("right_calientabrazos_cobertura_superior");
+
+    /** Anclaje INFERIOR (muñeca hacia arriba) — eje nuevo. Ausente = {@code LARGA}. */
+    public static final ComponentType<Variante.Manga> CALIENTABRAZOS_COBERTURA_INFERIOR = calientabrazosCoberturaComponent("calientabrazos_cobertura_inferior");
+    public static final ComponentType<Variante.Manga> RIGHT_CALIENTABRAZOS_COBERTURA_INFERIOR = calientabrazosCoberturaComponent("right_calientabrazos_cobertura_inferior");
+
+    /**
+     * Override de la manga DERECHA de la remera (2026-09-24, "vamos con
+     * mangas distintas") — la izquierda sigue viviendo en el {@code
+     * Variante} de siempre ({@code ModItems.VARIANTE}, sin cambios); esto
+     * es SOLO el override, mismo criterio primario-izquierda/override-
+     * derecha que {@link #RIGHT_DYED_COLOR}, no un par Superior/Inferior
+     * como calientabrazos. Ausente = hereda el valor izquierdo — ver
+     * {@code RemeraItem#manga}.
+     */
+    public static final ComponentType<Variante.Manga> RIGHT_REMERA_MANGA = calientabrazosCoberturaComponent("right_remera_manga");
 
     // CALIENTABRAZOS_TIRO se retiró (ver docs/MAQUINAS.md §"Categorías de
     // patrones de modelado"): tiro es exclusivo de prendas inferiores, no
     // de cubrebrazos. Si un mundo viejo tiene el componente guardado, el
     // codec ya no está registrado y Minecraft simplemente lo ignora al leer
     // -no rompe el guardado, el dato queda huérfano sin efecto.
+
+    /**
+     * Lo que guarda un {@code MoldeDeCorteItem} de la Mesa de Modelado: varios
+     * ejes de forma combinados en un solo ítem físico. Ver
+     * {@link com.femclothes.modelado.ComboCorte}.
+     */
+    public static final ComponentType<com.femclothes.modelado.ComboCorte> COMBO_CORTE = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "combo_corte"),
+            ComponentType.<com.femclothes.modelado.ComboCorte>builder()
+                    .codec(com.femclothes.modelado.ComboCorte.CODEC)
+                    .packetCodec(com.femclothes.modelado.ComboCorte.PACKET_CODEC)
+                    .build());
 
     public static void init() {
         // fuerza class-loading

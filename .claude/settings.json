@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(java -version)",
+      "Bash(./gradlew.bat compileJava --console=plain 2>&1 | tee /tmp/build_check.log | head -60)",
+      "Bash(grep -i \"\\\\.png$\")",
+      "Bash(python3 -c ' *)",
+      "Bash(xargs grep -ln \"enum\")",
+      "Bash(javap -p 'com/femclothes/render/SkinLayersCompat$Puente.class')",
+      "Bash(mkdir -p /tmp/checkjar)",
+      "Bash(unzip -o -q '/c/Users/feder/AppData/Roaming/ModrinthApp/profiles/Fabric 1.21.1 \\(2\\)/mods/femclothes-0.1.0.jar' 'com/femclothes/render/SkinLayersCompat$Puente.class')",
+      "Bash(grep -i \"\\\\.jar$\")",
+      "Bash(javap -p -c dev/tr7zw/skinlayers/SkinUtil.class)",
+      "Bash(awk '/public static net.minecraft.class_1011 getTexture/,/public static boolean setup3dLayers\\\\\\(net.minecraft.class_742/' /tmp/checkjar/skinutil_full.txt)",
+      "Bash(rm -f 'com/femclothes/render/SkinLayersCompat$Puente.class')",
+      "Bash(unzip -o -q /c/mods/femclothes-mod/build/libs/femclothes-0.1.0.jar 'com/femclothes/render/SkinLayersCompat$Puente.class')",
+      "Read(//c/Program Files \\\\\\(x86\\\\\\)/**)",
+      "Bash(where.exe ModrinthApp)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}

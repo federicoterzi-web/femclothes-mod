@@ -1,0 +1,134 @@
+[
+  {
+    "path": "femclothes/pollera_campana_rodilla.json",
+    "sil": "campana",
+    "silName": "Campana lisa",
+    "len": "rodilla",
+    "lenName": "Rodilla",
+    "drop": 6,
+    "hem": 7,
+    "cubes": 32,
+    "groups": 4
+  },
+  {
+    "path": "femclothes/pollera_campana_media_pierna.json",
+    "sil": "campana",
+    "silName": "Campana lisa",
+    "len": "media_pierna",
+    "lenName": "Media pierna",
+    "drop": 9,
+    "hem": 9,
+    "cubes": 32,
+    "groups": 4
+  },
+  {
+    "path": "femclothes/pollera_campana_tobillo.json",
+    "sil": "campana",
+    "silName": "Campana lisa",
+    "len": "tobillo",
+    "lenName": "Tobillo",
+    "drop": 12,
+    "hem": 11,
+    "cubes": 32,
+    "groups": 4
+  },
+  {
+    "path": "femclothes/pollera_gajos_rodilla.json",
+    "sil": "gajos",
+    "silName": "Gajos plegados",
+    "len": "rodilla",
+    "lenName": "Rodilla",
+    "drop": 6,
+    "hem": 7,
+    "cubes": 48,
+    "groups": 3
+  },
+  {
+    "path": "femclothes/pollera_gajos_media_pierna.json",
+    "sil": "gajos",
+    "silName": "Gajos plegados",
+    "len": "media_pierna",
+    "lenName": "Media pierna",
+    "drop": 9,
+    "hem": 9,
+    "cubes": 48,
+    "groups": 3
+  },
+  {
+    "path": "femclothes/pollera_gajos_tobillo.json",
+    "sil": "gajos",
+    "silName": "Gajos plegados",
+    "len": "tobillo",
+    "lenName": "Tobillo",
+    "drop": 12,
+    "hem": 11,
+    "cubes": 48,
+    "groups": 3
+  },
+  {
+    "path": "femclothes/pollera_dos_vuelos_rodilla.json",
+    "sil": "dos_vuelos",
+    "silName": "Dos vuelos",
+    "len": "rodilla",
+    "lenName": "Rodilla",
+    "drop": 6,
+    "hem": 7,
+    "cubes": 32,
+    "groups": 4
+  },
+  {
+    "path": "femclothes/pollera_dos_vuelos_media_pierna.json",
+    "sil": "dos_vuelos",
+    "silName": "Dos vuelos",
+    "len": "media_pierna",
+    "lenName": "Media pierna",
+    "drop": 9,
+    "hem": 9,
+    "cubes": 32,
+    "groups": 4
+  },
+  {
+    "path": "femclothes/pollera_dos_vuelos_tobillo.json",
+    "sil": "dos_vuelos",
+    "silName": "Dos vuelos",
+    "len": "tobillo",
+    "lenName": "Tobillo",
+    "drop": 12,
+    "hem": 11,
+    "cubes": 32,
+    "groups": 4
+  },
+  {
+    "path": "femclothes/pollera_movimiento_rodilla.json",
+    "sil": "movimiento",
+    "silName": "Con movimiento",
+    "len": "rodilla",
+    "lenName": "Rodilla",
+    "drop": 6,
+    "hem": 7,
+    "cubes": 24,
+    "groups": 8
+  },
+  {
+    "path": "femclothes/pollera_movimiento_media_pierna.json",
+    "sil": "movimiento",
+    "silName": "Con movimiento",
+    "len": "media_pierna",
+    "lenName": "Media pierna",
+    "drop": 9,
+    "hem": 9,
+    "cubes": 24,
+    "groups": 8
+  },
+  {
+    "path": "femclothes/pollera_movimiento_tobillo.json",
+    "sil": "movimiento",
+    "silName": "Con movimiento",
+    "len": "tobillo",
+    "lenName": "Tobillo",
+    "drop": 12,
+    "hem": 11,
+    "cubes": 24,
+    "groups": 8
+  }
+]

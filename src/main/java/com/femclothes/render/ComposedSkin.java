@@ -39,6 +39,17 @@ public final class ComposedSkin {
     public static SkinTextures forPlayer(AbstractClientPlayerEntity player, SkinTextures original) {
         if (original == null || original.texture() == null) return original;
 
+        // 2026-09-20: se probó NO borrar la segunda capa con 3D Skin
+        // Layers instalado (para que su volumen 3D siguiera visible DEBAJO
+        // de la tela) — probado en juego y descartado: "quiero que sea
+        // como antes q cuando ponias la prenda no renderizaba ahi". Vuelve
+        // al comportamiento de siempre: borra la segunda capa donde manda
+        // una prenda, apagando el volumen 3D de 3DSL ahí (es justo la
+        // razón por la que este mixin engancha getSkinTextures() y no el
+        // renderer — ver el javadoc de la clase). La malla 3D propia vía
+        // ModelPartInjector (ver memoria del proyecto) sigue siendo el
+        // camino pendiente si más adelante se quiere volumen real ahí.
+
         List<Parte> partes = partesGobernadas(player);
         if (partes.isEmpty()) return original;
 
@@ -82,8 +93,28 @@ public final class ComposedSkin {
         }
     }
 
-    /** Las partes del cuerpo que gobierna alguna prenda del mod. */
+    /**
+     * Las partes del cuerpo que gobierna alguna prenda del mod.
+     *
+     * 2026-09-16, bug real jugando: "la preview de la Mesa y la de
+     * inventario muestran la skin original a través de las prendas".
+     * Causa: {@link GarmentFeatureRenderer#previewOverride} (la lista que
+     * usa el visor 3D de la Mesa para dibujar una prenda en construcción,
+     * sin que el jugador se la tenga puesta) es una lista APARTE de lo que
+     * de verdad hay equipado en Trinkets — esta función solo miraba
+     * Trinkets, así que en el visor de la Mesa nunca borraba nada de la
+     * skin real: {@code GarmentFeatureRenderer} dibujaba CUERPO+TELA
+     * encima igual, pero la skin de ABAJO seguía intacta, sin agujero
+     * donde debería, y con la dilatación del cuerpo ahora en 0 (mismo
+     * tamaño que la skin cruda sin tocar, ver {@code CuerpoGeometria
+     * .Superficie.CUERPO}) terminaba compitiendo cabeza a cabeza en
+     * profundidad — a veces ganaba la original. Mirar primero el preview
+     * override (si hay uno activo) resuelve el visor de la Mesa de raíz.
+     */
     private static List<Parte> partesGobernadas(AbstractClientPlayerEntity player) {
+        List<ItemStack> override = GarmentFeatureRenderer.previewOverride;
+        if (override != null) return Garments.partesCubiertas(override);
+
         List<ItemStack> prendas = new ArrayList<>();
         TrinketsApi.getTrinketComponent(player).ifPresent(c -> {
             for (var par : c.getAllEquipped()) {

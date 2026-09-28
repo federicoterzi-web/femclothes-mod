@@ -7,7 +7,9 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Item de patrón reusable, como los patrones de estandarte de vanilla:
@@ -25,20 +27,68 @@ import java.util.List;
 public class ClothingPatternItem extends Item {
 
     public final Identifier patternId;
+    /** Cómo generar la máscara de este patrón — ver {@link com.femclothes.render.PatronGenerador}. */
+    public final com.femclothes.render.PatronGenerador.Forma forma;
+    /** Grosor en tamaño GRANDE (px, escala 8x); Mediano/Chico lo escalan (§{@link TamanoPatron}). */
+    public final int grosorBase;
 
-    public ClothingPatternItem(Settings settings, Identifier patternId) {
+    /**
+     * La Estación de Tintes guarda solo el {@code Identifier} en su lista
+     * de "aprendidos" (es lo único que viaja en NBT/componente), pero la
+     * GUI necesita el ITEM de vuelta para dibujar su ícono/nombre — este
+     * registro chiquito evita tener que pedirle a `FemclothesItems` una
+     * vuelta completa por todos los items registrados cada frame.
+     */
+    private static final Map<Identifier, ClothingPatternItem> POR_ID = new HashMap<>();
+
+    /**
+     * Motivo repetido (corazones, estrellas...) — null en los moldes de
+     * rayas. Con motivo, {@link #forma} no se usa y {@link #grosorBase}
+     * pasa a ser la escala del sprite (pixeles del atlas por pixel del
+     * dibujo, en tamaño GRANDE). Ver {@code PatronGenerador#mascaraDeCapa}.
+     */
+    @org.jetbrains.annotations.Nullable
+    public final com.femclothes.render.Motivo motivo;
+
+    public ClothingPatternItem(Settings settings, Identifier patternId,
+                               com.femclothes.render.PatronGenerador.Forma forma, int grosorBase) {
+        this(settings, patternId, forma, grosorBase, null);
+    }
+
+    /** Molde de motivo (2026-09-28, Fase 1 de la propuesta de patrones). */
+    public ClothingPatternItem(Settings settings, Identifier patternId, com.femclothes.render.Motivo motivo, int escala) {
+        this(settings, patternId, com.femclothes.render.PatronGenerador.Forma.ALTERNADO, escala, motivo);
+    }
+
+    private ClothingPatternItem(Settings settings, Identifier patternId,
+                                com.femclothes.render.PatronGenerador.Forma forma, int grosorBase,
+                                @org.jetbrains.annotations.Nullable com.femclothes.render.Motivo motivo) {
         super(settings);
         this.patternId = patternId;
+        this.forma = forma;
+        this.grosorBase = grosorBase;
+        this.motivo = motivo;
+        POR_ID.put(patternId, this);
+    }
+
+    public static ClothingPatternItem porId(Identifier patternId) {
+        return POR_ID.get(patternId);
+    }
+
+    /** Todos los patrones registrados — para el shulker de debug (ver {@code DebugMaquinas}). */
+    public static java.util.Collection<ClothingPatternItem> todos() {
+        return POR_ID.values();
     }
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
         tooltip.add(Text.translatable("femclothes.categoria.patron").formatted(Formatting.AQUA));
-        // Las únicas dos prendas cuyo Garment acepta la operación PATRON hoy
-        // (ver PrendasDelMod.regionesDe) — pantalón y calientabrazos todavía
-        // no tienen patrón, por diseño, no por olvido.
-        tooltip.add(PrendaLore.seUsaEn("remera", "medias").formatted(Formatting.DARK_GRAY));
+        // Las 5 prendas del mod aceptan PATRON (a pedido, 2026-09-18:
+        // "todas las prendas compatibles con los patrones" — ver
+        // PrendasDelMod.regionesDe, antes solo remera/medias).
+        tooltip.add(PrendaLore.seUsaEn("remera", "pantalon", "medias", "calientabrazos", "pollera")
+                .formatted(Formatting.DARK_GRAY));
         tooltip.add(Text.translatable("femclothes.pattern.tooltip.ayuda").formatted(Formatting.DARK_GRAY));
     }
 }

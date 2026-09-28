@@ -58,6 +58,21 @@ public final class ModItems {
                             .collect(net.minecraft.network.codec.PacketCodecs.toList()))
                     .build());
 
+    /**
+     * Papel cargado en el tanque (0..{@code SublimadoraBlockEntity#CARGA_MAXIMA})
+     * — a pedido (2026-09-19, "usa papel y ya no consume la imagen"): la foto
+     * pasa a ser reutilizable, y lo que se gasta por cada prensado es 1
+     * papel de este tanque en vez de la foto misma. Mismo criterio que
+     * {@link #CARGAS} para sobrevivir a romper el bloque.
+     */
+    public static final ComponentType<Integer> PAPEL_CARGADO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of(Femclothes.MOD_ID, "papel_cargado"),
+            ComponentType.<Integer>builder()
+                    .codec(Codec.INT)
+                    .packetCodec(net.minecraft.network.codec.PacketCodecs.INTEGER)
+                    .build());
+
     /** Que corte de prenda es. Ausente = remera comun. */
     public static final ComponentType<Variante> VARIANTE = Registry.register(
             Registries.DATA_COMPONENT_TYPE,
@@ -86,8 +101,14 @@ public final class ModItems {
      * servidor cargaria NativeImage y MinecraftClient en un dedicado.
      */
     public static boolean esEstampable(net.minecraft.item.ItemStack stack) {
+        // A pedido (2026-09-19, "hace todas las prendas sublimables") —
+        // pantalón y calientabrazos se suman a remera/medias. Pollera queda
+        // afuera por ahora: su geometría (PolleraGeometria, paneles en
+        // abanico) no encaja en el mapeo Cara[] plano que usa EstampaTextures.
         return stack.getItem() == REMERA
-                || stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID;
+                || stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID
+                || stack.getItem() == com.femclothes.item.FemclothesItems.PANTALON
+                || stack.getItem() == com.femclothes.item.FemclothesItems.CALIENTABRAZOS;
     }
 
     private static ComponentType<Estampa> registrarEstampa(String nombre) {
@@ -101,24 +122,23 @@ public final class ModItems {
     }
 
     /**
-     * Los moldes de manga y cuello: uno por eje, ciclan.
-     *
-     * Con 36 combinaciones, un item por valor de estos dos ejes seguiría
-     * siendo ruido en el inventario y en las recetas.
+     * El molde de manga cíclico (único que queda de los cíclicos: el de
+     * cuello y los de largo por valor se retiraron el 2026-09-28, "saca lo
+     * que ya no se usa" — los reemplazan el molde de torso unificado y los
+     * de cuello por valor).
      */
     public static final MoldeItem MOLDE_MANGA = molde("manga", MoldeItem.Eje.MANGA);
-    public static final MoldeItem MOLDE_CUELLO = molde("cuello", MoldeItem.Eje.CUELLO);
 
     /**
-     * Los moldes de largo: uno POR VALOR, no cíclico — ver
-     * {@link MoldeLargoRemeraItem}.
+     * Moldes de cuello POR VALOR (no cíclicos) — a pedido, mismo cambio
+     * que largo/manga. Ver {@link MoldeCuelloItem}.
      */
-    public static final MoldeLargoRemeraItem MOLDE_LARGO_CROP =
-            moldeLargo("molde_largo_crop", Variante.Largo.CROP);
-    public static final MoldeLargoRemeraItem MOLDE_LARGO_NORMAL =
-            moldeLargo("molde_largo_normal", Variante.Largo.NORMAL);
-    public static final MoldeLargoRemeraItem MOLDE_LARGO_LARGO =
-            moldeLargo("molde_largo_largo", Variante.Largo.LARGO);
+    public static final MoldeCuelloItem MOLDE_CUELLO_REDONDO =
+            moldeCuello("molde_cuello_redondo", Variante.Cuello.REDONDO);
+    public static final MoldeCuelloItem MOLDE_CUELLO_V =
+            moldeCuello("molde_cuello_v", Variante.Cuello.V);
+    public static final MoldeCuelloItem MOLDE_CUELLO_POLERA =
+            moldeCuello("molde_cuello_polera", Variante.Cuello.POLERA);
 
     private static MoldeItem molde(String nombre, MoldeItem.Eje eje) {
         return Registry.register(Registries.ITEM,
@@ -126,10 +146,10 @@ public final class ModItems {
                 new MoldeItem(new Item.Settings().maxCount(1), eje));
     }
 
-    private static MoldeLargoRemeraItem moldeLargo(String id, Variante.Largo valor) {
+    private static MoldeCuelloItem moldeCuello(String id, Variante.Cuello valor) {
         return Registry.register(Registries.ITEM,
                 Identifier.of(Femclothes.MOD_ID, id),
-                new MoldeLargoRemeraItem(new Item.Settings().maxCount(1), valor));
+                new MoldeCuelloItem(new Item.Settings().maxCount(1), valor));
     }
 
     public static void register() {

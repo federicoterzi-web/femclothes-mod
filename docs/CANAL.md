@@ -1,4 +1,4 @@
-<!-- canal-version: 16 -->
+<!-- canal-version: 19 -->
 # Canal — bitácora entre sesiones de Claude
 
 Este archivo es el **canal de comunicación asincrónico** entre las distintas
@@ -42,6 +42,359 @@ Reglas:
 ---
 
 ## Bitácora
+
+## v19 — 2026-09-16 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:** sesión larga — molde de Calce (fit) de punta a punta, un bug real
+de choque de piernas, y una investigación larga (varias vueltas en falso
+antes de dar con la causa real) de una mancha/línea en la muñeca que vale
+la pena leer entera si aparece de nuevo algo parecido.
+
+- **Molde de Calce** (5 niveles: Pegado/Ajustado/Normal/Suelto/Oversize,
+  `com.femclothes.item.Calce`) — transversal a las 4 categorías, sin
+  anclaje ni lado, un componente compartido (`FemclothesComponents.CALCE`).
+  No recorta tela: cambia la DILATACIÓN de la geometría 3D
+  (`CuerpoGeometria`). Pegado/Ajustado necesitan achicar el CUERPO (piel)
+  además de la tela para que la prenda no quede tapada por una piel más
+  grande — pero SOLO donde la tela realmente cubre, no en toda la parte
+  (la panza que asoma bajo una musculosa ajustada sigue con la piel
+  normal). Esto llevó a partir la geometría del cuerpo en tramos de fila
+  con dilatación propia cada uno: `Pieza` ahora lleva `filaDesde`/
+  `filaHasta` (qué filas tiene tela de verdad), `GarmentFeatureRenderer
+  #segmentosCuerpo` arma los tramos a partir de las piezas puestas en
+  cada parte, y `CuerpoGeometria#cuerpoSegmentado` construye los cuboides
+  a MANO (con el constructor público de `ModelPart.Cuboid`, que permite
+  elegir dilatación Y caras a la vez — `ModelPartBuilder` no deja
+  combinar ambas). Íconos de los 5 niveles pegados por el dueño,
+  recortados a 16x16.
+- **Bug real — choque de piernas**: con CUALQUIER dilatación positiva del
+  CUERPO (hasta la de Pegado, que ya usaba la misma que el cuerpo normal)
+  las dos piernas —pegadas sin espacio entre sí en el esqueleto de
+  Minecraft— se empujaban una contra la otra por el borde interno.
+  `CuerpoGeometria.Superficie.CUERPO.dilatacion` bajó de 0.30 a **0.0**
+  (calza exacto con la caja cruda de la skin) — es seguro porque lo que
+  importaba de ese 0.30 era la relación CUERPO-vs-TELA (que el cuerpo
+  quede estrictamente más chico que cualquier tela, ahora con MÁS margen
+  todavía), no la relación con el render propio de vanilla: donde una
+  prenda gobierna, `ComposedSkin` ya deja esa región de la skin real en
+  alfa 0, así que no hay nada ahí con qué competir en profundidad aunque
+  calcen exacto. Efecto colateral: el salto entre piel(0) y Normal/Suelto/
+  Oversize se hizo mucho más grande (antes 0.30→0.32, un salto de 0.02) —
+  se reescalaron los tres restándoles el mismo 0.30 que bajó el cuerpo
+  (ahora 0.02/0.15/0.30) para mantener la MISMA separación relativa de
+  siempre, solo que anclada más abajo.
+- **La mancha/línea de la muñeca — bitácora completa, con las vueltas en
+  falso incluidas** (queda TODA copiada también como javadoc largo en
+  `CuerpoGeometria`, arriba de `TODAS_LAS_CARAS` — quien la vea de nuevo
+  debería leer ESE comentario antes de repetir la investigación):
+  1. Se sospechó sombreado de motor (`DiffuseLighting`, una cara que mira
+     hacia abajo recibe menos luz) — descartado, el dueño insistió
+     "es blanco, no oscuro", no encajaba con una sombra.
+  2. Se encontró un hueco REAL: la tapa de la muñeca estaba TRANSPARENTE
+     de fábrica en los 9 `cuerpo_*_larga_*.png` de remera y en los 4
+     `calientabrazos_*_layer_1.png` (confirmado con el canal alfa, no a
+     ojo). Se pintó con la tapa del otro lado (arreglaba el "blanco"),
+     después se revirtió a transparente a propósito (para que se vea la
+     piel REAL de abajo en vez de un tono de tela inventado que nunca va
+     a matchear el tinte elegido) — pero la mancha SIGUIÓ apareciendo,
+     ahora con otro color. Esto probó que la causa real era otra.
+  3. Se encontró y arregló un problema real pero PARCIAL:
+     `CuerpoBaseTextures` pintaba la tapa de la muñeca de la PIEL al
+     mismo nivel de sombra que la entrepierna/planta del pie
+     (ABAJO=0.15, pensado para zonas lógicamente oscuras) — muy oscuro
+     contra el lateral (0.32). Con esto la piel DESNUDA dejó de mancharse
+     (`pintarCuerpo` ahora usa el nivel LADO para la tapa de abajo
+     específicamente en brazos), pero con una prenda puesta (remera-
+     manga, calientabrazos) seguía apareciendo una LÍNEA fina, no un
+     parche — pista de que no era (solo) un nivel de sombra.
+  4. **Causa real, confirmada con una calibración a propósito** (pintar
+     la tapa de arriba de un color bien distinto a la de abajo — ver
+     `tools/generar_calibracion_remera.py` para el mecanismo, se aplicó
+     a mano esta vez): **sangrado de textura entre celdas UV vecinas**.
+     La tapa de arriba y la de abajo de CUALQUIER cuboide de Minecraft
+     están pegadas una al lado de la otra en el atlas de textura, SIN
+     ningún margen (ver `CajaSkin`) — el pixel del borde compartido cae
+     justo en el límite y agarra el color de la celda vecina, SIEMPRE
+     que las dos tengan colores distintos, sin importar qué haya pintado.
+     Confirmado en el código fuente de Minecraft que no es filtrado
+     bilinear/mipmap (`RenderLayer.getArmorCutoutNoCull` pide
+     `blur=false, mipmap=false`) — es la coordenada UV la que cae mal en
+     ese pixel exacto. Por eso NINGUNA textura estática lo arregla:
+     mientras arriba y abajo tengan colores distintos (lo normal — hombro
+     pintado vs muñeca vacía), ese pixel sangra siempre.
+  5. **Arreglo final**: sacar el vértice de la tapa de la muñeca en la
+     geometría de {@code Superficie.TELA} para brazos (remera-manga,
+     calientabrazos) — sin vértice ahí, no hay UV que pueda caer mal. En
+     {@code Superficie.CUERPO} se dejaron las 6 caras (con el arreglo del
+     punto 3, arriba/abajo/lateral ya no tienen colores tan distintos
+     pegados, no hay nada que sangre). Ver
+     `CuerpoGeometria#raiz`/`SIN_MUNECA`.
+- **Bug real, de paso — recorte de manga en runtime nunca funcionaba con
+  una remera teñida**: `ClothingTextureCache#imagenBase` solo sabe leer
+  archivos del resource pack (`ResourceManager.getResource`), pero
+  `EstampaTextures#cuerpoEstampado` (usado por CUALQUIER remera teñida o
+  con estampa/patrón — o sea, casi siempre) registra su textura
+  compuesta de forma DINÁMICA (`TextureManager.registerTexture`, sin
+  archivo real detrás). `imagenBase` nunca la encontraba, devolvía null,
+  y `PiezasDelMod#recortarMangaYCachear` caía en silencio a "sin
+  recortar" — la manga de una remera teñida SIEMPRE llegaba hasta el
+  puño sin importar el largo elegido. Arreglado con
+  `ClothingTextureCache#registrarImagenCompuesta`, que cachea la imagen
+  ya compuesta explícitamente para que `imagenBase` la encuentre sin
+  tocar el resource pack — llamado desde `EstampaTextures` en los dos
+  lugares que registran texturas dinámicas.
+- **`ComboCorte#iconoOrigen`** — a pedido, la fila de fijadas de la Mesa
+  (`ModeladoScreen`) mostraba un código de texto ("P^", "Mv"...); ahora
+  muestra el ícono real del molde que produjo cada fijada (guardado en
+  `ModeladoBlockEntity#fijar`, un campo más en el codec/packet-codec) con
+  una flechita de anclaje (arriba/abajo) y otra de lado (izquierda/
+  derecha/ambas) dibujadas a mano en las esquinas — sin arte nueva, un
+  `BotonFijada extends ButtonWidget` con `renderWidget` propio.
+- **Comando de debug `/femclothesdebug`** (cliente-only, solo el jugador
+  local) — a pedido, para probar Calce/geometría sobre distintos cuerpos
+  sin tocar la cuenta real: `skin` cicla entre 5 skins default de
+  Minecraft (steve/alex/zuri/noor/kai, reusa `DefaultSkinHelper`, cero
+  arte nueva), `slim`/`ancho` fuerza el modelo de brazo, `automodelo`
+  vuelve al de la skin activa, `reset` vuelve a la skin real. Enganchado
+  en `AbstractClientPlayerEntityMixin`, antes de que `ComposedSkin`
+  componga la ropa encima.
+- **3D Skin Layers reactivado en el cliente de desarrollo** (estaba
+  comentado en `build.gradle` desde antes de esta sesión, con la nota
+  "se cuelga siempre después de Initializing MixinExtras") — se probó de
+  nuevo y YA NO se cuelga (el cliente carga limpio hasta el menú
+  principal con `skinlayers3d` en la lista de mods). No se investigó a
+  qué se debía el cuelgue original ni se validó a fondo la ruta de
+  render 3D de las prendas (§8 de `PRENDAS.md`) — sigue pendiente, pero
+  al menos ya no bloquea probar con el mod activo.
+
+**Próximo:** nada bloqueado. Pendiente sin pedir todavía: `MediasLargo`/
+`Variante.Manga`/`calientabrazos` también podrían necesitar el mismo
+tratamiento de Calce (segmentar el cuerpo por fila) que ya tiene remera —
+no se probó Ajustado a fondo en esas tres. La ruta real de 3DSL (§8 de
+PRENDAS.md, componer la tela dentro de la capa externa de la skin) sigue
+sin implementar, ahora que el mod carga junto con 3DSL se puede probar en
+serio.
+
+**Para el otro Claude:** si aparece de nuevo algo como "mancha/línea rara"
+en el borde de una prenda o de la piel, LEÉ el javadoc largo de
+`CuerpoGeometria` arriba de `TODAS_LAS_CARAS` antes de investigar de
+cero — ya se probaron y descartaron sombreado de motor y hueco
+transparente, la causa casi siempre es sangrado de UV entre celdas
+vecinas (arriba/abajo pegadas sin margen) cuando pintás algo con un color
+muy distinto al de al lado. Calibrar con colores bien contrastados
+(pintar una celda de un color chillón, mirar si aparece en la vecina) es
+la forma más rápida de confirmarlo o descartarlo — mucho más rápido que
+adivinar mirando capturas en 3D desde ángulos raros.
+
+## v18 — 2026-09-15 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:** segunda mitad larga de la misma sesión de v17 — consolidación de
+moldes en dos sets unificados (Rango y Torso), extensión real de dos ejes
+(medias y manga/pantalón) a escalas parejas, y un bug de fondo en remera
+que hacía que sus propias fijadas compitieran entre sí. De más a menos
+grande:
+
+- **Bug real — remera se pisaba a sí misma**: `ComboCorte` guardaba largo/
+  manga/cuello de remera en UN SOLO campo (`remeraVariante`, un
+  `Variante` entero) — cada fijada de remera reemplazaba el corte
+  COMPLETO usando campos de borrador CONGELADOS (sin botón que los
+  cambie desde esta sesión), así que fijar el largo después de fijar la
+  manga pisaba la manga de vuelta a su default, y viceversa. Reportado
+  jugando como "el largo no funciona" cuando en realidad SÍ se aplicaba,
+  solo que la fijada siguiente lo borraba. Se separó en 3 campos
+  independientes (`remeraLargo`/`remeraManga`/`remeraCuello`), y
+  `PrendaModelado#aplicar` ahora lee el `Variante` ACTUAL de la prenda
+  (no el borrador) y parchea solo el eje presente — mismo patrón no
+  destructivo que ya usaban pantalón/medias.
+- **Manga de remera gana recorte en runtime** (antes NO lo tenía — era
+  "36 combos horneados", una limitación documentada desde antes de esta
+  sesión): en vez de hornear un archivo por cada valor nuevo de manga,
+  `PiezasDelMod#remera` arma SIEMPRE el torso con manga=LARGA (el archivo
+  ya horneado más largo) y recorta el BRAZO en runtime a la longitud real
+  — un solo anclaje (Superior, hombro hacia abajo), no hace falta
+  intersección de dos anclajes como pantalón/medias. Nuevo método
+  `recortarMangaYCachear` (no pasa por `ClothingTextureCache.composeGarment`
+  porque esa función tiñe siempre, y la textura de remera ya viene a full
+  color). Se armó una remera de calibración
+  (`tools/generar_calibracion_remera.py`, mismas coordenadas que la de
+  calientabrazos) para verificar el mapeo brazo izq/der antes de dar el
+  recorte por bueno — confirmado sin espejado. El "bug del puño" reportado
+  (una fila con diseño de manga larga visible en el borde del corte corto)
+  se investigó con un volcado de píxeles: el recorte en sí es perfecto
+  (alpha correcto fila por fila), lo que se ve es el ARTE de manga larga
+  en esa fila exacta, no un bug — pendiente si se quiere pintar un
+  dobladillo prolijo en el borde nuevo (como ya hace `pintarCintura` para
+  pantalón).
+- **Escalas parejas nuevas**, a pedido explícito y ajustadas en varias
+  vueltas de ida y vuelta con el dueño:
+  - `MediasLargo` extendida a 2/4/6/8/10/12 — se sumó
+    `SIETE_OCTAVOS`(10) y **se extendió el asset**
+    `medias_solid_cancan_layer_1.png` (antes solo pintaba 10 de 12 filas,
+    le faltaban las 2 de la cadera — duplicado hacia arriba el patrón
+    existente) y `CANCAN` pasó de 10 a 12 filas.
+  - `Variante.Manga` extendida a 0/2/4/6/8/10/12 — se sumaron `MINIMA`(2)
+    y `MEDIA`(6).
+  - `PantalonLargo` extendida a 0/2/4/6/8/10/12 — se sumó `DESCUBIERTO`(0)
+    y `SIETE_OCTAVOS`(10), y `BERMUDAS`/`TRES_CUARTOS` corrieron de 7/9 a
+    6/8 para cerrar la escala.
+  - Pantalón y manga de remera terminan con escalas DISTINTAS por
+    anclaje (a pedido): pantalón usa 0-10 desde Superior y 2-12 desde
+    Inferior (tiene los dos anclajes reales); manga de remera usa 0-10
+    desde su único anclaje (Superior) — Larga(12) queda fuera del rango
+    unificado por ahora. Calientabrazos, que comparte el eje real con
+    manga de remera pero SÍ tiene los dos anclajes, usa la escala pareja
+    2-12 sin importar cuál.
+- **`MoldeRangoItem`** (6 valores: Mínimo/Corto/Medio/Mediolargo/Largo/
+  Máximo) — a pedido, "sintetizar todos en esos dos moldes aunque cada
+  prenda tenga su propia medida": un solo set físico sirve para las 4
+  categorías de extremidad, cada una lo traduce a su escala real
+  (`*DeRango` en `ModeladoBlockEntity`). Reemplazó en la pestaña creativa
+  a los moldes específicos de pantalón-largo y medias. Íconos definitivos
+  (6, uno por escalón) pegados por el dueño, recortados y bajados a 16x16.
+- **`MoldeTorsoItem`** (3 valores: Corto/Medio/Largo) — mismo espíritu
+  pero para los DOS ejes de TORSO (largo de remera + tiro de pantalón,
+  sin anclaje ni lado). Reemplazó a los moldes específicos de largo-remera
+  y tiro en la pestaña creativa.
+- **`MoldeCuelloItem`** (3 valores: Redondo/V/Polera) — a pedido, "no
+  quiero molde cíclico, quiero molde de cuello redondo, molde de cuello
+  en v": el viejo `MoldeItem` cíclico de cuello sigue registrado pero no
+  enganchado al nuevo sistema; estos son la forma real de tocar cuello
+  desde la Mesa ahora.
+- Los 8 presets de combo directo (`COBERTURA_TORSO_*`/
+  `COBERTURA_EXTREMIDAD_*`) se sacaron de la pestaña creativa — traen sus
+  anclajes horneados de fábrica e ignoran Anclaje/Lado por completo,
+  confundido con el flujo real más de una vez esta sesión. La GUI ahora
+  además apaga Anclaje/Lado cuando el molde puesto es de este tipo.
+
+**Próximo:** nada bloqueado. Quedó pendiente, sin pedir todavía: pintar un
+dobladillo prolijo en el borde de un corte de manga corto (hoy hereda el
+arte de manga larga tal cual); diferenciar `MEDIOLARGO` para pantalón y
+manga (hoy mapea igual que `MEDIO` en esos dos ejes, solo medias tiene los
+6 valores realmente distintos).
+
+**Para el otro Claude:** si algo de remera "no aplica", primero
+descartá que sea ESTE bug — mirá si hay más de una fijada de remera en la
+lista y en qué orden se aplicaron (`ModeladoBlockEntity#procesar` las
+corre en orden, la última gana el conflicto SOLO en el eje que toca, ya
+no en el Variante entero). Y antes de tocar `PiezasDelMod` de nuevo:
+usá el volcado de píxeles (`ClothingTextureCache.DEBUG_DUMP`) para mirar
+el alpha real ANTES de sospechar del código — dos veces esta sesión lo
+que parecía bug de lógica resultó ser el arte original o fijadas viejas
+sin borrar.
+
+## v17 — 2026-09-15 — cuenta de H0p3san · Claude Code (extensión de VSCode)
+
+**Hecho:** sesión larga, la Mesa de Modelado pasó de bloque recién plantado
+a utilizable de punta a punta, con varios bugs reales encontrados jugando
+(no solo pulido de UI). Resumen de lo que cambió, de más a menos grande:
+
+- **Visor 3D real en la GUI** (`ModeladoScreen#dibujarPreview`): franja
+  izquierda del panel, `InventoryScreen.drawEntity` sobre `client.player`
+  rotable con el mouse. Muestra la prenda física del slot PRENDA con TODAS
+  las fijadas ya aplicadas (`ModeladoBlockEntity#previsualizar`, pura, no
+  muta el slot real). Para no tocar Trinkets real, `GarmentFeatureRenderer`
+  ganó un hook estático `previewOverride`: si no es null, se usa esa lista
+  de prendas en vez de leer el trinket component real del jugador — se
+  setea y limpia en el mismo frame, alrededor de un único `drawEntity`, así
+  que el render normal del jugador en el mundo nunca lo ve.
+- **Rediseño de layout a 3 columnas** (visor | config | storage), panel
+  300x258 → ahora 482x258. La columna de config tiene un botón nuevo,
+  **Categoría** (`ModeladoBlockEntity.Categoria`: REMERA/PANTALON/MEDIAS/
+  CALIENTABRAZOS), que reemplaza "poné un molde en Activo para elegir el
+  eje" — ahora el eje lo elige el botón, el molde solo aporta el valor. El
+  storage se partió en **compartido** (almacén de 27, como antes) y **por
+  prenda** (48 = 12×4 categorías, pero en pantalla se ve un solo banco de
+  12 que cicla con el mismo botón de Categoría — igual con el slot Activo,
+  1 visible de los 4 reales). Truco clave: `Slot.x`/`Slot.y` son `final`
+  en vanilla, así que en vez de reposicionar Slots al cambiar de categoría
+  se los ata a un `Inventory` adaptador que redirige el índice real según
+  `be.categoria()` **en el momento del acceso** (ver
+  `ModeladoScreenHandler.activoAdaptador`/`porPrendaAdaptador`) — el Slot
+  nunca se mueve, cambia a qué mira.
+- **Sin botón de Encender**: a pedido, la máquina se prende sola al cerrar
+  la pantalla (`ModeladoScreenHandler#onClosed` → `encenderAlCerrar()`) y
+  se apaga sola al terminar de procesar (`tick()`), así se puede reabrir
+  para sacar el resultado sin un paso manual de más.
+- **Bug real #1 — carrera cliente/servidor en los botones**: el patrón
+  viejo (heredado, no nuevo de esta sesión) hacía que el CLIENTE corriera
+  `be.onButtonClick(id)` en su propia copia del block entity para
+  "responder al instante" Y ADEMÁS mandara el click al servidor. El sync
+  periódico de propiedades del servidor podía pisar esa mutación optimista
+  del cliente antes de que el servidor terminara de procesar el click —
+  un click rápido de Anclaje seguido de Fijar podía fijar con el valor
+  VIEJO aunque el botón ya mostrara el nuevo. Reportado jugando como
+  "Anclaje/Lateralidad no hacen nada". Fix: `ModeladoScreen#clickBoton`
+  ahora solo le avisa al servidor, sin mutación local — mismo patrón que
+  cualquier pantalla vanilla (Telar, Yunque). El Telar viejo
+  (`ClothingLoomScreen`) tiene el mismo patrón sin arreglar, a propósito
+  (queda como backup, fuera de alcance).
+- **Bug real #2 — `markDirty()` sola no sincroniza**: al sacar la
+  mutación optimista de arriba, quedó al descubierto que
+  `ModeladoBlockEntity#onButtonClick` solo llamaba `markDirty()` (marca el
+  chunk para GUARDAR, no manda paquete de red) en vez de también forzar el
+  sync en vivo como ya hace `SublimadoraBlockEntity`
+  (`world.updateListeners(pos, getCachedState(), getCachedState(), 3)`).
+  Encima el caso de Fijar tenía un `return` que se saltaba hasta el
+  `markDirty()` compartido. Sin esto, Fijar/Desfijar no llegaban al
+  cliente en vivo ("no hace pin", "no lo desfija"). Arreglado: los dos
+  ahora corren siempre que alguna rama cambió estado real.
+- **Bug real #3 — el gordo, cache de textura sin discriminar pierna/brazo**
+  (`PiezasDelMod`, afecta medias/pantalón/calientabrazos por igual, viene
+  de ANTES de esta sesión): la clave de cache de `ClothingTextureCache
+  .composeGarment` para la textura recortada nunca incluía qué
+  Parte/pierna/brazo era, solo el rango de filas visibles. Cuando las dos
+  piernas dan el MISMO rango — que es EXACTAMENTE lo que pasa con
+  Lateralidad=Ambas, el caso más común — la segunda pierna procesada
+  encontraba la textura ya cacheada de la primera y la reusaba TAL CUAL,
+  sin aplicarle su propio recorte (`composeGarment` retorna apenas
+  encuentra `cached != null`, nunca llega a llamar `encima.aplicar()` de
+  nuevo). Resultado: con anclajes/lado simétricos, una pierna quedaba sin
+  recortar. Los casos ASIMÉTRICOS "funcionaban" de pura casualidad — al
+  tener rangos distintos por lado, nunca colisionaban en el cache. Costó
+  como 15 mensajes de ida y vuelta descartar hipótesis (UX, orden de
+  clicks, ítems reusados con NBT vieja) antes de leer el código de
+  `PiezasDelMod` con lupa y encontrarlo. Fix: `piernaParte`/`brazoParte`
+  ahora forman parte de la clave en los 3 call-sites
+  (`texturaMedia`/`texturaPantalon`/`texturaCalientabrazos`). Lección para
+  la próxima: cuando algo "solo falla si es simétrico", sospechar cache
+  antes que lógica de datos.
+- **Molde de Rango unificado** (`MoldeRangoItem`, 5 ítems: Mínimo/Corto/
+  Medio/Largo/Máximo) — a pedido explícito ("sintetizar todos en esos dos
+  moldes aunque cada prenda tenga su propia medida"): un solo set físico
+  sirve para las 4 categorías de extremidad (pantalón/medias/
+  calientabrazos/manga de remera), cada una lo traduce a SU escala real
+  al fijar (`ModeladoBlockEntity#pantalonDeRango`/`mediasDeRango`/
+  `mangaDeRango`) — a diferencia de los presets de combo directo (ver
+  abajo), Anclaje/Lado siguen aplicando normal sobre él. Reemplazó en la
+  pestaña creativa a los moldes específicos de pantalón-largo y medias
+  (siguen registrados, el Telar viejo los sigue usando).
+- **Los 8 presets de combo directo** (`ModeladoMod.COBERTURA_TORSO_*`/
+  `COBERTURA_EXTREMIDAD_*`, de la sesión anterior) se sacaron de la
+  pestaña creativa — traen sus anclajes horneados de fábrica e IGNORAN
+  Anclaje/Lado por completo, lo que generaba confusión real jugando (se
+  reportó como "Anclaje/Lado rotos" cuando en realidad el ítem puesto los
+  ignoraba a propósito). Ahora además la GUI los detecta y apaga esos
+  botones cuando el molde puesto es de este tipo
+  (`ModeladoBlockEntity#activoEsComboDirecto`), para que no se repita la
+  confusión con otro molde de este tipo.
+- Logging de diagnóstico agregado (`LoggerFactory.getLogger
+  ("femclothes-modelado")`) en `ModeladoBlockEntity#onButtonClick`/
+  `fijar`/`agregarFijada`/`procesar` y `PrendaModelado#aplicar` — se
+  mantiene (no es debug temporal), fue clave para diagnosticar los bugs
+  reales #1 y #2 sin depender de que el jugador describiera síntomas por
+  chat.
+
+**Próximo:** Estación de Tintes y Sublimadora-de-línea (los otros 2
+bloques industriales de `docs/PRODUCCION_TEXTIL.md`) siguen sin construir
+— esta sesión fue toda Mesa de Modelado. La sección "Anclaje" de este
+mismo doc (más abajo) decía "sin implementar, el jugador no elige
+anclaje" — **ya no es así**, está actualizada.
+
+**Para el otro Claude:** si algo en `PiezasDelMod` "solo falla en el caso
+simétrico" de nuevo, mirar la clave de cache PRIMERO — es la clase de bug
+que no se ve leyendo la lógica de escritura de datos (que puede estar
+perfecta) ni el log de la Mesa (que puede mostrar el combo correcto),
+porque el problema está un paso después, en el compositor de texturas.
 
 ## v16 — 2026-09-08 — cuenta de H0p3san · Claude Code (extensión de VSCode)
 

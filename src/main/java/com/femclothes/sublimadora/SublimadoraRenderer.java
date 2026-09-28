@@ -6,7 +6,6 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import software.bernie.geckolib.renderer.GeoBlockRenderer;
-import software.bernie.geckolib.renderer.layer.AutoGlowingGeoLayer;
 
 import java.util.UUID;
 
@@ -33,11 +32,13 @@ public class SublimadoraRenderer extends GeoBlockRenderer<SublimadoraBlockEntity
 
     public SublimadoraRenderer() {
         super(new SublimadoraGeoModel());
-        // Capa emisiva: los pixeles marcados en sublimadora_atlas_glowmask.png
-        // se dibujan a luz plena, asi los LEDs se ven prendidos aunque el
-        // bloque este en penumbra. El sufijo _glowmask lo resuelve GeckoLib
-        // solo, a partir del nombre de la textura del modelo.
-        addRenderLayer(new AutoGlowingGeoLayer<>(this));
+        // Capa emisiva de los LEDs (2026-09-21, "que brillen de verdad") —
+        // NO es la AutoGlowingGeoLayer que se había sacado el 2026-09-19
+        // (esa esperaba un sublimator_atlas_glowmask.png real de recurso,
+        // incompatible con un color de LED que cambia en runtime); ver
+        // com.femclothes.render.PantallaLed y LedGlowLayer.
+        addRenderLayer(new com.femclothes.render.LedGlowLayer<>(this, SublimadoraGeoModel.ANCHO_ATLAS,
+                SublimadoraGeoModel.ALTO_ATLAS, SublimadoraGeoModel.LEDS, SublimadoraGeoModel::coloresLed));
     }
 
     @Override

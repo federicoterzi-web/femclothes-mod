@@ -1,0 +1,7 @@
+{
+  "_comment": "Reusa el icono de pantalon como placeholder -- no hay arte propia todavia para pollera.",
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "femclothes:item/pantalon"
+  }
+}

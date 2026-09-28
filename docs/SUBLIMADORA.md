@@ -287,11 +287,18 @@ export de Blockbench**.
 
 ## Trampas que ya costaron tiempo
 
-### GeckoLib está fijado en 4.7.7 a propósito
+### GeckoLib estuvo fijado en 4.7.7 (2026-09-19: resuelto, ahora en 4.9.3)
 
-4.8.4 **no dibuja cubos con `uv_size` parcial por cara**, que es como está
-hecho todo el modelo. Confirmado con un A/B. Y no se puede subir a 4.9+:
-pide Loom 1.17.13 y el proyecto está en 1.15.3.
+4.8.4 **no dibujaba cubos con `uv_size` parcial por cara**, que es como está
+hecho todo el modelo. Confirmado con un A/B en su momento. Subir a 4.9+
+pedía Loom 1.17.13+ y el proyecto estaba en 1.15.3, así que quedó fijado en
+4.7.7 mientras tanto.
+
+Se resolvió de raíz subiendo Loom a 1.17.21 (y Gradle wrapper a 9.6.0, el
+mismo combo que ya usa stage-manager en esta máquina) y GeckoLib a 4.9.3 —
+confirmado jugando que el bug de `uv_size` parcial ya no está: en algún
+punto entre 4.8.4 y 4.9.3 lo arreglaron río arriba. El Fabric Loader
+declarado (`0.18.4`) no cambió.
 
 ### La tapa aparecía abierta al cargar el chunk
 

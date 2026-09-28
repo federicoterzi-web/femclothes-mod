@@ -22,16 +22,28 @@ import java.util.UUID;
  * son tres resoluciones distintas.
  *
  * @param foto   la foto de Camerapture
- * @param escala 1.0 cubre la remera entera, 0.15 es un logo
+ * @param escala 1.0 cubre la remera entera, 0.15 es un logo, más de 1.0
+ *               sobre-escala más allá de la cobertura completa (ver
+ *               {@link #ESCALA_MAXIMA})
  * @param x      corrimiento horizontal, -0.5 a 0.5, 0 es centrado
  * @param y      corrimiento vertical, -0.5 a 0.5, positivo es hacia arriba
+ * @param angulo rotación en grados, 0 es como viene la foto
  */
-public record Estampa(UUID foto, float escala, float x, float y, boolean cubrir) {
+public record Estampa(UUID foto, float escala, float x, float y, float angulo, boolean cubrir) {
 
     /** Ni tan chica que no se lea, ni tan grande que se coma las mangas. */
     public static final float ESCALA_DEFECTO = 0.42f;
     public static final float ESCALA_MINIMA = 0.10f;
-    public static final float ESCALA_MAXIMA = 1.0f;
+    /** Acá el diseño llega a cubrir el lienzo entero — el "100%" de siempre. */
+    public static final float ESCALA_CUBRIR = 1.0f;
+    /**
+     * Techo real del control — a pedido (2026-09-20, "me gustaria que el
+     * limite maximo... fuera mas grande"): por arriba de {@link #ESCALA_CUBRIR}
+     * el diseño sigue creciendo MÁS ALLÁ de cubrir la prenda entera (ver
+     * {@code EstampaTextures#pintarLienzo}), en vez de plancharse en el
+     * 100% de siempre.
+     */
+    public static final float ESCALA_MAXIMA = 1.5f;
 
     /**
      * Los dos presets de estampado, que es lo que elige la palanca.
@@ -64,7 +76,7 @@ public record Estampa(UUID foto, float escala, float x, float y, boolean cubrir)
         }
 
         public Estampa aplicar(UUID foto) {
-            return new Estampa(foto, escala, x, y, cubrir);
+            return new Estampa(foto, escala, x, y, 0f, cubrir);
         }
 
         public Modo siguiente() {
@@ -88,11 +100,12 @@ public record Estampa(UUID foto, float escala, float x, float y, boolean cubrir)
         escala = MathHelper.clamp(escala, ESCALA_MINIMA, ESCALA_MAXIMA);
         x = MathHelper.clamp(x, -0.5f, 0.5f);
         y = MathHelper.clamp(y, -0.5f, 0.5f);
+        angulo = ((angulo % 360f) + 360f) % 360f;
     }
 
     /** Centrada y del tamano de siempre: como salian las remeras viejas. */
     public static Estampa centrada(UUID foto) {
-        return new Estampa(foto, ESCALA_DEFECTO, 0f, 0f, false);
+        return new Estampa(foto, ESCALA_DEFECTO, 0f, 0f, 0f, false);
     }
 
     // Escala y posicion son opcionales a proposito: una estampa centrada y
@@ -102,6 +115,7 @@ public record Estampa(UUID foto, float escala, float x, float y, boolean cubrir)
             Codec.FLOAT.optionalFieldOf("escala", ESCALA_DEFECTO).forGetter(Estampa::escala),
             Codec.FLOAT.optionalFieldOf("x", 0f).forGetter(Estampa::x),
             Codec.FLOAT.optionalFieldOf("y", 0f).forGetter(Estampa::y),
+            Codec.FLOAT.optionalFieldOf("angulo", 0f).forGetter(Estampa::angulo),
             Codec.BOOL.optionalFieldOf("cubrir", false).forGetter(Estampa::cubrir)
     ).apply(i, Estampa::new));
 
@@ -110,6 +124,7 @@ public record Estampa(UUID foto, float escala, float x, float y, boolean cubrir)
             PacketCodecs.FLOAT, Estampa::escala,
             PacketCodecs.FLOAT, Estampa::x,
             PacketCodecs.FLOAT, Estampa::y,
+            PacketCodecs.FLOAT, Estampa::angulo,
             PacketCodecs.BOOL, Estampa::cubrir,
             Estampa::new);
 }
