@@ -87,6 +87,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
     private ButtonWidget btnFijar;
     private ButtonWidget btnAnclaje, btnLado;
     private ButtonWidget btnSimetria;
+    private ButtonWidget btnModelar;
     private ButtonWidget btnVista;
     private ButtonWidget btnGuardarDiseno;
     private net.minecraft.client.gui.widget.TextFieldWidget txtNombreDiseno;
@@ -130,6 +131,13 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         btnSimetria = new EstiloPergamino.BotonPergamino(this.x + 8, this.y + 292, 86, 16, Text.literal(""), b -> clickBoton(ModeladoBlockEntity.BTN_SIMETRIA));
         btnSimetria.setTooltip(Tooltip.of(Text.translatable("femclothes.modelado.tooltip.simetria")));
         this.addDrawableChild(btnSimetria);
+
+        // Modelar, ENCIMA de la flecha Entrada -> Salida (2026-09-28, "a
+        // modeladora le agreguemos el boton modelar") — como Teñir y Prensar.
+        btnModelar = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO + 96, this.y + 184, 48, 16,
+                Text.translatable("femclothes.modelado.boton.modelar"), b -> clickBoton(ModeladoBlockEntity.BTN_MODELAR));
+        btnModelar.setTooltip(Tooltip.of(Text.translatable("femclothes.modelado.tooltip.modelar")));
+        this.addDrawableChild(btnModelar);
 
         // Casilleros de diseño (2026-09-27, "que los slots donde se fijaban
         // sirvan para guardar el diseño completo de todos los pines como 1
@@ -322,6 +330,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         // quedaron sin uso: el esquema los reemplaza. Simetría aplica a todo
         // pin de lado (mangas, botas, cortes izq/der de medias y cubrebrazos).
         btnFijar.visible = false;
+        btnModelar.active = be.puedeModelar();
         btnAnclaje.visible = false;
         btnLado.visible = false;
         btnSimetria.visible = true;

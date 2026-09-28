@@ -48,6 +48,7 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
     private ButtonWidget btnCategoria;
     private ButtonWidget btnEscala, btnX, btnY, btnAngulo;
     private ButtonWidget btnCara;
+    private ButtonWidget btnSimetria;
     private ButtonWidget btnVista;
     private ButtonWidget btnPrensar;
     private ButtonWidget btnGuardarDiseno;
@@ -135,6 +136,10 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
                 SublimadoraBlockEntity.BTN_ANGULO_MENOS, SublimadoraBlockEntity.BTN_ANGULO_MAS);
         // Cara también por botón (además de tocar su slot).
         btnCara = boton(M_MEDIO, 272, 116, Text.empty(), "femclothes.sublimadora.tooltip.cara", SublimadoraBlockEntity.BTN_SELECCION);
+        // Simetría lateral (2026-09-28, "simetria lateral para medias y
+        // cubrebrazos"): solo se ve en las prendas de a pares.
+        btnSimetria = boton(M_MEDIO + 124, 272, 116, Text.empty(), "femclothes.sublimadora.tooltip.simetria",
+                SublimadoraBlockEntity.BTN_SIMETRIA);
 
         // Una chincheta por cara, arriba a la derecha de su slot — se
         // dibujan a mano en render(), encima de todo (mismo criterio que Tintes).
@@ -366,6 +371,9 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
                 Text.translatable("femclothes.sublimadora.cara." + be.getSeleccion().clave)));
         btnVista.setMessage(Text.translatable("femclothes.preview.vista",
                 Text.translatable(PreviewJugador.nombreVista(anguloVista))));
+        btnSimetria.visible = SublimadoraBlockEntity.admiteSimetria(be.categoria());
+        btnSimetria.setMessage(Text.translatable("femclothes.modelado.simetria",
+                Text.translatable(be.simetria() ? "femclothes.si" : "femclothes.no")));
 
         boolean enReposo = be.getEstado() == SublimadoraBlockEntity.Estado.REPOSO;
         btnPrensar.active = enReposo && !be.getRemera().isEmpty() && be.getSalida().isEmpty();

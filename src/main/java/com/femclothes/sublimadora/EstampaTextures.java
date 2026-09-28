@@ -266,6 +266,46 @@ public final class EstampaTextures {
                 LIENZO_PIERNA, MEDIA_ALTO, 0, MEDIA_ALTO, todas.toArray(new Cara[0]));
     }
 
+    /**
+     * Simetría lateral (2026-09-28, "a la sublimadora hay que agregarle
+     * simetria lateral para medias y cubrebrazos"): las caras de un lado
+     * leyendo el lienzo al revés — cada cara toma la ventana espejada
+     * ({@code LIENZO_PIERNA - x - ancho}) y da vuelta su eje horizontal,
+     * así un logo corrido hacia afuera en una pierna queda hacia afuera en
+     * la otra.
+     */
+    private static Cara[] espejarLado(Cara[] caras) {
+        Cara[] out = new Cara[caras.length];
+        for (int i = 0; i < caras.length; i++) {
+            Cara c = caras[i];
+            int[] l = c.lienzo();
+            out[i] = new Cara(c.rect(), new int[] { LIENZO_PIERNA - l[0] - l[2], l[1], l[2], l[3] },
+                    c.atras(), !c.espejar(), c.espejarV(), c.compartida(), c.principal());
+        }
+        return out;
+    }
+
+    /** Mismas caras y en el MISMO orden que {@code base}, con el lado izquierdo espejado. */
+    private static Prenda conEspejo(Prenda base, int uDer, int vDer, int uIzq, int vIzq) {
+        java.util.List<Cara> todas = new java.util.ArrayList<>();
+        todas.addAll(java.util.Arrays.asList(deUnaPierna(uDer, vDer)));
+        todas.addAll(java.util.Arrays.asList(espejarLado(deUnaPierna(uIzq, vIzq))));
+        return new Prenda(base.escala(), base.lienzoAncho(), base.lienzoAlto(), base.cuerpoY(), base.cuerpoAlto(),
+                todas.toArray(new Cara[0]));
+    }
+
+    private static final Prenda MEDIAS_ESPEJO = conEspejo(MEDIAS, 0, 16, 16, 48);
+    private static final Prenda BRAZO_ESPEJO = conEspejo(BRAZO, 40, 16, 32, 48);
+
+    /** La versión con el lado izquierdo espejado, o null si la prenda no va de a pares. */
+    @Nullable
+    private static Prenda espejadaDe(ItemStack stack) {
+        if (stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID
+                || stack.getItem() == com.femclothes.item.FemclothesItems.PANTALON) return MEDIAS_ESPEJO;
+        if (stack.getItem() == com.femclothes.item.FemclothesItems.CALIENTABRAZOS) return BRAZO_ESPEJO;
+        return null;
+    }
+
     /** Que prenda estampable es este stack, o null si no lo es. */
     @Nullable
     private static Prenda prendaDe(ItemStack stack) {
@@ -436,7 +476,7 @@ public final class EstampaTextures {
         if (color != RemeraItem.BLANCO) tenir(salida, color);
         if (!capas.isEmpty()) aplicarPatron(salida, base, capas);
 
-        if (!estampar(salida, deLaRemera(variante), frente, espalda)) {
+        if (!estampar(salida, deLaRemera(variante), null, frente, espalda)) {
             salida.close();
             return null;
         }
@@ -483,7 +523,7 @@ public final class EstampaTextures {
     public static boolean estampar(NativeImage destino, ItemStack stack) {
         Prenda prenda = prendaDe(stack);
         if (prenda == null) return true;
-        return estampar(destino, prenda,
+        return estampar(destino, prenda, espejadaDe(stack),
                 RemeraItem.estampaDe(stack, Estampa.Cara.FRENTE),
                 RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA));
     }
@@ -510,7 +550,7 @@ public final class EstampaTextures {
      * lienzo: chico y centrado en el cuerpo a escala mínima, tapando todo
      * el lienzo a escala máxima — sin ninguna rama.
      */
-    private static boolean estampar(NativeImage salida, Prenda prenda,
+    private static boolean estampar(NativeImage salida, Prenda prenda, @Nullable Prenda espejada,
                                     @Nullable Estampa frente, @Nullable Estampa espalda) {
         // El ruedo/la planta (caras sin lado propio) los pinta el que
         // tenga la escala MAS GRANDE de los dos lados — el chico no llega
@@ -526,13 +566,17 @@ public final class EstampaTextures {
         // proximo frame puede estar, y cachear a medias dejaria una prenda con
         // una sola de sus dos estampas para siempre.
         boolean listo = true;
-        for (Cara cara : prenda.caras()) {
+        for (int k = 0; k < prenda.caras().length; k++) {
+            Cara cara = prenda.caras()[k];
             // Cada cara la pinta la estampa de SU lado. Antes un full print
             // en el frente pintaba tambien la espalda, porque el bucle usaba
             // la misma estampa para todas.
             Estampa suya = cara.compartida() ? compartida
                     : (cara.atras() ? espalda : frente);
             if (suya == null) continue;
+            // Simetría lateral: la misma cara, leída del lienzo espejado
+            // (mismo orden de caras, ver conEspejo).
+            if (suya.espejo() && espejada != null) cara = espejada.caras()[k];
             listo &= pintarLienzo(salida, suya, cara, prenda);
         }
         return listo;

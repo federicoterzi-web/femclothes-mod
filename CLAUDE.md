@@ -54,6 +54,7 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 
 **Máquinas — sintonía y pulido** (2026-09-28, "cambiemos la gui de la sublimadora para hacerla sintonizar con sus bloques hermanos y que recien ahi revisemos y pulamos las 3"):
 - Sublimadora rehecha al estilo de Tintes (hecha, falta probar en el juego): 560×408 pergamino, fotos sobre el dibujo de la prenda (el ítem real agrandado, Frente | Espalda) con chincheta por cara (solo se estampan las fijadas), diseños con nombre (`GuardarDisenoSublimadoraPayload`), botón Prensar, tanques CMYK + papel.
+- Sublimadora: simetría lateral en medias y calientabrazos (`Estampa.espejo`; `EstampaTextures.conEspejo` espeja el lienzo del lado izquierdo). Modeladora: botón Modelar sobre la flecha (`BTN_MODELAR`). Hechos el 2026-09-28, falta probar.
 - **Siguiente:** revisar y pulir las tres máquinas juntas.
 
 **Otros, sin empezar:**

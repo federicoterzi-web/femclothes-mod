@@ -428,6 +428,11 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
         sincronizar();
     }
 
+    /** ¿Tiene sentido apretar Modelar? Apagada, con prenda en la Entrada, algo fijado y la Salida libre. */
+    public boolean puedeModelar() {
+        return !encendida && !items.get(PRENDA).isEmpty() && items.get(SALIDA).isEmpty() && hayFijadas();
+    }
+
     public Estado estado() { return estado; }
     public int progreso() { return progreso; }
     /** Las fijadas de la categoría ACTUAL — ver {@link #fijadasPorCategoria}. */
@@ -451,6 +456,13 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
     public static final int BTN_CATEGORIA = 9;
     /** Togglea {@link #remeraSimetria} — solo el esquema de REMERA lo usa. */
     public static final int BTN_SIMETRIA = 10;
+    /**
+     * Botón Modelar (2026-09-28, "a modeladora le agreguemos el boton
+     * modelar"), encima de la flecha como Teñir/Prensar: arranca con la
+     * prenda de la Entrada sin tener que cerrar la GUI. Cerrarla sigue
+     * arrancando igual (ver {@link #encenderAlCerrar}).
+     */
+    public static final int BTN_MODELAR = 11;
     public static final int BTN_DESFIJAR_BASE = 100; // + índice en fijadas
     /** + índice de pin (0..7): la chincheta de cada slot de corte de remera. */
     public static final int BTN_PIN_BASE = 200;
@@ -483,6 +495,11 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
             }
             case BTN_SIMETRIA -> {
                 remeraSimetria = !remeraSimetria;
+                cambio = true;
+            }
+            case BTN_MODELAR -> {
+                if (!puedeModelar()) return false;
+                encenderAlCerrar();
                 cambio = true;
             }
             default -> {

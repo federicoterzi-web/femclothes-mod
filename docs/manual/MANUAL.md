@@ -91,7 +91,7 @@ Las máquinas se pueden encadenar con tolvas (hoppers):
 | **Atrás** | Los insumos: tintes (C, M, Y, K) y papel. |
 | **Derecha** | La prenda terminada sale sola hacia un cofre o tolva de ese lado. |
 
-Con tolva, la prenda **arranca sola** si hay un diseño fijado. Desde la interfaz, cada máquina arranca a su manera (ver cada sección): la Modeladora al cerrar la interfaz, la Estación de Tintes con el botón Teñir y la Sublimadora con el botón Prensar (o cerrando la tapa). *(La cadena completa de máquinas todavía no se probó a fondo.)*
+Con tolva, la prenda **arranca sola** si hay un diseño fijado. Desde la interfaz, las tres tienen un botón sobre la flecha Entrada → Salida: **Modelar**, **Teñir** y **Prensar**. Además, la Modeladora arranca al cerrar la interfaz y la Sublimadora al cerrar la tapa. *(La cadena completa de máquinas todavía no se probó a fondo.)*
 
 ## 6. Mesa de Modelado
 
@@ -105,7 +105,7 @@ La Modeladora cambia el **corte** de la prenda. En el centro está el **dibujo d
 2. Arrastrá un **molde** al pin que quieras cambiar.
 3. Apretá la **chincheta** del pin: el corte queda fijado y el molde vuelve al almacén. En el pin queda un ícono fantasma del molde fijado.
 4. Click en la chincheta de un pin fijado lo quita.
-5. Poné la prenda en la **Entrada** y **cerrá la interfaz**: la máquina se enciende sola y empieza a producir. Mientras está encendida (sin estar produciendo), un click en el bloque la apaga.
+5. Poné la prenda en la **Entrada** y apretá **Modelar** (el botón sobre la flecha), o **cerrá la interfaz**: la máquina se enciende sola y empieza a producir. Modelar solo se habilita con prenda en la Entrada, algún corte fijado y la Salida libre. Mientras está encendida (sin estar produciendo), un click en el bloque la apaga.
 
 ![Mesa de Modelado, medias](img/captura_modelado_medias.png)
 
@@ -269,7 +269,7 @@ La Sublimadora **imprime fotos** del mod Camerapture sobre remeras, pantalones, 
 | Zona | Qué hay |
 |---|---|
 | **Izquierda** | Vista previa 3D, botón Vista, nombre y **Guardar diseño**. |
-| **Centro** | **Categoría**; el dibujo de la prenda dos veces, **Frente** y **Espalda**, cada una con su slot de foto y su chincheta; el cinturón **Entrada → Salida** con **Prensar** sobre la flecha; los 8 casilleros de diseño; y los controles de la cara elegida: **Escala**, **Posición X**, **Posición Y**, **Ángulo** y **Cara**. |
+| **Centro** | **Categoría**; el dibujo de la prenda dos veces, **Frente** y **Espalda**, cada una con su slot de foto y su chincheta; el cinturón **Entrada → Salida** con **Prensar** sobre la flecha; los 8 casilleros de diseño; y los controles de la cara elegida: **Escala**, **Posición X**, **Posición Y**, **Ángulo** y **Cara**, más **Simetría** en medias y calientabrazos. |
 | **Derecha** | Los tanques de tinta **C, M, Y, K** y el de **papel** con su nivel (n/64), la guía de pasos y el **almacén** de 9 fotos. |
 
 El dibujo muestra la prenda que está en la Entrada, con su color. Si no hay ninguna, muestra la prenda terminada de la Salida, y si tampoco, una de la categoría elegida.
@@ -285,7 +285,8 @@ El dibujo muestra la prenda que está en la Entrada, con su color. Si no hay nin
 **Detalles:**
 
 - **Insumos:** tinta CMYK (tintes vanilla, hasta 64 por tanque) y **papel** (hasta 64). Cada cara estampada gasta una dosis de cada color; cada prensado gasta una hoja de papel. Las fotos **no se consumen**: quedan cargadas para reimprimir.
-- **Diseños guardados:** como en las otras máquinas, nombre + Guardar diseño y 8 casilleros por categoría: guardan el ajuste de las dos caras y cuáles están fijadas. Click carga, click derecho borra. Las "fijadas" de la versión anterior pasaron a ser diseños "#1", "#2"...
+- **Simetría lateral (medias y calientabrazos):** las dos piernas (o brazos) llevan la misma foto. Con **Simetría: No** llevan la misma copia; con **Simetría: Sí**, la izquierda lleva el **espejo** de la derecha, así un logo corrido hacia afuera queda hacia afuera en las dos. Ojo: un texto en la foto se lee al revés en el lado espejado.
+- **Diseños guardados:** como en las otras máquinas, nombre + Guardar diseño y 8 casilleros por categoría: guardan el ajuste de las dos caras, cuáles están fijadas y la simetría. Click carga, click derecho borra. Las "fijadas" de la versión anterior pasaron a ser diseños "#1", "#2"...
 - **Prensado:** 15 segundos, con vapor, pitidos y LED rojo; al terminar, LED verde y campanita.
 - Frente y espalda se pueden estampar en una sola pasada. No pisa una cara ya estampada: una prenda con el frente hecho puede volver a entrar para imprimirle la espalda.
 - Las fotos con transparencia (PNG) funcionan.
