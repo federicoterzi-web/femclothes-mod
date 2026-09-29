@@ -117,7 +117,7 @@ Las máquinas se pueden encadenar con tolvas (hoppers):
 | **Atrás** | Los insumos: tintes (C, M, Y, K) y papel. |
 | **Derecha** | La prenda terminada sale sola hacia un cofre o tolva de ese lado. |
 
-Con tolva, la prenda **arranca sola** si hay un diseño fijado. Desde la interfaz, las tres tienen un botón sobre la flecha Entrada → Salida: **Modelar**, **Teñir** y **Prensar**. Además, la Modeladora arranca al cerrar la interfaz y la Sublimadora al cerrar la tapa. *(La cadena completa de máquinas todavía no se probó a fondo.)*
+Con tolva, la prenda **arranca sola** si hay un diseño fijado. Desde la interfaz, las tres tienen un botón sobre la flecha Entrada → Salida: **Modelar**, **Teñir** y **Prensar**. Además, la Modeladora arranca al cerrar la interfaz (solo si hay prenda en la Entrada, algo fijado y la Salida libre; si no, queda apagada) y la Sublimadora al cerrar la tapa. *(La cadena completa de máquinas todavía no se probó a fondo.)*
 
 ## 6. Mesa de Modelado
 
@@ -335,7 +335,9 @@ El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría 
 | `/femclothes debug normal` | Vuelve a los tiempos reales. |
 | `/femclothes debug ver` | Muestra en qué modo está. |
 | `/femclothes debug patrones` | Te da shulker boxes con uno de cada molde de patrón. |
-| `/femclothes debug moldes` | Te da shulker boxes con uno de cada molde de corte y de red. |
+| `/femclothes debug moldes` | Te da shulker boxes con uno de cada molde de corte y de red (son 30: van en 2 shulkers). |
+| `/femclothes debug insumos` | Te da una shulker con 64 de cada uno de los 16 tintes y 64 de papel. |
+| `/femclothes debug kit` | Moldes, patrones e insumos de una sola vez. |
 
 **Del cliente** (solo cambian lo que VOS ves, para probar):
 

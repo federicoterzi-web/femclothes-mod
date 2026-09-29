@@ -438,6 +438,12 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
         // puesta eso esta mal") — el ventilador ("en_marcha") arrancaba
         // sin nada para procesar.
         if (encendida || items.get(PRENDA).isEmpty()) return;
+        // Tampoco sin nada fijado o con la Salida ocupada (2026-09-29, "sin
+        // ningun pin cuando salgo de la gui dice que la apague para
+        // configurar y tiene particulas arriba"): tick() nunca pasaba a
+        // PROCESANDO y quedaba "encendida" de adorno — ventilador y
+        // partículas prendidos, config bloqueada, sin trabajar.
+        if (!hayFijadas() || !items.get(SALIDA).isEmpty()) return;
         encendida = true;
         // Mismo bug que las transiciones de tick() (ver #sincronizar): sin
         // esto, "en_marcha" (el ventilador) nunca se enteraba del lado
@@ -1011,6 +1017,12 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
                 if (be.encendida && prendaOk && salidaOk && fijadaOk) {
                     be.estado = Estado.PROCESANDO;
                     be.progreso = 0;
+                    be.sincronizar();
+                } else if (be.encendida && (!prendaOk || !fijadaOk)) {
+                    // Prendida sin nada que hacer (mundos guardados con el
+                    // bug de arriba, o sacaron la prenda por una tolva):
+                    // se apaga sola en vez de quedar trabada.
+                    be.encendida = false;
                     be.sincronizar();
                 }
             }

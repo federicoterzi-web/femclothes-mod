@@ -417,5 +417,7 @@
   "femclothes.tinturas.tooltip.variacion": "Cómo cambia el relleno entre los colores: Fijo (todo el Color 1), Alternar (cada motivo el siguiente), Aleatorio (al azar — Azar vuelve a sortear) o Degradé (de arriba a abajo, también en capas lisas)",
   "femclothes.elegir_cuerpo.zona.rubor": "Rubor",
   "femclothes.elegir_cuerpo.tooltip.zona.rubor": "Rubor: rodillas, codos, pecho y cara. Automático = tu mismo color, más intenso",
-  "femclothes.elegir_cuerpo.fuerza_rubor": "Fuerza del rubor: %s%%"
+  "femclothes.elegir_cuerpo.fuerza_rubor": "Fuerza del rubor: %s%%",
+  "femclothes.debug.insumos.nombre": "Insumos FemClothes",
+  "femclothes.debug.insumos.entregado": "[femclothes] Insumos entregados: 64 de cada tinte y 64 de papel"
 }
