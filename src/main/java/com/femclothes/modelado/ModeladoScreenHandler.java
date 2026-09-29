@@ -22,7 +22,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
     // esquema de remera (2026-09-24), prenda(1), salida(1), porprenda(12),
     // después el inventario del jugador.
     private static final int SLOT_ACTIVO = ModeladoBlockEntity.ALMACEN_TAMANO;
-    private static final int CANTIDAD_PINES = ModeladoBlockEntity.PINES_TAMANO;
+    private static final int CANTIDAD_PINES = ModeladoBlockEntity.PINES_LOGICOS;
     private static final int SLOT_PRENDA = SLOT_ACTIVO + 1 + CANTIDAD_PINES;
     private static final int SLOT_SALIDA = SLOT_PRENDA + 1;
     private static final int SLOT_PORPRENDA_INICIO = SLOT_SALIDA + 1;
@@ -41,6 +41,8 @@ public class ModeladoScreenHandler extends ScreenHandler {
             {{112, 46}, {112, 79}, {112, 100}, {112, 122}, {47, 95}, {49, 143}, {175, 144}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             {{44, 52}, {180, 52}, {43, 142}, {184, 142}, {112, 142}, {28, 76}, {28, 94}, {28, 113}, {196, 76}, {196, 94}, {196, 113}, {0, 0}},
             {{38, 55}, {185, 55}, {37, 134}, {187, 135}, {112, 144}, {28, 77}, {28, 96}, {28, 115}, {196, 77}, {196, 96}, {196, 115}, {0, 0}},
+            // Pollera (2026-09-29): Forma, Largo, Calce, Mat1..3 — sobre esquema_pollera.png.
+            {{112, 46}, {175, 144}, {47, 95}, {112, 79}, {112, 100}, {112, 122}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
     };
 
     /**
@@ -54,6 +56,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
             {{129, 45}, {129, 78}, {129, 99}, {129, 121}, {64, 94}, {66, 142}, {192, 143}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             {{61, 51}, {197, 51}, {60, 141}, {201, 141}, {129, 141}, {45, 75}, {45, 93}, {45, 112}, {213, 75}, {213, 93}, {213, 112}, {0, 0}},
             {{55, 54}, {202, 54}, {54, 133}, {204, 134}, {129, 143}, {45, 76}, {45, 95}, {45, 114}, {213, 76}, {213, 95}, {213, 114}, {0, 0}},
+            {{129, 45}, {192, 143}, {64, 94}, {129, 78}, {129, 99}, {129, 121}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
     };
 
     /** Slots grandes de prenda base / resultado (coordenadas del slot 16x16; el marco de 32x32 se hornea en la textura). */
@@ -88,7 +91,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
      */
     private static Inventory activoAdaptador(ModeladoBlockEntity be) {
         return new Inventory() {
-            private int real() { return ModeladoBlockEntity.ACTIVO_INICIO + be.categoria().ordinal(); }
+            private int real() { return ModeladoBlockEntity.activoSlot(be.categoria()); }
 
             @Override public int size() { return 1; }
             @Override public boolean isEmpty() { return be.getStack(real()).isEmpty(); }
@@ -171,9 +174,9 @@ public class ModeladoScreenHandler extends ScreenHandler {
         // (x, y) = origen del ítem de 16x16, centrado en cada pin del dibujo;
         // y = 36 (donde arranca el esquema, ver ModeladoScreen#ESQUEMA_Y) +
         // el y local medido sobre el PNG. Orden = índices PIN_* del BE.
-        for (int p = 0; p < ModeladoBlockEntity.PINES_TAMANO; p++) {
+        for (int p = 0; p < ModeladoBlockEntity.PINES_LOGICOS; p++) {
             int cat = p / ModeladoBlockEntity.PINES_POR_CATEGORIA, i = p % ModeladoBlockEntity.PINES_POR_CATEGORIA;
-            addSlot(new PinSlot(be, ModeladoBlockEntity.PINES_INICIO + p, mMedio + PIN_POS[cat][i][0], PIN_POS[cat][i][1]));
+            addSlot(new PinSlot(be, ModeladoBlockEntity.pinSlot(p), mMedio + PIN_POS[cat][i][0], PIN_POS[cat][i][1]));
         }
 
         addSlot(new Slot(be, ModeladoBlockEntity.PRENDA, mMedio + ENTRADA_X, SLOT_Y_IO) {
@@ -335,7 +338,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
 
         @Override
         public boolean isEnabled() {
-            int p = this.getIndex() - ModeladoBlockEntity.PINES_INICIO;
+            int p = ModeladoBlockEntity.pinDeSlot(this.getIndex());
             int cat = p / ModeladoBlockEntity.PINES_POR_CATEGORIA;
             return be.categoria().ordinal() == cat
                     && ModeladoBlockEntity.ROLES[cat][p % ModeladoBlockEntity.PINES_POR_CATEGORIA]

@@ -306,6 +306,23 @@ public final class EstampaTextures {
         return null;
     }
 
+    /**
+     * La pollera (2026-09-29, "quiero poder... sublimarla"): su tela tiene
+     * el layout de la caja del torso (ver {@code render.PolleraMalla}), así
+     * que sus caras son las del torso de la remera a largo completo — frente
+     * y espalda enteros más los costados partidos al medio, sobre un lienzo
+     * de 16: [der atrás 2 | der adelante 2 | frente 8 | izq adelante 2 | izq atrás 2].
+     */
+    private static final Prenda POLLERA = new Prenda(com.femclothes.render.CuerpoGeometria.ESCALA_TELA, 16, 12, 0, 12,
+            new Cara[] {
+                    new Cara(new int[] { 20, 20, 8, 12 }, new int[] { 4, 0, 8, 12 }, false).principal_(),
+                    new Cara(new int[] { 32, 20, 8, 12 }, new int[] { 4, 0, 8, 12 }, true).espejada().principal_(),
+                    new Cara(new int[] { 18, 20, 2, 12 }, new int[] { 2, 0, 2, 12 }, false),    // costado der delantero
+                    new Cara(new int[] { 16, 20, 2, 12 }, new int[] { 0, 0, 2, 12 }, true),     // costado der trasero
+                    new Cara(new int[] { 28, 20, 2, 12 }, new int[] { 12, 0, 2, 12 }, false),  // costado izq delantero
+                    new Cara(new int[] { 30, 20, 2, 12 }, new int[] { 14, 0, 2, 12 }, true),   // costado izq trasero
+            });
+
     /** Que prenda estampable es este stack, o null si no lo es. */
     @Nullable
     private static Prenda prendaDe(ItemStack stack) {
@@ -315,6 +332,7 @@ public final class EstampaTextures {
         // PIERNA_*) — el mapeo de caras es idéntico, se reusa tal cual.
         if (stack.getItem() == com.femclothes.item.FemclothesItems.PANTALON) return MEDIAS;
         if (stack.getItem() == com.femclothes.item.FemclothesItems.CALIENTABRAZOS) return BRAZO;
+        if (stack.getItem() instanceof com.femclothes.item.PolleraItem) return POLLERA;
         return null;   // ModItems.esEstampable tiene que decir lo mismo
     }
 

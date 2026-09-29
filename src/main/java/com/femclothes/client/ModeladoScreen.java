@@ -62,6 +62,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
             Identifier.of("femclothes", "textures/gui/container/esquema_pantalon.png"),
             Identifier.of("femclothes", "textures/gui/container/esquema_medias.png"),
             Identifier.of("femclothes", "textures/gui/container/esquema_calientabrazos.png"),
+            Identifier.of("femclothes", "textures/gui/container/esquema_pollera.png"),
     };
     /** Cuadros de la chincheta: 0 sin fijar (aguja a la vista), 1 a mitad de clavarse, 2 fijada (sin aguja). */
     private static final Identifier[] TEXTURE_CHINCHETA = {
@@ -356,7 +357,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
             int p = cat * ModeladoBlockEntity.PINES_POR_CATEGORIA + i;
             boolean usable = ModeladoBlockEntity.ROLES[cat][i] != ModeladoBlockEntity.Rol.NINGUNO;
             boolean fijado = be.pinFijado(p);
-            boolean conMolde = !be.getStack(ModeladoBlockEntity.PINES_INICIO + p).isEmpty();
+            boolean conMolde = !be.getStack(ModeladoBlockEntity.pinSlot(p)).isEmpty();
             int[] c = ModeladoScreenHandler.PIN_BTN[cat][i];
             btnPines[i].setPosition(this.x + M_MEDIO + c[0] - 8, this.y + c[1] - 8);
             btnPines[i].pin = p;
@@ -398,6 +399,10 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         combo.calientabrazosCoberturaSuperior().ifPresent(v -> sb.append("Calient. sup: ").append(v.clave).append(' '));
         combo.calientabrazosCoberturaInferior().ifPresent(v -> sb.append("Calient. inf: ").append(v.clave).append(' '));
         combo.calce().ifPresent(v -> sb.append("Calce: ").append(v.clave).append(' '));
+        combo.pollera().ifPresent(p -> {
+            p.largo().ifPresent(v -> sb.append("Pollera largo: ").append(v.clave).append(' '));
+            p.forma().ifPresent(v -> sb.append("Pollera forma: ").append(v.clave).append(' '));
+        });
         if (combo.lado() != com.femclothes.region.Lado.AMBAS) sb.append('(').append(combo.lado().clave()).append(')');
         return Text.literal(sb.toString().trim());
     }
@@ -580,7 +585,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         for (int i = 0; i < ModeladoBlockEntity.PINES_POR_CATEGORIA; i++) {
             int p = cat * ModeladoBlockEntity.PINES_POR_CATEGORIA + i;
             if (ModeladoBlockEntity.ROLES[cat][i] == ModeladoBlockEntity.Rol.NINGUNO) continue;
-            if (!be.pinFijado(p) || !be.getStack(ModeladoBlockEntity.PINES_INICIO + p).isEmpty()) continue;
+            if (!be.pinFijado(p) || !be.getStack(ModeladoBlockEntity.pinSlot(p)).isEmpty()) continue;
             ComboCorte combo = be.pinCombo(p);
             if (combo == null) continue;
             ItemStack icono = iconoDe(combo);

@@ -132,6 +132,8 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RED_ARNES_TIRANTES);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RED_ARNES_BANDAS);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RED_LISA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_POLLERA_CAMPANA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_POLLERA_TABLEADA);
             })
             .build();
 

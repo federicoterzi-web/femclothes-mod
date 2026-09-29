@@ -121,7 +121,7 @@ public class ModeladoBlock extends BlockWithEntity {
         ModeladoBlockEntity.Categoria categoria = be.categoria();
         int destino = -1;
         if (ModeladoBlockEntity.esMoldeDeCategoria(stack, categoria)) {
-            int activo = ModeladoBlockEntity.ACTIVO_INICIO + categoria.ordinal();
+            int activo = ModeladoBlockEntity.activoSlot(categoria);
             if (be.getStack(activo).isEmpty()) {
                 destino = activo;
             } else {

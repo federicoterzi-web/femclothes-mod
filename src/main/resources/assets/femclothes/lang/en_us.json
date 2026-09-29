@@ -419,5 +419,16 @@
   "femclothes.elegir_cuerpo.tooltip.zona.rubor": "Blush: knees, elbows, chest and face. Automatic = your own color, more intense",
   "femclothes.elegir_cuerpo.fuerza_rubor": "Blush strength: %s%%",
   "femclothes.debug.insumos.nombre": "FemClothes Supplies",
-  "femclothes.debug.insumos.entregado": "[femclothes] Supplies given: 64 of each dye and 64 paper"
+  "femclothes.debug.insumos.entregado": "[femclothes] Supplies given: 64 of each dye and 64 paper",
+  "femclothes.pollera.tooltip": "%s · %s",
+  "femclothes.pollera.largo.minimo": "Micro",
+  "femclothes.pollera.largo.corto": "Mini",
+  "femclothes.pollera.largo.medio": "Knee-length",
+  "femclothes.pollera.largo.mediolargo": "Midi",
+  "femclothes.pollera.largo.largo": "Long",
+  "femclothes.pollera.largo.maximo": "Ankle-length",
+  "femclothes.pollera.forma.campana": "A-line",
+  "femclothes.pollera.forma.tableada": "Pleated",
+  "item.femclothes.molde_pollera_campana": "Skirt Pattern: A-line",
+  "item.femclothes.molde_pollera_tableada": "Skirt Pattern: Pleated"
 }

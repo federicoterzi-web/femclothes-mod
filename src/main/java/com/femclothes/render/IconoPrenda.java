@@ -50,8 +50,12 @@ public final class IconoPrenda {
     private static final int TORSO = 1, BRAZO_DER = 2, BRAZO_IZQ = 3, PIERNA_DER = 4, PIERNA_IZQ = 5,
             TORSO_ATRAS = 6, POLLERA = 7;
 
-    /** Cara grande de un gajo de la pollera en su textura de 64 (ver PolleraGeometria: UV en (0,0), ANCHO_GAJO 1.79, LARGO_GAJO 9). */
-    private static final float POLLERA_X = 0f, POLLERA_Y = 1.79f, POLLERA_ANCHO = 1.79f, POLLERA_ALTO = 9f;
+    /**
+     * La pollera (2026-09-29): su tela tiene el layout de la caja del torso
+     * (ver PolleraMalla) — el ícono muestra el frente (20..28 x 20..32 en
+     * coordenadas de 64). El largo recorta el dibujo desde abajo.
+     */
+    private static final float POLLERA_X = 20f, POLLERA_Y = 20f, POLLERA_ANCHO = 8f, POLLERA_ALTO = 12f;
 
     private record Plantilla(NativeImage sombra, NativeImage mapa) {}
 
@@ -111,6 +115,8 @@ public final class IconoPrenda {
             piezas = PiezasDePrenda.de(stack, null);
             if (stack.getItem() instanceof PolleraItem) texturaPollera = GarmentFeatureRenderer.texturaPollera(stack);
             clave = claveDe(nombre, piezas, texturaPollera);
+            // El largo de la pollera no cambia su textura, pero sí el recorte del ícono.
+            if (stack.getItem() instanceof PolleraItem) clave += "|largo:" + PolleraItem.largo(stack);
             if (POR_STACK.size() > 4 * MAXIMO_ICONOS) POR_STACK.clear();
             POR_STACK.put(hash, new PorStack(clave, ahora));
         }
@@ -246,6 +252,14 @@ public final class IconoPrenda {
 
                 int texel;   // ABGR
                 if (codigo == POLLERA) {
+                    // Largo: el dibujo es la pollera más larga; lo que queda
+                    // por debajo del ruedo real se recorta (y lleva contorno).
+                    float fraccion = com.femclothes.item.PolleraItem.largo(stack).fraccion();
+                    if (v > 0.1f && v > fraccion) {
+                        cortado[y * LADO + x] = true;
+                        continue;
+                    }
+                    v = v <= 0.1f ? v : Math.min(0.999f, v / fraccion);
                     if (pollera == null) {
                         texel = abgrDe(colorLiso);
                     } else {

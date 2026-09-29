@@ -107,8 +107,7 @@ public final class PatronGenerador {
      * Qué cajas pinta un patrón para cada prenda — la pierna/brazo que
      * gobierna esa prenda (medias y pantalón comparten pierna, calienta-
      * brazos usa brazo, remera usa torso+los dos brazos). Prenda sin
-     * entrada acá (ej. "pollera", UV propio sin mapear todavía) → sin
-     * patrón procedural, cae a la prenda lisa como antes.
+     * entrada acá → sin patrón procedural, cae a la prenda lisa.
      */
     private static final Map<String, List<Caja>> CAJAS_POR_PRENDA = Map.of(
             "socks", List.of(PIERNA_DER, PIERNA_IZQ),
@@ -119,7 +118,11 @@ public final class PatronGenerador {
             // patrón de acá en vez de quedar SIEMPRE lisa.
             "pantalon", List.of(PIERNA_DER, PIERNA_IZQ, TORSO),
             "calientabrazos", List.of(BRAZO_DER, BRAZO_IZQ),
-            "remera", List.of(TORSO, BRAZO_DER, BRAZO_IZQ));
+            "remera", List.of(TORSO, BRAZO_DER, BRAZO_IZQ),
+            // La pollera nueva (2026-09-29, "quiero poder... teñirla"): su tela
+            // usa el layout de la caja del TORSO, envuelto en la campana (ver
+            // render.PolleraMalla), así que los patrones van en esa caja.
+            "pollera", List.of(TORSO));
 
     /**
      * Dónde cae la rayita a lo largo del eje que le toca según

@@ -96,6 +96,14 @@ public final class ModeladoMod {
     /** Arnés de bandas (2026-09-28). */
     public static final MoldeRedItem MOLDE_RED_ARNES_BANDAS = new MoldeRedItem(new Item.Settings().maxCount(1), PatronRed.ARNES_BANDAS);
 
+    // ── molde de pollera (a pedido 2026-09-29) ─────────────────────────
+    // Forma de la pollera: campana o tableada. Exclusivo de la pollera.
+
+    public static final MoldePolleraItem MOLDE_POLLERA_CAMPANA = new MoldePolleraItem(new Item.Settings().maxCount(1),
+            com.femclothes.item.PolleraForma.CAMPANA);
+    public static final MoldePolleraItem MOLDE_POLLERA_TABLEADA = new MoldePolleraItem(new Item.Settings().maxCount(1),
+            com.femclothes.item.PolleraForma.TABLEADA);
+
     public static void register() {
         Identifier bloqueId = Identifier.of(Femclothes.MOD_ID, "modelado");
         Registry.register(Registries.BLOCK, bloqueId, MODELADO_BLOCK);
@@ -132,6 +140,8 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_red_arnes_x"), MOLDE_RED_ARNES_X);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_red_arnes_tirantes"), MOLDE_RED_ARNES_TIRANTES);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_red_arnes_bandas"), MOLDE_RED_ARNES_BANDAS);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_pollera_campana"), MOLDE_POLLERA_CAMPANA);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_pollera_tableada"), MOLDE_POLLERA_TABLEADA);
 
         // "Guardar diseño" con nombre (2026-09-27): el nombre viaja como paquete propio, ver GuardarDisenoPayload.
         PayloadTypeRegistry.playC2S().register(GuardarDisenoPayload.ID, GuardarDisenoPayload.CODEC);

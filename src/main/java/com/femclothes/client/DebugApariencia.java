@@ -85,26 +85,19 @@ public final class DebugApariencia {
     }
 
     /**
-     * Comparar en el juego los 4 estilos de pollera traídos de un
-     * Artifact (campana/gajos/dos_vuelos/movimiento × 3 largos) antes de
-     * invertir en integrarlos como molde real de la Modeladora — a
-     * pedido (2026-09-17). Solo cambia campos estáticos de {@link
-     * com.femclothes.render.PolleraJsonGeometria}; no hay UI ni
-     * persistencia, es puramente para mirar.
+     * Cómo se comporta la pollera con las piernas (2026-09-29, "probaria las
+     * dos"): {@code abierta} = el ruedo se corre donde pasa cada pierna,
+     * {@code rigida} = quieta pero más ancha. Solo cambia lo que VE quien lo
+     * usa, sin persistencia — es para comparar en el juego.
      */
     private static LiteralArgumentBuilder<FabricClientCommandSource> pollera() {
         LiteralArgumentBuilder<FabricClientCommandSource> raiz = ClientCommandManager.literal("pollera");
-        for (String est : new String[]{"campana", "gajos", "dos_vuelos", "movimiento"}) {
-            LiteralArgumentBuilder<FabricClientCommandSource> nodoEstilo = ClientCommandManager.literal(est);
-            for (String lg : new String[]{"rodilla", "media_pierna", "tobillo"}) {
-                nodoEstilo.then(ClientCommandManager.literal(lg).executes(ctx -> {
-                    com.femclothes.render.PolleraJsonGeometria.estilo = est;
-                    com.femclothes.render.PolleraJsonGeometria.largo = lg;
-                    ctx.getSource().sendFeedback(Text.literal("[femclothes debug] pollera=" + est + "/" + lg));
-                    return 1;
-                }));
-            }
-            raiz.then(nodoEstilo);
+        for (String modo : new String[]{"abierta", "rigida"}) {
+            raiz.then(ClientCommandManager.literal(modo).executes(ctx -> {
+                com.femclothes.render.PolleraMalla.piernasAbiertas = modo.equals("abierta");
+                ctx.getSource().sendFeedback(Text.literal("[femclothes debug] pollera piernas=" + modo));
+                return 1;
+            }));
         }
         return raiz;
     }

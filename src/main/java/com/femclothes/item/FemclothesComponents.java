@@ -452,6 +452,24 @@ public final class FemclothesComponents {
                     .packetCodec(com.femclothes.modelado.ComboCorte.PACKET_CODEC)
                     .build());
 
+    /** Largo de la pollera (§{@link PolleraLargo}); ausente = MEDIO. */
+    public static final ComponentType<PolleraLargo> POLLERA_LARGO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "pollera_largo"),
+            ComponentType.<PolleraLargo>builder()
+                    .codec(StringIdentifiable.createCodec(PolleraLargo::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PolleraLargo.values()[i], Enum::ordinal))
+                    .build());
+
+    /** Forma de la pollera (§{@link PolleraForma}); ausente = CAMPANA. */
+    public static final ComponentType<PolleraForma> POLLERA_FORMA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "pollera_forma"),
+            ComponentType.<PolleraForma>builder()
+                    .codec(StringIdentifiable.createCodec(PolleraForma::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PolleraForma.values()[i], Enum::ordinal))
+                    .build());
+
     public static void init() {
         // fuerza class-loading
     }

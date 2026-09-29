@@ -419,5 +419,16 @@
   "femclothes.elegir_cuerpo.tooltip.zona.rubor": "Rubor: rodillas, codos, pecho y cara. Automático = tu mismo color, más intenso",
   "femclothes.elegir_cuerpo.fuerza_rubor": "Fuerza del rubor: %s%%",
   "femclothes.debug.insumos.nombre": "Insumos FemClothes",
-  "femclothes.debug.insumos.entregado": "[femclothes] Insumos entregados: 64 de cada tinte y 64 de papel"
+  "femclothes.debug.insumos.entregado": "[femclothes] Insumos entregados: 64 de cada tinte y 64 de papel",
+  "femclothes.pollera.tooltip": "%s · %s",
+  "femclothes.pollera.largo.minimo": "Micro",
+  "femclothes.pollera.largo.corto": "Mini",
+  "femclothes.pollera.largo.medio": "A la rodilla",
+  "femclothes.pollera.largo.mediolargo": "Midi",
+  "femclothes.pollera.largo.largo": "Larga",
+  "femclothes.pollera.largo.maximo": "Hasta el tobillo",
+  "femclothes.pollera.forma.campana": "Campana",
+  "femclothes.pollera.forma.tableada": "Tableada",
+  "item.femclothes.molde_pollera_campana": "Molde de Pollera: Campana",
+  "item.femclothes.molde_pollera_tableada": "Molde de Pollera: Tableada"
 }

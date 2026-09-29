@@ -99,15 +99,54 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
     public static final int PORPRENDA_TOTAL = PORPRENDA_POR_CATEGORIA + PORPRENDA_EXTRA_POR_CATEGORIA;
     public static final int PORPRENDA_EXTRA_INICIO = PINES_FIN;
     public static final int PORPRENDA_EXTRA_FIN = PORPRENDA_EXTRA_INICIO + PORPRENDA_EXTRA_POR_CATEGORIA * 4;
-    public static final int TAMANO = PORPRENDA_EXTRA_FIN;
+    /**
+     * Lo que ya existía antes de la Pollera: se guarda con
+     * {@code Inventories.writeNbt}, que anota el número de slot en un BYTE
+     * (0..255) — por eso lo nuevo no puede ir en la misma lista.
+     */
+    public static final int TAMANO_VIEJO = PORPRENDA_EXTRA_FIN;
+    /**
+     * Categoría Pollera (2026-09-29, "Categoría Pollera en la Modeladora"):
+     * su Activo, sus 12 pines y sus 36 "Moldes de Pollera", al FINAL del
+     * inventario (no se corre ningún índice viejo) y guardados en una lista
+     * NBT aparte ({@code "pollera_items"}).
+     */
+    public static final int POLLERA_ACTIVO = TAMANO_VIEJO;
+    public static final int POLLERA_PINES_INICIO = POLLERA_ACTIVO + 1;
+    public static final int POLLERA_PORPRENDA_INICIO = POLLERA_PINES_INICIO + PINES_POR_CATEGORIA;
+    public static final int TAMANO = POLLERA_PORPRENDA_INICIO + PORPRENDA_TOTAL;
+    /** Pines "lógicos": 12 por categoría, p = categoría*12 + i (ver {@link #pinSlot}). */
+    public static final int PINES_LOGICOS = PINES_POR_CATEGORIA * 5;
+
+    /** Slot real del pin lógico {@code p}. */
+    public static int pinSlot(int p) {
+        return p < PINES_TAMANO ? PINES_INICIO + p : POLLERA_PINES_INICIO + (p - PINES_TAMANO);
+    }
+
+    /** Pin lógico de un slot real, o -1 si no es un pin. */
+    public static int pinDeSlot(int slot) {
+        if (slot >= PINES_INICIO && slot < PINES_FIN) return slot - PINES_INICIO;
+        if (slot >= POLLERA_PINES_INICIO && slot < POLLERA_PINES_INICIO + PINES_POR_CATEGORIA) {
+            return PINES_TAMANO + (slot - POLLERA_PINES_INICIO);
+        }
+        return -1;
+    }
+
+    /** Slot real del Activo de {@code cat}. */
+    public static int activoSlot(Categoria cat) {
+        return cat == Categoria.POLLERA ? POLLERA_ACTIVO : ACTIVO_INICIO + cat.ordinal();
+    }
 
     /** Qué prenda está configurando ahora el jugador — cicla con {@link #BTN_CATEGORIA}. */
-    public enum Categoria { REMERA, PANTALON, MEDIAS, CALIENTABRAZOS }
+    /** POLLERA al final (2026-09-29): sus slots van al final del inventario, ver {@link #POLLERA_ACTIVO}. */
+    public enum Categoria { REMERA, PANTALON, MEDIAS, CALIENTABRAZOS, POLLERA }
 
     /** Qué hace cada pin del esquema (2026-09-26, pines para las 4 prendas). NINGUNO = pin sin usar en esa categoría. */
     public enum Rol { CUELLO, MAT1, MAT2, MAT3, MANGA_IZQ, MANGA_DER, CALCE, TORSO, TIRO, BOTA_IZQ, BOTA_DER,
         SUP_IZQ, SUP_DER, INF_IZQ, INF_DER,
-        PERS_IZQ1, PERS_IZQ2, PERS_IZQ3, PERS_DER1, PERS_DER2, PERS_DER3, NINGUNO }
+        PERS_IZQ1, PERS_IZQ2, PERS_IZQ3, PERS_DER1, PERS_DER2, PERS_DER3, NINGUNO,
+        /** Pollera (2026-09-29): molde de forma y molde de rango para el largo. */
+        FORMA_POLLERA, LARGO_POLLERA }
 
     /** Rol de cada uno de los 8 pines por categoría — MISMO orden que {@code ModeladoScreenHandler#PIN_POS}. */
     public static final Rol[][] ROLES = {
@@ -119,6 +158,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
                     Rol.PERS_IZQ3, Rol.PERS_DER1, Rol.PERS_DER2, Rol.PERS_DER3, Rol.NINGUNO},
             {Rol.SUP_IZQ, Rol.SUP_DER, Rol.INF_IZQ, Rol.INF_DER, Rol.CALCE, Rol.PERS_IZQ1, Rol.PERS_IZQ2,
                     Rol.PERS_IZQ3, Rol.PERS_DER1, Rol.PERS_DER2, Rol.PERS_DER3, Rol.NINGUNO},
+            // Pollera (2026-09-29): Forma, Largo, Calce y los 3 materiales.
+            {Rol.FORMA_POLLERA, Rol.LARGO_POLLERA, Rol.CALCE, Rol.MAT1, Rol.MAT2, Rol.MAT3,
+                    Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
     };
 
     /** 15s a 20 ticks — a pedido (2026-09-21, "que cada maquina tome su tiempo... 15 la modeladora"). */
@@ -217,7 +259,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
     public Categoria categoria() { return categoria; }
 
     /** El slot Activo dedicado de esa categoría (de los 4 en {@link #ACTIVO_INICIO}). */
-    public ItemStack activoStack(Categoria cat) { return items.get(ACTIVO_INICIO + cat.ordinal()); }
+    public ItemStack activoStack(Categoria cat) { return items.get(activoSlot(cat)); }
 
     private ItemStack activoActual() { return activoStack(categoria); }
 
@@ -239,6 +281,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
 
     /** Índice de inventario del lugar {@code i} (0..{@link #PORPRENDA_TOTAL}-1) del banco de {@code cat}, en el orden de la pantalla. */
     public static int porPrendaSlot(Categoria cat, int i) {
+        if (cat == Categoria.POLLERA) return POLLERA_PORPRENDA_INICIO + i;
         return i < PORPRENDA_POR_CATEGORIA ? porPrendaInicio(cat) + i
                 : PORPRENDA_EXTRA_INICIO + cat.ordinal() * PORPRENDA_EXTRA_POR_CATEGORIA + (i - PORPRENDA_POR_CATEGORIA);
     }
@@ -278,6 +321,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
                     || (item instanceof MoldeItem m && m.eje == MoldeItem.Eje.MANGA);
             case PANTALON, MEDIAS -> false;
             case CALIENTABRAZOS -> item instanceof MoldeItem m && m.eje == MoldeItem.Eje.MANGA;
+            case POLLERA -> item instanceof MoldePolleraItem;
         };
     }
 
@@ -531,7 +575,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
                 cambio = true;
             }
             default -> {
-                if (id >= BTN_PIN_BASE && id < BTN_PIN_BASE + PINES_TAMANO) {
+                if (id >= BTN_PIN_BASE && id < BTN_PIN_BASE + PINES_LOGICOS) {
                     cambio = chinchetaPin(id - BTN_PIN_BASE);
                     if (!cambio) return false;
                 } else if (id >= BTN_CARGAR_DISENO_BASE && id < BTN_CARGAR_DISENO_BASE + DISENOS_MAXIMO) {
@@ -633,6 +677,12 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
                         ? ComboCorte.calientabrazosSuperior(v, ladoBorrador)
                         : ComboCorte.calientabrazosInferior(v, ladoBorrador);
             }
+            case POLLERA -> {
+                if (activo.getItem() instanceof MoldeRangoItem m)
+                    yield ComboCorte.polleraLargo(com.femclothes.item.PolleraLargo.valueOf(m.rango.name()));
+                if (activo.getItem() instanceof MoldePolleraItem m) yield ComboCorte.polleraForma(m.valor);
+                yield ComboCorte.VACIO;
+            }
         };
         return agregarFijada(combo.conIcono(icono));
     }
@@ -700,6 +750,13 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
             case TIRO -> {
                 if (item instanceof MoldeTorsoItem m) c = ComboCorte.tiro(tiroDeRango(m.rango));
             }
+            case FORMA_POLLERA -> {
+                if (item instanceof MoldePolleraItem m) c = ComboCorte.polleraForma(m.valor);
+            }
+            case LARGO_POLLERA -> {
+                // Los 6 rangos del pantalón, 1 a 1 (2026-09-29, "Los 6 rangos del pantalón").
+                if (item instanceof MoldeRangoItem m) c = ComboCorte.polleraLargo(com.femclothes.item.PolleraLargo.valueOf(m.rango.name()));
+            }
             case BOTA_IZQ, BOTA_DER -> {
                 if (item instanceof MoldeRangoItem m) c = ComboCorte.pantalonInferior(pantalonDeRango(m.rango), lado);
             }
@@ -753,8 +810,8 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
     // CHINCHETA se fija: el corte queda aplicado y el molde vuelve al
     // almacén, así el mismo molde sirve para el otro lado. pinCombo = el
     // corte que aplica ese pin ahora; pinFijado = si ya se chinchó.
-    private final ComboCorte[] pinCombo = new ComboCorte[PINES_TAMANO];
-    private final boolean[] pinFijado = new boolean[PINES_TAMANO];
+    private final ComboCorte[] pinCombo = new ComboCorte[PINES_LOGICOS];
+    private final boolean[] pinFijado = new boolean[PINES_LOGICOS];
 
     public boolean pinFijado(int i) { return pinFijado[i]; }
     public ComboCorte pinCombo(int i) { return pinCombo[i]; }
@@ -794,8 +851,8 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
      * (no se pierde nada, queda en el pin).
      */
     private boolean chinchetaPin(int idx) {
-        if (idx < 0 || idx >= PINES_TAMANO || idx / PINES_POR_CATEGORIA != categoria.ordinal()) return false;
-        int slot = PINES_INICIO + idx;
+        if (idx < 0 || idx >= PINES_LOGICOS || idx / PINES_POR_CATEGORIA != categoria.ordinal()) return false;
+        int slot = pinSlot(idx);
         ItemStack molde = items.get(slot);
         List<ComboCorte> lista = fijadasPorCategoria.get(categoria);
         if (!molde.isEmpty()) {
@@ -851,9 +908,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
         for (int i = categoria.ordinal() * PINES_POR_CATEGORIA; i < (categoria.ordinal() + 1) * PINES_POR_CATEGORIA; i++) {
             pinCombo[i] = null;
             pinFijado[i] = false;
-            ItemStack en = items.get(PINES_INICIO + i);
+            ItemStack en = items.get(pinSlot(i));
             if (en.isEmpty()) continue;
-            items.set(PINES_INICIO + i, ItemStack.EMPTY);
+            items.set(pinSlot(i), ItemStack.EMPTY);
             if (!guardarMolde(categoria, en.copyWithCount(1)) && world != null && !world.isClient) {
                 net.minecraft.util.ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, en);
             }
@@ -905,9 +962,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
             if (!quitada.equals(pinCombo[i])) continue;
             pinCombo[i] = null;
             pinFijado[i] = false;
-            ItemStack en = items.get(PINES_INICIO + i);
+            ItemStack en = items.get(pinSlot(i));
             if (!en.isEmpty()) {
-                items.set(PINES_INICIO + i, ItemStack.EMPTY);
+                items.set(pinSlot(i), ItemStack.EMPTY);
                 if (world != null && !world.isClient) {
                     net.minecraft.util.ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, en);
                 }
@@ -953,6 +1010,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
         if (stack.getItem() instanceof com.femclothes.item.PantalonItem) return Categoria.PANTALON;
         if (stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID) return Categoria.MEDIAS;
         if (stack.getItem() instanceof com.femclothes.item.CalientabrazosItem) return Categoria.CALIENTABRAZOS;
+        if (stack.getItem() instanceof com.femclothes.item.PolleraItem) return Categoria.POLLERA;
         return null;
     }
 
@@ -1180,7 +1238,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
         if (!r.isEmpty()) {
             markDirty();
             if (slot == PRENDA || slot == SALIDA) sincronizar();
-            if (slot >= PINES_INICIO && slot < PINES_FIN) pinCambio(slot - PINES_INICIO, antes, items.get(slot));
+            if (pinDeSlot(slot) >= 0) pinCambio(pinDeSlot(slot), antes, items.get(slot));
         }
         return r;
     }
@@ -1190,17 +1248,18 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
         ItemStack antes = items.get(slot).copy();
         ItemStack r = Inventories.removeStack(items, slot);
         if ((slot == PRENDA || slot == SALIDA) && !antes.isEmpty()) sincronizar();
-        if (slot >= PINES_INICIO && slot < PINES_FIN && !antes.isEmpty()) pinCambio(slot - PINES_INICIO, antes, ItemStack.EMPTY);
+        if (pinDeSlot(slot) >= 0 && !antes.isEmpty()) pinCambio(pinDeSlot(slot), antes, ItemStack.EMPTY);
         return r;
     }
 
     @Override
     public void setStack(int slot, ItemStack stack) {
-        ItemStack antesPin = slot >= PINES_INICIO && slot < PINES_FIN ? items.get(slot).copy() : ItemStack.EMPTY;
+        int pin = pinDeSlot(slot);
+        ItemStack antesPin = pin >= 0 ? items.get(slot).copy() : ItemStack.EMPTY;
         items.set(slot, stack);
-        if (slot >= PINES_INICIO && slot < PINES_FIN) {
+        if (pin >= 0) {
             if (stack.getCount() > 1) stack.setCount(1);
-            pinCambio(slot - PINES_INICIO, antesPin, stack);
+            pinCambio(pin, antesPin, stack);
         }
         if (stack.getCount() > getMaxCountPerStack()) stack.setCount(getMaxCountPerStack());
         if (slot == PRENDA && !stack.isEmpty() && guiAbiertas == 0 && hayFijadas()) {
@@ -1222,8 +1281,8 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
         if (encendida) return false; // apagada para tocar el inventario, salvo la prenda física (ver ModeladoBlock)
         if (slot == SALIDA) return false;
         if (slot == PRENDA) return com.femclothes.item.FemclothesDye.isClothing(stack);
-        if (slot >= PINES_INICIO && slot < PINES_FIN) {
-            int p = slot - PINES_INICIO;
+        if (pinDeSlot(slot) >= 0) {
+            int p = pinDeSlot(slot);
             Categoria cat = Categoria.values()[p / PINES_POR_CATEGORIA];
             boolean ok = categoria == cat && pinAcepta(cat, p % PINES_POR_CATEGORIA, stack);
             if (!ok) LOG.info("isValid(pin) RECHAZADO: item={} clase={} pin={} cat={} categoriaActual={} rol={}",
@@ -1231,6 +1290,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
                     ROLES[cat.ordinal()][p % PINES_POR_CATEGORIA]);
             return ok;
         }
+        if (slot == POLLERA_ACTIVO) return false; // sin uso, igual que los otros (ver abajo)
         if (slot >= ACTIVO_INICIO && slot < ACTIVO_FIN) {
             Categoria cat = Categoria.values()[slot - ACTIVO_INICIO];
             // El Activo de REMERA quedó sin uso (2026-09-24, esquema de
@@ -1238,6 +1298,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
             // molde invisible atrás del diagrama sin ninguna pista visual.
             if (cat != null) return false;
             return esMoldeDeCategoria(stack, cat);
+        }
+        if (slot >= POLLERA_PORPRENDA_INICIO && slot < POLLERA_PORPRENDA_INICIO + PORPRENDA_TOTAL) {
+            return esMoldeExclusivoDe(stack, Categoria.POLLERA) || categoriaDe(stack) == Categoria.POLLERA;
         }
         if ((slot >= PORPRENDA_INICIO && slot < PORPRENDA_FIN) || (slot >= PORPRENDA_EXTRA_INICIO && slot < PORPRENDA_EXTRA_FIN)) {
             Categoria cat = slot < PORPRENDA_FIN
@@ -1314,7 +1377,8 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
         return item instanceof MoldeItem || item instanceof MoldeDeCorteItem
                 || item instanceof MoldeRangoItem || item instanceof MoldeTorsoItem
                 || item instanceof MoldeCalceItem || item instanceof MoldeRedItem
-                || item instanceof MoldeCuelloItem || item instanceof ClothingPatternItem;
+                || item instanceof MoldeCuelloItem || item instanceof ClothingPatternItem
+                || item instanceof MoldePolleraItem;
     }
 
     @Override
@@ -1332,7 +1396,14 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
         super.readNbt(nbt, lookup);
         items.clear();
-        Inventories.readNbt(nbt, items, lookup);
+        // Los primeros TAMANO_VIEJO van en la lista de siempre; lo de la
+        // Pollera, aparte (el índice de slot de Inventories es un byte).
+        DefaultedList<ItemStack> viejos = DefaultedList.ofSize(TAMANO_VIEJO, ItemStack.EMPTY);
+        Inventories.readNbt(nbt, viejos, lookup);
+        for (int i = 0; i < TAMANO_VIEJO; i++) items.set(i, viejos.get(i));
+        DefaultedList<ItemStack> nuevos = DefaultedList.ofSize(TAMANO - TAMANO_VIEJO, ItemStack.EMPTY);
+        Inventories.readNbt(nbt.getCompound("pollera_items"), nuevos, lookup);
+        for (int i = 0; i < nuevos.size(); i++) items.set(TAMANO_VIEJO + i, nuevos.get(i));
         encendida = nbt.getBoolean("encendida");
         estado = Estado.values()[nbt.getInt("estado")];
         progreso = nbt.getInt("progreso");
@@ -1371,7 +1442,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
             }
         }
 
-        for (int i = 0; i < PINES_TAMANO; i++) {
+        for (int i = 0; i < PINES_LOGICOS; i++) {
             pinCombo[i] = null;
             pinFijado[i] = nbt.getBoolean("pin_fijado_" + i);
             if (nbt.contains("pin_combo_" + i)) {
@@ -1392,7 +1463,14 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
         super.writeNbt(nbt, lookup);
-        Inventories.writeNbt(nbt, items, lookup);
+        DefaultedList<ItemStack> viejos = DefaultedList.ofSize(TAMANO_VIEJO, ItemStack.EMPTY);
+        for (int i = 0; i < TAMANO_VIEJO; i++) viejos.set(i, items.get(i));
+        Inventories.writeNbt(nbt, viejos, lookup);
+        DefaultedList<ItemStack> nuevos = DefaultedList.ofSize(TAMANO - TAMANO_VIEJO, ItemStack.EMPTY);
+        for (int i = 0; i < nuevos.size(); i++) nuevos.set(i, items.get(TAMANO_VIEJO + i));
+        NbtCompound polleraNbt = new NbtCompound();
+        Inventories.writeNbt(polleraNbt, nuevos, lookup);
+        nbt.put("pollera_items", polleraNbt);
         nbt.putBoolean("encendida", encendida);
         nbt.putInt("estado", estado.ordinal());
         nbt.putInt("progreso", progreso);
@@ -1428,7 +1506,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
             nbt.put("disenos_" + cat.name(), disenos);
         }
 
-        for (int i = 0; i < PINES_TAMANO; i++) {
+        for (int i = 0; i < PINES_LOGICOS; i++) {
             nbt.putBoolean("pin_fijado_" + i, pinFijado[i]);
             if (pinCombo[i] != null) {
                 int idx = i;

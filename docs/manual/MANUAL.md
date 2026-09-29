@@ -46,11 +46,13 @@ Cada máquina **no consume la prenda ni los moldes**: la prenda sale modificada 
 | Pantalón | Piernas (exterior) | Largo de pierna (por lado), tiro, calce, trama | Sí | Sí |
 | Medias | Medias | Largo arriba y abajo (por lado), calce, trama | Sí | Sí |
 | Calientabrazos | Brazos | Cobertura arriba y abajo (por lado), calce, trama | Sí | Sí |
-| Pollera | Piernas (exterior) | — (todavía sin moldes) | Sí | No |
+| Pollera | Piernas (exterior) | Forma (campana o tableada), largo (6), calce, trama | Sí | Sí (frente y espalda) |
 
 **Capas de dibujo.** Las prendas se dibujan en orden fijo, así una no borra a la otra: cuerpo base → medias → calientabrazos → pantalón → remera → pollera. Donde una prenda no tiene tela (una media corta, una remera sin mangas) se ve lo que hay abajo.
 
 **El ícono muestra la prenda de verdad.** Los íconos de remera, pantalón, pollera, medias y calientabrazos son de 64×64 y se arman con la misma tela que se ve puesta: aparecen las capas y los patrones de Tintes, cada manga o pierna con su color, las redes y los arneses, las fotos de la Sublimadora y el largo real (manga corta, crop, short, zoquete). La remera tiene un dibujo por cuello (redondo, V, polera).
+
+**La pollera** es una malla propia que baja desde la cintura y se abre hacia el ruedo. Puede ser **campana** (lisa) o **tableada** (pliegues en V) y tiene 6 largos, del micro hasta el tobillo. Al caminar, el ruedo se corre para afuera donde pasa cada pierna, así no la atraviesa; con `/femclothesdebug pollera rigida` queda quieta y un poco más ancha (`abierta` vuelve al modo normal; es para comparar). Su tela tiene el mismo formato que las demás prendas, así que se tiñe con patrones y zonas, se estampa y se le puede poner red.
 
 **Varias prendas del mismo tipo.** Cada slot de Trinkets tiene **4 lugares**: se pueden llevar a la vez un croptop sobre un remerón largo, o medias de red debajo de unas medias cortas.
 
@@ -128,7 +130,7 @@ La Modeladora cambia el **corte** de la prenda. En el centro está el **dibujo d
 
 **Cómo se usa:**
 
-1. Elegí la prenda con el botón **Categoría** (remera, pantalón, medias, calientabrazos).
+1. Elegí la prenda con el botón **Categoría** (remera, pantalón, medias, calientabrazos, pollera).
 2. Arrastrá un **molde** al pin que quieras cambiar.
 3. Apretá la **chincheta** del pin: el corte queda fijado y el molde vuelve al almacén. En el pin queda un ícono fantasma del molde fijado.
 4. Click en la chincheta de un pin fijado lo quita.
@@ -148,16 +150,18 @@ La Modeladora cambia el **corte** de la prenda. En el centro está el **dibujo d
 | Pantalón | Tiro, Corte Bota Izq., Corte Bota Der., Calce, 3 de Materiales |
 | Medias | Corte Superior e Inferior de cada pierna, Calce, 3 de Personalización por lado |
 | Calientabrazos | Corte Superior e Inferior de cada brazo, Calce, 3 de Personalización por lado |
+| Pollera | Forma (molde de pollera), Largo (molde de rango), Calce, 3 de Materiales |
 
 ### Los moldes
 
 | Molde | Dónde va | Qué hace |
 |---|---|---|
-| **Molde de rango** (Mínimo, Corto, Medio, Medio largo, Largo, Máximo) | Mangas, botas, cortes sup./inf. | Hasta dónde llega la tela. Sirve para todas las prendas: cada una lo traduce a su propia medida (una manga "corta" llega al codo, una media "corta" es un zoquete). |
+| **Molde de rango** (Mínimo, Corto, Medio, Medio largo, Largo, Máximo) | Mangas, botas, cortes sup./inf., largo de pollera | Hasta dónde llega la tela. Sirve para todas las prendas: cada una lo traduce a su propia medida (una manga "corta" llega al codo, una media "corta" es un zoquete). |
 | **Molde de torso** (Corto, Medio, Largo) | Corte inferior de remera, Tiro de pantalón | Largo de la remera (crop, normal, largo) o altura del tiro. |
 | **Molde de cuello** (Redondo, V, Polera) | Cuello de remera | Forma del cuello. |
 | **Molde de manga** | Activo (remera, calientabrazos) | Molde viejo de manga: cada uso pasa al largo siguiente. |
 | **Molde de calce** (Pegado, Ajustado, Normal, Suelto, Oversize) | Calce | Qué tan despegada del cuerpo va la prenda. |
+| **Molde de pollera** (Campana, Tableada) | Forma de la pollera | Pollera lisa en campana o tableada con pliegues. |
 | **Molde de red** | Materiales / Personalización | La trama de la tela (ver abajo). |
 | **Molde de corte** | Activo | Un combo de cortes guardado en un solo ítem. |
 
@@ -287,7 +291,7 @@ Ejemplos: corazones rojos y rosas alternados con contorno negro (3 colores, Cont
 
 ## 8. Sublimadora
 
-La Sublimadora **imprime fotos** del mod Camerapture sobre remeras, pantalones, medias y calientabrazos. La pollera todavía no se puede estampar: su geometría en abanico no encaja con el mapeo de estampas.
+La Sublimadora **imprime fotos** del mod Camerapture sobre remeras, pantalones, medias, calientabrazos y polleras (en la pollera, Frente y Espalda cubren cada mitad de la campana).
 
 > *Captura pendiente: la interfaz se rehízo el 2026-09-28 con el mismo estilo que Tintes y la Modeladora.*
 
@@ -347,6 +351,7 @@ El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría 
 | `/femclothesdebug skin` | Cicla skins de prueba (Steve, Alex, Zuri, Noor, Kai) y la tuya. |
 | `/femclothesdebug slim` / `ancho` / `automodelo` | Fuerza brazos finos, anchos, o los de la skin. |
 | `/femclothesdebug reset` | Vuelve a tu skin. |
+| `/femclothesdebug pollera abierta` / `rigida` | Cómo se comporta la pollera con las piernas: se abre donde pasan o queda quieta y más ancha. Solo para vos, para comparar. |
 
 ## 11. Recetas
 
@@ -369,7 +374,7 @@ El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría 
 | Rayas superiores | Hilo / papel / papel (filas) |
 | Tres rayas | Hilo / hilo / papel (filas) |
 
-**Sin receta todavía (solo en creativo o con `/femclothes debug`):** Estación de Tintes, Guardarropas, Pollera, moldes de rango, torso, cuello, calce, red y arnés, molde de corte, y los patrones de corazones, estrellas, lunares y vichy.
+**Sin receta todavía (solo en creativo o con `/femclothes debug`):** Estación de Tintes, Guardarropas, Pollera, moldes de rango, torso, cuello, calce, red, arnés y pollera, molde de corte, y los patrones de corazones, estrellas, lunares y vichy.
 
 Todo el contenido del mod está en su propia pestaña del inventario creativo: **FemClothes**.
 
