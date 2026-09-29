@@ -218,7 +218,8 @@ public final class CuerpoBaseTextures {
         }
 
         if (mascara != null) colorearPorZonas(img, mascara, perfil.cuerpo().animal, tonoRgb,
-                perfil.tonoClaro(), perfil.tonoOscuro(), perfil.tonoRubor());
+                perfil.tonoClaro(), perfil.tonoOscuro(), perfil.tonoRubor(),
+                perfil.fuerzaRubor() / 100f);
         superponer(img, perfil.interior().textura());
         return img;
     }
@@ -247,8 +248,6 @@ public final class CuerpoBaseTextures {
     public static final int ZONA_RUBOR = 3;
     /** Diferencia R - (G+B)/2 de la máscara que cuenta como rubor pleno (el más rosado del zip anda por 23). */
     private static final float RUBOR_PLENO = 24f;
-    /** Cuánto pesa el rubor pleno sobre el color de la piel. */
-    private static final float RUBOR_FUERZA = 0.8f;
     private static final int LIMITE_OSCURA = 75, LIMITE_CLARA = 165;
 
     public static int zonaDe(int gris, boolean animal) {
@@ -271,7 +270,7 @@ public final class CuerpoBaseTextures {
      * como referencia (más clara o más oscura sola, como antes).
      */
     private static void colorearPorZonas(NativeImage img, NativeImage mascara, boolean animal,
-                                         int base, int claro, int oscuro, int rubor) {
+                                         int base, int claro, int oscuro, int rubor, float fuerzaRubor) {
         float[] refs = referencias(mascara, animal);
         int[] colores = {base, claro != 0 ? claro : base, oscuro != 0 ? oscuro : base};
         float[] refUsada = {refs[ZONA_BASE], claro != 0 ? refs[ZONA_CLARA] : refs[ZONA_BASE],
@@ -290,7 +289,7 @@ public final class CuerpoBaseTextures {
                 // pecho, cara); se mezcla hacia el color de rubor con el
                 // mismo sombreado.
                 int mr = m & 0xFF, mg = (m >> 8) & 0xFF, mb = (m >> 16) & 0xFF;
-                float cantidad = Math.min(1f, Math.max(0f, (mr - (mg + mb) / 2f) / RUBOR_PLENO)) * RUBOR_FUERZA;
+                float cantidad = Math.min(1f, Math.max(0f, (mr - (mg + mb) / 2f) / RUBOR_PLENO)) * fuerzaRubor;
                 if (cantidad > 0f) {
                     int rc = rubor != 0 ? rubor : ruborAutomatico(c);
                     r = Math.round(r + (sombrear((rc >> 16) & 0xFF, k) - r) * cantidad);

@@ -416,5 +416,6 @@
   "femclothes.tinturas.tooltip.contorno": "Una línea alrededor de cada motivo o raya, con el ÚLTIMO color activo (necesita 2 colores o más)",
   "femclothes.tinturas.tooltip.variacion": "Cómo cambia el relleno entre los colores: Fijo (todo el Color 1), Alternar (cada motivo el siguiente), Aleatorio (al azar — Azar vuelve a sortear) o Degradé (de arriba a abajo, también en capas lisas)",
   "femclothes.elegir_cuerpo.zona.rubor": "Rubor",
-  "femclothes.elegir_cuerpo.tooltip.zona.rubor": "Rubor: rodillas, codos, pecho y cara. Automático = tu mismo color, más intenso"
+  "femclothes.elegir_cuerpo.tooltip.zona.rubor": "Rubor: rodillas, codos, pecho y cara. Automático = tu mismo color, más intenso",
+  "femclothes.elegir_cuerpo.fuerza_rubor": "Fuerza del rubor: %s%%"
 }

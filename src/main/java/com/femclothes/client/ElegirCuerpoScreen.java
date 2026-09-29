@@ -63,6 +63,9 @@ public class ElegirCuerpoScreen extends Screen {
      * automático — la Base sale de la skin, Clara y Oscura del color Base.
      */
     private final Integer[] tonos = new Integer[ZONAS];
+    /** Fuerza del rubor en % (2026-09-29, "poneme un selector de fuerza de rubor"). */
+    private int fuerzaRubor = PerfilCuerpo.FUERZA_RUBOR_DEFECTO;
+    private SliderFuerza sliderFuerza;
     private int zona = CuerpoBaseTextures.ZONA_BASE;
     private final SliderCanal[] sliders = new SliderCanal[3];
     private final BotonZona[] botonesZona = new BotonZona[ZONAS];
@@ -79,6 +82,7 @@ public class ElegirCuerpoScreen extends Screen {
         tonos[1] = perfil.tonoClaro() == PerfilCuerpo.TONO_AUTOMATICO ? null : perfil.tonoClaro();
         tonos[2] = perfil.tonoOscuro() == PerfilCuerpo.TONO_AUTOMATICO ? null : perfil.tonoOscuro();
         tonos[3] = perfil.tonoRubor() == PerfilCuerpo.TONO_AUTOMATICO ? null : perfil.tonoRubor();
+        fuerzaRubor = perfil.fuerzaRubor();
     }
 
     private int tonoDeLaSkin() {
@@ -145,6 +149,10 @@ public class ElegirCuerpoScreen extends Screen {
         });
         addDrawableChild(btnAutomatico);
 
+        // Solo con la zona Rubor elegida, debajo de Automática.
+        sliderFuerza = new SliderFuerza(x0 + DERECHA_X, y0 + SLIDERS_Y + 74);
+        addDrawableChild(sliderFuerza);
+
         addDrawableChild(new EstiloPergamino.BotonPergamino(x0 + DERECHA_X, y0 + 200, DERECHA_ANCHO, 18,
                 Text.translatable("femclothes.elegir_cuerpo.boton.confirmar"), b -> confirmar()));
         addDrawableChild(new EstiloPergamino.BotonPergamino(x0 + DERECHA_X, y0 + 222, DERECHA_ANCHO, 18,
@@ -158,6 +166,7 @@ public class ElegirCuerpoScreen extends Screen {
             sincronizarSliders();
         }
         for (int z = 0; z < ZONAS; z++) botonesZona[z].active = zonaDisponible(z);
+        sliderFuerza.visible = zona == CuerpoBaseTextures.ZONA_RUBOR;
         boolean base = zona == CuerpoBaseTextures.ZONA_BASE;
         btnAutomatico.setMessage(Text.translatable(base
                 ? "femclothes.elegir_cuerpo.boton.skin" : "femclothes.elegir_cuerpo.boton.automatico"));
@@ -175,7 +184,7 @@ public class ElegirCuerpoScreen extends Screen {
                 tonos[0] == null ? PerfilCuerpo.TONO_DE_LA_SKIN : tonos[0],
                 tonos[1] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[1],
                 tonos[2] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[2],
-                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3]));
+                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3], fuerzaRubor));
         close();
     }
 
@@ -232,7 +241,7 @@ public class ElegirCuerpoScreen extends Screen {
                 tonos[0] == null ? PerfilCuerpo.TONO_DE_LA_SKIN : tonos[0], actual.interior(), true,
                 tonos[1] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[1],
                 tonos[2] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[2],
-                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3]);
+                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3], fuerzaRubor);
         // Sin ropa: solo el cuerpo que se está eligiendo.
         GarmentFeatureRenderer.previewOverride = List.of();
         try {
@@ -407,6 +416,24 @@ public class ElegirCuerpoScreen extends Screen {
             int t = 0;
             for (int i = 0; i < 3; i++) t |= sliders[i] == null ? 0 : sliders[i].nivel() << (16 - 8 * i);
             tonos[zona] = sinCero(t);
+        }
+    }
+
+    /** Fuerza del rubor, 0..100% de a 5. */
+    private class SliderFuerza extends SliderWidget {
+        SliderFuerza(int x, int y) {
+            super(x, y, DERECHA_ANCHO, 14, Text.empty(), fuerzaRubor / 100.0);
+            updateMessage();
+        }
+
+        @Override
+        protected void updateMessage() {
+            setMessage(Text.translatable("femclothes.elegir_cuerpo.fuerza_rubor", Math.round(this.value * 20) * 5));
+        }
+
+        @Override
+        protected void applyValue() {
+            fuerzaRubor = (int) (Math.round(this.value * 20) * 5);
         }
     }
 }
