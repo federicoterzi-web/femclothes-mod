@@ -25,7 +25,9 @@ public class SublimadoraModClient implements ClientModInitializer {
         ModelLoadingPlugin.register(contexto -> {
             for (Variante v : Variante.todas()) contexto.addModels(v.modeloItem());
         });
-        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.REMERA, new RemeraItemRenderer());
+        // Ícono de 64x64 con la tela real (2026-09-29); el de antes queda de respaldo.
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.REMERA,
+                new com.femclothes.client.IconoPrendaItemRenderer(new RemeraItemRenderer()));
 
         // El icono lo tine vanilla con el proveedor de color: item/generated
         // le pone tintIndex 0 a layer0, igual que a una armadura de cuero.

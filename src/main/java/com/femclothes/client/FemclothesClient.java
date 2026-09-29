@@ -87,6 +87,15 @@ public class FemclothesClient implements ClientModInitializer {
             return 0xFF000000 | color;
         }, FemclothesItems.SOCKS_SOLID, FemclothesItems.PANTALON);
 
+        // Íconos de 64x64 armados con la tela real (2026-09-29, "ok pero los
+        // hagamos 64x64" / "B"): muestran capas, patrones, redes, estampas y
+        // el largo de verdad. La remera se registra en SublimadoraModClient.
+        IconoPrendaItemRenderer icono = new IconoPrendaItemRenderer(null);
+        for (var item : new net.minecraft.item.Item[]{FemclothesItems.PANTALON, FemclothesItems.POLLERA,
+                FemclothesItems.SOCKS_SOLID, FemclothesItems.CALIENTABRAZOS}) {
+            net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(item, icono);
+        }
+
         // TODO: acá también va el registro de la geometría custom del
         // buzo oversize y la falda del traje de maid vía Armor Model API
         // (ver README, sección "Buzo oversize y Armor Model API").
@@ -105,6 +114,7 @@ public class FemclothesClient implements ClientModInitializer {
                     @Override
                     public void reload(ResourceManager manager) {
                         ClothingTextureCache.limpiarCache();
+                        com.femclothes.render.IconoPrenda.limpiar();
                     }
                 });
     }
