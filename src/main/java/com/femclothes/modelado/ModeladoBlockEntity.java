@@ -88,7 +88,18 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
     public static final int PINES_POR_CATEGORIA = 12;
     public static final int PINES_TAMANO = PINES_POR_CATEGORIA * 4;
     public static final int PINES_FIN = PINES_INICIO + PINES_TAMANO;
-    public static final int TAMANO = PINES_FIN;
+    /**
+     * Más lugares en "Moldes de <prenda>" (2026-09-29, "agregaria mas
+     * slots a moldes de pantalones moldes de remera"): 24 más por
+     * categoría, al FINAL del inventario igual que los pines, así los
+     * índices de las partidas viejas no se corren. En pantalla se ven los
+     * 36 juntos (9x4) — ver {@link #porPrendaSlot}.
+     */
+    public static final int PORPRENDA_EXTRA_POR_CATEGORIA = 24;
+    public static final int PORPRENDA_TOTAL = PORPRENDA_POR_CATEGORIA + PORPRENDA_EXTRA_POR_CATEGORIA;
+    public static final int PORPRENDA_EXTRA_INICIO = PINES_FIN;
+    public static final int PORPRENDA_EXTRA_FIN = PORPRENDA_EXTRA_INICIO + PORPRENDA_EXTRA_POR_CATEGORIA * 4;
+    public static final int TAMANO = PORPRENDA_EXTRA_FIN;
 
     /** Qué prenda está configurando ahora el jugador — cicla con {@link #BTN_CATEGORIA}. */
     public enum Categoria { REMERA, PANTALON, MEDIAS, CALIENTABRAZOS }
@@ -225,6 +236,12 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
 
     /** Primer slot del banco de storage-por-prenda de esa categoría (12 slots desde ahí). */
     public static int porPrendaInicio(Categoria cat) { return PORPRENDA_INICIO + cat.ordinal() * PORPRENDA_POR_CATEGORIA; }
+
+    /** Índice de inventario del lugar {@code i} (0..{@link #PORPRENDA_TOTAL}-1) del banco de {@code cat}, en el orden de la pantalla. */
+    public static int porPrendaSlot(Categoria cat, int i) {
+        return i < PORPRENDA_POR_CATEGORIA ? porPrendaInicio(cat) + i
+                : PORPRENDA_EXTRA_INICIO + cat.ordinal() * PORPRENDA_EXTRA_POR_CATEGORIA + (i - PORPRENDA_POR_CATEGORIA);
+    }
 
     /**
      * Qué moldes acepta el Activo (o el storage-por-prenda) de esta
@@ -845,22 +862,24 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
 
     /** Devuelve un molde al storage que le corresponde (mismas reglas que isValid: compartido -> almacén general, exclusivo de remera -> su banco). */
     private boolean guardarMolde(Categoria cat, ItemStack molde) {
-        int desde, hasta;
+        int[] lugares;
         if (esMoldeCompartido(molde)) {
-            desde = ALMACEN_INICIO; hasta = ALMACEN_FIN;
+            lugares = new int[ALMACEN_TAMANO];
+            for (int i = 0; i < ALMACEN_TAMANO; i++) lugares[i] = ALMACEN_INICIO + i;
         } else if (esMoldeExclusivoDe(molde, cat)) {
-            desde = porPrendaInicio(cat); hasta = desde + PORPRENDA_POR_CATEGORIA;
+            lugares = new int[PORPRENDA_TOTAL];
+            for (int i = 0; i < PORPRENDA_TOTAL; i++) lugares[i] = porPrendaSlot(cat, i);
         } else {
             return false;
         }
-        for (int i = desde; i < hasta; i++) {
+        for (int i : lugares) {
             ItemStack en = items.get(i);
             if (!en.isEmpty() && ItemStack.areItemsAndComponentsEqual(en, molde) && en.getCount() < en.getMaxCount()) {
                 en.increment(1);
                 return true;
             }
         }
-        for (int i = desde; i < hasta; i++) {
+        for (int i : lugares) {
             if (items.get(i).isEmpty()) {
                 items.set(i, molde);
                 return true;
@@ -1200,8 +1219,10 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
             if (cat != null) return false;
             return esMoldeDeCategoria(stack, cat);
         }
-        if (slot >= PORPRENDA_INICIO && slot < PORPRENDA_FIN) {
-            Categoria cat = Categoria.values()[(slot - PORPRENDA_INICIO) / PORPRENDA_POR_CATEGORIA];
+        if ((slot >= PORPRENDA_INICIO && slot < PORPRENDA_FIN) || (slot >= PORPRENDA_EXTRA_INICIO && slot < PORPRENDA_EXTRA_FIN)) {
+            Categoria cat = slot < PORPRENDA_FIN
+                    ? Categoria.values()[(slot - PORPRENDA_INICIO) / PORPRENDA_POR_CATEGORIA]
+                    : Categoria.values()[(slot - PORPRENDA_EXTRA_INICIO) / PORPRENDA_EXTRA_POR_CATEGORIA];
             // Banco "Moldes de <Categoria>" (2026-09-24, a pedido): solo
             // moldes EXCLUSIVOS de esta categoría + la prenda terminada de
             // esta categoría — los compartidos (Rango/Calce/Red/Torso/

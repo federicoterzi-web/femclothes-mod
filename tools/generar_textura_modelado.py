@@ -231,12 +231,14 @@ def main():
     for col in range(9):
         img = slot(img, M_MEDIO + col * 18, 304)
 
-    # Columna de la derecha: almacén compartido (3x9) y banco por prenda (3x4).
+    # Columna de la derecha: almacén compartido (3x9) y banco por prenda
+    # (4x9 desde 2026-09-29, "agregaria mas slots a moldes de pantalones
+    # moldes de remera" — antes 3x4).
     for fila in range(3):
         for col in range(9):
             img = slot(img, M_DERECHA + col * 18, 18 + fila * 18)
-    for fila in range(3):
-        for col in range(4):
+    for fila in range(4):
+        for col in range(9):
             img = slot(img, M_DERECHA + col * 18, 90 + fila * 18)
 
     # Separadores cosidos entre las tres columnas (antes eran 2 líneas grises dibujadas por el screen).

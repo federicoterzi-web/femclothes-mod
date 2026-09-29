@@ -842,7 +842,7 @@ public final class ClothingTextureCache {
         boolean brazo = parte == com.femclothes.garment.Parte.BRAZO_DER || parte == com.femclothes.garment.Parte.BRAZO_IZQ;
         if (tipo.esArnes() && brazo && filaDesde == 0) {
             // Va DESPUÉS de los costados: lee cómo quedaron sus tiras.
-            continuarTirasEnHombro(img, caja);
+            continuarTirasEnHombro(img, tipo, caja);
         } else {
             perforarRedEnCara(img, tipo, arriba.x0(), arriba.y0(), arriba.x1(), arriba.y1(),
                     false, Integer.MIN_VALUE, Integer.MAX_VALUE, torso ? ARNES_ROL_HOMBROS : ARNES_ROL_COMUN);
@@ -1009,13 +1009,19 @@ public final class ClothingTextureCache {
      * hasta la mitad; si la cara de enfrente tiene una tira en el mismo
      * lugar, las dos se juntan y cruzan el hombro de lado a lado.
      *
+     * <p>2026-09-29 ("los hombros no se completaron" — con el arnés
+     * cruzado solo quedaba un marquito, porque las diagonales llegan por
+     * las esquinas): además la tapa lleva el MISMO dibujo del arnés que un
+     * costado (X de esquina a esquina con su anillo, tirantes o bandas),
+     * así el hombro se ve completo y empalma con lo que sube por el brazo.
+     *
      * <p>Empalmes en el atlas (mismo layout que {@link CajaSkin}): la fila
      * de abajo de la tapa toca el frente (misma columna); la de arriba, la
      * espalda (columna espejada); la columna 0 toca la cara derecha (su
      * columna {@code j} es la fila {@code j} de la tapa); la última, la
      * izquierda (su columna 0 va con la fila de abajo).
      */
-    private static void continuarTirasEnHombro(NativeImage img, CajaSkin caja) {
+    private static void continuarTirasEnHombro(NativeImage img, com.femclothes.item.PatronRed tipo, CajaSkin caja) {
         CajaSkin.Rect tapa = caja.arriba(), frente = caja.frente(), atras = caja.atras();
         CajaSkin.Rect der = caja.derecha(), izq = caja.izquierda();
         int ancho = tapa.x1() - tapa.x0(), prof = tapa.y1() - tapa.y0();
@@ -1038,10 +1044,31 @@ public final class ClothingTextureCache {
                 for (int k = 0; k < mitadAncho; k++) tira[ancho - 1 - k][prof - 1 - j] = true;
             }
         }
+        // El dibujo del arnés sobre la tapa entera, como en un costado.
+        double[][] anillos = anillosArnes(tipo.dibujo, ancho, prof, false);
         for (int d = 0; d < prof; d++) {
             for (int i = 0; i < ancho; i++) {
                 int x = tapa.x0() + i, y = tapa.y0() + d;
-                if (!opaco(img, x, y) || tira[i][d]) continue;
+                if (!opaco(img, x, y)) continue;
+                double lx = i + 0.5, ly = d + 0.5;
+                boolean enAnillo = false;
+                for (double[] a : anillos) {
+                    double dist = Math.hypot(lx - a[0], ly - a[1]);
+                    if (dist > ARNES_ANILLO_EXT) continue;
+                    if (dist <= ARNES_ANILLO_INT) {
+                        img.setColor(x, y, 0);
+                    } else {
+                        double k = 1 + ((a[0] - lx) + (a[1] - ly)) / ARNES_ANILLO_EXT * 0.25;
+                        if (dist > ARNES_ANILLO_EXT - 0.8) k *= 0.78;
+                        int r = (int) Math.min(255, ARNES_METAL_R * k), g = (int) Math.min(255, ARNES_METAL_G * k),
+                                b = (int) Math.min(255, ARNES_METAL_B * k);
+                        img.setColor(x, y, 0xFF000000 | (b << 16) | (g << 8) | r);
+                    }
+                    enAnillo = true;
+                    break;
+                }
+                if (enAnillo) continue;
+                if (tira[i][d] || esTiraArnes(tipo.dibujo, lx, ly, ancho, prof, false)) continue;
                 img.setColor(x, y, 0);
             }
         }

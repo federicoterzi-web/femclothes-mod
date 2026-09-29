@@ -124,9 +124,9 @@ public class ModeladoBlock extends BlockWithEntity {
             if (be.getStack(activo).isEmpty()) {
                 destino = activo;
             } else {
-                int base = ModeladoBlockEntity.porPrendaInicio(categoria);
-                for (int i = 0; i < ModeladoBlockEntity.PORPRENDA_POR_CATEGORIA; i++) {
-                    if (be.getStack(base + i).isEmpty()) { destino = base + i; break; }
+                for (int i = 0; i < ModeladoBlockEntity.PORPRENDA_TOTAL; i++) {
+                    int lugar = ModeladoBlockEntity.porPrendaSlot(categoria, i);
+                    if (be.getStack(lugar).isEmpty()) { destino = lugar; break; }
                 }
             }
         }

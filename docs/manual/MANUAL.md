@@ -111,7 +111,7 @@ La Modeladora cambia el **corte** de la prenda. En el centro está el **dibujo d
 
 **Simetría (remera):** con simetría activada, soltar un molde en cualquiera de las dos mangas fija las dos iguales. Sin simetría, cada manga tiene su propio largo.
 
-**Almacén:** a la derecha hay un almacén general de moldes y uno por prenda (12 lugares), para tener los moldes de cada categoría a mano.
+**Almacén:** a la derecha hay un almacén general de moldes (27 lugares) y uno por prenda, "Moldes de <prenda>" (36 lugares, 9×4), para tener los moldes de cada categoría a mano.
 
 ### Pines por prenda
 
@@ -158,7 +158,7 @@ El molde de red **perfora** la tela ya teñida: deja ver la piel por los agujero
 
 ![Arneses: cruzado, tirantes, bandas (torso con hombros)](img/arneses.png)
 
-**Arneses.** Son lo contrario de una red: todo queda abierto salvo las tiras. Las tiras siguen los bordes de corte reales, así que si acortás la remera a crop, el arnés se acomoda solo. En la remera, las tiras pasan por los **hombros** y empalman siempre con el frente y la espalda. En las mangas y calientabrazos que llegan al hombro, cada tira que sube por el brazo **sigue por arriba del hombro** hasta encontrarse con la del otro lado (con el arnés de bandas, que no tiene tiras que suban, el hombro queda abierto). Los anillos son plateados y no se tiñen; las tiras toman el color de la prenda.
+**Arneses.** Son lo contrario de una red: todo queda abierto salvo las tiras. Las tiras siguen los bordes de corte reales, así que si acortás la remera a crop, el arnés se acomoda solo. En la remera, las tiras pasan por los **hombros** y empalman siempre con el frente y la espalda. En las mangas y calientabrazos que llegan al hombro, el **hombro** (la tapa de arriba del brazo) lleva el mismo dibujo del arnés que los costados (la X con su anillo, los tirantes o las bandas) más un marco que empalma con cada tira que sube por el brazo. Los anillos son plateados y no se tiñen; las tiras toman el color de la prenda.
 
 ## 7. Estación de Tintes
 
