@@ -41,6 +41,7 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 - **Enums que viajan por red por ordinal** (`PatronRed`, etc.): agregar valores nuevos siempre al final.
 - **Medias y calientabrazos en los esquemas se leen de frente**: el pin de la izquierda del dibujo es el lado DERECHO del jugador.
 - **`PIN_POS` ya trae la Y absoluta del panel**: no sumarle el offset del esquema.
+- **Huesos de prenda en los modelos de máquina**: `garment_shaper` y `sublimator` necesitan los huesos `REMERA`, `PANTALON`, `CALIENTABRAZOS` y `MEDIAS` (hijos de `base`); Tintes, `prenda_*` bajo `roller`. Una reexportación desde Blockbench sin ellos los borró (2026-09-29, restaurados desde el commit 7011582): revisar que sigan después de exportar.
 - **Primera persona**: la ropa nunca se dibuja en el brazo de primera persona (no hay hook en `renderArm`).
 - **Outfit de otro jugador desactualizado un rato**: probablemente lag de sync de Trinkets, no un bug de caché del mod.
 
