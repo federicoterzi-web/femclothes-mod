@@ -82,8 +82,12 @@ public class TinturasGeoModel extends GeoModel<TinturasBlockEntity> {
     // ── viales: últimos 2 colores usados (2026-09-21, "que muestren los
     // ultimos dos colores utilizados") ──────────────────────────────────
     /** Rects UV reales de cada vial (relevados a mano con Python) — vial_1 el más reciente, vial_2 el anterior. */
-    private static final com.femclothes.render.PantallaLed.Rect VIAL_1_UV = new com.femclothes.render.PantallaLed.Rect(48, 8, 8, 8);
-    private static final com.femclothes.render.PantallaLed.Rect VIAL_2_UV = new com.femclothes.render.PantallaLed.Rect(24, 8, 8, 8);
+    // Movidos a una zona propia del atlas (2026-09-29, "cuando solo tenia dos
+    // tintes... el magenta se veia blanco en el indicador"): compartían UV con
+    // los tubos level_magenta (48,8) y level_cyan (24,8), así que pintar el
+    // vial con el último color pisaba también el tubo.
+    private static final com.femclothes.render.PantallaLed.Rect VIAL_1_UV = new com.femclothes.render.PantallaLed.Rect(40, 16, 8, 8);
+    private static final com.femclothes.render.PantallaLed.Rect VIAL_2_UV = new com.femclothes.render.PantallaLed.Rect(48, 16, 8, 8);
     /**
      * Último color pintado en cada vial, por máquina — para no repintar
      * (y volver a subir a la GPU) la textura entera cada frame, mismo
