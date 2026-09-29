@@ -9,12 +9,15 @@ public class TinturasRenderer extends GeoBlockRenderer<TinturasBlockEntity> {
         super(new TinturasGeoModel());
         addRenderLayer(new LedGlowLayer<>(this, TinturasGeoModel.ANCHO_ATLAS, TinturasGeoModel.ALTO_ATLAS,
                 TinturasGeoModel.LEDS, TinturasGeoModel::coloresLed));
-        // La prenda girando en el rodillo con su ícono real (2026-09-29,
-        // "reemplazar esos huesos por el item nuevo"): ancla en un hijo de
-        // "roller", así hereda el giro. Solo mientras tiñe.
+        // La prenda enrollada en el rodillo con su ícono real (2026-09-29,
+        // "reemplazar esos huesos por el item nuevo" / "enredar el icono
+        // alrededor del rodillo"): ancla en un hijo de "roller", así hereda
+        // el giro. Solo mientras tiñe.
         addRenderLayer(new com.femclothes.render.PrendaEnMaquinaLayer<>(this, "prenda_remera",
                 be -> be.estado() == TinturasBlockEntity.Estado.TINIENDO ? be.getPrendaEntrada()
                         : net.minecraft.item.ItemStack.EMPTY,
-                0f, 11.2f, 5.75f, 6.5f, com.femclothes.render.PrendaEnMaquinaLayer.Apoyo.PARADA_FRENTE_MAS_Z));
+                // Enrollada (2026-09-29): eje del rodillo en (y 12.2, z 3.2), largo 12.4;
+                // su sección (dos cuadrados de 2.9 cruzados) llega a ~2.05 del eje.
+                0f, 12.2f, 3.2f, 12f, 2.2f, com.femclothes.render.PrendaEnMaquinaLayer.Apoyo.ENROLLADA_EJE_X));
     }
 }
