@@ -112,7 +112,15 @@ public final class PantallaMaquina {
     // esta se agrandó a juego, ~90% del hueco del marco (6.6×5.4),
     // guardando su misma proporción.
     public static final Rect PANEL_128 = new Rect(0, 48, 90, 74);
-    public static final Rect PANEL_TINTURAS = new Rect(0, 24, 48, 28);
+    // Tintes al molde de sus hermanas (2026-09-29, "el panel de la estacion
+    // de tintes, donde esta la pantallita tiene cosas atras que no van y un
+    // hueso que no se usa. mira la estructura de las otras dos"): se sacaron
+    // las 2 placas intermedias, las dos ventanitas 2x2 de adorno y la tira
+    // de barra de progreso sin uso (el progreso real está en el panel de los
+    // viales); queda el marco de afuera + la pantalla, que se agrandó a
+    // ~90% del marco como en la Modeladora/Sublimadora (5.94×4.884). 49×40
+    // guarda esa proporción dentro de la franja libre del atlas de 64.
+    public static final Rect PANEL_TINTURAS = new Rect(0, 24, 49, 40);
 
     /**
      * Margen alrededor de la prenda dentro de la pantalla — a pedido

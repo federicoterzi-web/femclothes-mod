@@ -17,6 +17,7 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(__file__))
+import generar_textura_tinturas as base  # noqa: E402
 from generar_textura_tinturas import (  # noqa: E402
     ALTO, ANCHO, M_DERECHA, M_MEDIO, M_MEDIO_ANCHO, Image, costura_vertical, esquina, flecha,
     marco_madera, marco_visor, pergamino, rgb, slot, slot_grande)
@@ -41,6 +42,7 @@ def cuadro_esquema(img):
 
 
 def main():
+    base.aplicar_tema("oro")   # dorado (2026-09-29), ver TEMAS en generar_textura_tinturas.py
     img = pergamino(ANCHO, ALTO)
     img = marco_madera(img, 5)
     img = esquina(img, 0, 0, 1, 1)

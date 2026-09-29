@@ -115,6 +115,7 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
 
     @Override
     protected void init() {
+        EstiloPergamino.usarTema(EstiloPergamino.Tema.VERDIN);
         super.init();
 
         btnCategoria = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 20, TinturasScreenHandler.M_MEDIO_ANCHO, 14, Text.literal(""), b -> clickBoton(TinturasBlockEntity.BTN_CATEGORIA));
