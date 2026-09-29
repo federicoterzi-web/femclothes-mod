@@ -85,12 +85,14 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         if (!(getContextModel() instanceof BipedEntityModel<?> biped)) return;
 
         List<ItemStack> prendas = previewOverride != null ? previewOverride : equipadas(entidad);
-        if (prendas.isEmpty()) return;
+        // En la vista previa de elegir cuerpo, el cuerpo va entero aunque no haya ropa.
+        boolean cuerpoEntero = perfilOverride != null;
+        if (prendas.isEmpty() && !cuerpoEntero) return;
 
         boolean slim = esSlim(entidad);
 
         // Las partes que alguna prenda gobierna: ahi va el cuerpo base.
-        List<Parte> conCuerpo = Garments.partesCubiertas(prendas);
+        List<Parte> conCuerpo = cuerpoEntero ? List.of(Parte.values()) : Garments.partesCubiertas(prendas);
 
         // Las piezas de tela, agrupadas por parte. EnumMap para que el
         // recorrido sea estable: dos frames no pueden dibujar en distinto
@@ -325,10 +327,11 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
      */
     public static List<Parte> partesAOcultarDeVanilla(LivingEntity entidad) {
         List<ItemStack> prendas = previewOverride != null ? previewOverride : equipadas(entidad);
-        if (prendas.isEmpty()) return List.of();
+        boolean cuerpoEntero = perfilOverride != null;
+        if (prendas.isEmpty() && !cuerpoEntero) return List.of();
         Identifier cuerpo = texturaDelCuerpo(entidad, esSlim(entidad));
         if (cuerpo == null) return List.of();
-        List<Parte> out = new ArrayList<>(Garments.partesCubiertas(prendas));
+        List<Parte> out = new ArrayList<>(cuerpoEntero ? List.of(Parte.values()) : Garments.partesCubiertas(prendas));
         // La cabeza nunca lleva cuerpo base (ver render) — ocultar la de
         // vanilla ahí dejaría al jugador sin cara.
         out.remove(Parte.CABEZA);
@@ -375,9 +378,18 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         return segmentos;
     }
 
+    /**
+     * Perfil a mostrar en vez del guardado mientras se dibuja la vista previa
+     * de la GUI de elegir cuerpo (2026-09-29) — mismo mecanismo que
+     * {@link #previewOverride}: se pone antes de dibujar y se limpia después.
+     */
+    @Nullable
+    public static PerfilCuerpo perfilOverride = null;
+
     @Nullable
     private static Identifier texturaDelCuerpo(LivingEntity entidad, boolean slim) {
-        PerfilCuerpo perfil = entidad instanceof PlayerEntity jugador
+        PerfilCuerpo perfil = perfilOverride != null ? perfilOverride
+                : entidad instanceof PlayerEntity jugador
                 ? PerfilesDeCuerpo.de(jugador)
                 : PerfilCuerpo.DEFECTO;
         return CuerpoBaseTextures.de(entidad, perfil, slim);

@@ -1,0 +1,31 @@
+package com.femclothes.mixin;
+
+import com.femclothes.render.GarmentFeatureRenderer;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerModelPart;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+/**
+ * Vista previa de elegir cuerpo sin la segunda capa de la skin (2026-09-29,
+ * "tiene que aparecer sin ropa y sin la capa de 3dsl en el cuerpo"):
+ * mientras se dibuja esa vista previa ({@link GarmentFeatureRenderer#perfilOverride}
+ * puesto), el jugador dice que tiene apagadas la chaqueta, las mangas y los
+ * pantalones de su skin. Vanilla las esconde en {@code setModelPose} y 3D
+ * Skin Layers pregunta lo mismo antes de extruir las suyas, así que ninguno
+ * las dibuja. El sombrero (la capa de la cabeza) queda, igual que la cara.
+ * Solo afecta ese dibujo: el override se limpia al terminar.
+ */
+@Mixin(PlayerEntity.class)
+public abstract class PlayerEntityCapasSkinMixin {
+
+    @Inject(method = "isPartVisible", at = @At("HEAD"), cancellable = true)
+    private void femclothes$sinCapaEnVistaPrevia(PlayerModelPart parte, CallbackInfoReturnable<Boolean> cir) {
+        if (GarmentFeatureRenderer.perfilOverride != null && parte != PlayerModelPart.HAT
+                && parte != PlayerModelPart.CAPE) {
+            cir.setReturnValue(false);
+        }
+    }
+}
