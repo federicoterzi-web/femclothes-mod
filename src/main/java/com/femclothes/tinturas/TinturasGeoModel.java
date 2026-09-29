@@ -256,17 +256,11 @@ public class TinturasGeoModel extends GeoModel<TinturasBlockEntity> {
         // visible mientras TINIENDO — a diferencia de Modeladora/
         // Sublimadora (muestran la prenda cargada aunque esté en
         // reposo), acá no hay "prenda cargada quieta".
-        net.minecraft.item.ItemStack entrada = be.getPrendaEntrada();
-        TinturasBlockEntity.Categoria categoria = be.estado() == TinturasBlockEntity.Estado.TINIENDO
-                ? TinturasBlockEntity.categoriaDe(entrada) : null;
+        // Siempre ocultos (2026-09-29): la prenda la dibuja PrendaEnMaquinaLayer
+        // con su ícono real, anclada en "prenda_remera" para girar con el rodillo.
         for (int i = 0; i < HUESOS_PRENDA.length; i++) {
             GeoBone hueso = getAnimationProcessor().getBone(HUESOS_PRENDA[i]);
-            if (hueso != null) hueso.setHidden(categoria == null || categoria.ordinal() != i);
-        }
-        if (categoria != null) {
-            Identifier textura = com.femclothes.render.PantallaMaquina.con(TEX,
-                    com.femclothes.render.PantallaMaquina.PANEL_TINTURAS, be.vistaPreviaPersistente(), be.getPos());
-            pintarColorPrenda(be, textura, abgrOpaco(colorDePrenda(entrada)));
+            if (hueso != null) hueso.setHidden(true);
         }
     }
 }

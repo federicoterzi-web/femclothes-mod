@@ -103,6 +103,7 @@ Las tres máquinas de confección (Modelado, Tintes, Sublimadora) comparten la m
 - **Diseños guardados.** Escribís un nombre y apretás **Guardar diseño**: se guarda todo lo fijado de esa prenda (hasta 8 diseños por prenda, en las tres máquinas). Click en un casillero numerado lo carga (el nombre aparece al pasar el mouse); click derecho lo borra.
 - **Entrada y salida.** Cada máquina tiene un slot grande de **Entrada** (la prenda a procesar) y uno de **Salida** (la prenda terminada). Mientras trabaja, la máquina se anima y hace ruido; al terminar suena una campanita. El LED (rojo trabajando, verde con la prenda lista) **ilumina** el bloque y lo que tiene alrededor (nivel de luz 7). La barrita de progreso del frente, sobre fondo negro, se llena de izquierda a derecha y queda llena mientras la prenda terminada espera en la salida.
 - **Colores de cada máquina.** Las tres interfaces son de pergamino y madera, pero cada una tiene su metal: la Estación de Tintes es **verdosa** (verdín), la Modeladora **cobriza** y la Sublimadora **dorada**. El color se ve en los filos, las esquinas, los slots y los botones.
+- **La prenda en el bloque.** La prenda cargada se ve sobre la máquina con su ícono real (el mismo del inventario, con colores, patrones y estampas): acostada sobre la mesa en la Modeladora y la Sublimadora, y girando en el rodillo de Tintes mientras tiñe. La pantallita del frente muestra también ese ícono.
 - **Tiempos.** Modelado 15 s, Tintes 10 s, Sublimadora 15 s.
 - **¡Cuidado!** Meter la mano (click derecho) en una máquina mientras trabaja lastima: la Modeladora corta, la de Tintes marea con los vapores y la Sublimadora quema.
 - **Al romperlas**, la tinta cargada viaja adentro del ítem (como una shulker box). El resto de la configuración se pierde.
@@ -378,7 +379,6 @@ Funciones planeadas que todavía no están:
 
 - Volumen 3D real en la ropa (integración con 3D Skin Layers).
 - Cadena de máquinas por tolvas, probada de punta a punta.
-- La prenda cargada visible encima de cada máquina y una pantallita con vista previa en el bloque.
 - Guardarropas: sistema de estilos guardados.
 - La ropa en el brazo en primera persona.
 - Piernas redondeadas opcionales (versión 2).

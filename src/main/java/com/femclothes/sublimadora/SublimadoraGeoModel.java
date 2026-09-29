@@ -183,11 +183,10 @@ public class SublimadoraGeoModel extends GeoModel<SublimadoraBlockEntity> {
         // prendas") — solo una visible a la vez, según qué se estampó.
         // Visible mientras haya una prenda cargada O la recién estampada
         // no se retiró.
-        net.minecraft.item.ItemStack mostrar = !be.getRemera().isEmpty() ? be.getRemera() : be.getSalida();
-        String categoria = huesoDe(mostrar);
+        // Siempre ocultos (2026-09-29): la prenda la dibuja PrendaEnMaquinaLayer con su ícono real.
         for (String huesoCat : HUESOS_CATEGORIA) {
             GeoBone hueso = getAnimationProcessor().getBone(huesoCat);
-            if (hueso != null) hueso.setHidden(!huesoCat.equals(categoria));
+            if (hueso != null) hueso.setHidden(true);
         }
     }
 

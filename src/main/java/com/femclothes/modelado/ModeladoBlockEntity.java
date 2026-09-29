@@ -417,6 +417,11 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
 
     /** A qué categoría pertenece la prenda cargada AHORA (null si no hay nada) — para el hueso "REMERA" de {@link ModeladoGeoModel}. */
     @Nullable
+    /** La prenda que se ve arriba de la máquina: la de la Entrada o, ya terminada, la de la Salida. */
+    public ItemStack prendaVisible() {
+        return !items.get(PRENDA).isEmpty() ? items.get(PRENDA) : items.get(SALIDA);
+    }
+
     public Categoria categoriaPrenda() {
         // La de la ranura PRENDA y, cuando la máquina la terminó y pasó a
         // SALIDA, la del resultado: la prenda se ve arriba hasta que se

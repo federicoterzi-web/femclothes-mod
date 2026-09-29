@@ -107,10 +107,10 @@ public class ModeladoGeoModel extends GeoModel<ModeladoBlockEntity> {
         // con el resto de la carcasa) + las otras 3 categorías armadas en
         // cubos simples con el mismo criterio ("no aparecen las otras
         // prendas") — solo una visible a la vez, según la prenda cargada.
-        ModeladoBlockEntity.Categoria categoria = be.categoriaPrenda();
         for (String huesoCat : HUESOS_CATEGORIA) {
             GeoBone hueso = getAnimationProcessor().getBone(huesoCat);
-            if (hueso != null) hueso.setHidden(categoria == null || !huesoCat.equals(categoria.name()));
+            // Siempre ocultos (2026-09-29): la prenda la dibuja PrendaEnMaquinaLayer con su ícono real.
+            if (hueso != null) hueso.setHidden(true);
         }
     }
 

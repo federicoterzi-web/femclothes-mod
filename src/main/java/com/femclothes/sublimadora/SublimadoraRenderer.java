@@ -39,6 +39,11 @@ public class SublimadoraRenderer extends GeoBlockRenderer<SublimadoraBlockEntity
         // com.femclothes.render.PantallaLed y LedGlowLayer.
         addRenderLayer(new com.femclothes.render.LedGlowLayer<>(this, SublimadoraGeoModel.ANCHO_ATLAS,
                 SublimadoraGeoModel.ALTO_ATLAS, SublimadoraGeoModel.LEDS, SublimadoraGeoModel::coloresLed));
+        // La prenda cargada con su ícono real (2026-09-29, "reemplazar esos
+        // huesos por el item nuevo"), debajo de las fotos (Y_FOTO 11.9).
+        addRenderLayer(new com.femclothes.render.PrendaEnMaquinaLayer<>(this, "REMERA",
+                be -> !be.getRemera().isEmpty() ? be.getRemera() : be.getSalida(), 0f, 11.85f, -0.6f, 10f,
+                com.femclothes.render.PrendaEnMaquinaLayer.Apoyo.ACOSTADA_FRENTE_MENOS_Z));
     }
 
     @Override

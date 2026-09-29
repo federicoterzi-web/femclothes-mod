@@ -140,6 +140,34 @@ public final class IconoPrenda {
         return icono.id;
     }
 
+    /**
+     * Copia del ícono armado de {@code stack} (la cierra quien la pide), o
+     * null si la prenda no tiene ícono — para la pantallita de las máquinas
+     * (2026-09-29, "igual el item que aparece en la pantallita?").
+     */
+    @Nullable
+    public static NativeImage copia(ItemStack stack) {
+        Icono icono = iconoDe(stack);
+        if (icono == null || icono.textura.getImage() == null) return null;
+        NativeImage fuente = icono.textura.getImage();
+        NativeImage salida = new NativeImage(LADO, LADO, true);
+        salida.copyFrom(fuente);
+        return salida;
+    }
+
+    /** ¿El ícono de {@code stack} ya tiene todas sus texturas? (Si no, conviene volver a pedirlo en un rato.) */
+    public static boolean completo(ItemStack stack) {
+        Icono icono = iconoDe(stack);
+        return icono == null || icono.completo;
+    }
+
+    @Nullable
+    private static Icono iconoDe(ItemStack stack) {
+        if (de(stack) == null) return null;
+        PorStack p = POR_STACK.get(ItemStack.hashCode(stack));
+        return p == null ? null : ICONOS.get(p.clave());
+    }
+
     private static String claveDe(String nombre, List<Pieza> piezas, @Nullable Identifier pollera) {
         StringBuilder sb = new StringBuilder(nombre);
         for (Pieza p : piezas) {
