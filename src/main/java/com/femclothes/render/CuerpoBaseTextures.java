@@ -267,11 +267,16 @@ public final class CuerpoBaseTextures {
                 int m = mascara.getColor(x, y);
                 if (((m >> 24) & 0xFF) == 0) continue;
                 if (((img.getColor(x, y) >> 24) & 0xFF) == 0) continue;
-                int gris = m & 0xFF;
+                int gris = grisDe(m);
                 int zona = zonaDe(gris, animal);
                 int c = colores[zona];
-                float k = gris / refUsada[zona];
-                int r = sombrear((c >> 16) & 0xFF, k), g = sombrear((c >> 8) & 0xFF, k), b = sombrear(c & 0xFF, k);
+                // Cada canal con su propio factor (2026-09-29, zip nuevo): las
+                // máscaras humanas traen rubor rosado en rodillas, codos y
+                // cara — en una máscara gris los tres factores son iguales.
+                float ref = refUsada[zona];
+                int r = sombrear((c >> 16) & 0xFF, (m & 0xFF) / ref);
+                int g = sombrear((c >> 8) & 0xFF, ((m >> 8) & 0xFF) / ref);
+                int b = sombrear(c & 0xFF, ((m >> 16) & 0xFF) / ref);
                 img.setColor(x, y, 0xFF000000 | (b << 16) | (g << 8) | r);
             }
         }
@@ -286,6 +291,12 @@ public final class CuerpoBaseTextures {
         if (k <= 1f) return Math.round(canal * k);
         float haciaBlanco = Math.min(1f, (k - 1f) * 0.6f);
         return Math.min(255, Math.round(canal + (255 - canal) * haciaBlanco));
+    }
+
+    /** Luminancia de un pixel ABGR de la máscara (en una gris, su valor). */
+    private static int grisDe(int abgr) {
+        int r = abgr & 0xFF, g = (abgr >> 8) & 0xFF, b = (abgr >> 16) & 0xFF;
+        return Math.min(255, (r * 299 + g * 587 + b * 114 + 500) / 1000);
     }
 
     private static final Map<NativeImage, float[]> REFERENCIAS = new java.util.IdentityHashMap<>();
@@ -308,7 +319,7 @@ public final class CuerpoBaseTextures {
                 int sx = x * LayoutSkin.LADO / w, sy = y * LayoutSkin.LADO / h;
                 boolean capaBase = (sy >= 16 && sy < 32) || (sy >= 48 && sx >= 16 && sx < 48);
                 if (!capaBase) continue;
-                int gris = m & 0xFF;
+                int gris = grisDe(m);
                 int zona = zonaDe(gris, animal);
                 histo[zona][gris]++;
                 total[zona]++;
