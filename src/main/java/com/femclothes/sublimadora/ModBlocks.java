@@ -25,6 +25,7 @@ public final class ModBlocks {
                     .nonOpaque()                       // la tapa abierta sale del cubo
                     .sounds(BlockSoundGroup.METAL)
                     .pistonBehavior(PistonBehavior.BLOCK)
+                    .luminance(com.femclothes.util.LuzMaquina::luminancia)
     );
 
     // BlockItem propio para que el icono del inventario lo dibuje GeckoLib

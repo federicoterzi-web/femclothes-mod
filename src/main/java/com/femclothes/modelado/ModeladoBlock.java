@@ -43,7 +43,8 @@ public class ModeladoBlock extends BlockWithEntity {
 
     public ModeladoBlock(Settings settings) {
         super(settings);
-        setDefaultState(getStateManager().getDefaultState().with(FACING, Direction.NORTH));
+        setDefaultState(getStateManager().getDefaultState().with(FACING, Direction.NORTH)
+                .with(com.femclothes.util.LuzMaquina.LIT, false));
     }
 
     @Override
@@ -51,7 +52,7 @@ public class ModeladoBlock extends BlockWithEntity {
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, com.femclothes.util.LuzMaquina.LIT);
     }
 
     @Override

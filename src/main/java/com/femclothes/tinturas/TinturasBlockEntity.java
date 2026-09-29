@@ -557,6 +557,10 @@ public class TinturasBlockEntity extends BlockEntity
      */
     public static void tick(net.minecraft.world.World world, BlockPos pos, BlockState state, TinturasBlockEntity be) {
         if (!world.isClient && !be.salida.isEmpty()) be.empujarSalida();
+        // Luz del LED (2026-09-29, "hace que las luces de las maquinas iluminen"):
+        // mismo criterio que TinturasGeoModel#coloresLed.
+        com.femclothes.util.LuzMaquina.actualizar(world, pos, state,
+                be.estado == Estado.TINIENDO || (be.estado == Estado.REPOSO && !be.salida.isEmpty()));
         if (world.isClient || be.estado != Estado.TINIENDO) return;
 
         be.progreso++;

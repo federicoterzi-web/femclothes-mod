@@ -990,6 +990,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
 
     public static void tick(net.minecraft.world.World world, BlockPos pos, net.minecraft.block.BlockState state, ModeladoBlockEntity be) {
         if (world.isClient) return;
+        // Luz del LED (2026-09-29, "hace que las luces de las maquinas iluminen").
+        com.femclothes.util.LuzMaquina.actualizar(world, pos, state,
+                be.estado == Estado.PROCESANDO || be.estado == Estado.LISTO);
 
         // Ráfaga del ventilador (2026-09-22, "unos efectos visuales como
         // de carga de viento") — atada a "encendida", igual que la
