@@ -430,5 +430,9 @@
   "femclothes.pollera.forma.campana": "A-line",
   "femclothes.pollera.forma.tableada": "Pleated",
   "item.femclothes.molde_pollera_campana": "Skirt Pattern: A-line",
-  "item.femclothes.molde_pollera_tableada": "Skirt Pattern: Pleated"
+  "item.femclothes.molde_pollera_tableada": "Skirt Pattern: Pleated",
+  "femclothes.elegir_cuerpo.boton.interior": "Underwear: %s",
+  "femclothes.elegir_cuerpo.boton.siempre": "Always use as my skin: %s",
+  "femclothes.elegir_cuerpo.tooltip.interior": "Body underwear (click: next one)",
+  "femclothes.elegir_cuerpo.tooltip.siempre": "Yes: the chosen body, with its underwear, always shows, even without mod clothes. No: it only shows under mod clothes."
 }

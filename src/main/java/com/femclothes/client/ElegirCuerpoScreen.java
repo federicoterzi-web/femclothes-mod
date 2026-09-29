@@ -67,6 +67,10 @@ public class ElegirCuerpoScreen extends Screen {
     private int fuerzaRubor = PerfilCuerpo.FUERZA_RUBOR_DEFECTO;
     private SliderFuerza sliderFuerza;
     private int zona = CuerpoBaseTextures.ZONA_BASE;
+    /** Ropa interior y "usar siempre como skin" (2026-09-29, "un selector que directamente te deje esa skin de default, quizas con ropa interior base"). */
+    private com.femclothes.body.RopaInterior interior = com.femclothes.body.RopaInterior.BASICA;
+    private boolean siempre = false;
+    private ButtonWidget btnInterior, btnSiempre;
     private final SliderCanal[] sliders = new SliderCanal[3];
     private final BotonZona[] botonesZona = new BotonZona[ZONAS];
     private ButtonWidget btnAutomatico;
@@ -82,6 +86,8 @@ public class ElegirCuerpoScreen extends Screen {
         tonos[1] = perfil.tonoClaro() == PerfilCuerpo.TONO_AUTOMATICO ? null : perfil.tonoClaro();
         tonos[2] = perfil.tonoOscuro() == PerfilCuerpo.TONO_AUTOMATICO ? null : perfil.tonoOscuro();
         tonos[3] = perfil.tonoRubor() == PerfilCuerpo.TONO_AUTOMATICO ? null : perfil.tonoRubor();
+        interior = perfil.interior();
+        siempre = perfil.siempre();
         fuerzaRubor = perfil.fuerzaRubor();
     }
 
@@ -153,6 +159,16 @@ public class ElegirCuerpoScreen extends Screen {
         sliderFuerza = new SliderFuerza(x0 + DERECHA_X, y0 + SLIDERS_Y + 74);
         addDrawableChild(sliderFuerza);
 
+        // Debajo de la vista previa: la ropa interior. Debajo de la grilla: usar siempre.
+        btnInterior = new EstiloPergamino.BotonPergamino(x0 + PREVIEW_X1, y0 + 226, PREVIEW_X2 - PREVIEW_X1, 16,
+                Text.empty(), b -> interior = interior.siguiente());
+        btnInterior.setTooltip(Tooltip.of(Text.translatable("femclothes.elegir_cuerpo.tooltip.interior")));
+        addDrawableChild(btnInterior);
+        btnSiempre = new EstiloPergamino.BotonPergamino(x0 + GRILLA_X, y0 + 224, COLUMNAS * CELDA_W - 4, 16,
+                Text.empty(), b -> siempre = !siempre);
+        btnSiempre.setTooltip(Tooltip.of(Text.translatable("femclothes.elegir_cuerpo.tooltip.siempre")));
+        addDrawableChild(btnSiempre);
+
         addDrawableChild(new EstiloPergamino.BotonPergamino(x0 + DERECHA_X, y0 + 200, DERECHA_ANCHO, 18,
                 Text.translatable("femclothes.elegir_cuerpo.boton.confirmar"), b -> confirmar()));
         addDrawableChild(new EstiloPergamino.BotonPergamino(x0 + DERECHA_X, y0 + 222, DERECHA_ANCHO, 18,
@@ -166,6 +182,10 @@ public class ElegirCuerpoScreen extends Screen {
             sincronizarSliders();
         }
         for (int z = 0; z < ZONAS; z++) botonesZona[z].active = zonaDisponible(z);
+        btnInterior.setMessage(Text.translatable("femclothes.elegir_cuerpo.boton.interior",
+                Text.translatable(interior.traduccion())));
+        btnSiempre.setMessage(Text.translatable("femclothes.elegir_cuerpo.boton.siempre",
+                Text.translatable(siempre ? "femclothes.si" : "femclothes.no")));
         sliderFuerza.visible = zona == CuerpoBaseTextures.ZONA_RUBOR;
         boolean base = zona == CuerpoBaseTextures.ZONA_BASE;
         btnAutomatico.setMessage(Text.translatable(base
@@ -184,7 +204,8 @@ public class ElegirCuerpoScreen extends Screen {
                 tonos[0] == null ? PerfilCuerpo.TONO_DE_LA_SKIN : tonos[0],
                 tonos[1] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[1],
                 tonos[2] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[2],
-                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3], fuerzaRubor));
+                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3], fuerzaRubor,
+                interior.clave, siempre));
         close();
     }
 
@@ -207,8 +228,9 @@ public class ElegirCuerpoScreen extends Screen {
         // Nombre del elegido debajo de la grilla y la ayuda del comando.
         c.drawText(textRenderer, Text.translatable("femclothes.elegir_cuerpo.elegido",
                 Text.translatable(elegido.traduccion())), x0 + GRILLA_X, y0 + 212, EstiloPergamino.TEXTO, false);
+        // Arriba, al lado del título (abajo va el botón de usar siempre).
         c.drawText(textRenderer, Text.translatable("femclothes.elegir_cuerpo.ayuda"),
-                x0 + GRILLA_X, y0 + 230, EstiloPergamino.TEXTO_APAGADO, false);
+                x0 + GRILLA_X, y0 + 8, EstiloPergamino.TEXTO_APAGADO, false);
 
         // Colores: título, de dónde sale el de la zona elegida, y la paleta.
         c.drawText(textRenderer, Text.translatable("femclothes.elegir_cuerpo.tono"), x0 + DERECHA_X, y0 + 22, EstiloPergamino.TEXTO, false);
@@ -236,12 +258,11 @@ public class ElegirCuerpoScreen extends Screen {
     private void dibujarPreview(DrawContext c, int mouseY) {
         ClientPlayerEntity jugador = MinecraftClient.getInstance().player;
         if (jugador == null) return;
-        PerfilCuerpo actual = PerfilesDeCuerpo.de(jugador);
         GarmentFeatureRenderer.perfilOverride = new PerfilCuerpo(elegido,
-                tonos[0] == null ? PerfilCuerpo.TONO_DE_LA_SKIN : tonos[0], actual.interior(), true,
+                tonos[0] == null ? PerfilCuerpo.TONO_DE_LA_SKIN : tonos[0], interior, true,
                 tonos[1] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[1],
                 tonos[2] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[2],
-                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3], fuerzaRubor);
+                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3], fuerzaRubor, siempre);
         // Sin ropa: solo el cuerpo que se está eligiendo.
         GarmentFeatureRenderer.previewOverride = List.of();
         try {

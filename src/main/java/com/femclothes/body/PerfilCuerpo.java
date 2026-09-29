@@ -23,7 +23,8 @@ import net.minecraft.util.StringIdentifiable;
  * Clara y Oscura en 0 = automáticas: salen del color Base, como antes.
  */
 public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, boolean elegido,
-                           int tonoClaro, int tonoOscuro, int tonoRubor, int fuerzaRubor) {
+                           int tonoClaro, int tonoOscuro, int tonoRubor, int fuerzaRubor,
+                           boolean siempre) {
 
     /**
      * Tono "sin elegir": lo saca de la skin del jugador.
@@ -36,7 +37,7 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
     /** Zona Clara u Oscura sin elegir: sale del color Base. */
     public static final int TONO_AUTOMATICO = 0;
     /** Fuerza del rubor por defecto, en % (2026-09-29, "poneme un selector de fuerza de rubor"). */
-    public static final int FUERZA_RUBOR_DEFECTO = 80;
+    public static final int FUERZA_RUBOR_DEFECTO = 50;
 
     /**
      * Lo que tiene un jugador que nunca abrio la GUI.
@@ -47,7 +48,7 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
      */
     public static final PerfilCuerpo DEFECTO =
             new PerfilCuerpo(CuerpoBase.SKIN_REAL, TONO_DE_LA_SKIN, RopaInterior.BASICA, false,
-                    TONO_AUTOMATICO, TONO_AUTOMATICO, TONO_AUTOMATICO, FUERZA_RUBOR_DEFECTO);
+                    TONO_AUTOMATICO, TONO_AUTOMATICO, TONO_AUTOMATICO, FUERZA_RUBOR_DEFECTO, false);
 
     public static final Codec<PerfilCuerpo> CODEC = RecordCodecBuilder.create(i -> i.group(
             // Por clave y tolerante (2026-09-29): los cuerpos viejos
@@ -63,10 +64,13 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
             // Rubor (2026-09-29, "3 por default, mas selector propio"): 0 =
             // automático, el color de la zona más saturado y oscuro.
             Codec.INT.optionalFieldOf("tono_rubor", TONO_AUTOMATICO).forGetter(PerfilCuerpo::tonoRubor),
-            Codec.INT.optionalFieldOf("fuerza_rubor", FUERZA_RUBOR_DEFECTO).forGetter(PerfilCuerpo::fuerzaRubor)
+            Codec.INT.optionalFieldOf("fuerza_rubor", FUERZA_RUBOR_DEFECTO).forGetter(PerfilCuerpo::fuerzaRubor),
+            // Usar el cuerpo como skin aunque no haya ropa del mod (2026-09-29,
+            // "un selector que directamente te deje esa skin de default").
+            Codec.BOOL.optionalFieldOf("siempre", false).forGetter(PerfilCuerpo::siempre)
     ).apply(i, PerfilCuerpo::new));
 
-    /** A mano: {@code PacketCodec.tuple} llega hasta 6 campos y son 8. */
+    /** A mano: {@code PacketCodec.tuple} llega hasta 6 campos y son 9. */
     public static final PacketCodec<RegistryByteBuf, PerfilCuerpo> PACKET_CODEC = PacketCodec.of(
             (p, buf) -> {
                 buf.writeVarInt(p.cuerpo().ordinal());
@@ -77,10 +81,11 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
                 buf.writeInt(p.tonoOscuro());
                 buf.writeInt(p.tonoRubor());
                 buf.writeVarInt(p.fuerzaRubor());
+                buf.writeBoolean(p.siempre());
             },
             buf -> new PerfilCuerpo(CuerpoBase.values()[buf.readVarInt()], buf.readInt(),
                     RopaInterior.values()[buf.readVarInt()], buf.readBoolean(),
-                    buf.readInt(), buf.readInt(), buf.readInt(), buf.readVarInt()));
+                    buf.readInt(), buf.readInt(), buf.readInt(), buf.readVarInt(), buf.readBoolean()));
 
     /** True si el tono todavia hay que sacarlo de la skin del jugador. */
     public boolean tonoDerivado() {
@@ -88,20 +93,24 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
     }
 
     public PerfilCuerpo conCuerpo(CuerpoBase c) {
-        return new PerfilCuerpo(c, tono, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor);
+        return new PerfilCuerpo(c, tono, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre);
     }
 
     public PerfilCuerpo conTono(int rgb) {
-        return new PerfilCuerpo(cuerpo, rgb, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor);
+        return new PerfilCuerpo(cuerpo, rgb, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre);
     }
 
     /** Los tres colores de una vez (la GUI de elegir cuerpo). */
     public PerfilCuerpo conTonos(int base, int claro, int oscuro, int rubor, int fuerza) {
-        return new PerfilCuerpo(cuerpo, base, interior, true, claro, oscuro, rubor, fuerza);
+        return new PerfilCuerpo(cuerpo, base, interior, true, claro, oscuro, rubor, fuerza, siempre);
+    }
+
+    public PerfilCuerpo conSiempre(boolean valor) {
+        return new PerfilCuerpo(cuerpo, tono, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, valor);
     }
 
     public PerfilCuerpo conInterior(RopaInterior r) {
-        return new PerfilCuerpo(cuerpo, tono, r, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor);
+        return new PerfilCuerpo(cuerpo, tono, r, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre);
     }
 
     /**

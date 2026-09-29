@@ -23,7 +23,11 @@ public abstract class PlayerEntityCapasSkinMixin {
 
     @Inject(method = "isPartVisible", at = @At("HEAD"), cancellable = true)
     private void femclothes$sinCapaEnVistaPrevia(PlayerModelPart parte, CallbackInfoReturnable<Boolean> cir) {
-        if (GarmentFeatureRenderer.perfilOverride != null && parte != PlayerModelPart.HAT
+        // También con el cuerpo usado como skin (2026-09-29): la segunda capa
+        // de la skin real taparía el cuerpo elegido.
+        boolean cuerpoComoSkin = GarmentFeatureRenderer.perfilOverride != null
+                || com.femclothes.body.PerfilesDeCuerpo.de((PlayerEntity) (Object) this).siempre();
+        if (cuerpoComoSkin && parte != PlayerModelPart.HAT
                 && parte != PlayerModelPart.CAPE) {
             cir.setReturnValue(false);
         }

@@ -86,7 +86,10 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
 
         List<ItemStack> prendas = previewOverride != null ? previewOverride : equipadas(entidad);
         // En la vista previa de elegir cuerpo, el cuerpo va entero aunque no haya ropa.
-        boolean cuerpoEntero = perfilOverride != null;
+        // Cuerpo entero: la vista previa de elegir cuerpo, o un perfil que usa
+        // el cuerpo como skin aunque no haya ropa (2026-09-29, "un selector que
+        // directamente te deje esa skin de default").
+        boolean cuerpoEntero = perfilOverride != null || perfilDe(entidad).siempre();
         if (prendas.isEmpty() && !cuerpoEntero) return;
 
         boolean slim = esSlim(entidad);
@@ -291,7 +294,11 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                                             @Nullable List<CuerpoGeometria.SegmentoCuerpo> segmentos,
                                             ModelPart delJugador, MatrixStack matrices,
                                             VertexConsumerProvider vertexConsumers, int luz) {
+        // Con un cuerpo elegido la pelvis también es del cuerpo (2026-09-29,
+        // "porque no cubre la zona de la pelvis?"): la piel real de la cintura
+        // para abajo tiene sentido solo con "Mi propia skin".
         Identifier pielReal = entidad instanceof AbstractClientPlayerEntity jugador
+                && perfilDe(entidad).cuerpo() == com.femclothes.body.CuerpoBase.SKIN_REAL
                 ? jugador.getSkinTextures().texture() : null;
         if (pielReal == null) {
             ModelPart nuestra = segmentos == null
@@ -352,7 +359,10 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
      */
     public static List<Parte> partesAOcultarDeVanilla(LivingEntity entidad) {
         List<ItemStack> prendas = previewOverride != null ? previewOverride : equipadas(entidad);
-        boolean cuerpoEntero = perfilOverride != null;
+        // Cuerpo entero: la vista previa de elegir cuerpo, o un perfil que usa
+        // el cuerpo como skin aunque no haya ropa (2026-09-29, "un selector que
+        // directamente te deje esa skin de default").
+        boolean cuerpoEntero = perfilOverride != null || perfilDe(entidad).siempre();
         if (prendas.isEmpty() && !cuerpoEntero) return List.of();
         Identifier cuerpo = texturaDelCuerpo(entidad, esSlim(entidad));
         if (cuerpo == null) return List.of();
@@ -411,13 +421,17 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     @Nullable
     public static PerfilCuerpo perfilOverride = null;
 
-    @Nullable
-    private static Identifier texturaDelCuerpo(LivingEntity entidad, boolean slim) {
-        PerfilCuerpo perfil = perfilOverride != null ? perfilOverride
+    /** El perfil que se está dibujando: el de la vista previa, el del jugador o el de siempre. */
+    public static PerfilCuerpo perfilDe(LivingEntity entidad) {
+        return perfilOverride != null ? perfilOverride
                 : entidad instanceof PlayerEntity jugador
                 ? PerfilesDeCuerpo.de(jugador)
                 : PerfilCuerpo.DEFECTO;
-        return CuerpoBaseTextures.de(entidad, perfil, slim);
+    }
+
+    @Nullable
+    private static Identifier texturaDelCuerpo(LivingEntity entidad, boolean slim) {
+        return CuerpoBaseTextures.de(entidad, perfilDe(entidad), slim);
     }
 
     /**

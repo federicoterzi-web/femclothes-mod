@@ -246,8 +246,11 @@ public final class CuerpoBaseTextures {
      * verde no aparecen manchas violetas.
      */
     public static final int ZONA_RUBOR = 3;
-    /** Diferencia R - (G+B)/2 de la máscara que cuenta como rubor pleno (el más rosado del zip anda por 23). */
-    private static final float RUBOR_PLENO = 24f;
+    /** Diferencia R - (G+B)/2 de la máscara que cuenta como rubor pleno. */
+    // 10 y no 24 (2026-09-29, "no se si el blush esta aplicando, no veo cambios
+    // con el slider"): el rosado de las máscaras es suave (casi todo entre 4 y
+    // 12), así que con 24 el rubor pleno no llegaba ni a la mitad.
+    private static final float RUBOR_PLENO = 10f;
     private static final int LIMITE_OSCURA = 75, LIMITE_CLARA = 165;
 
     public static int zonaDe(int gris, boolean animal) {
