@@ -51,6 +51,8 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
     private static final int M_DERECHA = TinturasScreenHandler.M_DERECHA;
     /** Etiquetas de los 5 sliders — el quinto es la Transparencia de la tinta (2026-09-28). */
     private static final String[] NOMBRE_CANAL = { "Cyan", "Magenta", "Yellow", "Key", "Transp." };
+    /** Color del líquido de cada tanque C/M/Y/K — los mismos que la Sublimadora. */
+    private static final int[] COLOR_TANQUE = { 0xFF1FB3D6, 0xFFD6287F, 0xFFE8C21E, 0xFF2A2A2A };
 
     /** Mismos esquemas que la Modeladora (reusados tal cual) — Pollera no tiene. */
     private static final Identifier[] TEXTURE_ESQUEMA = {
@@ -115,6 +117,7 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
 
     @Override
     protected void init() {
+        EstiloPergamino.usarTema(EstiloPergamino.Tema.VERDIN);
         super.init();
 
         btnCategoria = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 20, TinturasScreenHandler.M_MEDIO_ANCHO, 14, Text.literal(""), b -> clickBoton(TinturasBlockEntity.BTN_CATEGORIA));
@@ -723,6 +726,45 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
             if (nivel == ultimoNivelEnviado) return;
             ultimoNivelEnviado = nivel;
             clickBoton(handler.be.botonMezcla(canal, nivel));
+        }
+
+        /**
+         * Slider y tanque en uno (2026-09-29, "la subli tiene indicador de
+         * insumos, alguna forma de agregarsela a la tinturas fusionandola
+         * de alguna manera con los sliders?"): el canal del slider es el
+         * tanque — se llena con el color de la tinta según lo cargado
+         * (mismas barras que la Sublimadora) y a la derecha dice "n/64", en
+         * rojo si está vacío. El mango de madera marca la mezcla. La
+         * Transparencia no gasta tinta: canal vacío, sin número.
+         */
+        @Override
+        public void renderWidget(DrawContext c, int mouseX, int mouseY, float delta) {
+            int x0 = getX(), y0 = getY(), w = getWidth(), h = getHeight();
+            c.fill(x0 - 1, y0 - 1, x0 + w + 1, y0 + h + 1, 0xFF2A180C);
+            c.fill(x0, y0, x0 + w, y0 + h, 0xFF8A7556);
+            boolean tanque = canal < 4;
+            int carga = tanque ? handler.be.carga(canal) : 0;
+            if (tanque && carga > 0) {
+                int lleno = w * carga / TinturasBlockEntity.CARGA_MAXIMA;
+                c.fill(x0, y0, x0 + lleno, y0 + h, COLOR_TANQUE[canal]);
+                c.fill(x0, y0, x0 + lleno, y0 + 1, 0x40FFFFFF);   // brillo del líquido
+            }
+            // Mango: mismo recorrido que SliderWidget (8 px de ancho).
+            int mx = x0 + (int) (this.value * (w - 8));
+            EstiloPergamino.fondoBoton(c, mx, y0, 8, h, isHovered() || isFocused(), this.active);
+
+            var fuente = MinecraftClient.getInstance().textRenderer;
+            int ty = y0 + (h - 8) / 2;
+            Text m = getMessage();
+            // El texto pasa por encima del mango: sombra oscura para que se lea sobre cualquier tinta.
+            c.drawText(fuente, m, x0 + 5, ty + 1, 0xFF2A180C, false);
+            c.drawText(fuente, m, x0 + 4, ty, EstiloPergamino.TEXTO_CLARO, false);
+            if (tanque) {
+                String n = carga + "/" + TinturasBlockEntity.CARGA_MAXIMA;
+                int nx = x0 + w - 4 - fuente.getWidth(n);
+                c.drawText(fuente, n, nx + 1, ty + 1, 0xFF2A180C, false);
+                c.drawText(fuente, n, nx, ty, carga == 0 ? 0xFFFF5A48 : EstiloPergamino.TEXTO_CLARO, false);
+            }
         }
 
         /** Refleja el nivel del cuadradito recién seleccionado SIN mandar un click. */

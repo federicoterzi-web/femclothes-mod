@@ -36,6 +36,37 @@ CUERO = np.array([44, 34, 28], np.float32)
 COSTURA = (128, 88, 52)
 COSTURA_LUZ = (240, 214, 160)
 
+# Tema de color por máquina (2026-09-29, "cada una tenia un tema de color,
+# estacion de tintes verdoso, modeladora cobrizo y sublimadora dorado,
+# podemos cambiar los colores de las guis para que reflejen estas
+# tematicas?"): cambia el metal de los filos/esquinas/slots y tiñe un poco
+# el pergamino; la madera queda igual en las tres para que sigan siendo
+# hermanas. Mismos valores que EstiloPergamino.Tema en Java.
+TEMAS = {
+    "laton": dict(pergamino=[222, 188, 132], claro=[244, 208, 112], medio=[196, 150, 62], oscuro=[104, 72, 26]),
+    "verdin": dict(pergamino=[208, 198, 144], claro=[150, 212, 170], medio=[72, 146, 112], oscuro=[28, 74, 56]),
+    "cobre": dict(pergamino=[226, 184, 140], claro=[242, 170, 120], medio=[184, 102, 56], oscuro=[96, 44, 22]),
+    "oro": dict(pergamino=[230, 198, 124], claro=[255, 228, 118], medio=[216, 170, 38], oscuro=[122, 86, 8]),
+}
+# Interior hundido de los slots, relativo al pergamino (antes fijo en 178,142,96 / 120,88,54 / 150,114,72).
+_SLOT_FONDO_REL = np.array([178, 142, 96], np.float32) / np.array([222, 188, 132], np.float32)
+_SLOT_SOMBRA_REL = np.array([120, 88, 54], np.float32) / np.array([222, 188, 132], np.float32)
+_SLOT_MEDIO_REL = np.array([150, 114, 72], np.float32) / np.array([222, 188, 132], np.float32)
+SLOT_FONDO, SLOT_SOMBRA, SLOT_MEDIO = (178, 142, 96), (120, 88, 54), (150, 114, 72)
+
+
+def aplicar_tema(nombre):
+    """Reasigna la paleta del módulo (las funciones de dibujo la leen al llamarse)."""
+    global PERGAMINO, LATON_CLARO, LATON, LATON_OSCURO, SLOT_FONDO, SLOT_SOMBRA, SLOT_MEDIO
+    t = TEMAS[nombre]
+    PERGAMINO = np.array(t["pergamino"], np.float32)
+    LATON_CLARO = np.array(t["claro"], np.float32)
+    LATON = np.array(t["medio"], np.float32)
+    LATON_OSCURO = np.array(t["oscuro"], np.float32)
+    SLOT_FONDO = tuple(int(v) for v in np.clip(PERGAMINO * _SLOT_FONDO_REL, 0, 255))
+    SLOT_SOMBRA = tuple(int(v) for v in np.clip(PERGAMINO * _SLOT_SOMBRA_REL, 0, 255))
+    SLOT_MEDIO = tuple(int(v) for v in np.clip(PERGAMINO * _SLOT_MEDIO_REL, 0, 255))
+
 rng = np.random.default_rng(20260927)
 
 
@@ -133,11 +164,11 @@ def slot(img, sx, sy):
     x0, y0 = sx - 1, sy - 1
     im = Image.fromarray(rgb(img))
     d = ImageDraw.Draw(im)
-    d.rectangle([x0, y0, x0 + 17, y0 + 17], fill=(178, 142, 96))
-    d.line([(x0 + 1, y0 + 1), (x0 + 16, y0 + 1)], fill=(120, 88, 54))
-    d.line([(x0 + 1, y0 + 1), (x0 + 1, y0 + 16)], fill=(120, 88, 54))
-    d.line([(x0 + 2, y0 + 2), (x0 + 15, y0 + 2)], fill=(150, 114, 72))
-    d.line([(x0 + 2, y0 + 2), (x0 + 2, y0 + 15)], fill=(150, 114, 72))
+    d.rectangle([x0, y0, x0 + 17, y0 + 17], fill=SLOT_FONDO)
+    d.line([(x0 + 1, y0 + 1), (x0 + 16, y0 + 1)], fill=SLOT_SOMBRA)
+    d.line([(x0 + 1, y0 + 1), (x0 + 1, y0 + 16)], fill=SLOT_SOMBRA)
+    d.line([(x0 + 2, y0 + 2), (x0 + 15, y0 + 2)], fill=SLOT_MEDIO)
+    d.line([(x0 + 2, y0 + 2), (x0 + 2, y0 + 15)], fill=SLOT_MEDIO)
     d.line([(x0, y0), (x0 + 17, y0)], fill=tuple(LATON_CLARO.astype(int)))
     d.line([(x0, y0), (x0, y0 + 17)], fill=tuple(LATON_CLARO.astype(int)))
     d.line([(x0, y0 + 17), (x0 + 17, y0 + 17)], fill=tuple(LATON_OSCURO.astype(int)))
@@ -165,10 +196,10 @@ def slot_grande(img, x0, y0, lado=32):
     """Marco de 32x32 (copiado de generar_textura_modelado.py): latón fino por fuera, interior de pergamino hundido."""
     im = Image.fromarray(rgb(img))
     d = ImageDraw.Draw(im)
-    d.rectangle([x0, y0, x0 + lado - 1, y0 + lado - 1], fill=(178, 142, 96))
-    d.rectangle([x0 + 1, y0 + 1, x0 + lado - 2, y0 + lado - 2], outline=(120, 88, 54))
-    d.line([(x0 + 2, y0 + 2), (x0 + lado - 3, y0 + 2)], fill=(150, 114, 72))
-    d.line([(x0 + 2, y0 + 2), (x0 + 2, y0 + lado - 3)], fill=(150, 114, 72))
+    d.rectangle([x0, y0, x0 + lado - 1, y0 + lado - 1], fill=SLOT_FONDO)
+    d.rectangle([x0 + 1, y0 + 1, x0 + lado - 2, y0 + lado - 2], outline=SLOT_SOMBRA)
+    d.line([(x0 + 2, y0 + 2), (x0 + lado - 3, y0 + 2)], fill=SLOT_MEDIO)
+    d.line([(x0 + 2, y0 + 2), (x0 + 2, y0 + lado - 3)], fill=SLOT_MEDIO)
     d.line([(x0, y0), (x0 + lado - 1, y0)], fill=tuple(LATON_CLARO.astype(int)))
     d.line([(x0, y0), (x0, y0 + lado - 1)], fill=tuple(LATON_CLARO.astype(int)))
     d.line([(x0, y0 + lado - 1), (x0 + lado - 1, y0 + lado - 1)], fill=tuple(LATON_OSCURO.astype(int)))
@@ -200,6 +231,7 @@ def costura_vertical(img, x, y0, y1):
 
 
 def main():
+    aplicar_tema("verdin")
     img = pergamino(ANCHO, ALTO)
     img = marco_madera(img, 5)
 

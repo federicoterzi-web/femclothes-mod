@@ -28,7 +28,8 @@ public final class ModeladoMod {
                     // block entity) — sin esto vanilla lo trata como cubo
                     // opaco sólido y cullea la cara del bloque de abajo,
                     // que se ve como si el modelo se "comiera" esa cara.
-                    .nonOpaque());
+                    .nonOpaque()
+                    .luminance(com.femclothes.util.LuzMaquina::luminancia));
 
     public static final ModeladoBlockItem MODELADO_BLOCK_ITEM = new ModeladoBlockItem(MODELADO_BLOCK, new Item.Settings());
 

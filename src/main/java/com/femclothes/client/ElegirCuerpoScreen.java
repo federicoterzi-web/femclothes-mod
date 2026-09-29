@@ -98,6 +98,7 @@ public class ElegirCuerpoScreen extends Screen {
 
     @Override
     protected void init() {
+        EstiloPergamino.usarTema(EstiloPergamino.Tema.LATON);
         x0 = (this.width - ANCHO) / 2;
         y0 = (this.height - ALTO) / 2;
 

@@ -186,6 +186,26 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         if (stack == null) return;
 
         float dilatacion = com.femclothes.item.Calce.dilatacionEfectiva(stack);
+        Identifier textura = texturaPollera(stack);
+
+        ModelPart delJugador = CuerpoGeometria.delJugador(biped, Parte.TORSO);
+        if (!delJugador.visible) return;
+        // Se probó reemplazar esto por PolleraJsonGeometria (4 estilos
+        // traídos de un Artifact externo, 2026-09-17) pero el parser tenía
+        // un bug real de conversión de Y — los largos más largos quedaban
+        // como un pedestal pegado a la cadera en vez de llegar al tobillo.
+        // A pedido ("prefiero nuestro modelo"), vuelve a PolleraGeometria
+        // (gajos plegados a mano, con el cinto que ya se veía bien).
+        dibujarModelPart(PolleraGeometria.raiz(dilatacion), CuerpoGeometria.Superficie.CUERPO, textura,
+                delJugador, matrices, vertexConsumers, luz);
+    }
+
+    /**
+     * La tela de la pollera ya teñida — separada de {@link #dibujarPollera}
+     * (2026-09-29) para que el ícono del ítem ({@code IconoPrenda}) saque el
+     * color del mismo lugar que la prenda puesta.
+     */
+    public static Identifier texturaPollera(ItemStack stack) {
         int colorBase = com.femclothes.region.RegionResolver.colorBase(stack, com.femclothes.region.Lado.IZQUIERDA);
         // Patrón habilitado a pedido (2026-09-18): antes esta llamada
         // ignoraba el patrón por completo (mask=null fijo), así que la
@@ -204,19 +224,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             if (!capa.lisa() && mascara == null) continue;
             capasMascaraPollera.add(ClothingTextureCache.CapaMascara.de(capa, mascara, null));
         }
-        Identifier textura = ClothingTextureCache.composeGarmentCapas(POLLERA_BASE, colorBase, capasMascaraPollera,
+        return ClothingTextureCache.composeGarmentCapas(POLLERA_BASE, colorBase, capasMascaraPollera,
                 ClothingTextureCache.Shading.NONE, null);
-
-        ModelPart delJugador = CuerpoGeometria.delJugador(biped, Parte.TORSO);
-        if (!delJugador.visible) return;
-        // Se probó reemplazar esto por PolleraJsonGeometria (4 estilos
-        // traídos de un Artifact externo, 2026-09-17) pero el parser tenía
-        // un bug real de conversión de Y — los largos más largos quedaban
-        // como un pedestal pegado a la cadera en vez de llegar al tobillo.
-        // A pedido ("prefiero nuestro modelo"), vuelve a PolleraGeometria
-        // (gajos plegados a mano, con el cinto que ya se veía bien).
-        dibujarModelPart(PolleraGeometria.raiz(dilatacion), CuerpoGeometria.Superficie.CUERPO, textura,
-                delJugador, matrices, vertexConsumers, luz);
     }
 
     /** Copia la pose ya calculada de la parte del jugador y dibuja la nuestra encima. */

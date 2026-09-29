@@ -84,6 +84,7 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
 
     @Override
     protected void init() {
+        EstiloPergamino.usarTema(EstiloPergamino.Tema.ORO);
         super.init();
 
         btnCategoria = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 20, SublimadoraScreenHandler.M_MEDIO_ANCHO, 14,

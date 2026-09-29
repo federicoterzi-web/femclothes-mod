@@ -304,6 +304,10 @@ public class SublimadoraBlockEntity extends BlockEntity
         // lo que le sincroniza el NBT.
         if (world.isClient) return;
 
+        // Luz del LED (2026-09-29, "hace que las luces de las maquinas iluminen").
+        com.femclothes.util.LuzMaquina.actualizar(world, pos, state,
+                be.estado == Estado.PRENSANDO || be.estado == Estado.LISTO);
+
         if (be.estado == Estado.LISTO) {
             be.empujarSalida(world, pos);
         }

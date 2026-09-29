@@ -89,8 +89,14 @@ public class ModeladoGeoModel extends GeoModel<ModeladoBlockEntity> {
 
         GeoBone progreso = getAnimationProcessor().getBone("progress");
         if (progreso != null) {
-            float nivel = be.estado() == ModeladoBlockEntity.Estado.PROCESANDO
-                    ? be.progreso() / (float) ModeladoBlockEntity.TICKS_PROCESO : 0f;
+            // Llena mientras la prenda espera en la salida, igual que la
+            // Sublimadora (2026-09-29, "las barras de progreso... las
+            // normalicemos").
+            float nivel = switch (be.estado()) {
+                case PROCESANDO -> be.progreso() / (float) ModeladoBlockEntity.TICKS_PROCESO;
+                case LISTO -> 1f;
+                default -> 0f;
+            };
             progreso.setScaleX(Math.max(0.001f, nivel * FACTOR_PROGRESO));
             progreso.setHidden(nivel <= 0.001f);
         }

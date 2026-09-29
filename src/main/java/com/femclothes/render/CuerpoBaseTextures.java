@@ -183,7 +183,12 @@ public final class CuerpoBaseTextures {
     }
 
     private static NativeImage componer(PerfilCuerpo perfil, int tonoRgb, boolean slim) {
-        final int S = CuerpoGeometria.ESCALA_CUERPO;
+        NativeImage mascara = perfil.cuerpo().tieneTextura() ? mascaraPara(perfil.cuerpo(), slim) : null;
+        // A la escala de la máscara (2026-09-29, "texturas con mayor
+        // resolucion": las del zip vienen a 6x, 384x384): la geometría del
+        // cuerpo usa UV normalizadas, así que una textura más grande calza
+        // igual y solo gana detalle. Sin máscara (Tu skin), 1x como siempre.
+        final int S = mascara != null ? Math.max(1, mascara.getWidth() / LayoutSkin.LADO) : CuerpoGeometria.ESCALA_CUERPO;
         final int lado = LayoutSkin.LADO * S;
 
         NativeImage img = new NativeImage(lado, lado, true);
@@ -212,11 +217,8 @@ public final class CuerpoBaseTextures {
             }
         }
 
-        if (perfil.cuerpo().tieneTextura()) {
-            NativeImage mascara = mascaraPara(perfil.cuerpo(), slim);
-            if (mascara != null) colorearPorZonas(img, mascara, perfil.cuerpo().animal, tonoRgb,
-                    perfil.tonoClaro(), perfil.tonoOscuro());
-        }
+        if (mascara != null) colorearPorZonas(img, mascara, perfil.cuerpo().animal, tonoRgb,
+                perfil.tonoClaro(), perfil.tonoOscuro());
         superponer(img, perfil.interior().textura());
         return img;
     }
@@ -294,14 +296,17 @@ public final class CuerpoBaseTextures {
         if (hechas != null) return hechas;
         int[][] histo = new int[3][256];
         int[] total = new int[3];
-        for (int y = 0; y < mascara.getHeight(); y++) {
-            for (int x = 0; x < mascara.getWidth(); x++) {
+        int w = mascara.getWidth(), h = mascara.getHeight();
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
                 int m = mascara.getColor(x, y);
                 if (((m >> 24) & 0xFF) == 0) continue;
                 // Solo la capa BASE del cuerpo (lo que se dibuja): sin cabeza
                 // ni capas externas, que en el layout de 64x64 son las filas
-                // 0-15, 32-47 y las esquinas de abajo.
-                boolean capaBase = (y >= 16 && y < 32) || (y >= 48 && x >= 16 && x < 48);
+                // 0-15, 32-47 y las esquinas de abajo (la máscara puede venir
+                // a más resolución: se mira en coordenadas de 64).
+                int sx = x * LayoutSkin.LADO / w, sy = y * LayoutSkin.LADO / h;
+                boolean capaBase = (sy >= 16 && sy < 32) || (sy >= 48 && sx >= 16 && sx < 48);
                 if (!capaBase) continue;
                 int gris = m & 0xFF;
                 int zona = zonaDe(gris, animal);
@@ -344,8 +349,10 @@ public final class CuerpoBaseTextures {
         }
         NativeImage adaptada = new NativeImage(original.getWidth(), original.getHeight(), true);
         adaptada.copyFrom(original);
+        int escala = Math.max(1, original.getWidth() / LayoutSkin.LADO);
         for (Parte brazo : new Parte[]{Parte.BRAZO_DER, Parte.BRAZO_IZQ}) {
-            CajaSkin desde = LayoutSkin.base(brazo, cuerpo.slim), hacia = LayoutSkin.base(brazo, slim);
+            CajaSkin desde = LayoutSkin.base(brazo, cuerpo.slim).escalada(escala);
+            CajaSkin hacia = LayoutSkin.base(brazo, slim).escalada(escala);
             // Primero se limpia el lugar de las dos versiones (la classic es mas ancha).
             CajaSkin.Rect a = desde.todo(), b = hacia.todo();
             for (int y = Math.min(a.y0(), b.y0()); y < Math.max(a.y1(), b.y1()); y++) {
@@ -428,9 +435,12 @@ public final class CuerpoBaseTextures {
     private static void superponer(NativeImage img, Identifier textura) {
         NativeImage encima = ClothingTextureCache.imagenBase(textura);
         if (encima == null) return;
-        for (int y = 0; y < Math.min(img.getHeight(), encima.getHeight()); y++) {
-            for (int x = 0; x < Math.min(img.getWidth(), encima.getWidth()); x++) {
-                int px = encima.getColor(x, y);
+        // El cuerpo puede estar a otra escala que la ropa interior (las
+        // máscaras HD van a 6x): se lee en la posición proporcional.
+        int ew = encima.getWidth(), eh = encima.getHeight(), iw = img.getWidth(), ih = img.getHeight();
+        for (int y = 0; y < ih; y++) {
+            for (int x = 0; x < iw; x++) {
+                int px = encima.getColor(x * ew / iw, y * eh / ih);
                 int a = (px >> 24) & 0xFF;
                 if (a == 0) continue;
                 if (a == 255) {

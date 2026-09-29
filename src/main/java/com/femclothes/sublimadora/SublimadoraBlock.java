@@ -42,7 +42,8 @@ public class SublimadoraBlock extends BlockWithEntity {
 
     public SublimadoraBlock(Settings settings) {
         super(settings);
-        setDefaultState(getDefaultState().with(FACING, Direction.NORTH).with(OPEN, false));
+        setDefaultState(getDefaultState().with(FACING, Direction.NORTH).with(OPEN, false)
+                .with(com.femclothes.util.LuzMaquina.LIT, false));
     }
 
     @Override
@@ -52,7 +53,7 @@ public class SublimadoraBlock extends BlockWithEntity {
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(FACING, OPEN);
+        builder.add(FACING, OPEN, com.femclothes.util.LuzMaquina.LIT);
     }
 
     @Override

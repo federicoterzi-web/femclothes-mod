@@ -229,7 +229,14 @@ public class TinturasGeoModel extends GeoModel<TinturasBlockEntity> {
 
         GeoBone progreso = getAnimationProcessor().getBone("progress");
         if (progreso != null) {
-            float nivel = be.progresoFraccion();
+            // Normalizada con las hermanas (2026-09-29, "las barras de
+            // progreso la q mas me gusta es la de la tintura porque tiene
+            // fondo negro nomas que crece para el lado contrario que
+            // deberia. las normalicemos"): el pivote del hueso pasó al
+            // otro borde en el .geo.json (el modelo mira a +z, al revés que
+            // las otras dos) y queda llena con la prenda lista en la salida.
+            boolean lista = be.estado() == TinturasBlockEntity.Estado.REPOSO && !be.getSalida().isEmpty();
+            float nivel = lista ? 1f : be.progresoFraccion();
             progreso.setScaleX(Math.max(0.001f, nivel));
             progreso.setHidden(nivel <= 0.001f);
         }

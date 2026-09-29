@@ -106,6 +106,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
 
     @Override
     protected void init() {
+        EstiloPergamino.usarTema(EstiloPergamino.Tema.COBRE);
         super.init();
 
         btnCategoria = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 20, M_MEDIO_ANCHO, 14, Text.literal(""), b -> clickBoton(ModeladoBlockEntity.BTN_CATEGORIA));
