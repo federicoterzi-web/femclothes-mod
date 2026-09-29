@@ -20,6 +20,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 /**
  * Elegir el cuerpo base (2026-09-29, "la primera vez que uno se pone una
  * prenda del mod te lance una gui con el color de skin calculado y te de la
@@ -27,12 +29,16 @@ import org.jetbrains.annotations.Nullable;
  * comando para overridearla").
  *
  * <ul>
- *   <li>Izquierda: vista previa 3D del jugador con el cuerpo y el tono que
- *   se están eligiendo (arrastrar para girar) — {@link GarmentFeatureRenderer#perfilOverride}.</li>
- *   <li>Centro: "Tu skin" + los 19 cuerpos del zip, cada uno con una
- *   miniatura de frente teñida con el tono.</li>
- *   <li>Derecha: el tono — de entrada el calculado de la skin; los sliders
- *   lo pasan a elegido a mano, y "Tono de mi skin" lo vuelve al calculado.</li>
+ *   <li>Izquierda: vista previa 3D del jugador SIN ropa y sin la segunda capa
+ *   de la skin (ni la de 3D Skin Layers) — "tiene que aparecer sin ropa y
+ *   sin la capa de 3dsl en el cuerpo" — con el cuerpo y los colores que se
+ *   están eligiendo; arrastrar para girar.</li>
+ *   <li>Centro: "Tu skin" + los 19 cuerpos del zip, con miniatura teñida.</li>
+ *   <li>Derecha: los colores. Tres zonas (Base, Clara, Oscura — "tiene un
+ *   tono de pelaje y un tono en la pancita"; Clara y Oscura solo en los
+ *   animales), la paleta de 5 colores sacados de la skin ("poder
+ *   seleccionar hasta 5 colores directamente de la skin"), sliders R/G/B de
+ *   la zona elegida y un botón para volver a lo automático.</li>
  * </ul>
  * Confirmar lo guarda en el perfil (y ya no salta sola). "Ahora no" la
  * cierra sin guardar: vuelve a saltar la próxima sesión. {@code /femclothes
@@ -44,14 +50,22 @@ public class ElegirCuerpoScreen extends Screen {
     private static final int PREVIEW_X1 = 8, PREVIEW_Y1 = 22, PREVIEW_X2 = 108, PREVIEW_Y2 = 222;
     private static final int GRILLA_X = 116, GRILLA_Y = 22, CELDA_W = 44, CELDA_H = 46, COLUMNAS = 5;
     private static final int DERECHA_X = 344, DERECHA_ANCHO = 128;
+    private static final int ZONAS_Y = 34, PALETA_Y = 90, SLIDERS_Y = 110;
     /** Tono de reserva mientras la skin no bajó (el mismo beige que usa el resto del mod). */
     private static final int TONO_RESERVA = 0xC89F7E;
+    private static final String[] CLAVE_ZONA = {"base", "clara", "oscura"};
 
     private int x0, y0;
     private CuerpoBase elegido;
-    /** null = el tono sale de la skin. */
-    @Nullable private Integer tonoManual;
+    /**
+     * Color elegido a mano de cada zona (Base, Clara, Oscura); null =
+     * automático — la Base sale de la skin, Clara y Oscura del color Base.
+     */
+    private final Integer[] tonos = new Integer[3];
+    private int zona = CuerpoBaseTextures.ZONA_BASE;
     private final SliderCanal[] sliders = new SliderCanal[3];
+    private final BotonZona[] botonesZona = new BotonZona[3];
+    private ButtonWidget btnAutomatico;
     private float anguloVista = 0f;
     private boolean arrastrando = false;
 
@@ -60,7 +74,9 @@ public class ElegirCuerpoScreen extends Screen {
         ClientPlayerEntity jugador = MinecraftClient.getInstance().player;
         PerfilCuerpo perfil = jugador == null ? PerfilCuerpo.DEFECTO : PerfilesDeCuerpo.de(jugador);
         this.elegido = perfil.cuerpo();
-        this.tonoManual = perfil.tonoDerivado() ? null : perfil.tono();
+        tonos[0] = perfil.tonoDerivado() ? null : perfil.tono();
+        tonos[1] = perfil.tonoClaro() == PerfilCuerpo.TONO_AUTOMATICO ? null : perfil.tonoClaro();
+        tonos[2] = perfil.tonoOscuro() == PerfilCuerpo.TONO_AUTOMATICO ? null : perfil.tonoOscuro();
     }
 
     private int tonoDeLaSkin() {
@@ -69,8 +85,15 @@ public class ElegirCuerpoScreen extends Screen {
         return t == null ? TONO_RESERVA : t;
     }
 
-    private int tonoActual() {
-        return tonoManual != null ? tonoManual : tonoDeLaSkin();
+    /** El color con el que se ve la zona {@code z} ahora (las automáticas muestran el Base). */
+    private int colorDeZona(int z) {
+        if (tonos[z] != null) return tonos[z];
+        return tonos[0] != null ? tonos[0] : tonoDeLaSkin();
+    }
+
+    /** Clara y Oscura solo tienen sentido en los cuerpos de animal. */
+    private boolean zonaDisponible(int z) {
+        return z == CuerpoBaseTextures.ZONA_BASE || elegido.animal;
     }
 
     @Override
@@ -88,35 +111,70 @@ public class ElegirCuerpoScreen extends Screen {
             addDrawableChild(b);
         }
 
-        int t = tonoActual();
+        for (int z = 0; z < 3; z++) {
+            botonesZona[z] = new BotonZona(z, x0 + DERECHA_X + z * 43, y0 + ZONAS_Y);
+            botonesZona[z].setTooltip(Tooltip.of(Text.translatable("femclothes.elegir_cuerpo.tooltip.zona." + CLAVE_ZONA[z])));
+            addDrawableChild(botonesZona[z]);
+        }
+
+        // Paleta: hasta 5 colores sacados de la skin.
+        ClientPlayerEntity jugador = MinecraftClient.getInstance().player;
+        List<Integer> paleta = jugador == null ? List.of() : CuerpoBaseTextures.paletaDeLaSkin(jugador);
+        for (int i = 0; i < paleta.size(); i++) {
+            BotonPaleta b = new BotonPaleta(paleta.get(i), x0 + DERECHA_X + i * 26, y0 + PALETA_Y);
+            b.setTooltip(Tooltip.of(Text.translatable("femclothes.elegir_cuerpo.tooltip.paleta")));
+            addDrawableChild(b);
+        }
+
+        int t = colorDeZona(zona);
         for (int canal = 0; canal < 3; canal++) {
-            sliders[canal] = new SliderCanal(x0 + DERECHA_X, y0 + 78 + canal * 18, canal, (t >> (16 - 8 * canal)) & 0xFF);
+            sliders[canal] = new SliderCanal(x0 + DERECHA_X, y0 + SLIDERS_Y + canal * 18, canal, (t >> (16 - 8 * canal)) & 0xFF);
             addDrawableChild(sliders[canal]);
         }
 
-        ButtonWidget deLaSkin = new EstiloPergamino.BotonPergamino(x0 + DERECHA_X, y0 + 136, DERECHA_ANCHO, 16,
-                Text.translatable("femclothes.elegir_cuerpo.boton.skin"), b -> {
-            tonoManual = null;
+        btnAutomatico = new EstiloPergamino.BotonPergamino(x0 + DERECHA_X, y0 + SLIDERS_Y + 56, DERECHA_ANCHO, 16,
+                Text.empty(), b -> {
+            tonos[zona] = null;
             sincronizarSliders();
         });
-        deLaSkin.setTooltip(Tooltip.of(Text.translatable("femclothes.elegir_cuerpo.tooltip.skin")));
-        addDrawableChild(deLaSkin);
+        addDrawableChild(btnAutomatico);
 
         addDrawableChild(new EstiloPergamino.BotonPergamino(x0 + DERECHA_X, y0 + 200, DERECHA_ANCHO, 18,
                 Text.translatable("femclothes.elegir_cuerpo.boton.confirmar"), b -> confirmar()));
         addDrawableChild(new EstiloPergamino.BotonPergamino(x0 + DERECHA_X, y0 + 222, DERECHA_ANCHO, 18,
                 Text.translatable("femclothes.elegir_cuerpo.boton.despues"), b -> close()));
+        refrescar();
+    }
+
+    private void refrescar() {
+        if (!zonaDisponible(zona)) {
+            zona = CuerpoBaseTextures.ZONA_BASE;
+            sincronizarSliders();
+        }
+        for (int z = 0; z < 3; z++) botonesZona[z].active = zonaDisponible(z);
+        boolean base = zona == CuerpoBaseTextures.ZONA_BASE;
+        btnAutomatico.setMessage(Text.translatable(base
+                ? "femclothes.elegir_cuerpo.boton.skin" : "femclothes.elegir_cuerpo.boton.automatico"));
+        btnAutomatico.setTooltip(Tooltip.of(Text.translatable(base
+                ? "femclothes.elegir_cuerpo.tooltip.skin" : "femclothes.elegir_cuerpo.tooltip.automatico")));
     }
 
     private void sincronizarSliders() {
-        int t = tonoActual();
+        int t = colorDeZona(zona);
         for (int canal = 0; canal < 3; canal++) sliders[canal].fijar((t >> (16 - 8 * canal)) & 0xFF);
     }
 
     private void confirmar() {
         ClientPlayNetworking.send(new RedCuerpo.Elegir(elegido.clave,
-                tonoManual == null ? PerfilCuerpo.TONO_DE_LA_SKIN : tonoManual));
+                tonos[0] == null ? PerfilCuerpo.TONO_DE_LA_SKIN : tonos[0],
+                tonos[1] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[1],
+                tonos[2] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[2]));
         close();
+    }
+
+    /** 0 es "automático" en el perfil: el negro puro elegido a mano va como 1. */
+    private static int sinCero(int rgb) {
+        return rgb == 0 ? 1 : rgb;
     }
 
     @Override
@@ -126,6 +184,7 @@ public class ElegirCuerpoScreen extends Screen {
 
     @Override
     public void render(DrawContext c, int mouseX, int mouseY, float delta) {
+        refrescar();
         super.render(c, mouseX, mouseY, delta);
         c.drawText(textRenderer, this.title, x0 + 8, y0 + 8, EstiloPergamino.TEXTO, false);
 
@@ -135,14 +194,14 @@ public class ElegirCuerpoScreen extends Screen {
         c.drawText(textRenderer, Text.translatable("femclothes.elegir_cuerpo.ayuda"),
                 x0 + GRILLA_X, y0 + 230, EstiloPergamino.TEXTO_APAGADO, false);
 
-        // Tono: muestra, y de dónde sale.
+        // Colores: título, de dónde sale el de la zona elegida, y la paleta.
         c.drawText(textRenderer, Text.translatable("femclothes.elegir_cuerpo.tono"), x0 + DERECHA_X, y0 + 22, EstiloPergamino.TEXTO, false);
-        int sx = x0 + DERECHA_X, sy = y0 + 34;
-        c.fill(sx - 1, sy - 1, sx + DERECHA_ANCHO + 1, sy + 25, 0xFF2A180C);
-        c.fill(sx, sy, sx + DERECHA_ANCHO, sy + 24, 0xFF000000 | tonoActual());
-        c.drawText(textRenderer, Text.translatable(tonoManual == null
-                        ? "femclothes.elegir_cuerpo.tono_skin" : "femclothes.elegir_cuerpo.tono_mano"),
-                x0 + DERECHA_X, y0 + 64, EstiloPergamino.TEXTO, false);
+        String estado = tonos[zona] != null ? "femclothes.elegir_cuerpo.tono_mano"
+                : zona == CuerpoBaseTextures.ZONA_BASE ? "femclothes.elegir_cuerpo.tono_skin"
+                : "femclothes.elegir_cuerpo.tono_auto";
+        c.drawText(textRenderer, Text.translatable(estado), x0 + DERECHA_X, y0 + 66, EstiloPergamino.TEXTO, false);
+        c.drawText(textRenderer, Text.translatable("femclothes.elegir_cuerpo.de_tu_skin"), x0 + DERECHA_X, y0 + PALETA_Y - 10,
+                EstiloPergamino.TEXTO, false);
 
         dibujarPreview(c, mouseY);
     }
@@ -163,12 +222,17 @@ public class ElegirCuerpoScreen extends Screen {
         if (jugador == null) return;
         PerfilCuerpo actual = PerfilesDeCuerpo.de(jugador);
         GarmentFeatureRenderer.perfilOverride = new PerfilCuerpo(elegido,
-                tonoManual == null ? PerfilCuerpo.TONO_DE_LA_SKIN : tonoManual, actual.interior(), true);
+                tonos[0] == null ? PerfilCuerpo.TONO_DE_LA_SKIN : tonos[0], actual.interior(), true,
+                tonos[1] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[1],
+                tonos[2] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[2]);
+        // Sin ropa: solo el cuerpo que se está eligiendo.
+        GarmentFeatureRenderer.previewOverride = List.of();
         try {
             PreviewJugador.dibujar(c, jugador, x0 + PREVIEW_X1, y0 + PREVIEW_Y1, x0 + PREVIEW_X2, y0 + PREVIEW_Y2,
                     70, anguloVista, (float) mouseY);
         } finally {
             GarmentFeatureRenderer.perfilOverride = null;
+            GarmentFeatureRenderer.previewOverride = null;
         }
     }
 
@@ -199,7 +263,7 @@ public class ElegirCuerpoScreen extends Screen {
 
     /**
      * Miniatura de frente: cabeza de la skin del jugador + torso, brazos y
-     * piernas de la máscara (o de la skin, en "Tu skin"), teñidos con el tono.
+     * piernas de la máscara (o de la skin, en "Tu skin"), teñidos con el color Base.
      */
     private void dibujarMiniatura(DrawContext c, CuerpoBase cuerpo, int x, int y) {
         ClientPlayerEntity jugador = MinecraftClient.getInstance().player;
@@ -219,7 +283,7 @@ public class ElegirCuerpoScreen extends Screen {
         // Cabeza: siempre la cara del jugador (el cuerpo base no la tapa).
         c.drawTexture(skin.texture(), aw, 0, 8, 8, 8, 8, 64, 64);
         if (!skinReal) {
-            int t = tonoActual();
+            int t = colorDeZona(CuerpoBaseTextures.ZONA_BASE);
             float k = 1.35f;
             RenderSystem.setShaderColor(Math.min(1f, ((t >> 16) & 0xFF) / 255f * k),
                     Math.min(1f, ((t >> 8) & 0xFF) / 255f * k), Math.min(1f, (t & 0xFF) / 255f * k), 1f);
@@ -253,7 +317,59 @@ public class ElegirCuerpoScreen extends Screen {
         }
     }
 
-    /** Un canal R/G/B del tono (0..255): moverlo pasa el tono a elegido a mano. */
+    /** Una zona (Base/Clara/Oscura): muestra su color; click la elige para editar. */
+    private class BotonZona extends ButtonWidget {
+        private final int z;
+
+        BotonZona(int z, int x, int y) {
+            super(x, y, 42, 28, Text.translatable("femclothes.elegir_cuerpo.zona." + CLAVE_ZONA[z]), b -> {
+                zona = z;
+                sincronizarSliders();
+            }, DEFAULT_NARRATION_SUPPLIER);
+            this.z = z;
+        }
+
+        @Override
+        protected void renderWidget(DrawContext c, int mouseX, int mouseY, float delta) {
+            int x = getX(), y = getY(), w = getWidth(), h = getHeight();
+            c.fill(x, y, x + w, y + h, active ? 0xFFB9956A : 0xFF9A8466);
+            if (active) {
+                c.fill(x + 3, y + 3, x + w - 3, y + 15, 0xFF000000 | colorDeZona(z));
+                // Automática: una "A" sobre la muestra.
+                if (tonos[z] == null) c.drawText(textRenderer, "A", x + w - 10, y + 5, 0xFFFFFFFF, true);
+            }
+            c.drawText(textRenderer, getMessage(), x + (w - textRenderer.getWidth(getMessage())) / 2, y + 18,
+                    active ? EstiloPergamino.TEXTO : EstiloPergamino.TEXTO_APAGADO, false);
+            boolean sel = z == zona;
+            c.drawBorder(x, y, w, h, sel ? 0xFFFFD24C : 0xFF6B4E2A);
+            if (sel) c.drawBorder(x + 1, y + 1, w - 2, h - 2, 0xFFFFD24C);
+        }
+    }
+
+    /** Un color sacado de la skin: click lo pone en la zona elegida. */
+    private class BotonPaleta extends ButtonWidget {
+        private final int color;
+
+        BotonPaleta(int color, int x, int y) {
+            super(x, y, 24, 16, Text.empty(), b -> {}, DEFAULT_NARRATION_SUPPLIER);
+            this.color = color;
+        }
+
+        @Override
+        public void onPress() {
+            tonos[zona] = sinCero(color);
+            sincronizarSliders();
+        }
+
+        @Override
+        protected void renderWidget(DrawContext c, int mouseX, int mouseY, float delta) {
+            int x = getX(), y = getY(), w = getWidth(), h = getHeight();
+            c.fill(x, y, x + w, y + h, 0xFF000000 | color);
+            c.drawBorder(x, y, w, h, isHovered() ? 0xFFFFD24C : 0xFF2A180C);
+        }
+    }
+
+    /** Un canal R/G/B de la zona elegida (0..255): moverlo la pasa a elegida a mano. */
     private class SliderCanal extends SliderWidget {
         private static final String[] CLAVE = {"rojo", "verde", "azul"};
         private final int canal;
@@ -282,8 +398,7 @@ public class ElegirCuerpoScreen extends Screen {
         protected void applyValue() {
             int t = 0;
             for (int i = 0; i < 3; i++) t |= sliders[i] == null ? 0 : sliders[i].nivel() << (16 - 8 * i);
-            // 0 es "sacarlo de la skin" (PerfilCuerpo.TONO_DE_LA_SKIN): el negro puro elegido a mano va como 1.
-            tonoManual = t == 0 ? 1 : t;
+            tonos[zona] = sinCero(t);
         }
     }
 }

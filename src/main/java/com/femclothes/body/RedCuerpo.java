@@ -23,12 +23,18 @@ import net.minecraft.util.Identifier;
  */
 public final class RedCuerpo {
 
-    /** Cuerpo por clave y tono RGB ({@link PerfilCuerpo#TONO_DE_LA_SKIN} = sacarlo de la skin). */
-    public record Elegir(String cuerpo, int tono) implements CustomPayload {
+    /**
+     * Cuerpo por clave y los colores de sus 3 zonas en RGB — Base
+     * ({@link PerfilCuerpo#TONO_DE_LA_SKIN} = sacarlo de la skin), Clara y
+     * Oscura ({@link PerfilCuerpo#TONO_AUTOMATICO} = salen del Base).
+     */
+    public record Elegir(String cuerpo, int tono, int claro, int oscuro) implements CustomPayload {
         public static final Id<Elegir> ID = new Id<>(Identifier.of(Femclothes.MOD_ID, "elegir_cuerpo"));
         public static final PacketCodec<RegistryByteBuf, Elegir> CODEC = PacketCodec.tuple(
                 PacketCodecs.string(32), Elegir::cuerpo,
                 PacketCodecs.INTEGER, Elegir::tono,
+                PacketCodecs.INTEGER, Elegir::claro,
+                PacketCodecs.INTEGER, Elegir::oscuro,
                 Elegir::new);
 
         @Override
@@ -52,10 +58,10 @@ public final class RedCuerpo {
                 context.server().execute(() -> {
                     ServerPlayerEntity jugador = context.player();
                     CuerpoBase cuerpo = CuerpoBase.deClave(payload.cuerpo());
-                    int tono = payload.tono() & 0xFFFFFF;
-                    // conCuerpo/conTono ya marcan el perfil como elegido: la
+                    // conCuerpo/conTonos ya marcan el perfil como elegido: la
                     // GUI no vuelve a saltar sola.
-                    PerfilesDeCuerpo.poner(jugador, PerfilesDeCuerpo.de(jugador).conCuerpo(cuerpo).conTono(tono));
+                    PerfilesDeCuerpo.poner(jugador, PerfilesDeCuerpo.de(jugador).conCuerpo(cuerpo)
+                            .conTonos(payload.tono() & 0xFFFFFF, payload.claro() & 0xFFFFFF, payload.oscuro() & 0xFFFFFF));
                 }));
     }
 
