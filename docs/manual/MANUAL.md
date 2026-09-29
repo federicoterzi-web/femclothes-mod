@@ -396,7 +396,7 @@ Esta parte es para quien quiera entender o extender el mod.
 | `guardarropas` | Guardarropas. |
 | `region` | Lado (izq./der./ambas), regiones de pintura (`RegionPintura`), `RegionResolver` (lee y escribe capas y colores por lado), `ModoMezcla`. |
 | `render` | Composición de texturas (`ClothingTextureCache`), geometría (`CuerpoGeometria`, layout de skin a 8x), generador de patrones (`PatronGenerador`, `Motivo`, `Repeticion`, `Variacion`), el renderer único de ropa (`GarmentFeatureRenderer`). |
-| `body` | Cuerpo base (`CuerpoBase`: las 19 máscaras en gris de `textures/entity/cuerpo/`, 64×64, multiplicadas por el tono en `CuerpoBaseTextures`), ropa interior, perfil por jugador (`PerfilCuerpo.elegido`), comandos y paquetes de la GUI de elegir cuerpo (`RedCuerpo`). La GUI es `client/ElegirCuerpoScreen` y el disparador `ElegirCuerpoCliente`. |
+| `body` | Cuerpo base (`CuerpoBase`: las 19 máscaras de `textures/entity/cuerpo/`, 64×64, en gris con rubor rosado en las humanas, multiplicadas canal por canal por el tono en `CuerpoBaseTextures`), ropa interior, perfil por jugador (`PerfilCuerpo.elegido`), comandos y paquetes de la GUI de elegir cuerpo (`RedCuerpo`). La GUI es `client/ElegirCuerpoScreen` y el disparador `ElegirCuerpoCliente`. |
 | `client` | Pantallas, vista previa 3D, estilo pergamino, piezas de cada prenda (`PiezasDelMod`). |
 
 ## B. Cómo se dibuja una prenda
