@@ -80,6 +80,13 @@ public final class PantallaMaquina {
         /** El ícono todavía esperaba texturas la última vez: se reintenta (a lo sumo 1 vez por segundo). */
         boolean incompleta;
         long ultimoIntento;
+        /**
+         * Copia con SOLO la pantalla opaca (el resto transparente), para la
+         * capa emisiva — 2026-09-29, "que las pantallitas de las maquinas
+         * siempre esten iluminadas". Ver {@code PantallaGlowLayer}.
+         */
+        @Nullable Identifier glowId;
+        @Nullable NativeImageBackedTexture glow;
 
         Entrada(Identifier id, NativeImageBackedTexture textura) {
             this.id = id;
@@ -165,6 +172,11 @@ public final class PantallaMaquina {
             NativeImageBackedTexture textura = new NativeImageBackedTexture(copia);
             MinecraftClient.getInstance().getTextureManager().registerTexture(id, textura);
             entrada = new Entrada(id, textura);
+            NativeImage vacia = new NativeImage(base.getWidth(), base.getHeight(), true);
+            for (int y = 0; y < base.getHeight(); y++) for (int x = 0; x < base.getWidth(); x++) vacia.setColor(x, y, 0);
+            entrada.glow = new NativeImageBackedTexture(vacia);
+            entrada.glowId = Identifier.of("femclothes", "dynamic/pantalla_glow_" + Integer.toHexString(key.hashCode()));
+            MinecraftClient.getInstance().getTextureManager().registerTexture(entrada.glowId, entrada.glow);
             CACHE.put(key, entrada);
         }
 
@@ -195,6 +207,28 @@ public final class PantallaMaquina {
             if (recorte != null) recorte.close();
         }
         entrada.textura.upload();
+        if (entrada.glow != null && entrada.glow.getImage() != null) {
+            NativeImage g = entrada.glow.getImage();
+            int x1 = Math.min(destino.getWidth(), rect.u() + rect.ancho());
+            int y1 = Math.min(destino.getHeight(), rect.v() + rect.alto());
+            for (int y = rect.v(); y < y1; y++) {
+                for (int x = rect.u(); x < x1; x++) g.setColor(x, y, destino.getColor(x, y) | 0xFF000000);
+            }
+            entrada.glow.upload();
+        }
+    }
+
+    /**
+     * La textura emisiva de la pantalla de esa máquina (misma clave que
+     * {@link #con}; hay que llamarla después de {@code con} en el mismo frame),
+     * o null si todavía no existe.
+     */
+    @Nullable
+    public static Identifier glow(Identifier atlasBase, Rect rect, BlockPos posInstancia) {
+        String key = atlasBase + "|" + rect.u() + "," + rect.v() + "," + rect.ancho() + "," + rect.alto()
+                + "|" + posInstancia.asLong();
+        Entrada entrada = CACHE.get(key);
+        return entrada == null ? null : entrada.glowId;
     }
 
     /** El ícono es cuadrado: se centra un cuadrado del lado más corto para no estirarlo. */
