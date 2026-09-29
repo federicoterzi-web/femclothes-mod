@@ -58,6 +58,8 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 - Almacenes más grandes (2026-09-28): Tintes 30 (9 de siempre en `items` + 21 en `almacenExtra` al FINAL del inventario, para no correr los índices guardados de los cuadraditos; grilla 5x6 a la izquierda, `slotAlmacen`), Sublimadora 27. Arnés: la tapa del hombro (arriba del brazo) lleva el mismo dibujo del arnés + un marco que empalma con las tiras que suben (`ClothingTextureCache.continuarTirasEnHombro`); la tapa de arriba del torso queda debajo de la cabeza. Modeladora (2026-09-29): "Moldes de <prenda>" de 12 a 36 (los 24 nuevos al FINAL del inventario, `porPrendaSlot`).
 - **Siguiente:** revisar y pulir las tres máquinas juntas.
 
+**Cuerpo base** (2026-09-29, zip "Texturas de cuerpos para mod Minecraft.zip" en la raíz): 19 máscaras en gris en `textures/entity/cuerpo/<clave>.png` (`CuerpoBase`, reemplazan a plano/curvy/binder, que migran por `CuerpoBase.deClave`); se multiplican por el tono (`CuerpoBaseTextures`, gris 180 = tono tal cual) y los brazos se adaptan classic/slim solos (`mascaraPara`). GUI `ElegirCuerpoScreen` la primera vez que te ponés una prenda (`ElegirCuerpoCliente`) y con `/femclothes elegir`. Falta probar en el juego.
+
 **Otros, sin empezar:**
 - Volumen 3D real en la ropa con 3D Skin Layers.
 - Cadena textil: el hueso `cargo` de las máquinas debería moverse solo con máquinas encadenadas de izquierda a derecha.

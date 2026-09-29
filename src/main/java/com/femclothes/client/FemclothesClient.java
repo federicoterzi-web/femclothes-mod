@@ -46,6 +46,7 @@ public class FemclothesClient implements ClientModInitializer {
 
         PiezasDelMod.init();
         DebugApariencia.init();
+        ElegirCuerpoCliente.init();
 
         // TODA la ropa del mod se dibuja desde un solo feature renderer.
         //

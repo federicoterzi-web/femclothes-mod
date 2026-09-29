@@ -37,7 +37,9 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
             new PerfilCuerpo(CuerpoBase.SKIN_REAL, TONO_DE_LA_SKIN, RopaInterior.BASICA, false);
 
     public static final Codec<PerfilCuerpo> CODEC = RecordCodecBuilder.create(i -> i.group(
-            StringIdentifiable.createCodec(CuerpoBase::values)
+            // Por clave y tolerante (2026-09-29): los cuerpos viejos
+            // (plano, curvy, binder) ya no existen — ver CuerpoBase#deClave.
+            Codec.STRING.xmap(CuerpoBase::deClave, c -> c.clave)
                     .optionalFieldOf("cuerpo", CuerpoBase.SKIN_REAL).forGetter(PerfilCuerpo::cuerpo),
             Codec.INT.optionalFieldOf("tono", TONO_DE_LA_SKIN).forGetter(PerfilCuerpo::tono),
             StringIdentifiable.createCodec(RopaInterior::values)

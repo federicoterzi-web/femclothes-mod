@@ -58,11 +58,27 @@ Cada máquina **no consume la prenda ni los moldes**: la prenda sale modificada 
 
 ## 4. Cuerpo base y ropa interior
 
-El mod dibuja un **cuerpo base** debajo de la ropa (en vez de la skin pintada), así la ropa se ve pegada al cuerpo y las zonas descubiertas muestran piel. Cada jugador elige el suyo con comandos (sin permisos especiales, cada quien cambia el propio):
+El mod dibuja un **cuerpo base** debajo de la ropa (en vez de la skin pintada), así la ropa se ve pegada al cuerpo y las zonas descubiertas muestran piel. La cabeza siempre queda con la cara de tu skin.
+
+### Elegir cuerpo
+
+La **primera vez que te ponés una prenda** del mod se abre la pantalla **Elegí tu cuerpo**:
+
+- **Vista previa 3D** tuya con el cuerpo y el tono que estás eligiendo (se gira arrastrando).
+- **Cuerpos:** "Mi propia skin" (el de siempre: liso, con el tono de tu skin) y 19 cuerpos dibujados. Los humanos son Estándar, Delgado, Atlético, Musculoso, Gordito, Velludo, Fem estándar, Fem atlética, Fem con curvas y Fem gordita. Los animales son Cebra, Dálmata, Leopardo, Lobo, Osito, Panda, Tigre, Vaca y Zorro. Todos se tiñen con tu tono de piel; las manchas y rayas de los animales quedan oscuras.
+- **Tono de piel:** arranca **calculado de tu skin**. Con los sliders Rojo/Verde/Azul lo elegís a mano, y **Tono de mi skin** lo vuelve al calculado (que sigue a tu skin si la cambiás).
+- **Confirmar** lo guarda y la pantalla ya no vuelve a aparecer sola. **Ahora no** la cierra sin guardar y vuelve a aparecer la próxima vez que entres al mundo.
+
+Cada cuerpo está dibujado para brazos anchos (classic) o finos (slim). Si tu skin tiene los otros, la textura se adapta sola; tus brazos no cambian de ancho.
+
+### Comandos
+
+Sin permisos especiales, cada quien cambia el propio:
 
 | Comando | Qué hace |
 |---|---|
-| `/femclothes cuerpo <tipo>` | Forma del cuerpo: `skin_real`, `plano`, `atletico`, `curvy`, `binder`. |
+| `/femclothes elegir` | Vuelve a abrir la pantalla Elegí tu cuerpo. |
+| `/femclothes cuerpo <tipo>` | Cambia el cuerpo directo: `skin_real`, `estandar`, `delgado`, `atletico`, `musculoso`, `gordito`, `velludo`, `fem_estandar`, `fem_atletica`, `fem_curvas`, `fem_gordita`, `cebra`, `dalmata`, `leopardo`, `lobo`, `osito`, `panda`, `tigre`, `vaca`, `zorro`. Los cuerpos viejos (plano, curvy, binder) pasaron a Estándar y Fem con curvas. |
 | `/femclothes interior <tipo>` | Ropa interior base: `basica`, `slip`, `boxer`, `bralette`, `deportiva`. |
 | `/femclothes tono skin` | Tono de piel tomado de tu propia skin (el valor por defecto). |
 | `/femclothes tono <número>` | Tono de piel a mano, como color RGB en decimal (ej. 14329120). |
@@ -299,7 +315,7 @@ El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría 
 
 ## 10. Comandos
 
-**Para todos los jugadores** (cambian solo tu apariencia): ver la sección 4, `/femclothes cuerpo`, `interior`, `tono`, `ver`, `reset`.
+**Para todos los jugadores** (cambian solo tu apariencia): ver la sección 4, `/femclothes elegir`, `cuerpo`, `interior`, `tono`, `ver`, `reset`.
 
 **Para operadores** (afectan a todo el servidor):
 
@@ -371,7 +387,7 @@ Esta parte es para quien quiera entender o extender el mod.
 | `guardarropas` | Guardarropas. |
 | `region` | Lado (izq./der./ambas), regiones de pintura (`RegionPintura`), `RegionResolver` (lee y escribe capas y colores por lado), `ModoMezcla`. |
 | `render` | Composición de texturas (`ClothingTextureCache`), geometría (`CuerpoGeometria`, layout de skin a 8x), generador de patrones (`PatronGenerador`, `Motivo`, `Repeticion`, `Variacion`), el renderer único de ropa (`GarmentFeatureRenderer`). |
-| `body` | Cuerpo base, ropa interior, perfil por jugador y su comando. |
+| `body` | Cuerpo base (`CuerpoBase`: las 19 máscaras en gris de `textures/entity/cuerpo/`, 64×64, multiplicadas por el tono en `CuerpoBaseTextures`), ropa interior, perfil por jugador (`PerfilCuerpo.elegido`), comandos y paquetes de la GUI de elegir cuerpo (`RedCuerpo`). La GUI es `client/ElegirCuerpoScreen` y el disparador `ElegirCuerpoCliente`. |
 | `client` | Pantallas, vista previa 3D, estilo pergamino, piezas de cada prenda (`PiezasDelMod`). |
 
 ## B. Cómo se dibuja una prenda
