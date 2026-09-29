@@ -46,7 +46,13 @@ public class TinturasScreenHandler extends ScreenHandler {
     public static final int ENTRADA_X = 48, SALIDA_X = 176, SLOT_Y_IO = 184;
 
     private static final int SLOT_ALMACEN_INICIO = 0;
-    private static final int SLOT_CASILLAS_INICIO = SLOT_ALMACEN_INICIO + TinturasBlockEntity.ALMACEN_TAMANO;
+    private static final int SLOT_CASILLAS_INICIO = SLOT_ALMACEN_INICIO + TinturasBlockEntity.ALMACEN_TOTAL;
+    /**
+     * Almacén en la columna IZQUIERDA, 5x6 debajo de Guardar diseño
+     * (2026-09-28, "quiero mas espacios de almacenamiento"): a la derecha
+     * ya no entraba más que la fila de 9.
+     */
+    public static final int ALMACEN_X = 8, ALMACEN_Y = 280, ALMACEN_COLUMNAS = 5;
     private static final int SLOT_CASILLAS_TAMANO =
             TinturasBlockEntity.CASILLAS * TinturasBlockEntity.Categoria.values().length;
     // Entrada/salida — a pedido (2026-09-21, "slot de entrada y de
@@ -82,8 +88,12 @@ public class TinturasScreenHandler extends ScreenHandler {
         // (dentro del esquema) aunque se agregue DESPUÉS acá. Columna
         // DERECHA, debajo de la vista previa de color — mismo criterio que
         // ModeladoScreenHandler (el storage vive a la derecha, no en medio).
-        for (int i = 0; i < TinturasBlockEntity.ALMACEN_TAMANO; i++) {
-            addSlot(new Slot(be, TinturasBlockEntity.ALMACEN_INICIO + i, M_DERECHA + i * 18, 200));
+        for (int i = 0; i < TinturasBlockEntity.ALMACEN_TOTAL; i++) {
+            int indice = TinturasBlockEntity.slotAlmacen(i);
+            addSlot(new Slot(be, indice, ALMACEN_X + (i % ALMACEN_COLUMNAS) * 18, ALMACEN_Y + (i / ALMACEN_COLUMNAS) * 18) {
+                @Override
+                public boolean canInsert(ItemStack stack) { return be.isValid(indice, stack); }
+            });
         }
 
         // Un slot de molde por CUADRADITO del esquema, por categoría

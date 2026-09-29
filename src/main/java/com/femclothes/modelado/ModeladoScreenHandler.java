@@ -26,7 +26,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
     private static final int SLOT_PRENDA = SLOT_ACTIVO + 1 + CANTIDAD_PINES;
     private static final int SLOT_SALIDA = SLOT_PRENDA + 1;
     private static final int SLOT_PORPRENDA_INICIO = SLOT_SALIDA + 1;
-    private static final int INV_START = SLOT_PORPRENDA_INICIO + ModeladoBlockEntity.PORPRENDA_POR_CATEGORIA;
+    private static final int INV_START = SLOT_PORPRENDA_INICIO + ModeladoBlockEntity.PORPRENDA_TOTAL;
 
     /**
      * Origen (x relativo a la columna del medio, y absoluto) del ítem de
@@ -105,9 +105,9 @@ public class ModeladoScreenHandler extends ScreenHandler {
 
     private static Inventory porPrendaAdaptador(ModeladoBlockEntity be) {
         return new Inventory() {
-            private int real(int slot) { return ModeladoBlockEntity.porPrendaInicio(be.categoria()) + slot; }
+            private int real(int slot) { return ModeladoBlockEntity.porPrendaSlot(be.categoria(), slot); }
 
-            @Override public int size() { return ModeladoBlockEntity.PORPRENDA_POR_CATEGORIA; }
+            @Override public int size() { return ModeladoBlockEntity.PORPRENDA_TOTAL; }
             @Override public boolean isEmpty() {
                 for (int i = 0; i < size(); i++) if (!be.getStack(real(i)).isEmpty()) return false;
                 return true;
@@ -189,10 +189,12 @@ public class ModeladoScreenHandler extends ScreenHandler {
         // porPrendaAdaptador(). Debajo del compartido, misma columna derecha.
         // y=90 y no 80 (2026-09-24): deja lugar al rótulo "Moldes de
         // <Categoria>" que dibuja ModeladoScreen#dibujarRotulosStorage.
+        // 9x4 = 36 desde 2026-09-29 ("agregaria mas slots a moldes de
+        // pantalones moldes de remera") — antes 4x3.
         Inventory porPrenda = porPrendaAdaptador(be);
-        for (int i = 0; i < ModeladoBlockEntity.PORPRENDA_POR_CATEGORIA; i++) {
-            int fila = i / 4;
-            int col = i % 4;
+        for (int i = 0; i < ModeladoBlockEntity.PORPRENDA_TOTAL; i++) {
+            int fila = i / 9;
+            int col = i % 9;
             addSlot(new SlotValidado(porPrenda, i, mDerecha + col * 18, 90 + fila * 18));
         }
 
@@ -270,7 +272,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
                 ModeladoBlockEntity.Categoria catExclusiva = ModeladoBlockEntity.categoriaExclusivaDe(stack);
                 if (catExclusiva != null && catExclusiva == be.categoria()) {
                     if (!this.insertItem(stack, SLOT_PORPRENDA_INICIO,
-                            SLOT_PORPRENDA_INICIO + ModeladoBlockEntity.PORPRENDA_POR_CATEGORIA, false)) {
+                            SLOT_PORPRENDA_INICIO + ModeladoBlockEntity.PORPRENDA_TOTAL, false)) {
                         return ItemStack.EMPTY;
                     }
                 } else if (ModeladoBlockEntity.esMoldeCompartido(stack)) {

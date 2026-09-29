@@ -153,6 +153,22 @@ public class TinturasBlockEntity extends BlockEntity
      * {@code SublimadoraBlockEntity.salida}.
      */
     public static final int SLOT_SALIDA = SLOT_TINTA_BASE + 4;
+    /**
+     * Almacén más grande (2026-09-28, "quiero mas espacios de
+     * almacenamiento"): los lugares nuevos van en una lista APARTE al
+     * final del inventario — el almacén de siempre (0..8) está al
+     * principio, y agrandarlo ahí corría los índices guardados de los
+     * moldes de los cuadraditos. En pantalla se ven los 30 juntos, en una
+     * grilla de 5x6 en la columna izquierda (ver TinturasScreenHandler).
+     */
+    public static final int ALMACEN_EXTRA = 21;
+    public static final int SLOT_ALMACEN_EXTRA = SLOT_SALIDA + 1;
+    public static final int ALMACEN_TOTAL = ALMACEN_TAMANO + ALMACEN_EXTRA;
+
+    /** Índice de inventario del lugar {@code i} (0..ALMACEN_TOTAL-1) del almacén, tal como se ve en pantalla. */
+    public static int slotAlmacen(int i) {
+        return i < ALMACEN_TAMANO ? ALMACEN_INICIO + i : SLOT_ALMACEN_EXTRA + (i - ALMACEN_TAMANO);
+    }
     /** Mismo orden que {@code C,M,Y,K} — duplicado de SublimadoraBlock.TINTES (paquete distinto). */
     private static final net.minecraft.item.Item[] TINTES = {
             net.minecraft.item.Items.CYAN_DYE, net.minecraft.item.Items.MAGENTA_DYE,
@@ -173,6 +189,8 @@ public class TinturasBlockEntity extends BlockEntity
     private ItemStack salida = ItemStack.EMPTY;
 
     private final DefaultedList<ItemStack> items = DefaultedList.ofSize(TAMANO, ItemStack.EMPTY);
+    /** Los lugares nuevos del almacén — ver {@link #ALMACEN_EXTRA}. */
+    private final DefaultedList<ItemStack> almacenExtra = DefaultedList.ofSize(ALMACEN_EXTRA, ItemStack.EMPTY);
 
     private final int[] cargas = new int[4];
     /**
@@ -1029,17 +1047,20 @@ public class TinturasBlockEntity extends BlockEntity
 
     /** Mete {@code stack} entero en el almacén (apilando si se puede) — false y sin tocar nada si no entra. */
     private boolean guardarEnAlmacen(ItemStack stack) {
-        for (int s = ALMACEN_INICIO; s < ALMACEN_FIN; s++) {
-            ItemStack ahi = items.get(s);
+        // Todos los lugares en el orden de la pantalla (los 9 de siempre + los nuevos).
+        for (int i = 0; i < ALMACEN_TOTAL; i++) {
+            ItemStack ahi = getStack(slotAlmacen(i));
             if (!ahi.isEmpty() && ItemStack.areItemsAndComponentsEqual(ahi, stack)
                     && ahi.getCount() + stack.getCount() <= ahi.getMaxCount()) {
                 ahi.increment(stack.getCount());
                 return true;
             }
         }
-        for (int s = ALMACEN_INICIO; s < ALMACEN_FIN; s++) {
-            if (items.get(s).isEmpty()) {
-                items.set(s, stack.copy());
+        for (int i = 0; i < ALMACEN_TOTAL; i++) {
+            int s = slotAlmacen(i);
+            if (getStack(s).isEmpty()) {
+                if (s >= SLOT_ALMACEN_EXTRA) almacenExtra.set(s - SLOT_ALMACEN_EXTRA, stack.copy());
+                else items.set(s, stack.copy());
                 return true;
             }
         }
@@ -1397,9 +1418,10 @@ public class TinturasBlockEntity extends BlockEntity
 
     // ── inventario (almacén + Activo) ────────────────────────────────
 
-    @Override public int size() { return TAMANO + 6; }
+    @Override public int size() { return SLOT_ALMACEN_EXTRA + ALMACEN_EXTRA; }
     @Override public boolean isEmpty() {
         for (ItemStack s : items) if (!s.isEmpty()) return false;
+        for (ItemStack s : almacenExtra) if (!s.isEmpty()) return false;
         if (!prendaEntrada.isEmpty() || !salida.isEmpty()) return false;
         for (int c : cargas) if (c > 0) return false;
         return true;
@@ -1407,6 +1429,7 @@ public class TinturasBlockEntity extends BlockEntity
 
     @Override
     public ItemStack getStack(int slot) {
+        if (slot >= SLOT_ALMACEN_EXTRA) return almacenExtra.get(slot - SLOT_ALMACEN_EXTRA);
         if (slot == SLOT_PRENDA_ENTRADA) return prendaEntrada;
         if (slot == SLOT_SALIDA) return salida;
         // Misma instancia entre llamadas — ver el javadoc de tintaSlotView.
@@ -1416,6 +1439,11 @@ public class TinturasBlockEntity extends BlockEntity
 
     @Override
     public ItemStack removeStack(int slot, int amount) {
+        if (slot >= SLOT_ALMACEN_EXTRA) {
+            ItemStack result = net.minecraft.inventory.Inventories.splitStack(almacenExtra, slot - SLOT_ALMACEN_EXTRA, amount);
+            if (!result.isEmpty()) markDirty();
+            return result;
+        }
         if (slot == SLOT_PRENDA_ENTRADA) {
             ItemStack resultado = prendaEntrada.split(amount);
             if (!resultado.isEmpty()) sincronizar();
@@ -1442,6 +1470,9 @@ public class TinturasBlockEntity extends BlockEntity
 
     @Override
     public ItemStack removeStack(int slot) {
+        if (slot >= SLOT_ALMACEN_EXTRA) {
+            return net.minecraft.inventory.Inventories.removeStack(almacenExtra, slot - SLOT_ALMACEN_EXTRA);
+        }
         if (slot == SLOT_PRENDA_ENTRADA) {
             ItemStack resultado = prendaEntrada;
             prendaEntrada = ItemStack.EMPTY;
@@ -1468,6 +1499,12 @@ public class TinturasBlockEntity extends BlockEntity
 
     @Override
     public void setStack(int slot, ItemStack stack) {
+        if (slot >= SLOT_ALMACEN_EXTRA) {
+            almacenExtra.set(slot - SLOT_ALMACEN_EXTRA, stack);
+            if (stack.getCount() > stack.getMaxCount()) stack.setCount(stack.getMaxCount());
+            sincronizar();
+            return;
+        }
         if (slot == SLOT_PRENDA_ENTRADA) {
             if (stack.isEmpty()) {
                 prendaEntrada = ItemStack.EMPTY;
@@ -1500,6 +1537,7 @@ public class TinturasBlockEntity extends BlockEntity
     // canPlayerUse ya está definido más abajo (sección "pantalla") — sirve para las dos interfaces (Inventory y el ScreenHandler).
     @Override
     public boolean isValid(int slot, ItemStack stack) {
+        if (slot >= SLOT_ALMACEN_EXTRA) return stack.getItem() instanceof ClothingPatternItem;
         if (slot == SLOT_PRENDA_ENTRADA) {
             // estado == REPOSO también acá (2026-09-21): mientras está
             // TINIENDO, prendaEntrada NO está vacía (sigue mostrando la
@@ -1522,6 +1560,7 @@ public class TinturasBlockEntity extends BlockEntity
     @Override
     public void clear() {
         items.clear();
+        almacenExtra.clear();
         prendaEntrada = ItemStack.EMPTY;
         salida = ItemStack.EMPTY;
         java.util.Arrays.fill(cargas, 0);
@@ -1647,6 +1686,10 @@ public class TinturasBlockEntity extends BlockEntity
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.writeNbt(nbt, registries);
         net.minecraft.inventory.Inventories.writeNbt(nbt, items, registries);
+        // Aparte, en su propio compuesto: Inventories escribe siempre en "Items".
+        NbtCompound extra = new NbtCompound();
+        net.minecraft.inventory.Inventories.writeNbt(extra, almacenExtra, registries);
+        nbt.put("AlmacenExtra", extra);
         if (!prendaEntrada.isEmpty()) nbt.put("PrendaEntrada", prendaEntrada.encode(registries));
         if (!salida.isEmpty()) nbt.put("Salida", salida.encode(registries));
         nbt.putString("Estado", estado.name());
@@ -1705,6 +1748,8 @@ public class TinturasBlockEntity extends BlockEntity
         super.readNbt(nbt, registries);
         items.clear();
         net.minecraft.inventory.Inventories.readNbt(nbt, items, registries);
+        almacenExtra.clear();
+        net.minecraft.inventory.Inventories.readNbt(nbt.getCompound("AlmacenExtra"), almacenExtra, registries);
         prendaEntrada = nbt.contains("PrendaEntrada")
                 ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("PrendaEntrada")) : ItemStack.EMPTY;
         salida = nbt.contains("Salida")
