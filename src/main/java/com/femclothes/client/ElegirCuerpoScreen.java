@@ -53,7 +53,8 @@ public class ElegirCuerpoScreen extends Screen {
     private static final int ZONAS_Y = 34, PALETA_Y = 90, SLIDERS_Y = 110;
     /** Tono de reserva mientras la skin no bajó (el mismo beige que usa el resto del mod). */
     private static final int TONO_RESERVA = 0xC89F7E;
-    private static final String[] CLAVE_ZONA = {"base", "clara", "oscura"};
+    private static final String[] CLAVE_ZONA = {"base", "clara", "oscura", "rubor"};
+    private static final int ZONAS = 4;
 
     private int x0, y0;
     private CuerpoBase elegido;
@@ -61,10 +62,10 @@ public class ElegirCuerpoScreen extends Screen {
      * Color elegido a mano de cada zona (Base, Clara, Oscura); null =
      * automático — la Base sale de la skin, Clara y Oscura del color Base.
      */
-    private final Integer[] tonos = new Integer[3];
+    private final Integer[] tonos = new Integer[ZONAS];
     private int zona = CuerpoBaseTextures.ZONA_BASE;
     private final SliderCanal[] sliders = new SliderCanal[3];
-    private final BotonZona[] botonesZona = new BotonZona[3];
+    private final BotonZona[] botonesZona = new BotonZona[ZONAS];
     private ButtonWidget btnAutomatico;
     private float anguloVista = 0f;
     private boolean arrastrando = false;
@@ -77,6 +78,7 @@ public class ElegirCuerpoScreen extends Screen {
         tonos[0] = perfil.tonoDerivado() ? null : perfil.tono();
         tonos[1] = perfil.tonoClaro() == PerfilCuerpo.TONO_AUTOMATICO ? null : perfil.tonoClaro();
         tonos[2] = perfil.tonoOscuro() == PerfilCuerpo.TONO_AUTOMATICO ? null : perfil.tonoOscuro();
+        tonos[3] = perfil.tonoRubor() == PerfilCuerpo.TONO_AUTOMATICO ? null : perfil.tonoRubor();
     }
 
     private int tonoDeLaSkin() {
@@ -88,12 +90,14 @@ public class ElegirCuerpoScreen extends Screen {
     /** El color con el que se ve la zona {@code z} ahora (las automáticas muestran el Base). */
     private int colorDeZona(int z) {
         if (tonos[z] != null) return tonos[z];
-        return tonos[0] != null ? tonos[0] : tonoDeLaSkin();
+        int base = tonos[0] != null ? tonos[0] : tonoDeLaSkin();
+        // El rubor automático es el mismo color, más saturado y oscuro.
+        return z == CuerpoBaseTextures.ZONA_RUBOR ? CuerpoBaseTextures.ruborAutomatico(base) : base;
     }
 
     /** Clara y Oscura solo tienen sentido en los cuerpos de animal. */
     private boolean zonaDisponible(int z) {
-        return z == CuerpoBaseTextures.ZONA_BASE || elegido.animal;
+        return z == CuerpoBaseTextures.ZONA_BASE || z == CuerpoBaseTextures.ZONA_RUBOR || elegido.animal;
     }
 
     @Override
@@ -112,8 +116,9 @@ public class ElegirCuerpoScreen extends Screen {
             addDrawableChild(b);
         }
 
-        for (int z = 0; z < 3; z++) {
-            botonesZona[z] = new BotonZona(z, x0 + DERECHA_X + z * 43, y0 + ZONAS_Y);
+        // Cuatro zonas (2026-09-29, se sumó Rubor: "3 por default, mas selector propio").
+        for (int z = 0; z < ZONAS; z++) {
+            botonesZona[z] = new BotonZona(z, x0 + DERECHA_X + z * 32, y0 + ZONAS_Y);
             botonesZona[z].setTooltip(Tooltip.of(Text.translatable("femclothes.elegir_cuerpo.tooltip.zona." + CLAVE_ZONA[z])));
             addDrawableChild(botonesZona[z]);
         }
@@ -152,7 +157,7 @@ public class ElegirCuerpoScreen extends Screen {
             zona = CuerpoBaseTextures.ZONA_BASE;
             sincronizarSliders();
         }
-        for (int z = 0; z < 3; z++) botonesZona[z].active = zonaDisponible(z);
+        for (int z = 0; z < ZONAS; z++) botonesZona[z].active = zonaDisponible(z);
         boolean base = zona == CuerpoBaseTextures.ZONA_BASE;
         btnAutomatico.setMessage(Text.translatable(base
                 ? "femclothes.elegir_cuerpo.boton.skin" : "femclothes.elegir_cuerpo.boton.automatico"));
@@ -169,7 +174,8 @@ public class ElegirCuerpoScreen extends Screen {
         ClientPlayNetworking.send(new RedCuerpo.Elegir(elegido.clave,
                 tonos[0] == null ? PerfilCuerpo.TONO_DE_LA_SKIN : tonos[0],
                 tonos[1] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[1],
-                tonos[2] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[2]));
+                tonos[2] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[2],
+                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3]));
         close();
     }
 
@@ -225,7 +231,8 @@ public class ElegirCuerpoScreen extends Screen {
         GarmentFeatureRenderer.perfilOverride = new PerfilCuerpo(elegido,
                 tonos[0] == null ? PerfilCuerpo.TONO_DE_LA_SKIN : tonos[0], actual.interior(), true,
                 tonos[1] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[1],
-                tonos[2] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[2]);
+                tonos[2] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[2],
+                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3]);
         // Sin ropa: solo el cuerpo que se está eligiendo.
         GarmentFeatureRenderer.previewOverride = List.of();
         try {
@@ -318,12 +325,12 @@ public class ElegirCuerpoScreen extends Screen {
         }
     }
 
-    /** Una zona (Base/Clara/Oscura): muestra su color; click la elige para editar. */
+    /** Una zona (Base/Clara/Oscura/Rubor): muestra su color; click la elige para editar. */
     private class BotonZona extends ButtonWidget {
         private final int z;
 
         BotonZona(int z, int x, int y) {
-            super(x, y, 42, 28, Text.translatable("femclothes.elegir_cuerpo.zona." + CLAVE_ZONA[z]), b -> {
+            super(x, y, 31, 28, Text.translatable("femclothes.elegir_cuerpo.zona." + CLAVE_ZONA[z]), b -> {
                 zona = z;
                 sincronizarSliders();
             }, DEFAULT_NARRATION_SUPPLIER);

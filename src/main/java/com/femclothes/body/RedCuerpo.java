@@ -28,13 +28,14 @@ public final class RedCuerpo {
      * ({@link PerfilCuerpo#TONO_DE_LA_SKIN} = sacarlo de la skin), Clara y
      * Oscura ({@link PerfilCuerpo#TONO_AUTOMATICO} = salen del Base).
      */
-    public record Elegir(String cuerpo, int tono, int claro, int oscuro) implements CustomPayload {
+    public record Elegir(String cuerpo, int tono, int claro, int oscuro, int rubor) implements CustomPayload {
         public static final Id<Elegir> ID = new Id<>(Identifier.of(Femclothes.MOD_ID, "elegir_cuerpo"));
         public static final PacketCodec<RegistryByteBuf, Elegir> CODEC = PacketCodec.tuple(
                 PacketCodecs.string(32), Elegir::cuerpo,
                 PacketCodecs.INTEGER, Elegir::tono,
                 PacketCodecs.INTEGER, Elegir::claro,
                 PacketCodecs.INTEGER, Elegir::oscuro,
+                PacketCodecs.INTEGER, Elegir::rubor,
                 Elegir::new);
 
         @Override
@@ -61,7 +62,7 @@ public final class RedCuerpo {
                     // conCuerpo/conTonos ya marcan el perfil como elegido: la
                     // GUI no vuelve a saltar sola.
                     PerfilesDeCuerpo.poner(jugador, PerfilesDeCuerpo.de(jugador).conCuerpo(cuerpo)
-                            .conTonos(payload.tono() & 0xFFFFFF, payload.claro() & 0xFFFFFF, payload.oscuro() & 0xFFFFFF));
+                            .conTonos(payload.tono() & 0xFFFFFF, payload.claro() & 0xFFFFFF, payload.oscuro() & 0xFFFFFF, payload.rubor() & 0xFFFFFF));
                 }));
     }
 

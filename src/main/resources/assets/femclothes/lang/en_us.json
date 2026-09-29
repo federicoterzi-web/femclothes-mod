@@ -414,5 +414,7 @@
   "femclothes.tinturas.tooltip.muestra": "Color %s — click to edit it with the sliders (turns it on if off)",
   "femclothes.tinturas.tooltip.colores": "How many colors this layer uses (1 to 3)",
   "femclothes.tinturas.tooltip.contorno": "An outline around each motif or stripe, using the LAST active color (needs 2+ colors)",
-  "femclothes.tinturas.tooltip.variacion": "How the fill changes between colors: Fixed (all Color 1), Alternate (each motif the next one), Random (Roll re-rolls) or Gradient (top to bottom, also on plain layers)"
+  "femclothes.tinturas.tooltip.variacion": "How the fill changes between colors: Fixed (all Color 1), Alternate (each motif the next one), Random (Roll re-rolls) or Gradient (top to bottom, also on plain layers)",
+  "femclothes.elegir_cuerpo.zona.rubor": "Blush",
+  "femclothes.elegir_cuerpo.tooltip.zona.rubor": "Blush: knees, elbows, chest and face. Automatic = your own color, more intense"
 }

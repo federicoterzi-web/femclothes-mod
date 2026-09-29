@@ -218,7 +218,7 @@ public final class CuerpoBaseTextures {
         }
 
         if (mascara != null) colorearPorZonas(img, mascara, perfil.cuerpo().animal, tonoRgb,
-                perfil.tonoClaro(), perfil.tonoOscuro());
+                perfil.tonoClaro(), perfil.tonoOscuro(), perfil.tonoRubor());
         superponer(img, perfil.interior().textura());
         return img;
     }
@@ -235,6 +235,20 @@ public final class CuerpoBaseTextures {
      * son una sola zona, Base.
      */
     public static final int ZONA_BASE = 0, ZONA_CLARA = 1, ZONA_OSCURA = 2;
+    /**
+     * Rubor (2026-09-29, "y que pasa con una skin de colores frios?" → "3 por
+     * default, mas selector propio"): no es una zona por gris sino una
+     * cantidad por pixel — cuánto se aparta la máscara del gris hacia el
+     * rosado (R por encima de G/B). La máscara solo dice DÓNDE; el color
+     * sale del perfil o, en automático, del mismo color de la zona más
+     * saturado y oscuro ({@link #ruborAutomatico}), así en una skin azul o
+     * verde no aparecen manchas violetas.
+     */
+    public static final int ZONA_RUBOR = 3;
+    /** Diferencia R - (G+B)/2 de la máscara que cuenta como rubor pleno (el más rosado del zip anda por 23). */
+    private static final float RUBOR_PLENO = 24f;
+    /** Cuánto pesa el rubor pleno sobre el color de la piel. */
+    private static final float RUBOR_FUERZA = 0.8f;
     private static final int LIMITE_OSCURA = 75, LIMITE_CLARA = 165;
 
     public static int zonaDe(int gris, boolean animal) {
@@ -257,7 +271,7 @@ public final class CuerpoBaseTextures {
      * como referencia (más clara o más oscura sola, como antes).
      */
     private static void colorearPorZonas(NativeImage img, NativeImage mascara, boolean animal,
-                                         int base, int claro, int oscuro) {
+                                         int base, int claro, int oscuro, int rubor) {
         float[] refs = referencias(mascara, animal);
         int[] colores = {base, claro != 0 ? claro : base, oscuro != 0 ? oscuro : base};
         float[] refUsada = {refs[ZONA_BASE], claro != 0 ? refs[ZONA_CLARA] : refs[ZONA_BASE],
@@ -270,13 +284,19 @@ public final class CuerpoBaseTextures {
                 int gris = grisDe(m);
                 int zona = zonaDe(gris, animal);
                 int c = colores[zona];
-                // Cada canal con su propio factor (2026-09-29, zip nuevo): las
-                // máscaras humanas traen rubor rosado en rodillas, codos y
-                // cara — en una máscara gris los tres factores son iguales.
-                float ref = refUsada[zona];
-                int r = sombrear((c >> 16) & 0xFF, (m & 0xFF) / ref);
-                int g = sombrear((c >> 8) & 0xFF, ((m >> 8) & 0xFF) / ref);
-                int b = sombrear(c & 0xFF, ((m >> 16) & 0xFF) / ref);
+                float k = gris / refUsada[zona];
+                int r = sombrear((c >> 16) & 0xFF, k), g = sombrear((c >> 8) & 0xFF, k), b = sombrear(c & 0xFF, k);
+                // Rubor: la máscara trae rosado donde va (rodillas, codos,
+                // pecho, cara); se mezcla hacia el color de rubor con el
+                // mismo sombreado.
+                int mr = m & 0xFF, mg = (m >> 8) & 0xFF, mb = (m >> 16) & 0xFF;
+                float cantidad = Math.min(1f, Math.max(0f, (mr - (mg + mb) / 2f) / RUBOR_PLENO)) * RUBOR_FUERZA;
+                if (cantidad > 0f) {
+                    int rc = rubor != 0 ? rubor : ruborAutomatico(c);
+                    r = Math.round(r + (sombrear((rc >> 16) & 0xFF, k) - r) * cantidad);
+                    g = Math.round(g + (sombrear((rc >> 8) & 0xFF, k) - g) * cantidad);
+                    b = Math.round(b + (sombrear(rc & 0xFF, k) - b) * cantidad);
+                }
                 img.setColor(x, y, 0xFF000000 | (b << 16) | (g << 8) | r);
             }
         }
@@ -291,6 +311,42 @@ public final class CuerpoBaseTextures {
         if (k <= 1f) return Math.round(canal * k);
         float haciaBlanco = Math.min(1f, (k - 1f) * 0.6f);
         return Math.min(255, Math.round(canal + (255 - canal) * haciaBlanco));
+    }
+
+    /**
+     * Rubor automático: el mismo color, más saturado y un poco más oscuro
+     * (en HSV: saturación ×1.35 + 0.08, brillo ×0.85). En la piel da un
+     * rosado tibio; en un azul, un azul más intenso.
+     */
+    public static int ruborAutomatico(int rgb) {
+        float r = ((rgb >> 16) & 0xFF) / 255f, g = ((rgb >> 8) & 0xFF) / 255f, b = (rgb & 0xFF) / 255f;
+        float max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b)), d = max - min;
+        float h = 0f;
+        if (d > 0f) {
+            if (max == r) h = ((g - b) / d) % 6f;
+            else if (max == g) h = (b - r) / d + 2f;
+            else h = (r - g) / d + 4f;
+            h /= 6f;
+            if (h < 0f) h += 1f;
+        }
+        float sat = max == 0f ? 0f : d / max;
+        sat = Math.min(1f, sat * 1.35f + 0.08f);
+        float val = max * 0.85f;
+        // HSV → RGB
+        float h6 = h * 6f;
+        int i = (int) Math.floor(h6) % 6;
+        float f = h6 - (float) Math.floor(h6);
+        float p = val * (1 - sat), q = val * (1 - f * sat), t = val * (1 - (1 - f) * sat);
+        float[] rgbF = switch (i) {
+            case 0 -> new float[]{val, t, p};
+            case 1 -> new float[]{q, val, p};
+            case 2 -> new float[]{p, val, t};
+            case 3 -> new float[]{p, q, val};
+            case 4 -> new float[]{t, p, val};
+            default -> new float[]{val, p, q};
+        };
+        int ri = Math.round(rgbF[0] * 255), gi = Math.round(rgbF[1] * 255), bi = Math.round(rgbF[2] * 255);
+        return (ri << 16) | (gi << 8) | bi;
     }
 
     /** Luminancia de un pixel ABGR de la máscara (en una gris, su valor). */
