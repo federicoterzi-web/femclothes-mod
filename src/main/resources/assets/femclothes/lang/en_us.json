@@ -518,5 +518,17 @@
   "femclothes.tinturas.distancia_h": "↔ %s%%",
   "femclothes.tinturas.distancia_v": "↕ %s%%",
   "femclothes.tinturas.tooltip.distancia_h": "Horizontal spacing between motifs (or vertical stripes): 50% touching, 300% triple",
-  "femclothes.tinturas.tooltip.distancia_v": "Vertical spacing between motifs (or horizontal stripes): 50% touching, 300% triple"
+  "femclothes.tinturas.tooltip.distancia_v": "Vertical spacing between motifs (or horizontal stripes): 50% touching, 300% triple",
+  "femclothes.tinturas.espejo.ninguno": "Mirror: no",
+  "femclothes.tinturas.espejo.horizontal": "Mirror: ↔",
+  "femclothes.tinturas.espejo.vertical": "Mirror: ↕",
+  "femclothes.tinturas.espejo.ambos": "Mirror: ↔↕",
+  "femclothes.tinturas.alternancia.ninguna": "Alternate: no",
+  "femclothes.tinturas.alternancia.filas": "Alt.: rows",
+  "femclothes.tinturas.alternancia.columnas": "Alt.: columns",
+  "femclothes.tinturas.alternancia.damero": "Alt.: checker",
+  "femclothes.tinturas.simetria": "Symmetry: %s",
+  "femclothes.tinturas.tooltip.espejo": "Flips each motif: left↔right, up↔down or both",
+  "femclothes.tinturas.tooltip.alternancia": "Every other motif (by rows, columns or checkerboard) is mirrored; with Turn it makes a zigzag",
+  "femclothes.tinturas.tooltip.simetria": "On the torso, the left half mirrors the right (diagonal stripes make a V)"
 }

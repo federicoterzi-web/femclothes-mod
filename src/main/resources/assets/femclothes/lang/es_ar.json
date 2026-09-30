@@ -518,5 +518,17 @@
   "femclothes.tinturas.distancia_h": "↔ %s%%",
   "femclothes.tinturas.distancia_v": "↕ %s%%",
   "femclothes.tinturas.tooltip.distancia_h": "Distancia horizontal entre motivos (o entre rayas verticales): 50% pegados, 300% el triple",
-  "femclothes.tinturas.tooltip.distancia_v": "Distancia vertical entre motivos (o entre rayas horizontales): 50% pegados, 300% el triple"
+  "femclothes.tinturas.tooltip.distancia_v": "Distancia vertical entre motivos (o entre rayas horizontales): 50% pegados, 300% el triple",
+  "femclothes.tinturas.espejo.ninguno": "Espejo: no",
+  "femclothes.tinturas.espejo.horizontal": "Espejo: ↔",
+  "femclothes.tinturas.espejo.vertical": "Espejo: ↕",
+  "femclothes.tinturas.espejo.ambos": "Espejo: ↔↕",
+  "femclothes.tinturas.alternancia.ninguna": "Alternar: no",
+  "femclothes.tinturas.alternancia.filas": "Alt.: filas",
+  "femclothes.tinturas.alternancia.columnas": "Alt.: columnas",
+  "femclothes.tinturas.alternancia.damero": "Alt.: damero",
+  "femclothes.tinturas.simetria": "Simetría: %s",
+  "femclothes.tinturas.tooltip.espejo": "Da vuelta cada motivo: izquierda↔derecha, arriba↔abajo o los dos",
+  "femclothes.tinturas.tooltip.alternancia": "De por medio (por filas, columnas o en damero) el motivo sale espejado; con Giro arma un zigzag",
+  "femclothes.tinturas.tooltip.simetria": "En el torso, la mitad izquierda es el reflejo de la derecha (las rayas en diagonal quedan en V)"
 }

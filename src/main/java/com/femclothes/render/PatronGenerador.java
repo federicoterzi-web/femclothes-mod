@@ -228,6 +228,13 @@ public final class PatronGenerador {
     public static NativeImage mascaraPara(String prenda, Forma forma, float anguloGrados,
                                           int grosorBase, TamanoPatron tamano, float posicion, int semilla,
                                           float distancia) {
+        return mascaraPara(prenda, forma, anguloGrados, grosorBase, tamano, posicion, semilla, distancia, false);
+    }
+
+    /** Con {@code simetria} del torso (2026-09-30): las rayas en diagonal quedan en V, ver {@link #reflejoTorso}. */
+    public static NativeImage mascaraPara(String prenda, Forma forma, float anguloGrados,
+                                          int grosorBase, TamanoPatron tamano, float posicion, int semilla,
+                                          float distancia, boolean simetria) {
         List<Caja> cajas = CAJAS_POR_PRENDA.get(prenda);
         if (cajas == null) return null;
 
@@ -235,7 +242,7 @@ public final class PatronGenerador {
         int posPaso = forma == Forma.TRES_RAYAS ? Math.round(Math.max(0f, Math.min(1f, posicion)) * 100) : 0;
         int anguloPaso = Math.round(anguloGrados / 15f) * 15;
         int periodo = Math.max(grosor, Math.round(grosor * 2 * distancia));
-        String key = prenda + "|" + forma + "|" + anguloPaso + "|" + grosor + "|" + posPaso + "|" + semilla + "|" + periodo;
+        String key = prenda + "|" + forma + "|" + anguloPaso + "|" + grosor + "|" + posPaso + "|" + semilla + "|" + periodo + "|" + simetria;
         NativeImage cacheada = CACHE.get(key);
         if (cacheada != null) return cacheada;
 
@@ -266,8 +273,10 @@ public final class PatronGenerador {
             int largo = (int) Math.round(max - min);
             int inicioBloque = Math.round(posPaso / 100f * Math.max(0, largo - bloque));
             double minFinal = min;
+            boolean simetrica = simetria && caja == TORSO;
             recorrer(caja, img, (lx, ly) -> {
                 int lxEspejado = espejar ? Math.floorMod(3 * cuarto - lx, w) : lx;
+                if (simetrica) lxEspejado = reflejoTorso(lxEspejado, w);
                 int d = (int) Math.round(lxEspejado * sin + ly * cos - minFinal);
                 boolean opaco = rayaOpaca(forma, d, grosor, periodo, largo, inicioBloque, bloque);
                 boolean esContorno = !opaco && (rayaOpaca(forma, d - contorno, grosor, periodo, largo, inicioBloque, bloque)
@@ -367,7 +376,7 @@ public final class PatronGenerador {
         double s2 = Math.sin(rad) * Math.sin(rad);
         float distancia = (float) (dist.distanciaV() * (1 - s2) + dist.distanciaH() * s2);
         return mascaraPara(prenda, capa.forma(), capa.angulo(), item.grosorBase, capa.tamano(), capa.posicion(),
-                capa.semilla(), distancia);
+                capa.semilla(), distancia, dist.simetria());
     }
 
     /** Capa lisa con degradé: cubre todas las cajas de la prenda, con la altura en el canal azul. */
@@ -442,8 +451,10 @@ public final class PatronGenerador {
             // miden lo mismo (frente = 2ª columna); el torso es der 32 |
             // frente 64 | izq 32 | atrás 64.
             double centroFrente = caja == TORSO ? 64 : cuarto * 1.5;
+            boolean simetrica = dist.simetria() && caja == TORSO;
             recorrer(caja, img, (lx, ly) -> {
                 int u = espejar ? Math.floorMod(3 * cuarto - lx, w) : lx;
+                if (simetrica) u = reflejoTorso(u, w);
                 int rol = motivo.esProcedural()
                         ? coberturaVichy(u, ly, w, h, k, posPaso / 20.0, centroFrente, grillaPaso, dist, celda)
                         : rolSprite(motivo, repeticion, u + 0.5, ly + 0.5, w, h, k, semilla,
@@ -474,7 +485,8 @@ public final class PatronGenerador {
             celda[1] = 0;
             double kk = k * MOTIVO_UNICO;
             // El logo gira con los dos ángulos (no hay grilla que girar aparte).
-            return rolEn(m, u - centroFrente, v - posicion * h, giro + Math.toRadians(anguloGrilla), kk);
+            return rolEn(m, u - centroFrente, v - posicion * h, giro + Math.toRadians(anguloGrilla), kk,
+                    false, dist.espejo());
         }
         double tam = Math.max(anchoM, altoM) * MOTIVO_CELDA;
         double celdaY = tam * dist.distanciaV();
@@ -517,7 +529,7 @@ public final class PatronGenerador {
                     lu -= (((hash >> 8) & 0xFF) / 255.0 * 2 - 1) * libreX;
                     lv -= (((hash >> 16) & 0xFF) / 255.0 * 2 - 1) * libreY;
                 }
-                int rol = rolEn(m, lu, lv, giro, k);
+                int rol = rolEn(m, lu, lv, giro, k, dist.alternancia().espeja(colId, fila), dist.espejo());
                 if (rol == ROL_RELLENO) {
                     celda[0] = colId;
                     celda[1] = fila;
@@ -537,14 +549,42 @@ public final class PatronGenerador {
         return resultado;
     }
 
+    /**
+     * Simetría del torso (2026-09-30): la mitad que va del centro del frente
+     * (u 64, a escala 8) hasta el centro de la espalda (64 + w/2) toma el
+     * pixel reflejado de la otra mitad — así el lado izquierdo es el espejo
+     * del derecho, en el frente y en la espalda.
+     */
+    private static int reflejoTorso(int u, int w) {
+        int centro = w / 3;          // der w/6 + medio frente w/6 (192: 32 + 32 = 64)
+        int mitad = w / 2;
+        if (u >= centro && u < centro + mitad) return Math.floorMod(2 * centro - 1 - u, w);
+        return u;
+    }
+
     /** Relleno / contorno / nada de un motivo centrado en (0,0), girado {@code giro} radianes, a escala {@code kk}. */
     private static int rolEn(Motivo m, double lu, double lv, double giro, double kk) {
+        return rolEn(m, lu, lv, giro, kk, false, DistribucionPatron.Espejo.NINGUNO);
+    }
+
+    /**
+     * Con espejos (2026-09-30): el motivo final es
+     * {@code alternado( girado( espejado(motivo) ) )}, así que al pixel se le
+     * aplica la inversa en el orden contrario — primero la alternancia (dar
+     * vuelta el motivo YA girado: con Giro sale un zigzag), después el giro,
+     * y al final el espejo propio del motivo.
+     */
+    private static int rolEn(Motivo m, double lu, double lv, double giro, double kk,
+                             boolean alternado, DistribucionPatron.Espejo espejo) {
+        if (alternado) lu = -lu;
         if (giro != 0) {
             double cos = Math.cos(-giro), sin = Math.sin(-giro);
             double ru = lu * cos - lv * sin, rv = lu * sin + lv * cos;
             lu = ru;
             lv = rv;
         }
+        if (espejo.horizontal) lu = -lu;
+        if (espejo.vertical) lv = -lv;
         int sx = (int) Math.floor(lu / kk + m.ancho / 2.0), sy = (int) Math.floor(lv / kk + m.alto / 2.0);
         if (m.pinta(sx, sy)) return ROL_RELLENO;
         // Contorno: un pixel de sprite alrededor del dibujo (8 vecinos).

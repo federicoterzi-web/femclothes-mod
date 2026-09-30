@@ -263,9 +263,15 @@ public class TinturasBlockEntity extends BlockEntity
         public float giroMotivo = 0f;
         public float distanciaH = 1f;
         public float distanciaV = 1f;
+        /** Espejo del motivo, espejo alternado y simetría del torso (2026-09-30, "vamos con todo"). */
+        public com.femclothes.render.DistribucionPatron.Espejo espejo = com.femclothes.render.DistribucionPatron.Espejo.NINGUNO;
+        public com.femclothes.render.DistribucionPatron.Alternancia alternancia =
+                com.femclothes.render.DistribucionPatron.Alternancia.NINGUNA;
+        public boolean simetria = false;
 
         public com.femclothes.render.DistribucionPatron distribucion() {
-            return new com.femclothes.render.DistribucionPatron(giroMotivo, distanciaH, distanciaV);
+            return new com.femclothes.render.DistribucionPatron(giroMotivo, distanciaH, distanciaV,
+                    espejo, alternancia, simetria);
         }
 
         public int color() { return colorDeMezcla(mezcla); }
@@ -298,6 +304,9 @@ public class TinturasBlockEntity extends BlockEntity
             c.giroMotivo = giroMotivo;
             c.distanciaH = distanciaH;
             c.distanciaV = distanciaV;
+            c.espejo = espejo;
+            c.alternancia = alternancia;
+            c.simetria = simetria;
             return c;
         }
 
@@ -325,6 +334,9 @@ public class TinturasBlockEntity extends BlockEntity
             c.putFloat("GiroMotivo", giroMotivo);
             c.putFloat("DistanciaH", distanciaH);
             c.putFloat("DistanciaV", distanciaV);
+            c.putString("Espejo", espejo.name());
+            c.putString("Alternancia", alternancia.name());
+            c.putBoolean("Simetria", simetria);
             return c;
         }
 
@@ -346,6 +358,15 @@ public class TinturasBlockEntity extends BlockEntity
             r.giroMotivo = c.getFloat("GiroMotivo");
             r.distanciaH = c.contains("DistanciaH") ? c.getFloat("DistanciaH") : 1f;
             r.distanciaV = c.contains("DistanciaV") ? c.getFloat("DistanciaV") : 1f;
+            try {
+                if (c.contains("Espejo")) r.espejo = com.femclothes.render.DistribucionPatron.Espejo.valueOf(c.getString("Espejo"));
+                if (c.contains("Alternancia")) {
+                    r.alternancia = com.femclothes.render.DistribucionPatron.Alternancia.valueOf(c.getString("Alternancia"));
+                }
+            } catch (IllegalArgumentException ignorado) {
+                // Valor que ya no existe: queda el default.
+            }
+            r.simetria = c.getBoolean("Simetria");
             r.posicion = c.contains("Posicion") ? c.getFloat("Posicion") : 0.5f;
             r.invertido = c.getBoolean("Invertido");
             r.opacidad = c.contains("Opacidad") ? MathHelper.clamp(c.getInt("Opacidad"), PASO_OPACIDAD, 100) : 100;
@@ -919,6 +940,10 @@ public class TinturasBlockEntity extends BlockEntity
     /** Giro de cada motivo en su lugar, de a 15° (2026-09-30), adelante/atrás. */
     public static final int BTN_GIRO_MOTIVO = BTN_USAR_MUESTRA + 1;
     public static final int BTN_GIRO_MOTIVO_ATRAS = BTN_GIRO_MOTIVO + 1;
+    /** Ciclan el espejo del motivo y el espejo alternado; alterna la simetría del torso (2026-09-30). */
+    public static final int BTN_ESPEJO = BTN_GIRO_MOTIVO_ATRAS + 1;
+    public static final int BTN_ALTERNANCIA = BTN_ESPEJO + 1;
+    public static final int BTN_SIMETRIA = BTN_ALTERNANCIA + 1;
     /** + nivel (0..{@code DistribucionPatron.NIVELES}-1): sliders de distancia horizontal y vertical (2026-09-30). */
     public static final int BTN_DISTANCIA_H_BASE = 170;
     public static final int BTN_DISTANCIA_V_BASE = 230;
@@ -985,6 +1010,18 @@ public class TinturasBlockEntity extends BlockEntity
             }
             case BTN_GIRO_MOTIVO_ATRAS -> {
                 sel.giroMotivo = (Math.round(sel.giroMotivo) + 360 - 15) % 360;
+                return true;
+            }
+            case BTN_ESPEJO -> {
+                sel.espejo = sel.espejo.siguiente();
+                return true;
+            }
+            case BTN_ALTERNANCIA -> {
+                sel.alternancia = sel.alternancia.siguiente();
+                return true;
+            }
+            case BTN_SIMETRIA -> {
+                sel.simetria = !sel.simetria;
                 return true;
             }
             case BTN_POSICION -> {

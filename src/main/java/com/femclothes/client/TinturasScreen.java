@@ -78,6 +78,7 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
     private ButtonWidget btnAngulo;
     private ButtonWidget btnGiro, btnGiroAtras, btnGiroAdelante;
     private DistanciaSlider sliderDistH, sliderDistV;
+    private ButtonWidget btnEspejo, btnAlternancia, btnSimetria;
     private ButtonWidget btnPosicion;
     private ButtonWidget btnForma;
     private ButtonWidget btnSemilla;
@@ -229,6 +230,12 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
         sliderDistV = new DistanciaSlider(this.x + M_MEDIO + 159, this.y + 292, 77, 16, false, inicial.distanciaV);
         this.addDrawableChild(sliderDistH);
         this.addDrawableChild(sliderDistV);
+
+        // Espejos (2026-09-30, "vamos con todo"): a la derecha del inventario,
+        // en la columna del medio (el hueco entre la fila de 9 y la línea de puntos).
+        btnEspejo = boton(M_MEDIO + 166, 324, 72, Text.empty(), "femclothes.tinturas.tooltip.espejo", TinturasBlockEntity.BTN_ESPEJO);
+        btnAlternancia = boton(M_MEDIO + 166, 344, 72, Text.empty(), "femclothes.tinturas.tooltip.alternancia", TinturasBlockEntity.BTN_ALTERNANCIA);
+        btnSimetria = boton(M_MEDIO + 166, 364, 72, Text.empty(), "femclothes.tinturas.tooltip.simetria", TinturasBlockEntity.BTN_SIMETRIA);
 
         // Teñir, ENCIMA de la flecha Entrada->Salida (2026-09-28, "la unica
         // forma de activacion de la maquina es saliendo de la gui o
@@ -394,6 +401,11 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
         // El giro de cada motivo no tiene sentido en rayas ni en el vichy (simétrico).
         boolean giraMotivo = motivo != null && !motivo.esProcedural();
         btnGiro.active = btnGiroAtras.active = btnGiroAdelante.active = giraMotivo;
+        btnEspejo.active = btnAlternancia.active = giraMotivo;
+        btnEspejo.setMessage(Text.translatable(casilla.espejo.traduccion()));
+        btnAlternancia.setMessage(Text.translatable(casilla.alternancia.traduccion()));
+        btnSimetria.setMessage(Text.translatable("femclothes.tinturas.simetria",
+                Text.translatable(casilla.simetria ? "femclothes.si" : "femclothes.no")));
         btnSemilla.active = (motivo != null && casilla.repeticion == com.femclothes.render.Repeticion.DISPERSO)
                 || (casilla.variacion == com.femclothes.render.Variacion.ALEATORIO && casilla.colores > 1);
 
