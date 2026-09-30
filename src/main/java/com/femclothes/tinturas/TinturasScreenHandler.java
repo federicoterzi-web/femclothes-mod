@@ -212,7 +212,51 @@ public class TinturasScreenHandler extends ScreenHandler {
             if (motivo != null) player.sendMessage(motivo, true);
             return motivo == null;
         }
+        if (id == TinturasBlockEntity.BTN_ENVASAR || id == TinturasBlockEntity.BTN_USAR_MUESTRA) {
+            if (player.getWorld().isClient) return true;
+            net.minecraft.text.Text motivo = id == TinturasBlockEntity.BTN_ENVASAR ? envasar(player) : usarMuestra(player);
+            if (motivo != null) player.sendMessage(motivo, true);
+            return motivo == null;
+        }
         return be.onButtonClick(id);
+    }
+
+    /**
+     * Envasar (2026-09-30, "que la estacion de tintes genere un mezcla de
+     * color por si la gente se quiere pasar colores"): gasta un frasco de
+     * vidrio del inventario y da una muestra con el color que se está
+     * editando. No gasta tinta: es la receta del color, no tinta.
+     */
+    @org.jetbrains.annotations.Nullable
+    private net.minecraft.text.Text envasar(PlayerEntity player) {
+        var inv = player.getInventory();
+        int frasco = -1;
+        for (int i = 0; i < inv.size() && frasco < 0; i++) {
+            if (inv.getStack(i).isOf(net.minecraft.item.Items.GLASS_BOTTLE)) frasco = i;
+        }
+        if (frasco < 0 && !player.isCreative()) {
+            return net.minecraft.text.Text.translatable("femclothes.muestra.sin_frasco");
+        }
+        if (frasco >= 0 && !player.isCreative()) inv.getStack(frasco).decrement(1);
+        ItemStack muestra = com.femclothes.item.MuestraColorItem.con(
+                new ItemStack(com.femclothes.item.FemclothesItems.TINTE_MEZCLA), be.mezclaEnEdicion());
+        inv.offerOrDrop(muestra);
+        return null;
+    }
+
+    /** Usar muestra: la del cursor, o si no la primera del inventario; no se gasta. */
+    @org.jetbrains.annotations.Nullable
+    private net.minecraft.text.Text usarMuestra(PlayerEntity player) {
+        int[] mezcla = com.femclothes.item.MuestraColorItem.mezcla(getCursorStack());
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.size() && mezcla == null; i++) {
+            if (inv.getStack(i).isOf(com.femclothes.item.FemclothesItems.TINTE_MEZCLA)) {
+                mezcla = com.femclothes.item.MuestraColorItem.mezcla(inv.getStack(i));
+            }
+        }
+        if (mezcla == null) return net.minecraft.text.Text.translatable("femclothes.muestra.sin_muestra");
+        be.ponerMezclaEnEdicion(mezcla);
+        return null;
     }
 
     @Override

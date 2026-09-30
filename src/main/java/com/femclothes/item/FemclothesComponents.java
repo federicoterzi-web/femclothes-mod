@@ -490,6 +490,14 @@ public final class FemclothesComponents {
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capa_cuello"),
             ComponentType.<Boolean>builder().codec(com.mojang.serialization.Codec.BOOL).packetCodec(PacketCodecs.BOOL).build());
 
+    /** La mezcla C/M/Y/K/T de una muestra de color (2026-09-30), 5 niveles de 0..20. */
+    public static final ComponentType<java.util.List<Integer>> MEZCLA_COLOR = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "mezcla_color"),
+            ComponentType.<java.util.List<Integer>>builder()
+                    .codec(com.mojang.serialization.Codec.INT.listOf())
+                    .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
+                    .build());
+
     public static void init() {
         // fuerza class-loading
     }

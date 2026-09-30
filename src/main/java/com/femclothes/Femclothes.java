@@ -69,6 +69,7 @@ public class Femclothes implements ModInitializer {
             entries.add(FemclothesItems.FISHNET_SOCKS);
             entries.add(FemclothesItems.PANTALON);
             entries.add(FemclothesItems.POLLERA);
+            entries.add(FemclothesItems.TINTE_MEZCLA);
             // Los moldes por-eje ESPECÍFICOS de pantalón-largo y medias se
             // sacaron (a pedido, "sintetizar todos en esos dos moldes
             // aunque cada prenda tenga su propia medida") — reemplazados

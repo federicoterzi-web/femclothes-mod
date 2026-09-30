@@ -470,5 +470,15 @@
   "femclothes.elegir_cuerpo.tooltip.interior_arriba": "Ropa interior de arriba (click: la siguiente)",
   "femclothes.elegir_cuerpo.tooltip.interior_abajo": "Ropa interior de abajo (click: la siguiente)",
   "femclothes.elegir_cuerpo.zona.interior": "Ropa interior",
-  "femclothes.elegir_cuerpo.tooltip.zona.interior": "Color de la ropa interior: click y elegilo con la paleta o los sliders"
+  "femclothes.elegir_cuerpo.tooltip.zona.interior": "Color de la ropa interior: click y elegilo con la paleta o los sliders",
+  "item.femclothes.tinte_mezcla": "Muestra de color",
+  "femclothes.muestra.vacia": "Vacía",
+  "femclothes.muestra.mezcla": "C %s%% · M %s%% · Y %s%% · K %s%% · T %s%%",
+  "femclothes.muestra.ayuda": "Estación de Tintes: \"Usar muestra\" copia este color. No se gasta.",
+  "femclothes.muestra.sin_frasco": "Necesitás un frasco de vidrio para envasar",
+  "femclothes.muestra.sin_muestra": "Agarrá una muestra de color con el cursor o tenela en el inventario",
+  "femclothes.tinturas.boton.envasar": "Envasar",
+  "femclothes.tinturas.boton.usar_muestra": "Usar muestra",
+  "femclothes.tinturas.tooltip.envasar": "Guarda el color que estás editando en una muestra (gasta un frasco de vidrio, no gasta tinta)",
+  "femclothes.tinturas.tooltip.usar_muestra": "Copia el color de la muestra del cursor (o la primera de tu inventario) al color que estás editando"
 }

@@ -470,5 +470,15 @@
   "femclothes.elegir_cuerpo.tooltip.interior_arriba": "Top underwear (click: next)",
   "femclothes.elegir_cuerpo.tooltip.interior_abajo": "Bottom underwear (click: next)",
   "femclothes.elegir_cuerpo.zona.interior": "Underwear",
-  "femclothes.elegir_cuerpo.tooltip.zona.interior": "Underwear color: click, then pick it with the palette or sliders"
+  "femclothes.elegir_cuerpo.tooltip.zona.interior": "Underwear color: click, then pick it with the palette or sliders",
+  "item.femclothes.tinte_mezcla": "Color Sample",
+  "femclothes.muestra.vacia": "Empty",
+  "femclothes.muestra.mezcla": "C %s%% · M %s%% · Y %s%% · K %s%% · T %s%%",
+  "femclothes.muestra.ayuda": "Dye Station: \"Use sample\" copies this color. Not consumed.",
+  "femclothes.muestra.sin_frasco": "You need a glass bottle to bottle a color",
+  "femclothes.muestra.sin_muestra": "Hold a color sample on the cursor or keep one in your inventory",
+  "femclothes.tinturas.boton.envasar": "Bottle",
+  "femclothes.tinturas.boton.usar_muestra": "Use sample",
+  "femclothes.tinturas.tooltip.envasar": "Saves the color you are editing into a sample (uses a glass bottle, no ink)",
+  "femclothes.tinturas.tooltip.usar_muestra": "Copies the sample on the cursor (or the first in your inventory) into the color you are editing"
 }

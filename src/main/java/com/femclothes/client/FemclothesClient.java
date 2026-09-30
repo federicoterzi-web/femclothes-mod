@@ -75,6 +75,12 @@ public class FemclothesClient implements ClientModInitializer {
         // Shorts comparte el mismo callback aunque su modelo sea de una sola
         // capa: tintIndex 1 nunca se pide para ese item, asi que la rama de
         // patron simplemente no se ejecuta.
+        // Muestra de color (2026-09-30): el líquido (capa 0) toma el color de la mezcla.
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
+            if (tintIndex != 0) return -1;
+            int[] m = com.femclothes.item.MuestraColorItem.mezcla(stack);
+            return m == null ? 0xFFB0B0B0 : 0xFF000000 | com.femclothes.item.MuestraColorItem.rgb(m);
+        }, FemclothesItems.TINTE_MEZCLA);
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
             int base = RegionResolver.colorBase(stack, Lado.IZQUIERDA);
             int color = base;

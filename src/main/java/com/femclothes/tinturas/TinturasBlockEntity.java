@@ -699,6 +699,20 @@ public class TinturasBlockEntity extends BlockEntity
     private Casilla casillaSeleccionada() { return casilla(seleccionada()); }
 
     /** Nivel del canal CMYK del cuadradito seleccionado — lo que muestran los sliders. */
+    /** Copia de la mezcla del color en edición del cuadradito seleccionado (para envasarla). */
+    public int[] mezclaEnEdicion() {
+        Casilla c = casillaSeleccionada();
+        return c.mezclaDe(c.editando).clone();
+    }
+
+    /** Pone {@code mezcla} en el color en edición del cuadradito seleccionado (una muestra de color). */
+    public void ponerMezclaEnEdicion(int[] mezcla) {
+        Casilla c = casillaSeleccionada();
+        int[] destino = c.mezclaDe(c.editando);
+        for (int i = 0; i < CANALES && i < mezcla.length; i++) destino[i] = MathHelper.clamp(mezcla[i], 0, NIVELES_MEZCLA - 1);
+        sincronizar();
+    }
+
     public int nivelBorrador(int canal) {
         Casilla c = casillaSeleccionada();
         return c.mezclaDe(c.editando)[canal];
@@ -877,6 +891,9 @@ public class TinturasBlockEntity extends BlockEntity
     public static final int BTN_COLORES = BTN_SEMILLA + 1;
     public static final int BTN_CONTORNO = BTN_COLORES + 1;
     public static final int BTN_VARIACION = BTN_CONTORNO + 1;
+    /** Muestras de color (2026-09-30): los maneja TinturasScreenHandler, que tiene al jugador. */
+    public static final int BTN_ENVASAR = BTN_VARIACION + 1;
+    public static final int BTN_USAR_MUESTRA = BTN_ENVASAR + 1;
     /** + 0..2: qué color editan los sliders (click en su muestra). */
     public static final int BTN_EDITAR_COLOR_BASE = 90;
     /** + índice de cuadradito: lo selecciona para editar (click en su slot). */
