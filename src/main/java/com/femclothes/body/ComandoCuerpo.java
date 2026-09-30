@@ -35,11 +35,23 @@ public final class ComandoCuerpo {
                     aplicar(ctx.getSource(), p -> p.conCuerpo(c))));
         }
 
-        LiteralArgumentBuilder<ServerCommandSource> interior = CommandManager.literal("interior");
-        for (RopaInterior r : RopaInterior.values()) {
-            interior.then(CommandManager.literal(r.clave).executes(ctx ->
-                    aplicar(ctx.getSource(), p -> p.conInterior(r))));
+        // Dos partes + color (2026-09-30): /femclothes interior arriba|abajo <tipo>, interior color <rgb>.
+        LiteralArgumentBuilder<ServerCommandSource> interiorArriba = CommandManager.literal("arriba");
+        for (InteriorArriba a : InteriorArriba.values()) {
+            interiorArriba.then(CommandManager.literal(a.clave).executes(ctx ->
+                    aplicar(ctx.getSource(), p -> p.conInterior(p.interior().conArriba(a)))));
         }
+        LiteralArgumentBuilder<ServerCommandSource> interiorAbajo = CommandManager.literal("abajo");
+        for (InteriorAbajo b : InteriorAbajo.values()) {
+            interiorAbajo.then(CommandManager.literal(b.clave).executes(ctx ->
+                    aplicar(ctx.getSource(), p -> p.conInterior(p.interior().conAbajo(b)))));
+        }
+        LiteralArgumentBuilder<ServerCommandSource> interior = CommandManager.literal("interior")
+                .then(interiorArriba)
+                .then(interiorAbajo)
+                .then(CommandManager.literal("color").then(CommandManager.argument("rgb", IntegerArgumentType.integer(0, 0xFFFFFF))
+                        .executes(ctx -> aplicar(ctx.getSource(),
+                                p -> p.conInterior(p.interior().conColor(IntegerArgumentType.getInteger(ctx, "rgb")))))));
 
         LiteralArgumentBuilder<ServerCommandSource> tono = CommandManager.literal("tono")
                 // "skin" y no un color: es volver a derivarlo de la propia
@@ -92,6 +104,7 @@ public final class ComandoCuerpo {
                 perfil.tonoDerivado()
                         ? Text.translatable("femclothes.cuerpo.tono_de_la_skin")
                         : Text.literal("#" + String.format("%06X", perfil.tono())),
-                Text.translatable(perfil.interior().traduccion()));
+                Text.translatable(perfil.interior().arriba().traduccion()).append(" + ")
+                        .append(Text.translatable(perfil.interior().abajo().traduccion())));
     }
 }

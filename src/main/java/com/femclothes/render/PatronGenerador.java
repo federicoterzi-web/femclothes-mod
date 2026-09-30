@@ -58,6 +58,12 @@ public final class PatronGenerador {
     private static final Caja BRAZO_IZQ = new Caja(256, 416, 384, 96, 32);
     // TORSO (u=16,v=16,ancho=8,prof=4): caras 2*prof+2*ancho=192 de ancho.
     private static final Caja TORSO = new Caja(128, 160, 320, 96, 32);
+    // La capa (2026-09-29, "capas... como las capas vanilla"): el paño es la
+    // caja 10x16x1 de la capa vanilla en uv 0,0 (exterior = frente, forro =
+    // atrás) y capucha/cuello salen de una caja de detalles 12x8x2 en uv 24,0
+    // (ver render.CapaMalla).
+    private static final Caja CAPA = new Caja(0, 8, 176, 128, 8);
+    private static final Caja CAPA_DETALLES = new Caja(192, 16, 416, 64, 16);
 
     /** El valor (pixel de máscara) de un punto de la tira de 4 caras, en coordenadas de la tira. */
     @FunctionalInterface
@@ -122,7 +128,8 @@ public final class PatronGenerador {
             // La pollera nueva (2026-09-29, "quiero poder... teñirla"): su tela
             // usa el layout de la caja del TORSO, envuelto en la campana (ver
             // render.PolleraMalla), así que los patrones van en esa caja.
-            "pollera", List.of(TORSO));
+            "pollera", List.of(TORSO),
+            "capa", List.of(CAPA, CAPA_DETALLES));
 
     /**
      * Dónde cae la rayita a lo largo del eje que le toca según

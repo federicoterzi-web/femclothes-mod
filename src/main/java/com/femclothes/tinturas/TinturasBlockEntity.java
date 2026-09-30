@@ -128,6 +128,8 @@ public class TinturasBlockEntity extends BlockEntity
     public static final int CASILLAS = 12;
     /** Pollera no tiene esquema: sus capas son 3 cuadraditos sueltos, todos de prenda entera. */
     public static final int CASILLAS_POLLERA = 3;
+    /** Capa (2026-09-29, "forro aparte"): Exterior, Forro y Detalles (capucha y cuello alto). */
+    public static final int CASILLAS_CAPA = 3;
     public static final int CASILLAS_INICIO = ALMACEN_FIN;
     public static final int TAMANO = CASILLAS_INICIO + CASILLAS * Categoria.values().length;
     /** Opacidad en pasos de 10% (10..100). */
@@ -346,7 +348,8 @@ public class TinturasBlockEntity extends BlockEntity
      * tiene sus PROPIOS cuadraditos, orden y seleccionado, mismo espíritu
      * que {@code ModeladoBlockEntity.Categoria}.
      */
-    public enum Categoria { REMERA, PANTALON, MEDIAS, CALIENTABRAZOS, POLLERA }
+    /** Siempre al FINAL: los cuadraditos de cada categoría se guardan por índice (ver {@link #casillaSlot}). */
+    public enum Categoria { REMERA, PANTALON, MEDIAS, CALIENTABRAZOS, POLLERA, CAPA }
 
     private Categoria categoria = Categoria.REMERA;
     private final Casilla[][] casillas = new Casilla[Categoria.values().length][CASILLAS];
@@ -383,6 +386,14 @@ public class TinturasBlockEntity extends BlockEntity
     public static com.femclothes.region.RegionPintura regionDe(Categoria cat, int i) {
         if (i < 0 || i >= CASILLAS) return null;
         if (cat == Categoria.POLLERA) return i < CASILLAS_POLLERA ? com.femclothes.region.RegionPintura.TODO : null;
+        if (cat == Categoria.CAPA) {
+            return switch (i) {
+                case 0 -> com.femclothes.region.RegionPintura.CAPA_EXTERIOR;
+                case 1 -> com.femclothes.region.RegionPintura.CAPA_FORRO;
+                case 2 -> com.femclothes.region.RegionPintura.CAPA_DETALLES;
+                default -> null;
+            };
+        }
         boolean cruzado = cat == Categoria.MEDIAS || cat == Categoria.CALIENTABRAZOS;
         return switch (com.femclothes.modelado.ModeladoBlockEntity.ROLES[cat.ordinal()][i]) {
             case CUELLO -> com.femclothes.region.RegionPintura.CUELLO;
@@ -450,6 +461,7 @@ public class TinturasBlockEntity extends BlockEntity
         if (stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID) return Categoria.MEDIAS;
         if (stack.getItem() instanceof com.femclothes.item.CalientabrazosItem) return Categoria.CALIENTABRAZOS;
         if (stack.getItem() instanceof com.femclothes.item.PolleraItem) return Categoria.POLLERA;
+        if (stack.getItem() instanceof com.femclothes.item.CapaItem) return Categoria.CAPA;
         return null;
     }
 
@@ -687,6 +699,20 @@ public class TinturasBlockEntity extends BlockEntity
     private Casilla casillaSeleccionada() { return casilla(seleccionada()); }
 
     /** Nivel del canal CMYK del cuadradito seleccionado — lo que muestran los sliders. */
+    /** Copia de la mezcla del color en edición del cuadradito seleccionado (para envasarla). */
+    public int[] mezclaEnEdicion() {
+        Casilla c = casillaSeleccionada();
+        return c.mezclaDe(c.editando).clone();
+    }
+
+    /** Pone {@code mezcla} en el color en edición del cuadradito seleccionado (una muestra de color). */
+    public void ponerMezclaEnEdicion(int[] mezcla) {
+        Casilla c = casillaSeleccionada();
+        int[] destino = c.mezclaDe(c.editando);
+        for (int i = 0; i < CANALES && i < mezcla.length; i++) destino[i] = MathHelper.clamp(mezcla[i], 0, NIVELES_MEZCLA - 1);
+        sincronizar();
+    }
+
     public int nivelBorrador(int canal) {
         Casilla c = casillaSeleccionada();
         return c.mezclaDe(c.editando)[canal];
@@ -865,6 +891,9 @@ public class TinturasBlockEntity extends BlockEntity
     public static final int BTN_COLORES = BTN_SEMILLA + 1;
     public static final int BTN_CONTORNO = BTN_COLORES + 1;
     public static final int BTN_VARIACION = BTN_CONTORNO + 1;
+    /** Muestras de color (2026-09-30): los maneja TinturasScreenHandler, que tiene al jugador. */
+    public static final int BTN_ENVASAR = BTN_VARIACION + 1;
+    public static final int BTN_USAR_MUESTRA = BTN_ENVASAR + 1;
     /** + 0..2: qué color editan los sliders (click en su muestra). */
     public static final int BTN_EDITAR_COLOR_BASE = 90;
     /** + índice de cuadradito: lo selecciona para editar (click en su slot). */
@@ -1417,6 +1446,7 @@ public class TinturasBlockEntity extends BlockEntity
             case MEDIAS -> com.femclothes.item.FemclothesItems.SOCKS_SOLID;
             case CALIENTABRAZOS -> com.femclothes.item.FemclothesItems.CALIENTABRAZOS;
             case POLLERA -> com.femclothes.item.FemclothesItems.POLLERA;
+            case CAPA -> com.femclothes.item.FemclothesItems.CAPA;
         };
     }
 

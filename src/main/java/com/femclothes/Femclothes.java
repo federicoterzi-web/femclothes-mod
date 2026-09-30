@@ -29,6 +29,7 @@ public class Femclothes implements ModInitializer {
         PerfilesDeCuerpo.init();
         ComandoCuerpo.init();
         com.femclothes.body.RedCuerpo.init();
+        com.femclothes.util.RedTwirl.init();
         com.femclothes.util.DebugMaquinas.init();
         FemclothesScreenHandlers.init();
         com.femclothes.modelado.ModeladoMod.register();
@@ -68,6 +69,7 @@ public class Femclothes implements ModInitializer {
             entries.add(FemclothesItems.FISHNET_SOCKS);
             entries.add(FemclothesItems.PANTALON);
             entries.add(FemclothesItems.POLLERA);
+            entries.add(FemclothesItems.TINTE_MEZCLA);
             // Los moldes por-eje ESPECÍFICOS de pantalón-largo y medias se
             // sacaron (a pedido, "sintetizar todos en esos dos moldes
             // aunque cada prenda tenga su propia medida") — reemplazados
@@ -78,6 +80,7 @@ public class Femclothes implements ModInitializer {
             // de remera y tiro de pantalón en cobertura de torso") —
             // reemplazado por el molde de TORSO unificado de abajo.
             entries.add(FemclothesItems.CALIENTABRAZOS);
+            entries.add(FemclothesItems.CAPA);
             entries.add(FemclothesItems.MAID_OUTFIT);
             entries.add(FemclothesItems.OVERSIZED_HOODIE);
             entries.add(FemclothesItems.PATTERN_STRIPE_TOP);
@@ -134,6 +137,12 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RED_LISA);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_POLLERA_CAMPANA);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_POLLERA_TABLEADA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_RUEDO_RECTO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_RUEDO_REDONDEADO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_CON_CAPUCHA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_SIN_CAPUCHA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_CUELLO_ALTO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_SIN_CUELLO);
             })
             .build();
 

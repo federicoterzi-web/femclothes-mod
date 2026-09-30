@@ -63,6 +63,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
             Identifier.of("femclothes", "textures/gui/container/esquema_medias.png"),
             Identifier.of("femclothes", "textures/gui/container/esquema_calientabrazos.png"),
             Identifier.of("femclothes", "textures/gui/container/esquema_pollera.png"),
+            Identifier.of("femclothes", "textures/gui/container/esquema_capa.png"),
     };
     /** Cuadros de la chincheta: 0 sin fijar (aguja a la vista), 1 a mitad de clavarse, 2 fijada (sin aguja). */
     private static final Identifier[] TEXTURE_CHINCHETA = {
@@ -402,6 +403,10 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         combo.pollera().ifPresent(p -> {
             p.largo().ifPresent(v -> sb.append("Pollera largo: ").append(v.clave).append(' '));
             p.forma().ifPresent(v -> sb.append("Pollera forma: ").append(v.clave).append(' '));
+            p.capaLargo().ifPresent(v -> sb.append("Capa largo: ").append(v.asString()).append(' '));
+            p.capaRuedo().ifPresent(v -> sb.append("Capa ruedo: ").append(v.asString()).append(' '));
+            p.capaCapucha().ifPresent(v -> sb.append(v ? "Con capucha " : "Sin capucha "));
+            p.capaCuello().ifPresent(v -> sb.append(v ? "Cuello alto " : "Sin cuello "));
         });
         if (combo.lado() != com.femclothes.region.Lado.AMBAS) sb.append('(').append(combo.lado().clave()).append(')');
         return Text.literal(sb.toString().trim());

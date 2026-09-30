@@ -28,16 +28,25 @@ public final class RedCuerpo {
      * ({@link PerfilCuerpo#TONO_DE_LA_SKIN} = sacarlo de la skin), Clara y
      * Oscura ({@link PerfilCuerpo#TONO_AUTOMATICO} = salen del Base).
      */
-    public record Elegir(String cuerpo, int tono, int claro, int oscuro, int rubor, int fuerza) implements CustomPayload {
+    public record Elegir(String cuerpo, int tono, int claro, int oscuro, int rubor, int fuerza,
+                         String arriba, String abajo, int colorInterior, boolean siempre) implements CustomPayload {
         public static final Id<Elegir> ID = new Id<>(Identifier.of(Femclothes.MOD_ID, "elegir_cuerpo"));
-        public static final PacketCodec<RegistryByteBuf, Elegir> CODEC = PacketCodec.tuple(
-                PacketCodecs.string(32), Elegir::cuerpo,
-                PacketCodecs.INTEGER, Elegir::tono,
-                PacketCodecs.INTEGER, Elegir::claro,
-                PacketCodecs.INTEGER, Elegir::oscuro,
-                PacketCodecs.INTEGER, Elegir::rubor,
-                PacketCodecs.VAR_INT, Elegir::fuerza,
-                Elegir::new);
+        /** A mano: son 10 campos y {@code PacketCodec.tuple} llega hasta 6. */
+        public static final PacketCodec<RegistryByteBuf, Elegir> CODEC = PacketCodec.of(
+                (e, buf) -> {
+                    buf.writeString(e.cuerpo(), 32);
+                    buf.writeInt(e.tono());
+                    buf.writeInt(e.claro());
+                    buf.writeInt(e.oscuro());
+                    buf.writeInt(e.rubor());
+                    buf.writeVarInt(e.fuerza());
+                    buf.writeString(e.arriba(), 32);
+                    buf.writeString(e.abajo(), 32);
+                    buf.writeInt(e.colorInterior());
+                    buf.writeBoolean(e.siempre());
+                },
+                buf -> new Elegir(buf.readString(32), buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt(),
+                        buf.readVarInt(), buf.readString(32), buf.readString(32), buf.readInt(), buf.readBoolean()));
 
         @Override
         public Id<? extends CustomPayload> getId() { return ID; }
@@ -53,6 +62,14 @@ public final class RedCuerpo {
 
     private RedCuerpo() {}
 
+    private static RopaInterior interiorDe(Elegir e) {
+        InteriorArriba arriba = RopaInterior.DEFECTO.arriba();
+        for (InteriorArriba a : InteriorArriba.values()) if (a.clave.equals(e.arriba())) arriba = a;
+        InteriorAbajo abajo = RopaInterior.DEFECTO.abajo();
+        for (InteriorAbajo b : InteriorAbajo.values()) if (b.clave.equals(e.abajo())) abajo = b;
+        return new RopaInterior(arriba, abajo, e.colorInterior() & 0xFFFFFF);
+    }
+
     public static void init() {
         PayloadTypeRegistry.playC2S().register(Elegir.ID, Elegir.CODEC);
         PayloadTypeRegistry.playS2C().register(Abrir.ID, Abrir.CODEC);
@@ -64,7 +81,9 @@ public final class RedCuerpo {
                     // GUI no vuelve a saltar sola.
                     PerfilesDeCuerpo.poner(jugador, PerfilesDeCuerpo.de(jugador).conCuerpo(cuerpo)
                             .conTonos(payload.tono() & 0xFFFFFF, payload.claro() & 0xFFFFFF, payload.oscuro() & 0xFFFFFF, payload.rubor() & 0xFFFFFF,
-                                    net.minecraft.util.math.MathHelper.clamp(payload.fuerza(), 0, 100)));
+                                    net.minecraft.util.math.MathHelper.clamp(payload.fuerza(), 0, 100))
+                            .conInterior(interiorDe(payload))
+                            .conSiempre(payload.siempre()));
                 }));
     }
 

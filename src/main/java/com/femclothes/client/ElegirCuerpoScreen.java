@@ -47,7 +47,8 @@ import java.util.List;
 public class ElegirCuerpoScreen extends Screen {
 
     private static final int ANCHO = 480, ALTO = 250;
-    private static final int PREVIEW_X1 = 8, PREVIEW_Y1 = 22, PREVIEW_X2 = 108, PREVIEW_Y2 = 222;
+    // La vista previa se achicó (2026-09-30) para que entren abajo los dos botones de ropa interior.
+    private static final int PREVIEW_X1 = 8, PREVIEW_Y1 = 22, PREVIEW_X2 = 108, PREVIEW_Y2 = 204;
     private static final int GRILLA_X = 116, GRILLA_Y = 22, CELDA_W = 44, CELDA_H = 46, COLUMNAS = 5;
     private static final int DERECHA_X = 344, DERECHA_ANCHO = 128;
     private static final int ZONAS_Y = 34, PALETA_Y = 90, SLIDERS_Y = 110;
@@ -55,6 +56,8 @@ public class ElegirCuerpoScreen extends Screen {
     private static final int TONO_RESERVA = 0xC89F7E;
     private static final String[] CLAVE_ZONA = {"base", "clara", "oscura", "rubor"};
     private static final int ZONAS = 4;
+    /** "Zona" extra de los sliders: el color de la ropa interior (2026-09-30), con su muestra al lado de sus botones. */
+    private static final int ZONA_INTERIOR = 4;
 
     private int x0, y0;
     private CuerpoBase elegido;
@@ -62,11 +65,21 @@ public class ElegirCuerpoScreen extends Screen {
      * Color elegido a mano de cada zona (Base, Clara, Oscura); null =
      * automático — la Base sale de la skin, Clara y Oscura del color Base.
      */
-    private final Integer[] tonos = new Integer[ZONAS];
+    private final Integer[] tonos = new Integer[ZONAS + 1];
     /** Fuerza del rubor en % (2026-09-29, "poneme un selector de fuerza de rubor"). */
     private int fuerzaRubor = PerfilCuerpo.FUERZA_RUBOR_DEFECTO;
     private SliderFuerza sliderFuerza;
     private int zona = CuerpoBaseTextures.ZONA_BASE;
+    /**
+     * Ropa interior y "usar siempre como skin" (2026-09-29, "un selector que
+     * directamente te deje esa skin de default, quizas con ropa interior
+     * base"); en dos partes desde el 2026-09-30 ("capaz se eligen las dos
+     * partes?"). El color va en {@code tonos[ZONA_INTERIOR]} (null = el de siempre).
+     */
+    private com.femclothes.body.InteriorArriba interiorArriba = com.femclothes.body.RopaInterior.DEFECTO.arriba();
+    private com.femclothes.body.InteriorAbajo interiorAbajo = com.femclothes.body.RopaInterior.DEFECTO.abajo();
+    private boolean siempre = false;
+    private ButtonWidget btnArriba, btnAbajo, btnSiempre;
     private final SliderCanal[] sliders = new SliderCanal[3];
     private final BotonZona[] botonesZona = new BotonZona[ZONAS];
     private ButtonWidget btnAutomatico;
@@ -82,6 +95,11 @@ public class ElegirCuerpoScreen extends Screen {
         tonos[1] = perfil.tonoClaro() == PerfilCuerpo.TONO_AUTOMATICO ? null : perfil.tonoClaro();
         tonos[2] = perfil.tonoOscuro() == PerfilCuerpo.TONO_AUTOMATICO ? null : perfil.tonoOscuro();
         tonos[3] = perfil.tonoRubor() == PerfilCuerpo.TONO_AUTOMATICO ? null : perfil.tonoRubor();
+        interiorArriba = perfil.interior().arriba();
+        interiorAbajo = perfil.interior().abajo();
+        tonos[ZONA_INTERIOR] = perfil.interior().color() == com.femclothes.body.RopaInterior.COLOR_DEFECTO
+                ? null : perfil.interior().color();
+        siempre = perfil.siempre();
         fuerzaRubor = perfil.fuerzaRubor();
     }
 
@@ -94,6 +112,7 @@ public class ElegirCuerpoScreen extends Screen {
     /** El color con el que se ve la zona {@code z} ahora (las automáticas muestran el Base). */
     private int colorDeZona(int z) {
         if (tonos[z] != null) return tonos[z];
+        if (z == ZONA_INTERIOR) return com.femclothes.body.RopaInterior.COLOR_DEFECTO;
         int base = tonos[0] != null ? tonos[0] : tonoDeLaSkin();
         // El rubor automático es el mismo color, más saturado y oscuro.
         return z == CuerpoBaseTextures.ZONA_RUBOR ? CuerpoBaseTextures.ruborAutomatico(base) : base;
@@ -101,7 +120,8 @@ public class ElegirCuerpoScreen extends Screen {
 
     /** Clara y Oscura solo tienen sentido en los cuerpos de animal. */
     private boolean zonaDisponible(int z) {
-        return z == CuerpoBaseTextures.ZONA_BASE || z == CuerpoBaseTextures.ZONA_RUBOR || elegido.animal;
+        return z == CuerpoBaseTextures.ZONA_BASE || z == CuerpoBaseTextures.ZONA_RUBOR || z == ZONA_INTERIOR
+                || elegido.animal;
     }
 
     @Override
@@ -153,6 +173,22 @@ public class ElegirCuerpoScreen extends Screen {
         sliderFuerza = new SliderFuerza(x0 + DERECHA_X, y0 + SLIDERS_Y + 74);
         addDrawableChild(sliderFuerza);
 
+        // Debajo de la vista previa: la ropa interior. Debajo de la grilla: usar siempre.
+        // A la izquierda, la muestra del color (elige la ropa interior en los sliders).
+        addDrawableChild(new BotonColorInterior(x0 + PREVIEW_X1, y0 + 208));
+        btnArriba = new EstiloPergamino.BotonPergamino(x0 + PREVIEW_X1 + 18, y0 + 208, PREVIEW_X2 - PREVIEW_X1 - 18, 16,
+                Text.empty(), b -> interiorArriba = interiorArriba.siguiente());
+        btnArriba.setTooltip(Tooltip.of(Text.translatable("femclothes.elegir_cuerpo.tooltip.interior_arriba")));
+        addDrawableChild(btnArriba);
+        btnAbajo = new EstiloPergamino.BotonPergamino(x0 + PREVIEW_X1 + 18, y0 + 226, PREVIEW_X2 - PREVIEW_X1 - 18, 16,
+                Text.empty(), b -> interiorAbajo = interiorAbajo.siguiente());
+        btnAbajo.setTooltip(Tooltip.of(Text.translatable("femclothes.elegir_cuerpo.tooltip.interior_abajo")));
+        addDrawableChild(btnAbajo);
+        btnSiempre = new EstiloPergamino.BotonPergamino(x0 + GRILLA_X, y0 + 224, COLUMNAS * CELDA_W - 4, 16,
+                Text.empty(), b -> siempre = !siempre);
+        btnSiempre.setTooltip(Tooltip.of(Text.translatable("femclothes.elegir_cuerpo.tooltip.siempre")));
+        addDrawableChild(btnSiempre);
+
         addDrawableChild(new EstiloPergamino.BotonPergamino(x0 + DERECHA_X, y0 + 200, DERECHA_ANCHO, 18,
                 Text.translatable("femclothes.elegir_cuerpo.boton.confirmar"), b -> confirmar()));
         addDrawableChild(new EstiloPergamino.BotonPergamino(x0 + DERECHA_X, y0 + 222, DERECHA_ANCHO, 18,
@@ -166,6 +202,10 @@ public class ElegirCuerpoScreen extends Screen {
             sincronizarSliders();
         }
         for (int z = 0; z < ZONAS; z++) botonesZona[z].active = zonaDisponible(z);
+        btnArriba.setMessage(Text.literal("\u2191 ").append(Text.translatable(interiorArriba.traduccion())));
+        btnAbajo.setMessage(Text.literal("\u2193 ").append(Text.translatable(interiorAbajo.traduccion())));
+        btnSiempre.setMessage(Text.translatable("femclothes.elegir_cuerpo.boton.siempre",
+                Text.translatable(siempre ? "femclothes.si" : "femclothes.no")));
         sliderFuerza.visible = zona == CuerpoBaseTextures.ZONA_RUBOR;
         boolean base = zona == CuerpoBaseTextures.ZONA_BASE;
         btnAutomatico.setMessage(Text.translatable(base
@@ -184,7 +224,8 @@ public class ElegirCuerpoScreen extends Screen {
                 tonos[0] == null ? PerfilCuerpo.TONO_DE_LA_SKIN : tonos[0],
                 tonos[1] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[1],
                 tonos[2] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[2],
-                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3], fuerzaRubor));
+                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3], fuerzaRubor,
+                interiorArriba.clave, interiorAbajo.clave, colorDeZona(ZONA_INTERIOR), siempre));
         close();
     }
 
@@ -207,8 +248,9 @@ public class ElegirCuerpoScreen extends Screen {
         // Nombre del elegido debajo de la grilla y la ayuda del comando.
         c.drawText(textRenderer, Text.translatable("femclothes.elegir_cuerpo.elegido",
                 Text.translatable(elegido.traduccion())), x0 + GRILLA_X, y0 + 212, EstiloPergamino.TEXTO, false);
+        // Arriba, al lado del título (abajo va el botón de usar siempre).
         c.drawText(textRenderer, Text.translatable("femclothes.elegir_cuerpo.ayuda"),
-                x0 + GRILLA_X, y0 + 230, EstiloPergamino.TEXTO_APAGADO, false);
+                x0 + GRILLA_X, y0 + 8, EstiloPergamino.TEXTO_APAGADO, false);
 
         // Colores: título, de dónde sale el de la zona elegida, y la paleta.
         c.drawText(textRenderer, Text.translatable("femclothes.elegir_cuerpo.tono"), x0 + DERECHA_X, y0 + 22, EstiloPergamino.TEXTO, false);
@@ -236,12 +278,12 @@ public class ElegirCuerpoScreen extends Screen {
     private void dibujarPreview(DrawContext c, int mouseY) {
         ClientPlayerEntity jugador = MinecraftClient.getInstance().player;
         if (jugador == null) return;
-        PerfilCuerpo actual = PerfilesDeCuerpo.de(jugador);
         GarmentFeatureRenderer.perfilOverride = new PerfilCuerpo(elegido,
-                tonos[0] == null ? PerfilCuerpo.TONO_DE_LA_SKIN : tonos[0], actual.interior(), true,
+                tonos[0] == null ? PerfilCuerpo.TONO_DE_LA_SKIN : tonos[0],
+                new com.femclothes.body.RopaInterior(interiorArriba, interiorAbajo, colorDeZona(ZONA_INTERIOR)), true,
                 tonos[1] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[1],
                 tonos[2] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[2],
-                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3], fuerzaRubor);
+                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3], fuerzaRubor, siempre);
         // Sin ropa: solo el cuerpo que se está eligiendo.
         GarmentFeatureRenderer.previewOverride = List.of();
         try {
@@ -358,6 +400,28 @@ public class ElegirCuerpoScreen extends Screen {
             c.drawText(textRenderer, getMessage(), x + (w - textRenderer.getWidth(getMessage())) / 2, y + 18,
                     active ? EstiloPergamino.TEXTO : EstiloPergamino.TEXTO_APAGADO, false);
             boolean sel = z == zona;
+            c.drawBorder(x, y, w, h, sel ? 0xFFFFD24C : 0xFF6B4E2A);
+            if (sel) c.drawBorder(x + 1, y + 1, w - 2, h - 2, 0xFFFFD24C);
+        }
+    }
+
+    /** La muestra del color de la ropa interior (2026-09-30): click la elige para los sliders. */
+    private class BotonColorInterior extends ButtonWidget {
+        BotonColorInterior(int x, int y) {
+            super(x, y, 16, 34, Text.translatable("femclothes.elegir_cuerpo.zona.interior"), b -> {
+                zona = ZONA_INTERIOR;
+                sincronizarSliders();
+            }, DEFAULT_NARRATION_SUPPLIER);
+            setTooltip(Tooltip.of(Text.translatable("femclothes.elegir_cuerpo.tooltip.zona.interior")));
+        }
+
+        @Override
+        protected void renderWidget(DrawContext c, int mouseX, int mouseY, float delta) {
+            int x = getX(), y = getY(), w = getWidth(), h = getHeight();
+            c.fill(x, y, x + w, y + h, 0xFFB9956A);
+            c.fill(x + 3, y + 3, x + w - 3, y + h - 3, 0xFF000000 | colorDeZona(ZONA_INTERIOR));
+            if (tonos[ZONA_INTERIOR] == null) c.drawText(textRenderer, "A", x + 5, y + h / 2 - 4, 0xFF6B4E2A, false);
+            boolean sel = zona == ZONA_INTERIOR;
             c.drawBorder(x, y, w, h, sel ? 0xFFFFD24C : 0xFF6B4E2A);
             if (sel) c.drawBorder(x + 1, y + 1, w - 2, h - 2, 0xFFFFD24C);
         }

@@ -89,7 +89,8 @@ public final class PrendaModelado {
                 || out.getItem() instanceof PantalonItem
                 || out.getItem() == FemclothesItems.SOCKS_SOLID
                 || out.getItem() instanceof CalientabrazosItem
-                || out.getItem() instanceof com.femclothes.item.PolleraItem)) {
+                || out.getItem() instanceof com.femclothes.item.PolleraItem
+                || out.getItem() instanceof com.femclothes.item.CapaItem)) {
             var ci = combo.capaPatron().get();
             var patronItem = com.femclothes.item.ClothingPatternItem.porId(ci.patronId());
             var forma = patronItem != null ? patronItem.forma : com.femclothes.render.PatronGenerador.Forma.ALTERNADO;
@@ -148,6 +149,27 @@ public final class PrendaModelado {
             }
             if (p.forma().isPresent()) {
                 com.femclothes.item.PolleraItem.setForma(out, p.forma().get());
+                cambio = true;
+            }
+        }
+
+        // Capa (2026-09-29): largo, ruedo, capucha y cuello alto.
+        if (out.getItem() instanceof com.femclothes.item.CapaItem && combo.pollera().isPresent()) {
+            var p = combo.pollera().get();
+            if (p.capaLargo().isPresent()) {
+                com.femclothes.item.CapaItem.setLargo(out, p.capaLargo().get());
+                cambio = true;
+            }
+            if (p.capaRuedo().isPresent()) {
+                com.femclothes.item.CapaItem.setRuedo(out, p.capaRuedo().get());
+                cambio = true;
+            }
+            if (p.capaCapucha().isPresent()) {
+                com.femclothes.item.CapaItem.setCapucha(out, p.capaCapucha().get());
+                cambio = true;
+            }
+            if (p.capaCuello().isPresent()) {
+                com.femclothes.item.CapaItem.setCuelloAlto(out, p.capaCuello().get());
                 cambio = true;
             }
         }

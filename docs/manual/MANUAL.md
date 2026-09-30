@@ -4,7 +4,7 @@ Versión del mod: 0.1.0 · Minecraft 1.21.1 (Fabric) · Manual actualizado: {{FE
 
 ![Personaje vestido con prendas del mod](img/captura_jugador_1.png)
 
-FemClothes agrega ropa que se viste SOBRE el cuerpo del personaje: remeras, pantalones, medias, calientabrazos y polleras que siguen la forma del modelo, se superponen en capas (una media debajo de un pantalón, una remera arriba de todo) y se pueden personalizar casi por completo: el corte, el color, los patrones, las estampas con fotos y hasta la trama de la tela (redes, encaje, arneses).
+FemClothes agrega ropa que se viste SOBRE el cuerpo del personaje: remeras, pantalones, medias, calientabrazos, polleras y capas que siguen la forma del modelo, se superponen en capas (una media debajo de un pantalón, una remera arriba de todo) y se pueden personalizar casi por completo: el corte, el color, los patrones, las estampas con fotos y hasta la trama de la tela (redes, encaje, arneses).
 
 La personalización pasa por cuatro máquinas, cada una con su trabajo:
 
@@ -47,12 +47,15 @@ Cada máquina **no consume la prenda ni los moldes**: la prenda sale modificada 
 | Medias | Medias | Largo arriba y abajo (por lado), calce, trama | Sí | Sí |
 | Calientabrazos | Brazos | Cobertura arriba y abajo (por lado), calce, trama | Sí | Sí |
 | Pollera | Piernas (exterior) | Forma (campana o tableada), largo (6), calce, trama | Sí | Sí (frente y espalda) |
+| Capa | Espalda | Largo (6), ruedo (recto o redondeado), capucha, cuello alto | Sí (exterior, forro y detalles por separado) | Sí (Frente = exterior, Espalda = forro) |
 
 **Capas de dibujo.** Las prendas se dibujan en orden fijo, así una no borra a la otra: cuerpo base → medias → calientabrazos → pantalón → remera → pollera. Donde una prenda no tiene tela (una media corta, una remera sin mangas) se ve lo que hay abajo.
 
-**El ícono muestra la prenda de verdad.** Los íconos de remera, pantalón, pollera, medias y calientabrazos son de 64×64 y se arman con la misma tela que se ve puesta: aparecen las capas y los patrones de Tintes, cada manga o pierna con su color, las redes y los arneses, las fotos de la Sublimadora y el largo real (manga corta, crop, short, zoquete). La remera tiene un dibujo por cuello (redondo, V, polera).
+**El ícono muestra la prenda de verdad.** Los íconos de remera, pantalón, pollera, capa, medias y calientabrazos son de 64×64 y se arman con la misma tela que se ve puesta: aparecen las capas y los patrones de Tintes, cada manga o pierna con su color, las redes y los arneses, las fotos de la Sublimadora y el largo real (manga corta, crop, short, zoquete). La remera tiene un dibujo por cuello (redondo, V, polera).
 
-**La pollera** es una malla propia que baja desde la cintura y se abre hacia el ruedo. Puede ser **campana** (lisa) o **tableada** (pliegues en V) y tiene 6 largos, del micro hasta el tobillo. Al caminar, el ruedo se corre para afuera donde pasa cada pierna, así no la atraviesa; con `/femclothesdebug pollera rigida` queda quieta y un poco más ancha (`abierta` vuelve al modo normal; es para comparar). Su tela tiene el mismo formato que las demás prendas, así que se tiñe con patrones y zonas, se estampa y se le puede poner red.
+**La pollera** es una malla propia que baja desde la cintura y se abre hacia el ruedo. Puede ser **campana** (lisa) o **tableada** (pliegues en V) y tiene 6 largos, del micro hasta el tobillo. **Se mueve con vos:** la tela choca con las piernas (con su forma y su pose reales: caminando, agachada, sentada o nadando, la pierna la empuja hacia afuera y nunca la atraviesa), el ruedo queda atrás al caminar o correr, se abre al caer, se achica al saltar, se balancea de costado y se retuerce un poco con cada paso (la misma inercia que usa la capa vanilla). Con `/femclothesdebug pollera rigida` queda quieta, sin piernas ni movimiento y un poco más ancha (`abierta` vuelve al modo normal; es para comparar). **Twirl:** con una pollera puesta, apretá **R** (se cambia en Controles → FemClothes → "Girar (con pollera)") y el personaje da una vuelta entera mientras la pollera se abre casi horizontal y gira arrastrada; los demás jugadores también lo ven. Su tela tiene el mismo formato que las demás prendas, así que se tiñe con patrones y zonas, se estampa y se le puede poner red.
+
+**La capa** cuelga de los hombros y se mueve como tela: usa la misma inercia que la capa vanilla (se levanta al correr, rebota con los saltos, se balancea de costado y se abre al agacharte), pero no es una placa rígida: arriba sigue a la espalda y se va curvando hacia el ruedo, le baja una onda al moverte, se mece un poco quieta y se abre lo necesario para no atravesar las piernas. Va en su propio slot de Trinkets, **Espalda**. Tiene 6 largos (de la cintura al tobillo), ruedo **recto** o **redondeado** (las puntas suben en arco), **capucha** caída sobre la espalda y **cuello alto** detrás de la nuca; todo se elige en la Modeladora. El **forro** (la cara de adentro) se tiñe y se estampa aparte del exterior. **La del mod manda:** con una capa del mod puesta, la capa vanilla (de Minecraft o de Optifine/Minecon) no se dibuja; con élitros puestos es al revés, se ven los élitros y la del mod se esconde.
 
 **Varias prendas del mismo tipo.** Cada slot de Trinkets tiene **4 lugares**: se pueden llevar a la vez un croptop sobre un remerón largo, o medias de red debajo de unas medias cortas.
 
@@ -74,9 +77,12 @@ La **primera vez que te ponés una prenda** del mod se abre la pantalla **Elegí
   - **Base:** la piel, o el pelaje en los animales.
   - **Clara:** pancita, hocico y manchas claras (solo animales).
   - **Oscura:** rayas y manchas oscuras (solo animales).
-  - **Rubor:** rodillas, codos, pecho, panza y cara (los cuerpos humanos lo traen marcado en el dibujo). En automático es **tu mismo color, más intenso y un poco más oscuro**: en una piel da un rosado tibio y en una skin azul, verde o gris, un tono más profundo del mismo color, sin manchas violetas. Se puede elegir a mano, por ejemplo un rosa. Con la zona Rubor elegida aparece el slider **Fuerza del rubor** (0 a 100%, de a 5; arranca en 80%): en 0 no hay rubor.
+  - **Rubor:** rodillas, codos, pecho, panza y cara (los cuerpos humanos lo traen marcado en el dibujo). En automático es **tu mismo color, más intenso y un poco más oscuro**: en una piel da un rosado tibio y en una skin azul, verde o gris, un tono más profundo del mismo color, sin manchas violetas. Se puede elegir a mano, por ejemplo un rosa. Con la zona Rubor elegida aparece el slider **Fuerza del rubor** (0 a 100%, de a 5; arranca en 50%): en 0 no hay rubor.
 
   Click en una zona para editarla. La Base arranca **calculada de tu skin** (**Tono de mi skin** la vuelve a eso). Clara, Oscura y Rubor arrancan en **automático**: salen del color Base, más claras u oscuras solas (marcadas con una "A"). El botón **Automática** las devuelve a ese estado.
+- **Ropa interior** (debajo de la vista previa), en dos partes que se eligen por separado: **↑ arriba** (Nada arriba, Bralette, Deportivo, Binder) y **↓ abajo** (Slip, Culotte, Boxer). Click pasa a la siguiente. La muestra de color de al lado elige su **color** en los sliders y la paleta (con la "A" es el blanco roto de siempre). La tela toma el relieve del cuerpo. El binder tapa y da la forma de la faja, pero no achata: para pecho plano, elegí un cuerpo plano. La ropa interior es el mínimo que siempre está; lo personalizable (encaje, patrones, fotos) se hace con remeras y pantalones recortados en las máquinas.
+- **Usar siempre como mi skin** (debajo de la grilla): con **Sí**, el cuerpo elegido, con sus colores y su ropa interior, se ve siempre, aunque no tengas ropa del mod puesta (la segunda capa de tu skin se oculta, salvo el sombrero y la capa). Con **No**, aparece solo debajo de la ropa del mod.
+- Con un cuerpo elegido, la cadera (de la cintura para abajo) también es del cuerpo; con "Mi propia skin" ahí se sigue viendo tu skin real.
 - **De tu skin:** una paleta con hasta **5 colores sacados de tu skin** (los más usados, sin repetir parecidos). Click en uno lo pone en la zona elegida; por ejemplo, con una skin de osito, el marrón del pelaje en Base y el beige de la pancita en Clara. Los sliders Rojo/Verde/Azul ajustan la zona a mano.
 - **Confirmar** lo guarda y la pantalla ya no vuelve a aparecer sola. **Ahora no** la cierra sin guardar y vuelve a aparecer la próxima vez que entres al mundo.
 
@@ -90,7 +96,9 @@ Sin permisos especiales, cada quien cambia el propio:
 |---|---|
 | `/femclothes elegir` | Vuelve a abrir la pantalla Elegí tu cuerpo. |
 | `/femclothes cuerpo <tipo>` | Cambia el cuerpo directo: `skin_real`, `estandar`, `delgado`, `atletico`, `musculoso`, `gordito`, `velludo`, `fem_estandar`, `fem_atletica`, `fem_curvas`, `fem_gordita`, `cebra`, `dalmata`, `leopardo`, `lobo`, `osito`, `panda`, `tigre`, `vaca`, `zorro`. Los cuerpos viejos (plano, curvy, binder) pasaron a Estándar y Fem con curvas. |
-| `/femclothes interior <tipo>` | Ropa interior base: `basica`, `slip`, `boxer`, `bralette`, `deportiva`. |
+| `/femclothes interior arriba <tipo>` | Parte de arriba: `ninguna`, `bralette`, `deportivo`, `binder`. |
+| `/femclothes interior abajo <tipo>` | Parte de abajo: `slip`, `culotte`, `boxer`. |
+| `/femclothes interior color <rgb>` | Color de la ropa interior, como número (ej. `16777215` = blanco). |
 | `/femclothes tono skin` | Tono de piel tomado de tu propia skin (el valor por defecto). |
 | `/femclothes tono <número>` | Tono de piel a mano, como color RGB en decimal (ej. 14329120). |
 | `/femclothes ver` | Muestra tu configuración actual. |
@@ -103,12 +111,12 @@ Las tres máquinas de confección (Modelado, Tintes, Sublimadora) comparten la m
 - **Configuración y fijadas.** En la interfaz armás el ajuste y lo **fijás** (con la chincheta o un botón). Lo fijado es lo que se aplica; lo que no está fijado es solo un borrador que se ve en la vista previa.
 - **Vista previa 3D.** La columna izquierda muestra a tu personaje con la prenda como va a quedar. Se gira arrastrando con el mouse o con el botón Vista (frente, costado, espalda), y se hace zoom con la ruedita.
 - **Diseños guardados.** Escribís un nombre y apretás **Guardar diseño**: se guarda todo lo fijado de esa prenda (hasta 8 diseños por prenda, en las tres máquinas). Click en un casillero numerado lo carga (el nombre aparece al pasar el mouse); click derecho lo borra.
-- **Entrada y salida.** Cada máquina tiene un slot grande de **Entrada** (la prenda a procesar) y uno de **Salida** (la prenda terminada). Mientras trabaja, la máquina se anima y hace ruido; al terminar suena una campanita. El LED (rojo trabajando, verde con la prenda lista) **ilumina** el bloque y lo que tiene alrededor (nivel de luz 7). La barrita de progreso del frente, sobre fondo negro, se llena de izquierda a derecha y queda llena mientras la prenda terminada espera en la salida.
+- **Entrada y salida.** Cada máquina tiene un slot grande de **Entrada** (la prenda a procesar) y uno de **Salida** (la prenda terminada). Mientras trabaja, la máquina se anima y hace ruido; al terminar suena una campanita. La pantallita del frente está **siempre iluminada** y da una luz tenue (nivel 4); trabajando o con la prenda lista (LED rojo o verde), la máquina ilumina más fuerte (nivel 10). La barrita de progreso del frente, sobre fondo negro, se llena de izquierda a derecha y queda llena mientras la prenda terminada espera en la salida.
 - **Colores de cada máquina.** Las tres interfaces son de pergamino y madera, pero cada una tiene su metal: la Estación de Tintes es **verdosa** (verdín), la Modeladora **cobriza** y la Sublimadora **dorada**. El color se ve en los filos, las esquinas, los slots y los botones.
-- **La prenda en el bloque.** La prenda cargada se ve sobre la máquina con su ícono real (el mismo del inventario, con colores, patrones y estampas): acostada sobre la mesa en la Modeladora y la Sublimadora, y enrollada alrededor del rodillo de Tintes, girando con él, mientras tiñe. La pantallita del frente muestra también ese ícono.
+- **La prenda en el bloque.** La prenda cargada se ve sobre la máquina con su ícono real (el mismo del inventario, con colores, patrones y estampas): acostada sobre la mesa en la Modeladora y la Sublimadora, y enrollada alrededor del rodillo de Tintes (gira con él mientras tiñe y queda ahí hasta que la retirás). La pantallita del frente muestra también ese ícono.
 - **Tiempos.** Modelado 15 s, Tintes 10 s, Sublimadora 15 s.
 - **¡Cuidado!** Meter la mano (click derecho) en una máquina mientras trabaja lastima: la Modeladora corta, la de Tintes marea con los vapores y la Sublimadora quema.
-- **Al romperlas**, la tinta cargada viaja adentro del ítem (como una shulker box). El resto de la configuración se pierde.
+- **Al romperlas se guardan enteras** (como una shulker box, a pedido del 2026-09-30): el ítem que cae lleva TODO lo de adentro — prendas, moldes, pines, cuadraditos, diseños guardados, fotos, papel, tinta y hasta el trabajo a medias — y al volver a colocarla queda igual. Vale para las 4 (Modeladora, Tintes, Sublimadora y Guardarropas), rotas a mano o por una explosión. En creativo, como la shulker, cae solo si tiene algo adentro.
 
 ### Automatización con tolvas
 
@@ -130,7 +138,7 @@ La Modeladora cambia el **corte** de la prenda. En el centro está el **dibujo d
 
 **Cómo se usa:**
 
-1. Elegí la prenda con el botón **Categoría** (remera, pantalón, medias, calientabrazos, pollera).
+1. Elegí la prenda con el botón **Categoría** (remera, pantalón, medias, calientabrazos, pollera, capa).
 2. Arrastrá un **molde** al pin que quieras cambiar.
 3. Apretá la **chincheta** del pin: el corte queda fijado y el molde vuelve al almacén. En el pin queda un ícono fantasma del molde fijado.
 4. Click en la chincheta de un pin fijado lo quita.
@@ -151,6 +159,7 @@ La Modeladora cambia el **corte** de la prenda. En el centro está el **dibujo d
 | Medias | Corte Superior e Inferior de cada pierna, Calce, 3 de Personalización por lado |
 | Calientabrazos | Corte Superior e Inferior de cada brazo, Calce, 3 de Personalización por lado |
 | Pollera | Forma (molde de pollera), Largo (molde de rango), Calce, 3 de Materiales |
+| Capa | Largo (molde de rango), Ruedo, Capucha y Cuello (moldes de capa), 3 de Materiales |
 
 ### Los moldes
 
@@ -162,6 +171,7 @@ La Modeladora cambia el **corte** de la prenda. En el centro está el **dibujo d
 | **Molde de manga** | Activo (remera, calientabrazos) | Molde viejo de manga: cada uso pasa al largo siguiente. |
 | **Molde de calce** (Pegado, Ajustado, Normal, Suelto, Oversize) | Calce | Qué tan despegada del cuerpo va la prenda. |
 | **Molde de pollera** (Campana, Tableada) | Forma de la pollera | Pollera lisa en campana o tableada con pliegues. |
+| **Moldes de capa** (Ruedo recto, Ruedo redondeado, Con capucha, Sin capucha, Cuello alto, Sin cuello) | Ruedo, Capucha y Cuello de la capa | Cada uno en su pin. Los "Sin" le sacan la capucha o el cuello a una capa que ya los tiene. |
 | **Molde de red** | Materiales / Personalización | La trama de la tela (ver abajo). |
 | **Molde de corte** | Activo | Un combo de cortes guardado en un solo ítem. |
 
@@ -203,6 +213,10 @@ La máquina usa tinta **CMYK** (cian, magenta, amarillo y negro), que se carga c
 
 Cada color se arma con 5 sliders de 0 a 100% en pasos de 5%: **Cyan, Magenta, Yellow, Key** (negro) y **Transparencia**. La transparencia no gasta tinta: al 100% hace un **recorte** (un agujero en la tela) y entre medio deja la tela **calada**, con un tramado fino de puntitos abiertos que se lee como tul. Va por color, así se puede, por ejemplo, calar solo los corazones de un patrón. Las muestras con transparencia se ven con fondo a cuadros.
 
+### Muestras de color
+
+Para guardar un color o pasárselo a otra persona (2026-09-30): **Envasar** (debajo de la muestra grande) gasta un **frasco de vidrio** de tu inventario y te da una **Muestra de color** con la mezcla que estás editando. El frasquito toma ese color y su tooltip dice el código y los porcentajes C/M/Y/K/T. **Usar muestra** copia la mezcla de la muestra que tenés agarrada con el cursor (o, si no, de la primera que haya en tu inventario) al color que estás editando. La muestra es solo la receta del color: no trae tinta y no se gasta al usarla. En creativo, envasar no pide frasco.
+
 ### Los cuadraditos
 
 | Prenda | Cuadraditos de zona | Cuadraditos de prenda entera |
@@ -212,6 +226,7 @@ Cada color se arma con 5 sliders de 0 a 100% en pasos de 5%: **Cyan, Magenta, Ye
 | Medias | Superior e Inferior de cada pierna | Los 6 de Personalización |
 | Calientabrazos | Superior e Inferior de cada brazo | Los 6 de Personalización |
 | Pollera | — | 3 (fila fija) |
+| Capa | Exterior, Forro, Capucha y cuello (fila fija) | — |
 
 Las zonas cubren también las **tapas** de cada pieza (la parte de arriba del torso va con el Pecho, la de abajo con el Borde inferior; la planta de la media y la punta del calientabrazos con Inferior), y los patrones de prenda entera cruzan el hombro de adelante hacia atrás sin cortarse. El **Cuello** sigue la forma real del molde de cuello (redondo, en V) y siempre se pinta arriba del Pecho.
 
@@ -291,7 +306,7 @@ Ejemplos: corazones rojos y rosas alternados con contorno negro (3 colores, Cont
 
 ## 8. Sublimadora
 
-La Sublimadora **imprime fotos** del mod Camerapture sobre remeras, pantalones, medias, calientabrazos y polleras (en la pollera, Frente y Espalda cubren cada mitad de la campana).
+La Sublimadora **imprime fotos** del mod Camerapture sobre remeras, pantalones, medias, calientabrazos, polleras y capas (en la pollera, Frente y Espalda cubren cada mitad de la campana; en la capa, Frente es el exterior y Espalda el forro).
 
 > *Captura pendiente: la interfaz se rehízo el 2026-09-28 con el mismo estilo que Tintes y la Modeladora.*
 
@@ -301,7 +316,7 @@ La Sublimadora **imprime fotos** del mod Camerapture sobre remeras, pantalones, 
 |---|---|
 | **Izquierda** | Vista previa 3D, botón Vista, nombre y **Guardar diseño**. |
 | **Centro** | **Categoría**; el dibujo de la prenda dos veces, **Frente** y **Espalda**, cada una con su slot de foto y su chincheta; el cinturón **Entrada → Salida** con **Prensar** sobre la flecha; los 8 casilleros de diseño; y los controles de la cara elegida: **Escala**, **Posición X**, **Posición Y**, **Ángulo** y **Cara**, más **Simetría** en medias y calientabrazos. |
-| **Derecha** | Los tanques de tinta **C, M, Y, K** y el de **papel** con su nivel (n/64), la guía de pasos y el **almacén** de 27 fotos (3 filas). Al romper la máquina, las fotos del almacén se tiran al piso. |
+| **Derecha** | Los tanques de tinta **C, M, Y, K** y el de **papel** con su nivel (n/64), la guía de pasos y el **almacén** de 27 fotos (3 filas). Al romper la máquina, todo queda guardado adentro del ítem. |
 
 El dibujo muestra la prenda que está en la Entrada, con su color. Si no hay ninguna, muestra la prenda terminada de la Salida, y si tampoco, una de la categoría elegida.
 
@@ -351,7 +366,7 @@ El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría 
 | `/femclothesdebug skin` | Cicla skins de prueba (Steve, Alex, Zuri, Noor, Kai) y la tuya. |
 | `/femclothesdebug slim` / `ancho` / `automodelo` | Fuerza brazos finos, anchos, o los de la skin. |
 | `/femclothesdebug reset` | Vuelve a tu skin. |
-| `/femclothesdebug pollera abierta` / `rigida` | Cómo se comporta la pollera con las piernas: se abre donde pasan o queda quieta y más ancha. Solo para vos, para comparar. |
+| `/femclothesdebug pollera abierta` / `rigida` | Abierta: la pollera choca con las piernas y se mueve con el cuerpo. Rígida: quieta, sin piernas ni movimiento, más ancha. Solo para vos, para comparar. |
 
 ## 11. Recetas
 
@@ -374,7 +389,7 @@ El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría 
 | Rayas superiores | Hilo / papel / papel (filas) |
 | Tres rayas | Hilo / hilo / papel (filas) |
 
-**Sin receta todavía (solo en creativo o con `/femclothes debug`):** Estación de Tintes, Guardarropas, Pollera, moldes de rango, torso, cuello, calce, red, arnés y pollera, molde de corte, y los patrones de corazones, estrellas, lunares y vichy.
+**Sin receta todavía (solo en creativo o con `/femclothes debug`):** Estación de Tintes, Guardarropas, Pollera, moldes de rango, torso, cuello, calce, red, arnés, pollera y capa, molde de corte, la Capa, y los patrones de corazones, estrellas, lunares y vichy.
 
 Todo el contenido del mod está en su propia pestaña del inventario creativo: **FemClothes**.
 
@@ -404,7 +419,7 @@ Esta parte es para quien quiera entender o extender el mod.
 | `guardarropas` | Guardarropas. |
 | `region` | Lado (izq./der./ambas), regiones de pintura (`RegionPintura`), `RegionResolver` (lee y escribe capas y colores por lado), `ModoMezcla`. |
 | `render` | Composición de texturas (`ClothingTextureCache`), geometría (`CuerpoGeometria`, layout de skin a 8x), generador de patrones (`PatronGenerador`, `Motivo`, `Repeticion`, `Variacion`), el renderer único de ropa (`GarmentFeatureRenderer`). |
-| `body` | Cuerpo base (`CuerpoBase`: las 19 máscaras en gris de `textures/entity/cuerpo/`, en HD de 384×384, multiplicadas canal por canal por el tono en `CuerpoBaseTextures`), ropa interior, perfil por jugador (`PerfilCuerpo.elegido`), comandos y paquetes de la GUI de elegir cuerpo (`RedCuerpo`). La GUI es `client/ElegirCuerpoScreen` y el disparador `ElegirCuerpoCliente`. |
+| `body` | Cuerpo base (`CuerpoBase`: las 19 máscaras en gris de `textures/entity/cuerpo/`, en HD de 384×384, multiplicadas canal por canal por el tono en `CuerpoBaseTextures`), ropa interior (`RopaInterior` = `InteriorArriba` + `InteriorAbajo` + color; texturas grises `interior_arriba_*`/`interior_abajo_*` de `tools/generar_ropa_interior.py`, teñidas y sombreadas con la máscara en `CuerpoBaseTextures.superponer`), perfil por jugador (`PerfilCuerpo.elegido`), comandos y paquetes de la GUI de elegir cuerpo (`RedCuerpo`). La GUI es `client/ElegirCuerpoScreen` y el disparador `ElegirCuerpoCliente`. |
 | `client` | Pantallas, vista previa 3D, estilo pergamino, piezas de cada prenda (`PiezasDelMod`). |
 
 ## B. Cómo se dibuja una prenda
@@ -412,6 +427,9 @@ Esta parte es para quien quiera entender o extender el mod.
 1. `GarmentFeatureRenderer` junta todo lo que el jugador tiene puesto en Trinkets y lo dibuja desde un solo lugar, ordenado por **capa** (`Capa`), sobre el cuerpo base.
 2. Cada prenda devuelve sus **piezas** (`PiezasDelMod`): qué parte del cuerpo cubre, en qué capa, con qué textura y qué filas de la caja son visibles (así se recortan largos sin generar un archivo por cada largo).
 3. La textura se **compone en tiempo real** sobre un atlas con el layout de la skin a escala 8x (512×512) y se cachea por combinación: color base, capas de color, estampas, recorte y red.
+4. **Pollera y capa van aparte**, con malla propia: `PolleraMalla` en el marco del torso y `CapaMalla`, una cadena de 16 tramos (`doblar`) que parte de la inercia de `CapeFeatureRenderer` (`CapaMalla.movimiento`), se curva hacia el ruedo, ondea y se abre para no atravesar las piernas (`PolleraMalla.Piernas` llevado al marco de la capa). La tela de la capa (`capa_tela.png`) usa el layout del cuboide de la capa vanilla (10×16×1 en uv 0,0: exterior u 1..11, forro u 12..22) más una caja de detalles 12×8×2 en uv 24,0 para capucha y cuello; `PatronGenerador` la pinta como las cajas `CAPA` y `CAPA_DETALLES` y las zonas son `RegionPintura.CAPA_EXTERIOR/CAPA_FORRO/CAPA_DETALLES`. `PlayerEntityCapasSkinMixin` apaga la capa vanilla (`isPartVisible(CAPE)`) mientras haya una del mod y no haya élitros.
+
+**Máquinas que se guardan enteras.** `util/DropMaquina`: los 4 bloques sobreescriben `getDroppedStacks` (romper a mano y explosiones) y devuelven el ítem con todo el NBT del block entity en `minecraft:block_entity_data` más sus componentes (la tinta); `BlockItem` lo vuelve a cargar al colocarla. Ya no hay loot tables ni `onStateReplaced` que desparrame. En creativo, `onBreak` tira el ítem si la máquina no está vacía.
 
 ## C. Capas de color (Estación de Tintes)
 

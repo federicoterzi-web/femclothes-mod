@@ -93,6 +93,8 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
     private final CanalSlider[] sliders = new CanalSlider[TinturasBlockEntity.CANALES];
     /** Qué cuadradito (y de qué categoría) mostraban los sliders el frame pasado — si cambió, se reposicionan. */
     private int casillaMostradaEnSliders = -1;
+    /** Hasta cuándo releer los sliders del servidor (después de "Usar muestra"). */
+    private long releerSlidersHasta = 0;
     private TinturasBlockEntity.Categoria categoriaMostradaEnSliders = null;
     /** Qué color (1..3) editaban los sliders el frame pasado. */
     private int editandoMostrado = -1;
@@ -167,6 +169,17 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
         btnColores = boton(M_DERECHA + 6, 226, 74, Text.empty(), "femclothes.tinturas.tooltip.colores", TinturasBlockEntity.BTN_COLORES);
         btnContorno = boton(M_DERECHA + 82, 226, 74, Text.empty(), "femclothes.tinturas.tooltip.contorno", TinturasBlockEntity.BTN_CONTORNO);
         btnVariacion = boton(M_DERECHA + 6, 246, 150, Text.empty(), "femclothes.tinturas.tooltip.variacion", TinturasBlockEntity.BTN_VARIACION);
+        // Muestras de color (2026-09-30, "por si la gente se quiere pasar colores"), debajo de la muestra grande.
+        boton(M_DERECHA + 6, 204, 74, Text.translatable("femclothes.tinturas.boton.envasar"),
+                "femclothes.tinturas.tooltip.envasar", TinturasBlockEntity.BTN_ENVASAR);
+        ButtonWidget usar = new EstiloPergamino.BotonPergamino(this.x + M_DERECHA + 82, this.y + 204, 74, 16,
+                Text.translatable("femclothes.tinturas.boton.usar_muestra"), btn -> {
+            clickBoton(TinturasBlockEntity.BTN_USAR_MUESTRA);
+            // La mezcla nueva llega por la sincronización: los sliders se releen un rato.
+            releerSlidersHasta = System.currentTimeMillis() + 800;
+        });
+        usar.setTooltip(Tooltip.of(Text.translatable("femclothes.tinturas.tooltip.usar_muestra")));
+        this.addDrawableChild(usar);
 
         // Diseños guardados: mismo Y=214 que la Modeladora.
         for (int i = 0; i < btnDisenos.length; i++) {
@@ -383,7 +396,8 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
 
         // Los sliders muestran la mezcla del cuadradito SELECCIONADO — si
         // cambió (otro cuadradito u otra categoría), se reposicionan a mano.
-        if (sel != casillaMostradaEnSliders || cat != categoriaMostradaEnSliders || casilla.editando != editandoMostrado) {
+        if (sel != casillaMostradaEnSliders || cat != categoriaMostradaEnSliders || casilla.editando != editandoMostrado
+                || System.currentTimeMillis() < releerSlidersHasta) {
             casillaMostradaEnSliders = sel;
             categoriaMostradaEnSliders = cat;
             editandoMostrado = casilla.editando;

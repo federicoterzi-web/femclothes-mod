@@ -202,13 +202,17 @@ public class ModeladoBlock extends BlockWithEntity {
                 .formatted(net.minecraft.util.Formatting.RED), true);
     }
 
+    /** Cae con todo adentro, como una shulker (ver {@link com.femclothes.util.DropMaquina}). */
     @Override
-    protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-        if (!state.isOf(newState.getBlock())) {
-            if (world.getBlockEntity(pos) instanceof ModeladoBlockEntity be) {
-                ItemScatterer.spawn(world, pos, be);
-            }
-        }
-        super.onStateReplaced(state, world, pos, newState, moved);
+    protected java.util.List<ItemStack> getDroppedStacks(BlockState state,
+            net.minecraft.loot.context.LootContextParameterSet.Builder builder) {
+        return com.femclothes.util.DropMaquina.drops(this, builder);
+    }
+
+    @Override
+    public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
+        com.femclothes.util.DropMaquina.enCreativo(world, pos, player, this,
+                !(world.getBlockEntity(pos) instanceof ModeladoBlockEntity be) || be.isEmpty());
+        return super.onBreak(world, pos, state, player);
     }
 }

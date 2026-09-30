@@ -95,7 +95,8 @@ public final class DebugApariencia {
         for (String modo : new String[]{"abierta", "rigida"}) {
             raiz.then(ClientCommandManager.literal(modo).executes(ctx -> {
                 com.femclothes.render.PolleraMalla.piernasAbiertas = modo.equals("abierta");
-                ctx.getSource().sendFeedback(Text.literal("[femclothes debug] pollera piernas=" + modo));
+                ctx.getSource().sendFeedback(Text.literal("[femclothes debug] pollera " + modo
+                        + (modo.equals("abierta") ? ": sigue las piernas y se mueve" : ": quieta, sin piernas ni movimiento")));
                 return 1;
             }));
         }

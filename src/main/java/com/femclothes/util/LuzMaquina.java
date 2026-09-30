@@ -21,12 +21,19 @@ public final class LuzMaquina {
 
     public static final BooleanProperty LIT = Properties.LIT;
     /** Nivel de luz del LED: alumbra el bloque y un poco alrededor, menos que una antorcha (14). */
-    public static final int NIVEL = 7;
+    public static final int NIVEL = 10;
+    /**
+     * Luz tenue de la pantallita con la máquina quieta (2026-09-29, "que
+     * generen una luz tenue cuando la maquina no funciona y mas fuerte cuando
+     * funciona"): {@link #NIVEL} trabajando o con la prenda lista, esto el resto.
+     */
+    public static final int NIVEL_REPOSO = 4;
 
     private LuzMaquina() {}
 
     public static int luminancia(BlockState state) {
-        return state.contains(LIT) && state.get(LIT) ? NIVEL : 0;
+        if (!state.contains(LIT)) return 0;
+        return state.get(LIT) ? NIVEL : NIVEL_REPOSO;
     }
 
     /** Solo servidor: cambia el estado si el LED se prendió o se apagó. */

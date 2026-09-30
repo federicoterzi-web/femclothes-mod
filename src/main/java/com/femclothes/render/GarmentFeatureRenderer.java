@@ -86,7 +86,10 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
 
         List<ItemStack> prendas = previewOverride != null ? previewOverride : equipadas(entidad);
         // En la vista previa de elegir cuerpo, el cuerpo va entero aunque no haya ropa.
-        boolean cuerpoEntero = perfilOverride != null;
+        // Cuerpo entero: la vista previa de elegir cuerpo, o un perfil que usa
+        // el cuerpo como skin aunque no haya ropa (2026-09-29, "un selector que
+        // directamente te deje esa skin de default").
+        boolean cuerpoEntero = perfilOverride != null || perfilDe(entidad).siempre();
         if (prendas.isEmpty() && !cuerpoEntero) return;
 
         boolean slim = esSlim(entidad);
@@ -103,6 +106,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 porParte.computeIfAbsent(pieza.parte(), k -> new ArrayList<>()).add(pieza);
             }
         }
+        // La capa no gobierna ninguna parte: se dibuja antes del corte de abajo.
+        dibujarCapa(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta);
         if (conCuerpo.isEmpty() && porParte.isEmpty()) return;
 
         Identifier cuerpo = texturaDelCuerpo(entidad, slim);
@@ -156,7 +161,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             }
         }
 
-        dibujarPollera(prendas, biped, matrices, vertexConsumers, luz);
+        dibujarPollera(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta);
     }
 
     private static final Identifier POLLERA_BASE = Identifier.of("femclothes",
@@ -178,8 +183,9 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
      * "forma primero, balanceo después" otra vez, hasta confirmar que esta
      * forma de paneles en abanico se ve bien parada quieta.
      */
-    private static void dibujarPollera(List<ItemStack> prendas, BipedEntityModel<?> biped, MatrixStack matrices,
-                                       VertexConsumerProvider vertexConsumers, int luz) {
+    private static void dibujarPollera(List<ItemStack> prendas, LivingEntity entidad, BipedEntityModel<?> biped,
+                                       MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz,
+                                       float tickDelta) {
         ItemStack stack = prendas.stream()
                 .filter(s -> s.getItem() instanceof com.femclothes.item.PolleraItem)
                 .findFirst().orElse(null);
@@ -197,9 +203,14 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         matrices.push();
         delJugador.rotate(matrices);
         VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getArmorCutoutNoCull(textura));
+        // Movimiento (2026-09-30, "habria que animarlas segun el movimiento"):
+        // la misma inercia que usa la capa vanilla (ver CapaMalla#movimiento).
+        CapaMalla.Movimiento mov = entidad instanceof AbstractClientPlayerEntity jugador && previewOverride == null
+                ? CapaMalla.movimiento(jugador, tickDelta) : CapaMalla.Movimiento.QUIETO;
         PolleraMalla.dibujar(matrices, buffer, luz,
                 com.femclothes.item.PolleraItem.forma(stack), com.femclothes.item.PolleraItem.largo(stack),
-                dilatacion, biped.rightLeg.pitch - biped.body.pitch, biped.leftLeg.pitch - biped.body.pitch);
+                dilatacion, new PolleraMalla.Piernas(biped.body, biped.rightLeg, biped.leftLeg), mov,
+                previewOverride == null ? com.femclothes.client.TwirlCliente.progreso(entidad, tickDelta) : -1f);
         matrices.pop();
     }
 
@@ -241,6 +252,84 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             }
         };
         return ClothingTextureCache.composeGarmentCapas(POLLERA_BASE, colorBase, capasMascaraPollera,
+                ClothingTextureCache.Shading.NONE, encima);
+    }
+
+    private static final Identifier CAPA_BASE = Identifier.of("femclothes",
+            "textures/models/armor/capa_tela.png");
+
+    /** La capa del mod puesta en el slot espalda/capa, o null. */
+    @Nullable
+    public static ItemStack capaDe(List<ItemStack> prendas) {
+        for (ItemStack s : prendas) if (s.getItem() instanceof com.femclothes.item.CapaItem) return s;
+        return null;
+    }
+
+    /**
+     * La capa (2026-09-29, "capas... como las capas vanilla (misma dinamica
+     * de tela) pero usable y personalizable"): mismo marco y mismos giros que
+     * {@code CapeFeatureRenderer} (ver {@link CapaMalla#giros}), así que
+     * flamea igual que la vanilla. Con élitros puestos no se dibuja (como la
+     * vanilla); la capa vanilla se oculta mientras esté esta
+     * ({@code CapeFeatureRendererMixin}).
+     */
+    private static void dibujarCapa(List<ItemStack> prendas, LivingEntity entidad, BipedEntityModel<?> biped,
+                                    MatrixStack matrices,
+                                    VertexConsumerProvider vertexConsumers, int luz, float tickDelta) {
+        if (!(entidad instanceof AbstractClientPlayerEntity jugador)) return;
+        ItemStack stack = capaDe(prendas);
+        if (stack == null || jugador.isInvisible()) return;
+        if (jugador.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST).isOf(net.minecraft.item.Items.ELYTRA)) return;
+
+        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getArmorCutoutNoCull(texturaCapa(stack)));
+        boolean agachado = jugador.isInSneakingPose();
+        // Tela (2026-09-30, "es una placa tiesa"): sin giros de matriz; CapaMalla
+        // dobla el paño tramo por tramo y lo hace chocar con las piernas.
+        float sy = agachado ? 1.85f : 0f, sz = 2f + (agachado ? 1.4f : 0f);
+        PolleraMalla.Piernas piernas = new PolleraMalla.Piernas(
+                new org.joml.Matrix4f().translation(0f, sy, sz), biped.rightLeg, biped.leftLeg);
+        matrices.push();
+        matrices.translate(0f, sy / 16f, sz / 16f);
+        CapaMalla.dibujarPano(matrices, buffer, luz, stack, CapaMalla.movimiento(jugador, tickDelta), agachado,
+                jugador.age + tickDelta, piernas);
+        matrices.pop();
+
+        if (com.femclothes.item.CapaItem.cuelloAlto(stack)) {
+            matrices.push();
+            matrices.translate(0f, 0f, 0.125f);
+            if (jugador.isInSneakingPose()) matrices.translate(0f, 1.85f / 16f, 1.4f / 16f);
+            matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(180f));
+            CapaMalla.dibujarCuello(matrices, buffer, luz);
+            matrices.pop();
+        }
+    }
+
+    /** La tela de la capa ya teñida y estampada (también la usa el ícono). */
+    public static Identifier texturaCapa(ItemStack stack) {
+        int colorBase = com.femclothes.region.RegionResolver.colorBase(stack, com.femclothes.region.Lado.IZQUIERDA);
+        java.util.List<com.femclothes.region.RegionResolver.CapaPatron> capas =
+                com.femclothes.region.RegionResolver.capasTinte(stack, com.femclothes.region.Lado.IZQUIERDA);
+        java.util.List<ClothingTextureCache.CapaMascara> mascaras = new java.util.ArrayList<>(capas.size());
+        for (com.femclothes.region.RegionResolver.CapaPatron capa : capas) {
+            net.minecraft.client.texture.NativeImage mascara = PatronGenerador.mascaraDeCapa("capa", capa);
+            if (!capa.lisa() && mascara == null) continue;
+            java.util.List<CajaSkin.Rect> region = capa.region() == com.femclothes.region.RegionPintura.TODO ? null
+                    : capa.region().rects(com.femclothes.tinturas.TinturasBlockEntity.Categoria.CAPA, CuerpoGeometria.ESCALA_TELA);
+            mascaras.add(ClothingTextureCache.CapaMascara.de(capa, mascara, region));
+        }
+        boolean estampada = com.femclothes.sublimadora.EstampaTextures.tieneEstampa(stack);
+        ClothingTextureCache.Encima encima = !estampada ? null : new ClothingTextureCache.Encima() {
+            @Override
+            public String clave() {
+                return "capa_" + com.femclothes.sublimadora.EstampaTextures.claveEstampas(stack);
+            }
+
+            @Override
+            public boolean aplicar(net.minecraft.client.texture.NativeImage destino) {
+                return com.femclothes.sublimadora.EstampaTextures.estampar(destino, stack);
+            }
+        };
+        return ClothingTextureCache.composeGarmentCapas(CAPA_BASE, colorBase, mascaras,
                 ClothingTextureCache.Shading.NONE, encima);
     }
 
@@ -291,7 +380,11 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                                             @Nullable List<CuerpoGeometria.SegmentoCuerpo> segmentos,
                                             ModelPart delJugador, MatrixStack matrices,
                                             VertexConsumerProvider vertexConsumers, int luz) {
+        // Con un cuerpo elegido la pelvis también es del cuerpo (2026-09-29,
+        // "porque no cubre la zona de la pelvis?"): la piel real de la cintura
+        // para abajo tiene sentido solo con "Mi propia skin".
         Identifier pielReal = entidad instanceof AbstractClientPlayerEntity jugador
+                && perfilDe(entidad).cuerpo() == com.femclothes.body.CuerpoBase.SKIN_REAL
                 ? jugador.getSkinTextures().texture() : null;
         if (pielReal == null) {
             ModelPart nuestra = segmentos == null
@@ -352,7 +445,10 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
      */
     public static List<Parte> partesAOcultarDeVanilla(LivingEntity entidad) {
         List<ItemStack> prendas = previewOverride != null ? previewOverride : equipadas(entidad);
-        boolean cuerpoEntero = perfilOverride != null;
+        // Cuerpo entero: la vista previa de elegir cuerpo, o un perfil que usa
+        // el cuerpo como skin aunque no haya ropa (2026-09-29, "un selector que
+        // directamente te deje esa skin de default").
+        boolean cuerpoEntero = perfilOverride != null || perfilDe(entidad).siempre();
         if (prendas.isEmpty() && !cuerpoEntero) return List.of();
         Identifier cuerpo = texturaDelCuerpo(entidad, esSlim(entidad));
         if (cuerpo == null) return List.of();
@@ -411,13 +507,17 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     @Nullable
     public static PerfilCuerpo perfilOverride = null;
 
-    @Nullable
-    private static Identifier texturaDelCuerpo(LivingEntity entidad, boolean slim) {
-        PerfilCuerpo perfil = perfilOverride != null ? perfilOverride
+    /** El perfil que se está dibujando: el de la vista previa, el del jugador o el de siempre. */
+    public static PerfilCuerpo perfilDe(LivingEntity entidad) {
+        return perfilOverride != null ? perfilOverride
                 : entidad instanceof PlayerEntity jugador
                 ? PerfilesDeCuerpo.de(jugador)
                 : PerfilCuerpo.DEFECTO;
-        return CuerpoBaseTextures.de(entidad, perfil, slim);
+    }
+
+    @Nullable
+    private static Identifier texturaDelCuerpo(LivingEntity entidad, boolean slim) {
+        return CuerpoBaseTextures.de(entidad, perfilDe(entidad), slim);
     }
 
     /**

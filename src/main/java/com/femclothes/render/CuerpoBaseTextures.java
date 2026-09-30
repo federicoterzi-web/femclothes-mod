@@ -220,7 +220,11 @@ public final class CuerpoBaseTextures {
         if (mascara != null) colorearPorZonas(img, mascara, perfil.cuerpo().animal, tonoRgb,
                 perfil.tonoClaro(), perfil.tonoOscuro(), perfil.tonoRubor(),
                 perfil.fuerzaRubor() / 100f);
-        superponer(img, perfil.interior().textura());
+        // Ropa interior en dos partes, teñida (2026-09-30): primero abajo, después arriba.
+        com.femclothes.body.RopaInterior interior = perfil.interior();
+        NativeImage sombra = mascara != null && !perfil.cuerpo().animal ? mascara : null;
+        superponer(img, interior.abajo().textura(), interior.color(), sombra);
+        if (interior.arriba().textura() != null) superponer(img, interior.arriba().textura(), interior.color(), sombra);
         return img;
     }
 
@@ -246,8 +250,11 @@ public final class CuerpoBaseTextures {
      * verde no aparecen manchas violetas.
      */
     public static final int ZONA_RUBOR = 3;
-    /** Diferencia R - (G+B)/2 de la máscara que cuenta como rubor pleno (el más rosado del zip anda por 23). */
-    private static final float RUBOR_PLENO = 24f;
+    /** Diferencia R - (G+B)/2 de la máscara que cuenta como rubor pleno. */
+    // 10 y no 24 (2026-09-29, "no se si el blush esta aplicando, no veo cambios
+    // con el slider"): el rosado de las máscaras es suave (casi todo entre 4 y
+    // 12), así que con 24 el rubor pleno no llegaba ni a la mitad.
+    private static final float RUBOR_PLENO = 10f;
     private static final int LIMITE_OSCURA = 75, LIMITE_CLARA = 165;
 
     public static int zonaDe(int gris, boolean animal) {
@@ -498,26 +505,50 @@ public final class CuerpoBaseTextures {
     }
 
     /** La ropa interior, encima del cuerpo. Alfa parcial mezcla en vez de pisar. */
-    private static void superponer(NativeImage img, Identifier textura) {
+    /**
+     * Pinta la ropa interior encima del cuerpo. La textura es gris: el gris
+     * multiplica a {@code colorRgb}. Con {@code sombra} (la máscara de un
+     * cuerpo humano), la tela además toma el relieve del cuerpo — el pecho,
+     * la cola — relativo al gris medio de la máscara donde hay tela.
+     */
+    private static void superponer(NativeImage img, Identifier textura, int colorRgb, @Nullable NativeImage sombra) {
         NativeImage encima = ClothingTextureCache.imagenBase(textura);
         if (encima == null) return;
         // El cuerpo puede estar a otra escala que la ropa interior (las
         // máscaras HD van a 6x): se lee en la posición proporcional.
         int ew = encima.getWidth(), eh = encima.getHeight(), iw = img.getWidth(), ih = img.getHeight();
+        int cr = (colorRgb >> 16) & 0xFF, cg = (colorRgb >> 8) & 0xFF, cb = colorRgb & 0xFF;
+        float ref = 0f;
+        if (sombra != null) {
+            long suma = 0, n = 0;
+            for (int y = 0; y < ih; y += 2) {
+                for (int x = 0; x < iw; x += 2) {
+                    if (((encima.getColor(x * ew / iw, y * eh / ih) >>> 24) & 0xFF) == 0) continue;
+                    suma += grisDe(sombra.getColor(x * sombra.getWidth() / iw, y * sombra.getHeight() / ih));
+                    n++;
+                }
+            }
+            ref = n == 0 ? 0f : suma / (float) n;
+        }
         for (int y = 0; y < ih; y++) {
             for (int x = 0; x < iw; x++) {
                 int px = encima.getColor(x * ew / iw, y * eh / ih);
-                int a = (px >> 24) & 0xFF;
+                int a = (px >>> 24) & 0xFF;
                 if (a == 0) continue;
-                if (a == 255) {
-                    img.setColor(x, y, px);
-                    continue;
+                float f = (px & 0xFF) / 255f;
+                if (ref > 0f) {
+                    float g = grisDe(sombra.getColor(x * sombra.getWidth() / iw, y * sombra.getHeight() / ih));
+                    f *= Math.max(0.7f, Math.min(1.15f, g / ref));
                 }
-                int base = img.getColor(x, y);
-                int r = mezclar(base & 0xFF, px & 0xFF, a);
-                int g = mezclar((base >> 8) & 0xFF, (px >> 8) & 0xFF, a);
-                int b = mezclar((base >> 16) & 0xFF, (px >> 16) & 0xFF, a);
-                img.setColor(x, y, 0xFF000000 | (b << 16) | (g << 8) | r);
+                int r = Math.min(255, Math.round(cr * f)), g2 = Math.min(255, Math.round(cg * f)),
+                        b = Math.min(255, Math.round(cb * f));
+                if (a < 255) {
+                    int base = img.getColor(x, y);
+                    r = mezclar(base & 0xFF, r, a);
+                    g2 = mezclar((base >> 8) & 0xFF, g2, a);
+                    b = mezclar((base >> 16) & 0xFF, b, a);
+                }
+                img.setColor(x, y, 0xFF000000 | (b << 16) | (g2 << 8) | r);
             }
         }
     }

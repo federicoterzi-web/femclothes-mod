@@ -109,7 +109,8 @@ public final class ModItems {
                 || stack.getItem() == com.femclothes.item.FemclothesItems.CALIENTABRAZOS
                 // La pollera nueva (2026-09-29, "quiero poder... sublimarla"):
                 // su tela es una caja de torso, ver EstampaTextures#POLLERA.
-                || stack.getItem() instanceof com.femclothes.item.PolleraItem;
+                || stack.getItem() instanceof com.femclothes.item.PolleraItem
+                || stack.getItem() instanceof com.femclothes.item.CapaItem;
     }
 
     private static ComponentType<Estampa> registrarEstampa(String nombre) {

@@ -1,5 +1,6 @@
 package com.femclothes.sublimadora;
 
+import net.minecraft.block.BlockState;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
@@ -310,23 +311,18 @@ public class SublimadoraBlock extends BlockWithEntity {
             return null;   // cambio de version del mod: mejor sin estampa que crashear
         }
     }
-    /**
-     * Devuelve lo que la maquina tenga adentro al romperla.
-     *
-     * Sin esto, romper la sublimadora con una remera estampada adentro la
-     * borraba del mundo sin aviso: el block entity se va y con el sus
-     * ItemStack. Es el mismo comportamiento que un cofre o un horno.
-     */
+    /** Cae con todo adentro, como una shulker (ver {@link com.femclothes.util.DropMaquina}). */
     @Override
-    protected void onStateReplaced(BlockState state, World world, BlockPos pos,
-                                   BlockState nuevo, boolean movido) {
-        if (!state.isOf(nuevo.getBlock())
-                && world.getBlockEntity(pos) instanceof SublimadoraBlockEntity be) {
-            for (ItemStack stack : be.contenido()) {
-                net.minecraft.util.ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), stack);
-            }
-        }
-        super.onStateReplaced(state, world, pos, nuevo, movido);
+    protected java.util.List<ItemStack> getDroppedStacks(BlockState state,
+            net.minecraft.loot.context.LootContextParameterSet.Builder builder) {
+        return com.femclothes.util.DropMaquina.drops(this, builder);
+    }
+
+    @Override
+    public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
+        com.femclothes.util.DropMaquina.enCreativo(world, pos, player, this,
+                !(world.getBlockEntity(pos) instanceof SublimadoraBlockEntity be) || be.isEmpty());
+        return super.onBreak(world, pos, state, player);
     }
 
     /** GeckoLib dibuja el bloque completo desde el block entity renderer. */
