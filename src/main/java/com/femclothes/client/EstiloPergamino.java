@@ -35,7 +35,11 @@ public final class EstiloPergamino {
         LATON(0xFFF4D070, 0xFF684818),
         VERDIN(0xFF96D4AA, 0xFF1C4A38),
         COBRE(0xFFF2AA78, 0xFF602C16),
-        ORO(0xFFFFE476, 0xFF7A5608);
+        ORO(0xFFFFE476, 0xFF7A5608),
+        /** Guardarropas: acero plateado de sus bisagras y manijas (2026-09-30). */
+        PLATA(0xFFE6EAF0, 0xFF424854),
+        /** Maniquí: azul esmaltado de sus esquinas y parante (2026-09-30). */
+        AZUL(0xFF96B8E6, 0xFF1E345A);
 
         public final int claro, oscuro;
 

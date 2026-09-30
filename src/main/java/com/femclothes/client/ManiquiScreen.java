@@ -20,7 +20,7 @@ import net.minecraft.util.Identifier;
  */
 public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
 
-    private static final Identifier TEXTURE = Identifier.of("femclothes", "textures/gui/container/guardarropas.png");
+    private static final Identifier TEXTURE = Identifier.of("femclothes", "textures/gui/container/maniqui.png");
     private static final int ANCHO = 482;
     private static final int ALTO = 264;
     private static final int M_MEDIO = ManiquiScreenHandler.M_MEDIO;
@@ -35,39 +35,30 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
         this.backgroundWidth = ANCHO;
         this.backgroundHeight = ALTO;
         this.titleX = M_MEDIO;
-        this.titleY = 6;
+        this.titleY = 8;
         this.playerInventoryTitleX = M_MEDIO;
         this.playerInventoryTitleY = 170;
     }
 
     @Override
     protected void init() {
+        // Estilo del mod con el metal del mueble (2026-09-30, "armame la gui...
+        // con el estilo del mod y los colores de sus acentos metalicos").
+        EstiloPergamino.usarTema(EstiloPergamino.Tema.AZUL);
         super.init();
 
-        btnVista = ButtonWidget.builder(Text.literal(""),
-                        b -> anguloVista = Math.floorMod(Math.round(anguloVista) + 90, 360))
-                .dimensions(this.x + PREVIEW_X1_LOCAL, this.y + 166, 86, 16)
-                .build();
+        btnVista = new EstiloPergamino.BotonPergamino(this.x + PREVIEW_X1_LOCAL, this.y + 166, 86, 16, Text.literal(""), b -> anguloVista = Math.floorMod(Math.round(anguloVista) + 90, 360));
         this.addDrawableChild(btnVista);
 
-        btnGirar = ButtonWidget.builder(Text.literal(""), b -> clickBoton(ManiquiBlockEntity.BTN_GIRAR))
-                .dimensions(this.x + M_MEDIO, this.y + 104, 78, 16)
-                .build();
+        btnGirar = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 104, 78, 16, Text.literal(""), b -> clickBoton(ManiquiBlockEntity.BTN_GIRAR));
         this.addDrawableChild(btnGirar);
 
-        this.addDrawableChild(ButtonWidget.builder(Text.translatable("femclothes.maniqui.intercambiar"),
-                        b -> clickBoton(ManiquiBlockEntity.BTN_INTERCAMBIAR))
-                .dimensions(this.x + M_MEDIO + 82, this.y + 104, 80, 16)
-                .build());
+        this.addDrawableChild(new EstiloPergamino.BotonPergamino(this.x + M_MEDIO + 82, this.y + 104, 80, 16, Text.translatable("femclothes.maniqui.intercambiar"), b -> clickBoton(ManiquiBlockEntity.BTN_INTERCAMBIAR)));
 
         // Poses y figura (2026-09-30).
-        btnPose = ButtonWidget.builder(Text.literal(""), b -> clickBoton(ManiquiBlockEntity.BTN_POSE))
-                .dimensions(this.x + M_MEDIO, this.y + 124, 78, 16)
-                .build();
+        btnPose = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 124, 78, 16, Text.literal(""), b -> clickBoton(ManiquiBlockEntity.BTN_POSE));
         this.addDrawableChild(btnPose);
-        btnFigura = ButtonWidget.builder(Text.literal(""), b -> clickBoton(ManiquiBlockEntity.BTN_FIGURA))
-                .dimensions(this.x + M_MEDIO + 82, this.y + 124, 80, 16)
-                .build();
+        btnFigura = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO + 82, this.y + 124, 80, 16, Text.literal(""), b -> clickBoton(ManiquiBlockEntity.BTN_FIGURA));
         this.addDrawableChild(btnFigura);
 
         // A la derecha de los botones (M_MEDIO + 162) y de la columna de armadura.
@@ -137,6 +128,22 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
             setMessage(Text.translatable("femclothes.maniqui.eje." + indice, (int) grados()));
         }
 
+        /** Riel de madera oscura con filo del metal del tema y mango de madera (estilo del mod, 2026-09-30). */
+        @Override
+        public void renderWidget(DrawContext c, int mouseX, int mouseY, float delta) {
+            int x0 = getX(), y0 = getY(), w = getWidth(), h = getHeight();
+            c.fill(x0 - 1, y0 - 1, x0 + w + 1, y0 + h + 1, 0xFF2A180C);
+            c.fill(x0, y0, x0 + w, y0 + h, 0xFF5A4028);
+            c.fill(x0, y0 + h - 1, x0 + w, y0 + h, EstiloPergamino.tema().claro);
+            int mango = x0 + (int) (value * (w - 8));
+            EstiloPergamino.fondoBoton(c, mango, y0, 8, h, isHovered(), active);
+            var fuente = MinecraftClient.getInstance().textRenderer;
+            Text m = getMessage();
+            int tx = x0 + (w - fuente.getWidth(m)) / 2, ty = y0 + (h - 8) / 2;
+            c.drawText(fuente, m, tx + 1, ty + 1, 0xFF2A180C, false);
+            c.drawText(fuente, m, tx, ty, EstiloPergamino.TEXTO_CLARO, false);
+        }
+
         @Override
         protected void applyValue() {
             net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
@@ -173,9 +180,15 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
     }
 
     @Override
+    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+        context.drawText(this.textRenderer, this.title, this.titleX, this.titleY, EstiloPergamino.TEXTO, false);
+        context.drawText(this.textRenderer, this.playerInventoryTitle, this.playerInventoryTitleX,
+                this.playerInventoryTitleY, EstiloPergamino.TEXTO, false);
+    }
+
+    @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         context.drawTexture(TEXTURE, this.x, this.y, 0, 0,
                 this.backgroundWidth, this.backgroundHeight, this.backgroundWidth, this.backgroundHeight);
-        GuardarropasScreen.dibujarMarcosGrilla(context, this.x, this.y);
     }
 }

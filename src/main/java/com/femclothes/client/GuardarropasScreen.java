@@ -48,40 +48,32 @@ public class GuardarropasScreen extends HandledScreen<GuardarropasScreenHandler>
         this.backgroundWidth = ANCHO;
         this.backgroundHeight = ALTO;
         this.titleX = M_MEDIO;
-        this.titleY = 6;
+        this.titleY = 8;
         this.playerInventoryTitleX = M_MEDIO;
         this.playerInventoryTitleY = 170;
     }
 
     @Override
     protected void init() {
+        // Estilo del mod con el metal del mueble (2026-09-30, "armame la gui...
+        // con el estilo del mod y los colores de sus acentos metalicos").
+        EstiloPergamino.usarTema(EstiloPergamino.Tema.PLATA);
         super.init();
 
-        btnVista = ButtonWidget.builder(Text.literal(""),
-                        b -> anguloVista = Math.floorMod(Math.round(anguloVista) + 90, 360))
-                .dimensions(this.x + PREVIEW_X1_LOCAL, this.y + 166, 86, 16)
-                .build();
+        btnVista = new EstiloPergamino.BotonPergamino(this.x + PREVIEW_X1_LOCAL, this.y + 166, 86, 16, Text.literal(""), b -> anguloVista = Math.floorMod(Math.round(anguloVista) + 90, 360));
         this.addDrawableChild(btnVista);
 
         // Fila de botones/fijadas corrida a y=104 — a partir del ajuste
         // "4 slots por categoria" (2026-09-20) la grilla de borrador ocupa
         // 4 filas (y=20..98), no una sola (y=20..38) como antes.
-        btnFijar = ButtonWidget.builder(Text.translatable("femclothes.guardarropas.fijar"),
-                        b -> clickBoton(GuardarropasBlockEntity.BTN_FIJAR))
-                .dimensions(this.x + M_MEDIO, this.y + 104, 78, 16)
-                .build();
+        btnFijar = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 104, 78, 16, Text.translatable("femclothes.guardarropas.fijar"), b -> clickBoton(GuardarropasBlockEntity.BTN_FIJAR));
         this.addDrawableChild(btnFijar);
 
-        this.addDrawableChild(ButtonWidget.builder(Text.translatable("femclothes.guardarropas.equipar"),
-                        b -> clickBoton(GuardarropasBlockEntity.BTN_EQUIPAR))
-                .dimensions(this.x + M_MEDIO + 82, this.y + 104, 80, 16)
-                .build());
+        this.addDrawableChild(new EstiloPergamino.BotonPergamino(this.x + M_MEDIO + 82, this.y + 104, 80, 16, Text.translatable("femclothes.guardarropas.equipar"), b -> clickBoton(GuardarropasBlockEntity.BTN_EQUIPAR)));
 
         for (int i = 0; i < btnFijadas.length; i++) {
             int id = GuardarropasBlockEntity.BTN_FIJADA_BASE + i;
-            btnFijadas[i] = ButtonWidget.builder(Text.literal(Integer.toString(i + 1)), b -> clickBoton(id))
-                    .dimensions(this.x + M_MEDIO + i * 20, this.y + 124, 18, 18)
-                    .build();
+            btnFijadas[i] = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO + i * 20, this.y + 124, 18, 18, Text.literal(Integer.toString(i + 1)), b -> clickBoton(id));
             this.addDrawableChild(btnFijadas[i]);
         }
     }
@@ -183,33 +175,16 @@ public class GuardarropasScreen extends HandledScreen<GuardarropasScreenHandler>
     }
 
     @Override
+    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+        context.drawText(this.textRenderer, this.title, this.titleX, this.titleY, EstiloPergamino.TEXTO, false);
+        context.drawText(this.textRenderer, this.playerInventoryTitle, this.playerInventoryTitleX,
+                this.playerInventoryTitleY, EstiloPergamino.TEXTO, false);
+    }
+
+    @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         context.drawTexture(TEXTURE, this.x, this.y, 0, 0,
                 this.backgroundWidth, this.backgroundHeight, this.backgroundWidth, this.backgroundHeight);
-        dibujarMarcosGrilla(context, this.x, this.y);
     }
 
-    /**
-     * Marcos de la grilla de 5 categorías x 4 capas (2026-09-30, quinta
-     * columna = chaquetas): el fondo {@code guardarropas.png} solo trae la
-     * fila de 4 de la versión vieja, así que se dibujan por código — los
-     * usan el Guardarropas y el Maniquí (mismas posiciones de slot).
-     */
-    static void dibujarMarcosGrilla(DrawContext context, int x, int y) {
-        for (int categoria = 0; categoria < GuardarropasBlockEntity.CATEGORIAS; categoria++) {
-            for (int capa = 0; capa < GuardarropasBlockEntity.POR_CATEGORIA; capa++) {
-                marcoSlot(context, x + M_MEDIO + categoria * 20 - 1, y + 20 + capa * 20 - 1);
-            }
-        }
-        // Columna de armadura (2026-09-30).
-        for (int i = 0; i < GuardarropasBlockEntity.SLOTS_ARMADURA.length; i++) {
-            marcoSlot(context, x + GuardarropasScreenHandler.X_ARMADURA - 1, y + 20 + i * 20 - 1);
-        }
-    }
-
-    private static void marcoSlot(DrawContext context, int sx, int sy) {
-        context.fill(sx, sy, sx + 18, sy + 18, 0xFF373737);
-        context.fill(sx + 1, sy + 1, sx + 18, sy + 18, 0xFFFFFFFF);
-        context.fill(sx + 1, sy + 1, sx + 17, sy + 17, 0xFF8B8B8B);
-    }
 }
