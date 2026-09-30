@@ -45,6 +45,7 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 - **`PIN_POS` ya trae la Y absoluta del panel**: no sumarle el offset del esquema.
 - **Huesos de prenda en los modelos de máquina**: `garment_shaper` y `sublimator` necesitan los huesos `REMERA`, `PANTALON`, `CALIENTABRAZOS` y `MEDIAS` (hijos de `base`); Tintes, `prenda_*` bajo `roller`. Una reexportación desde Blockbench sin ellos los borró (2026-09-29, restaurados desde el commit 7011582): revisar que sigan después de exportar.
 - **Primera persona**: la ropa nunca se dibuja en el brazo de primera persona (no hay hook en `renderArm`).
+- **Grupos de Trinkets**: los grupos sin `slot_id` van en una columna de 3 al lado del muñeco (de abajo hacia arriba por `order`); del 4.º en adelante quedan AFUERA del inventario. Hoy: medias 1, piernas 2, torso 3; capa con `slot_id` 6 (pechera) y calentadores con 45 (mano secundaria). Si otro mod activa los grupos `chest`/`offhand` de Trinkets, comparten el mismo slot vanilla. Íconos de `tools/generar_iconos_slots.py`; info al pasar el mouse por un slot vacío: `mixin/HandledScreenSlotInfoMixin` + `femclothes.slot.<grupo>.<slot>`.
 - **Outfit de otro jugador desactualizado un rato**: probablemente lag de sync de Trinkets, no un bug de caché del mod.
 
 ## Pendientes

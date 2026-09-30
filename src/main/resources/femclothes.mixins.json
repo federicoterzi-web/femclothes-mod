@@ -9,7 +9,8 @@
     "BipedEntityModelTwirlMixin",
     "LivingEntityRendererMixin",
     "PlayerEntityCapasSkinMixin",
-    "PlayerEntityRendererFirstPersonArmMixin"
+    "PlayerEntityRendererFirstPersonArmMixin",
+    "HandledScreenSlotInfoMixin"
   ],
   "injectors": {
     "defaultRequire": 1
