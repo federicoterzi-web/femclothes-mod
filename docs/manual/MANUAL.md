@@ -177,6 +177,18 @@ La Modeladora cambia el **corte** de la prenda. En el centro está el **dibujo d
 | **Molde de red** | Materiales / Personalización | La trama de la tela (ver abajo). |
 | **Molde de corte** | Activo | Un combo de cortes guardado en un solo ítem. |
 
+**Los cinco calces:**
+
+| Calce | Cómo queda |
+|---|---|
+| Pegado | Reemplaza la piel: la tela va justo donde estaba la skin. |
+| Ajustado | Aprieta: donde hay tela el brazo, la pierna o el torso quedan más finos (medio píxel menos), y la piel de afuera sigue normal, así se nota el escalón donde corta la prenda. |
+| Normal | Un poco holgado: un cuarto de píxel de aire. |
+| Suelto | Más holgado, se abre hacia el ruedo (el puño, la botamanga, el borde de la remera) y cuelga 1 píxel por debajo de donde corta. |
+| Oversize | Muy grande, se abre el doble hacia el ruedo y cuelga 2 píxeles. |
+
+Las capas se respetan siempre: una prenda de arriba nunca queda por dentro de una de abajo (se corre apenas hacia afuera solo donde se superponen). Un pantalón largo no cuelga por debajo del pie, y la pollera no aprieta por dentro del cuerpo.
+
 **Cómo funcionan los cortes de extremidades.** En medias, calientabrazos y pantalón, el largo son **dos anclajes que se cruzan**: el corte superior dice desde dónde arranca la tela y el inferior hasta dónde llega. Así se arman desde zoquetes hasta medias hasta el muslo, o calientabrazos que solo cubren el antebrazo.
 
 ### Redes y arneses (trama de la tela)

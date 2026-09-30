@@ -65,18 +65,56 @@ public enum Calce implements StringIdentifiable {
     // +0.001F: un enum constant no puede leer un static field declarado
     // más abajo en la misma clase, así que el margen queda inline acá
     // (ver el comentario de arriba para el porqué del valor).
-    PEGADO("pegado", com.femclothes.render.CuerpoGeometria.Superficie.CUERPO.dilatacion + 0.001F),
-    AJUSTADO("ajustado", com.femclothes.render.CuerpoGeometria.Superficie.CUERPO.dilatacion - 0.04F),
-    NORMAL("normal", 0.02F),
-    SUELTO("suelto", 0.15F),
-    OVERSIZE("oversize", 0.30F);
+    //
+    // 2026-09-30, "quiero que resolvamos el calce para que quede
+    // diferenciado ahora se ven bastante similares. la idea del pegado es
+    // que reemplace la skin, el ajustado que apriete achicando el cuboide
+    // donde corta la prenda, el normal un poco holgado y el suelto mas
+    // holgado y si se puede con caida y el oversize super grande": los
+    // valores de antes (0.02 / 0.15 / 0.30) eran décimas de píxel sobre un
+    // brazo de 4 — Normal y Oversize se diferenciaban en un 7 %. Ahora:
+    // Ajustado aprieta de verdad (el cuerpo de abajo se achica igual, ver
+    // GarmentFeatureRenderer#segmentosCuerpo), Normal deja un cuarto de
+    // píxel de aire, y Suelto/Oversize además se abren hacia el ruedo
+    // ({@link #caida}) y cuelgan más abajo de donde corta la prenda
+    // ({@link #colgado}) — a pedido, "además cuelga más abajo".
+    PEGADO("pegado", com.femclothes.render.CuerpoGeometria.Superficie.CUERPO.dilatacion + 0.001F, 0F, 0, 1.2F),
+    AJUSTADO("ajustado", com.femclothes.render.CuerpoGeometria.Superficie.CUERPO.dilatacion - 0.25F, 0F, 0, 1.0F),
+    NORMAL("normal", 0.25F, 0F, 0, 0.8F),
+    SUELTO("suelto", 0.6F, 0.5F, 1, 0.4F),
+    OVERSIZE("oversize", 1.2F, 1.0F, 2, 0.25F);
 
     public final String clave;
+    /** Cuánto se separa la tela del cuerpo (en píxeles de skin; negativo = aprieta). */
     public final float dilatacion;
+    /** Cuánto MÁS se abre la tela en la fila del ruedo que arriba (en píxeles; crece de a poco hacia el ruedo). */
+    public final float caida;
+    /** Cuántos píxeles cuelga la tela por debajo de la fila donde corta la prenda. */
+    public final int colgado;
+    /**
+     * Cuánto se marca el muslo/pantorrilla de las medias con volumen
+     * ({@code CuerpoGeometria#telaConVolumenDePierna}): tela que aprieta =
+     * carne que abulta, así que cuanto más ajustada, más se marca.
+     */
+    public final float factorVolumen;
 
-    Calce(String clave, float dilatacion) {
+    Calce(String clave, float dilatacion, float caida, int colgado, float factorVolumen) {
         this.clave = clave;
         this.dilatacion = dilatacion;
+        this.caida = caida;
+        this.colgado = colgado;
+        this.factorVolumen = factorVolumen;
+    }
+
+    /**
+     * El calce con esa dilatación exacta, o null — las piezas
+     * ({@code Pieza}) guardan la dilatación y no el calce, y todas la sacan
+     * de {@link #dilatacionEfectiva}, así que la comparación exacta alcanza.
+     */
+    @org.jetbrains.annotations.Nullable
+    public static Calce de(float dilatacion) {
+        for (Calce c : values()) if (c.dilatacion == dilatacion) return c;
+        return null;
     }
 
     @Override

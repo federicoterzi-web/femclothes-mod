@@ -87,6 +87,8 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 
 **Sprites nuevos 64×64** (2026-09-30, diseñados por el usuario con Claude Design sobre el design system "Taller de sastrería": Molde = papel kraft, Textura = retazo de tela, Aplicación = cuero y bronce, Patrón = bastidor, Molde de Corte = carpeta, Tinte = frasco): los 45 de moldes/patrones reemplazados y los 2 del tinte nuevos; los viejos quedaron en `assets_viejos/textures_item_2026-09-30/` (fuera de los recursos, no van al jar). El zip original está en la raíz (`Sprite assets completed.zip`).
 
+**Calce diferenciado** (2026-09-30, "que quede diferenciado ahora se ven bastante similares"): `Calce` con `dilatacion`/`caida`/`colgado`/`factorVolumen` (Pegado 0.001, Ajustado −0.25, Normal 0.25, Suelto 0.6 +0.5 caída, 1 px colgado, Oversize 1.2 +1.0, 2 px) y `Calce.de(dilatacion)`. `GarmentFeatureRenderer.dibujarPiezas` arma la dilatación fila por fila (caída hacia el ruedo; una capa siempre `SEPARACION_CAPAS` por fuera de la de abajo, solo en las filas donde se superponen) y usa `CuerpoGeometria.telaPorFilas` si no es uniforme. Sin caída: tiro del pantalón, cinto de pollera, cabeza; pierna entera no cuelga. Pegado también achica el cuerpo de abajo (`segmentosCuerpo`). Falta probar en el juego.
+
 **Otros, sin empezar:**
 - Volumen 3D real en la ropa con 3D Skin Layers.
 - Cadena textil: el hueso `cargo` de las máquinas debería moverse solo con máquinas encadenadas de izquierda a derecha.

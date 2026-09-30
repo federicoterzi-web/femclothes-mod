@@ -150,15 +150,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 }
             }
             if (piezas == null) continue;
-            for (Pieza pieza : piezas) {
-                if (pieza == conVolumen) {
-                    dibujarModelPart(CuerpoGeometria.telaConVolumenDePierna(parte, pieza.dilatacion()),
-                            CuerpoGeometria.Superficie.TELA, pieza.textura(), delJugador, matrices, vertexConsumers, luz);
-                } else {
-                    dibujar(CuerpoGeometria.Superficie.TELA, parte, slim, pieza.textura(), pieza.dilatacion(),
-                            delJugador, matrices, vertexConsumers, luz);
-                }
-            }
+            dibujarPiezas(parte, slim, piezas, conVolumen, delJugador, matrices, vertexConsumers, luz);
         }
 
         dibujarPollera(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta);
@@ -191,7 +183,10 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 .findFirst().orElse(null);
         if (stack == null) return;
 
-        float dilatacion = com.femclothes.item.Calce.dilatacionEfectiva(stack);
+        // La cintura de la pollera no puede apretar por dentro del cuerpo
+        // (no es una Pieza: el cuerpo de abajo no se achica por ella) —
+        // Ajustado pasó a -0.25 el 2026-09-30.
+        float dilatacion = Math.max(0F, com.femclothes.item.Calce.dilatacionEfectiva(stack));
         Identifier textura = texturaPollera(stack);
 
         ModelPart delJugador = CuerpoGeometria.delJugador(biped, Parte.TORSO);
@@ -333,6 +328,92 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         };
         return ClothingTextureCache.composeGarmentCapas(CAPA_BASE, colorBase, mascaras,
                 ClothingTextureCache.Shading.NONE, encima);
+    }
+
+    /** Cuánto queda cada capa por fuera de la de abajo, en las filas donde se superponen (px de skin). */
+    private static final float SEPARACION_CAPAS = 0.03F;
+
+    /**
+     * Dibuja la tela de una parte, ya ordenada por {@link Capa}, con el
+     * calce de cada pieza (2026-09-30, "quiero que resolvamos el calce para
+     * que quede diferenciado"):
+     * <ul>
+     *   <li>Suelto/Oversize se abren hacia el ruedo ({@code Calce.caida},
+     *       creciendo de a poco fila a fila) y cuelgan por debajo de donde
+     *       corta la prenda ({@code Calce.colgado});</li>
+     *   <li>a pedido ("respetar siempre las capas"), una pieza nunca queda
+     *       por dentro de una de capa más baja: en cada fila donde se
+     *       superponen se la empuja {@link #SEPARACION_CAPAS} por fuera de la
+     *       de abajo — solo en esas filas, así un croptop ajustado sobre un
+     *       pantalón suelto sigue apretando donde no hay pantalón.</li>
+     * </ul>
+     * Una pieza que queda con todas sus filas iguales y sin colgar va por la
+     * caja entera de siempre ({@link #dibujar}); si no, fila por fila
+     * ({@link CuerpoGeometria#telaPorFilas}).
+     */
+    private static void dibujarPiezas(Parte parte, boolean slim, List<Pieza> piezas, @Nullable Pieza conVolumen,
+                                      ModelPart delModelo, MatrixStack matrices,
+                                      VertexConsumerProvider vertexConsumers, int luz) {
+        boolean pierna = parte == Parte.PIERNA_DER || parte == Parte.PIERNA_IZQ;
+        // Lo más afuera que ya hay dibujado en cada fila (12 + lo que puede colgar).
+        float[] exterior = new float[12 + 4];
+        java.util.Arrays.fill(exterior, Float.NEGATIVE_INFINITY);
+
+        for (Pieza pieza : piezas) {
+            int desde = Math.max(0, Math.min(12, pieza.filaDesde()));
+            int hasta = Math.max(desde, Math.min(12, pieza.filaHasta()));
+            float base = pieza.dilatacion();
+
+            if (pieza == conVolumen) {
+                dibujarModelPart(CuerpoGeometria.telaConVolumenDePierna(parte, base),
+                        CuerpoGeometria.Superficie.TELA, pieza.textura(), delModelo, matrices, vertexConsumers, luz);
+                for (int f = desde; f < hasta; f++) exterior[f] = Math.max(exterior[f], base);
+                continue;
+            }
+
+            com.femclothes.item.Calce calce = com.femclothes.item.Calce.de(base);
+            // La caída es del RUEDO: la parte de torso del pantalón (tiro) y el
+            // cinto de la pollera terminan en la cintura, no tienen ruedo libre.
+            // La cabeza (banda de la polera) tampoco.
+            boolean ruedoLibre = calce != null && parte != Parte.CABEZA
+                    && !(parte == Parte.TORSO && (pieza.capa() == Capa.PIERNA_EXTERIOR || pieza.capa() == Capa.POLLERA));
+            float caida = ruedoLibre ? calce.caida : 0F;
+            int colgado = ruedoLibre ? calce.colgado : 0;
+            // Una pierna entera no cuelga por debajo del pie (quedaría enterrada).
+            if (pierna && hasta >= 12) colgado = 0;
+            if (hasta == desde) colgado = 0;
+
+            float[] fila = new float[12];
+            boolean uniforme = true;
+            for (int f = 0; f < 12; f++) {
+                float d = base;
+                if (f >= desde && f < hasta) {
+                    if (caida > 0F) {
+                        float t = (f - desde + 1) / (float) (hasta - desde);
+                        d += caida * t * (float) Math.sqrt(t);
+                    }
+                    if (exterior[f] != Float.NEGATIVE_INFINITY) d = Math.max(d, exterior[f] + SEPARACION_CAPAS);
+                }
+                fila[f] = d;
+                if (d != base) uniforme = false;
+            }
+            float dilColgado = hasta > 0 ? fila[hasta - 1] : base;
+            for (int k = 0; k < colgado; k++) {
+                int f = hasta + k;
+                if (exterior[f] != Float.NEGATIVE_INFINITY) dilColgado = Math.max(dilColgado, exterior[f] + SEPARACION_CAPAS);
+            }
+
+            if ((uniforme && colgado == 0) || parte == Parte.CABEZA) {
+                dibujar(CuerpoGeometria.Superficie.TELA, parte, slim, pieza.textura(), base,
+                        delModelo, matrices, vertexConsumers, luz);
+            } else {
+                dibujarModelPart(CuerpoGeometria.telaPorFilas(parte, slim, fila, hasta, colgado, dilColgado),
+                        CuerpoGeometria.Superficie.TELA, pieza.textura(), delModelo, matrices, vertexConsumers, luz);
+            }
+
+            for (int f = desde; f < hasta; f++) exterior[f] = Math.max(exterior[f], fila[f]);
+            for (int k = 0; k < colgado; k++) exterior[hasta + k] = Math.max(exterior[hasta + k], dilColgado);
+        }
     }
 
     /** Copia la pose ya calculada de la parte del jugador y dibuja la nuestra encima. */
@@ -481,7 +562,10 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         java.util.Arrays.fill(porFila, base);
         boolean hayCompresion = false;
         for (Pieza pieza : piezas) {
-            if (pieza.dilatacion() >= base) continue;
+            // "< base + 0.01": también Pegado (base + 0.001), que "reemplaza la
+            // skin" (2026-09-30) — el cuerpo se mete apenas por dentro de él en
+            // vez de quedar a una milésima, así no hay empate de profundidad.
+            if (pieza.dilatacion() >= base + 0.01F) continue;
             hayCompresion = true;
             float propia = pieza.dilatacion() - EPSILON_COMPRESION;
             int desde = Math.max(0, pieza.filaDesde()), hasta = Math.min(12, pieza.filaHasta());
@@ -584,10 +668,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             List<Pieza> piezas = entrada.getValue();
             ModelPart delModelo = CuerpoGeometria.delJugador(biped, parte);
             piezas.sort(Comparator.comparingInt(Pieza::capa));
-            for (Pieza pieza : piezas) {
-                dibujar(CuerpoGeometria.Superficie.TELA, parte, slim, pieza.textura(), pieza.dilatacion(),
-                        delModelo, matrices, vertexConsumers, luz);
-            }
+            dibujarPiezas(parte, slim, piezas, null, delModelo, matrices, vertexConsumers, luz);
         }
         // Sin entidad: la pollera queda quieta (sin inercia ni twirl).
         dibujarPollera(prendas, null, biped, matrices, vertexConsumers, luz, 0f);
