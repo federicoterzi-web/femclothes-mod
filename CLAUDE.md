@@ -9,6 +9,7 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 - Hablar en **español rioplatense** (vos). El código, los comentarios y los nombres también van en español.
 - **Preguntar antes de compilar** (`gradlew build`) y antes de lanzar el cliente. Nunca commitear ni pushear sin que lo pida.
 - Antes de reworks grandes, **hacer preguntas** (el usuario lo prefiere) y proponer un plan.
+- **No dibujar assets** (texturas, íconos, esquemas de GUI, moldes): escribirle al usuario el prompt para que los genere él (tamaño, paleta, estilo, qué tiene que mostrar, nombre de archivo y ruta) y dejar el código apuntando a ese archivo (2026-09-30, "No gastes tokens en dibujar assets, la proxima haceme el prompt").
 - Los comentarios del código citan el pedido original entre comillas con fecha ("a pedido (2026-09-18, ...)"). Mantener ese estilo.
 
 ## Compilar y probar
