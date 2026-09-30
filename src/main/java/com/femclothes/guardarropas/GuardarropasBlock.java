@@ -8,10 +8,16 @@ import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.state.StateManager;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
@@ -19,22 +25,48 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Guardarropas — PLACEHOLDER: bloque simple, sin GeckoLib ni orientación
- * (no tiene panel físico como las otras 3), modelo vanilla normal. Click
- * derecho (con cualquier mano) abre la pantalla con los 4 slots y el
- * preview combinado.
+ * Guardarropas. Click derecho (con cualquier mano) abre la pantalla con los
+ * 16 slots y el preview combinado.
+ *
+ * <p>Desde 2026-09-30 ("hay 3 bloques nuevos que hay que hacer funcionar")
+ * usa el modelo GeckoLib {@code wardrobe} del zip: orientable ({@link #FACING})
+ * y con la puerta animada — {@link #OPEN} queda en true mientras alguien
+ * tenga la pantalla abierta (mismo criterio que un cofre, ver
+ * {@code GuardarropasBlockEntity#onOpen}), y el controlador de GeckoLib lee
+ * ese estado igual que la tapa de la Sublimadora.
  */
 public class GuardarropasBlock extends BlockWithEntity {
+
+    public static final DirectionProperty FACING = Properties.HORIZONTAL_FACING;
+    public static final BooleanProperty OPEN = Properties.OPEN;
 
     private static final MapCodec<GuardarropasBlock> CODEC = createCodec(GuardarropasBlock::new);
     private static final VoxelShape FORMA = VoxelShapes.cuboid(0, 0, 0, 1, 1, 1);
 
     public GuardarropasBlock(Settings settings) {
         super(settings);
+        setDefaultState(getStateManager().getDefaultState().with(FACING, Direction.NORTH).with(OPEN, false));
     }
 
     @Override
     protected MapCodec<? extends BlockWithEntity> getCodec() { return CODEC; }
+
+    @Override
+    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+        builder.add(FACING, OPEN);
+    }
+
+    /**
+     * Con {@code getOpposite()}, como Modeladora/Sublimadora: el frente del
+     * modelo {@code wardrobe} (la puerta) está en -Z, la convención que
+     * asume GeckoLib — a diferencia de {@code dye_station}, que lo tiene
+     * al revés (ver {@code TinturasBlock#getPlacementState}).
+     */
+    @Override
+    @Nullable
+    public BlockState getPlacementState(ItemPlacementContext ctx) {
+        return getDefaultState().with(FACING, ctx.getHorizontalPlayerFacing().getOpposite());
+    }
 
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
@@ -42,16 +74,13 @@ public class GuardarropasBlock extends BlockWithEntity {
     }
 
     /**
-     * {@code BlockWithEntity} es INVISIBLE por defecto (ver su propio
-     * javadoc) — pensado para bloques tipo GeckoLib que dibujan desde el
-     * block entity. Este es un modelo vanilla normal, así que hay que
-     * pisarlo — a las otras 3 estaciones (que SÍ son GeckoLib) también
-     * les tocó acordarse de esto (2026-09-20, "anota eso porque paso con
-     * todos"), solo que ahí el valor correcto es INVISIBLE, no MODEL.
+     * INVISIBLE: desde 2026-09-30 lo dibuja GeckoLib desde el block entity
+     * (modelo {@code wardrobe}). Antes era MODEL (cubo vanilla placeholder)
+     * — ver la trampa de {@code BlockWithEntity.getRenderType} en CLAUDE.md.
      */
     @Override
     protected BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.MODEL;
+        return BlockRenderType.INVISIBLE;
     }
 
     @Override

@@ -354,5 +354,12 @@
   "femclothes.tinturas.tooltip.muestra": "Color %s — click para editarlo con los sliders (si está apagado, se prende)",
   "femclothes.tinturas.tooltip.colores": "Cuántos colores usa esta capa (1 a 3)",
   "femclothes.tinturas.tooltip.contorno": "Una línea alrededor de cada motivo o raya, con el ÚLTIMO color activo (necesita 2 colores o más)",
-  "femclothes.tinturas.tooltip.variacion": "Cómo cambia el relleno entre los colores: Fijo (todo el Color 1), Alternar (cada motivo el siguiente), Aleatorio (al azar — Azar vuelve a sortear) o Degradé (de arriba a abajo, también en capas lisas)"
+  "femclothes.tinturas.tooltip.variacion": "Cómo cambia el relleno entre los colores: Fijo (todo el Color 1), Alternar (cada motivo el siguiente), Aleatorio (al azar — Azar vuelve a sortear) o Degradé (de arriba a abajo, también en capas lisas)",
+  "block.femclothes.maniqui": "Maniquí",
+  "block.femclothes.mesa_estilado": "Mesa de estilado",
+  "femclothes.maniqui.girar": "Girar",
+  "femclothes.maniqui.detener": "Detener",
+  "femclothes.maniqui.intercambiar": "Intercambiar conmigo",
+  "femclothes.maniqui.sin_lugar": "El maniquí no tiene más lugar para esa prenda",
+  "femclothes.estilado.en_construccion": "Mesa de estilado: los apliques todavía están en construcción"
 }

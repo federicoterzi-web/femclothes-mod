@@ -25,6 +25,22 @@ public class FemclothesClient implements ClientModInitializer {
         HandledScreens.register(FemclothesScreenHandlers.TINTURAS, TinturasScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.SUBLIMADORA, SublimadoraScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.GUARDARROPAS, GuardarropasScreen::new);
+        HandledScreens.register(FemclothesScreenHandlers.MANIQUI, ManiquiScreen::new);
+
+        // Los 3 bloques del zip "Bloque de sublimadora Minecraft" (2026-09-30):
+        // Guardarropas y Mesa de estilado con el GeoModel genérico; el
+        // Maniquí con su renderer propio (dibuja además la ropa puesta).
+        net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(
+                com.femclothes.guardarropas.GuardarropasMod.GUARDARROPAS_BLOCK_ENTITY,
+                ctx -> new software.bernie.geckolib.renderer.GeoBlockRenderer<>(
+                        new com.femclothes.bloque.ModeloGeo<com.femclothes.guardarropas.GuardarropasBlockEntity>("wardrobe")));
+        net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(
+                com.femclothes.estilado.EstiladoMod.ESTILADO_BLOCK_ENTITY,
+                ctx -> new software.bernie.geckolib.renderer.GeoBlockRenderer<>(
+                        new com.femclothes.bloque.ModeloGeo<com.femclothes.estilado.EstiladoBlockEntity>("styling_table")));
+        net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(
+                com.femclothes.maniqui.ManiquiMod.MANIQUI_BLOCK_ENTITY,
+                com.femclothes.maniqui.ManiquiRenderer::new);
 
         // El render de la Mesa de Modelado lo hace GeckoLib desde el block
         // entity (modelo garment_shaper) — mismo patrón que la sublimadora.

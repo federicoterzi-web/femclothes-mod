@@ -1,6 +1,6 @@
 {
-  "parent": "block/cube_all",
+  "_comment": "Modelo vacío a propósito: el bloque es INVISIBLE y lo dibuja GeckoLib (wardrobe.geo.json).",
   "textures": {
-    "all": "femclothes:block/guardarropas"
+    "particle": "femclothes:block/wardrobe_atlas"
   }
 }

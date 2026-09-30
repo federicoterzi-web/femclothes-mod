@@ -3,6 +3,7 @@ package com.femclothes.guardarropas;
 import com.femclothes.item.CalientabrazosItem;
 import com.femclothes.item.FemclothesItems;
 import com.femclothes.item.PantalonItem;
+import com.femclothes.item.PolleraItem;
 import com.femclothes.sublimadora.RemeraItem;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
@@ -21,6 +22,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
+
+import software.bernie.geckolib.animatable.GeoBlockEntity;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +55,8 @@ import java.util.List;
  * el orden entre ellas ya lo decide {@code Capa}, como con cualquier otro
  * par de prendas de distinta categoría.
  */
-public class GuardarropasBlockEntity extends BlockEntity implements Inventory, ExtendedScreenHandlerFactory<BlockPos> {
+public class GuardarropasBlockEntity extends BlockEntity
+        implements Inventory, ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity {
 
     public static final int POR_CATEGORIA = 4;
 
@@ -74,6 +83,88 @@ public class GuardarropasBlockEntity extends BlockEntity implements Inventory, E
 
     public GuardarropasBlockEntity(BlockPos pos, BlockState state) {
         super(GuardarropasMod.GUARDARROPAS_BLOCK_ENTITY, pos, state);
+    }
+
+    /**
+     * Categoría de una prenda (REMERA/PANTALON/MEDIAS/CALIENTABRAZOS), o -1
+     * si no entra en el Guardarropas. Mismo reparto que los tags de
+     * Trinkets ({@code data/trinkets/tags/item/...}) — la pollera va con el
+     * pantalón porque comparte su slot ({@code piernas/exterior}); antes
+     * {@link #isValid} la rechazaba aunque el manual prometía "un pantalón
+     * con una pollera y una calza". Compartido con el Maniquí.
+     */
+    public static int categoriaDe(ItemStack stack) {
+        if (stack.getItem() instanceof RemeraItem) return REMERA;
+        if (stack.getItem() instanceof PantalonItem || stack.getItem() instanceof PolleraItem) return PANTALON;
+        if (stack.isOf(FemclothesItems.SOCKS_SOLID)) return MEDIAS;
+        if (stack.getItem() instanceof CalientabrazosItem) return CALIENTABRAZOS;
+        return -1;
+    }
+
+    // ── puerta (modelo GeckoLib "wardrobe", 2026-09-30) ─────────────────
+    private static final RawAnimation ABRIR = RawAnimation.begin()
+            .thenPlay("animation.wardrobe.abrir")
+            .thenLoop("animation.wardrobe.abierta");
+    private static final RawAnimation CERRAR = RawAnimation.begin()
+            .thenPlay("animation.wardrobe.cerrar")
+            .thenLoop("animation.wardrobe.cerrada");
+    private static final RawAnimation ABIERTA = RawAnimation.begin().thenLoop("animation.wardrobe.abierta");
+    private static final RawAnimation CERRADA = RawAnimation.begin().thenLoop("animation.wardrobe.cerrada");
+
+    private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
+    /** Mismo mecanismo que la tapa de {@code SublimadoraBlockEntity}: pose al cargar, transición solo en un cambio real. */
+    private RawAnimation animacionPuerta = null;
+    private boolean puertaAbierta = false;
+
+    /** Cuántos jugadores tienen la pantalla abierta ahora — solo servidor, no se guarda. */
+    private int mirando = 0;
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>(this, "puerta", 0, state -> {
+            boolean abierta = getCachedState().get(GuardarropasBlock.OPEN);
+            if (animacionPuerta == null) {
+                puertaAbierta = abierta;
+                animacionPuerta = abierta ? ABIERTA : CERRADA;
+            } else if (abierta != puertaAbierta) {
+                puertaAbierta = abierta;
+                animacionPuerta = abierta ? ABRIR : CERRAR;
+                state.getController().forceAnimationReset();
+            }
+            return state.setAndContinue(animacionPuerta);
+        }));
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return cache;
+    }
+
+    /** Llamado por {@code GuardarropasScreenHandler} al abrirse — abre la puerta con el primero que mira. */
+    @Override
+    public void onOpen(PlayerEntity player) {
+        if (world == null || world.isClient || player.isSpectator()) return;
+        mirando++;
+        actualizarPuerta();
+    }
+
+    /** Llamado por {@code GuardarropasScreenHandler#onClosed} — cierra la puerta cuando ya no mira nadie. */
+    @Override
+    public void onClose(PlayerEntity player) {
+        if (world == null || world.isClient || player.isSpectator()) return;
+        mirando = Math.max(0, mirando - 1);
+        actualizarPuerta();
+    }
+
+    private void actualizarPuerta() {
+        BlockState estado = getCachedState();
+        if (!estado.contains(GuardarropasBlock.OPEN)) return;
+        boolean abrir = mirando > 0;
+        if (estado.get(GuardarropasBlock.OPEN) == abrir) return;
+        world.setBlockState(pos, estado.with(GuardarropasBlock.OPEN, abrir), 3);
+        world.playSound(null, pos,
+                abrir ? net.minecraft.sound.SoundEvents.BLOCK_BARREL_OPEN : net.minecraft.sound.SoundEvents.BLOCK_BARREL_CLOSE,
+                net.minecraft.sound.SoundCategory.BLOCKS, 0.6f, 1.1f);
     }
 
     public List<OutfitFijado> fijadas() { return fijadas; }
@@ -129,8 +220,17 @@ public class GuardarropasBlockEntity extends BlockEntity implements Inventory, E
         return false;
     }
 
-    private static final String[] GRUPO = {"torso", "piernas", "socks", "arms"};
-    private static final String[] NOMBRE_SLOT = {"prenda", "exterior", "pair", "armwarmer"};
+    /** Grupo/slot de Trinkets de cada categoría, en el orden de REMERA..CALIENTABRAZOS — compartido con el Maniquí. */
+    public static final String[] GRUPO = {"torso", "piernas", "socks", "arms"};
+    public static final String[] NOMBRE_SLOT = {"prenda", "exterior", "pair", "armwarmer"};
+
+    /** El inventario de Trinkets de una categoría del jugador, o null si ese slot no existe (datapack sin cargar). */
+    @Nullable
+    public static dev.emi.trinkets.api.TrinketInventory inventarioTrinkets(dev.emi.trinkets.api.TrinketComponent componente,
+                                                                             int categoria) {
+        var grupoDeSlots = componente.getInventory().get(GRUPO[categoria]);
+        return grupoDeSlots == null ? null : grupoDeSlots.get(NOMBRE_SLOT[categoria]);
+    }
 
     /**
      * Pone de verdad las prendas del borrador en los slots reales de
@@ -148,16 +248,13 @@ public class GuardarropasBlockEntity extends BlockEntity implements Inventory, E
     public void equiparEn(PlayerEntity player) {
         dev.emi.trinkets.api.TrinketsApi.getTrinketComponent(player).ifPresent(componente -> {
             for (int categoria = 0; categoria < CATEGORIAS; categoria++) {
-                equiparCategoria(componente, GRUPO[categoria], NOMBRE_SLOT[categoria], categoria, player);
+                equiparCategoria(componente, categoria, player);
             }
         });
     }
 
-    private void equiparCategoria(dev.emi.trinkets.api.TrinketComponent componente, String grupo, String nombreSlot,
-                                   int categoria, PlayerEntity player) {
-        var grupoDeSlots = componente.getInventory().get(grupo);
-        if (grupoDeSlots == null) return;
-        dev.emi.trinkets.api.TrinketInventory inv = grupoDeSlots.get(nombreSlot);
+    private void equiparCategoria(dev.emi.trinkets.api.TrinketComponent componente, int categoria, PlayerEntity player) {
+        dev.emi.trinkets.api.TrinketInventory inv = inventarioTrinkets(componente, categoria);
         if (inv == null) return;
 
         int slotsReales = Math.min(inv.size(), POR_CATEGORIA);
@@ -204,13 +301,8 @@ public class GuardarropasBlockEntity extends BlockEntity implements Inventory, E
     /** Las 4 capas de una misma categoría comparten el mismo chequeo de tipo — el slot solo cambia en qué capa queda. */
     @Override
     public boolean isValid(int slot, ItemStack stack) {
-        return switch (slot / POR_CATEGORIA) {
-            case REMERA -> stack.getItem() instanceof RemeraItem;
-            case PANTALON -> stack.getItem() instanceof PantalonItem;
-            case MEDIAS -> stack.isOf(FemclothesItems.SOCKS_SOLID);
-            case CALIENTABRAZOS -> stack.getItem() instanceof CalientabrazosItem;
-            default -> false;
-        };
+        int categoria = categoriaDe(stack);
+        return categoria >= 0 && categoria == slot / POR_CATEGORIA;
     }
 
     @Override

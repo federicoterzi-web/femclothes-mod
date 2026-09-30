@@ -1,5 +1,5 @@
 {
-  "_comment": "builtin/entity: GeckoLib dibuja el ítem con la malla del bloque (BloqueGeoItem). Transforms copiados de tinturas.json, pueden necesitar ajuste visual.",
+  "_comment": "builtin/entity: GeckoLib dibuja el ítem con la malla del bloque (BloqueGeoItem). Transforms copiados de tinturas.json, pueden necesitar ajuste visual. Escalas x0.6 porque el maniquí mide casi 2 bloques.",
   "parent": "builtin/entity",
   "gui_light": "side",
   "display": {
@@ -15,9 +15,9 @@
         0
       ],
       "scale": [
-        0.625,
-        0.625,
-        0.625
+        0.375,
+        0.375,
+        0.375
       ]
     },
     "ground": {
@@ -32,9 +32,9 @@
         0
       ],
       "scale": [
-        0.25,
-        0.25,
-        0.25
+        0.15,
+        0.15,
+        0.15
       ]
     },
     "fixed": {
@@ -49,9 +49,9 @@
         0
       ],
       "scale": [
-        0.5,
-        0.5,
-        0.5
+        0.3,
+        0.3,
+        0.3
       ]
     },
     "thirdperson_righthand": {
@@ -66,9 +66,9 @@
         0
       ],
       "scale": [
-        0.375,
-        0.375,
-        0.375
+        0.225,
+        0.225,
+        0.225
       ]
     },
     "firstperson_righthand": {
@@ -83,9 +83,9 @@
         0
       ],
       "scale": [
-        0.4,
-        0.4,
-        0.4
+        0.24,
+        0.24,
+        0.24
       ]
     }
   }

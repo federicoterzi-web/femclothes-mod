@@ -33,6 +33,8 @@ public class Femclothes implements ModInitializer {
         com.femclothes.modelado.ModeladoMod.register();
         com.femclothes.tinturas.TinturasMod.register();
         com.femclothes.guardarropas.GuardarropasMod.register();
+        com.femclothes.maniqui.ManiquiMod.register();
+        com.femclothes.estilado.EstiladoMod.register();
         registrarPestanaCreativa();
     }
 
@@ -60,6 +62,8 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.tinturas.TinturasMod.TINTURAS_BLOCK_ITEM);
             entries.add(com.femclothes.sublimadora.ModBlocks.SUBLIMADORA_ITEM);
             entries.add(com.femclothes.guardarropas.GuardarropasMod.GUARDARROPAS_BLOCK_ITEM);
+            entries.add(com.femclothes.maniqui.ManiquiMod.MANIQUI_BLOCK_ITEM);
+            entries.add(com.femclothes.estilado.EstiladoMod.ESTILADO_BLOCK_ITEM);
             // Prendas.
             entries.add(com.femclothes.sublimadora.ModItems.REMERA);
             entries.add(FemclothesItems.SOCKS_34);

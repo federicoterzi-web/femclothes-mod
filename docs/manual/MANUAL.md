@@ -6,7 +6,7 @@ Versión del mod: 0.1.0 · Minecraft 1.21.1 (Fabric) · Manual actualizado: {{FE
 
 FemClothes agrega ropa que se viste SOBRE el cuerpo del personaje: remeras, pantalones, medias, calientabrazos y polleras que siguen la forma del modelo, se superponen en capas (una media debajo de un pantalón, una remera arriba de todo) y se pueden personalizar casi por completo: el corte, el color, los patrones, las estampas con fotos y hasta la trama de la tela (redes, encaje, arneses).
 
-La personalización pasa por cuatro máquinas, cada una con su trabajo:
+La personalización pasa por cuatro máquinas, cada una con su trabajo (más el Maniquí para exhibir y la Mesa de estilado, en construcción):
 
 | Máquina | Qué hace |
 |---|---|
@@ -14,6 +14,8 @@ La personalización pasa por cuatro máquinas, cada una con su trabajo:
 | **Estación de Tintes** | El COLOR: colores lisos o con patrones (rayas, corazones, estrellas, lunares, vichy), por zona de la prenda y mezclando capas. |
 | **Sublimadora** | Las ESTAMPAS: imprime fotos (del mod Camerapture) sobre la prenda. |
 | **Guardarropas** | COMBINAR prendas y guardar outfits. |
+| **Maniquí** | EXHIBIR un outfit: la ropa se ve puesta en la figura, que puede girar. |
+| **Mesa de estilado** | APLIQUES (moños, mariposas, bijouterie): en construcción. |
 
 ## 1. Requisitos e instalación
 
@@ -257,9 +259,27 @@ La Sublimadora **imprime fotos** del mod Camerapture sobre remeras, pantalones, 
 
 ## 9. Guardarropas
 
-El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría (remera, pantalón, medias, calientabrazos), así se pueden probar juntas varias prendas del mismo tipo (un croptop sobre un remerón, un pantalón con una pollera y una calza), con vista previa. **Guardar outfit** y **Equipar** guardan y se ponen la combinación.
+El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría (remera, pantalón/pollera, medias, calientabrazos), así se pueden probar juntas varias prendas del mismo tipo (un croptop sobre un remerón, un pantalón con una pollera y una calza), con vista previa. **Guardar outfit** y **Equipar** guardan y se ponen la combinación.
+
+Es un mueble con puerta: se pone de frente a quien lo coloca y la puerta se abre mientras alguien tiene la pantalla abierta.
 
 *El sistema de estilos guardados todavía está en construcción.*
+
+### Maniquí
+
+Exhibe un outfit completo. Mide casi dos bloques (necesita lugar libre arriba para ponerlo). Tiene los mismos 16 lugares que el Guardarropas (4 por categoría) y **la ropa se ve puesta en la figura**, en el mundo.
+
+- **Click derecho con una prenda:** se la pone en el primer lugar libre de su categoría.
+- **Click derecho con la mano vacía:** abre la pantalla (los 16 lugares, vista previa tuya con esa ropa, botones).
+- **Agachado con la mano vacía**, o botón **Girar/Detener:** el plato gira (una vuelta cada 14 segundos) y se detiene donde está.
+- **Intercambiar conmigo:** la ropa del maniquí pasa a tus slots de ropa y la tuya al maniquí, lugar por lugar. No se pierde nada.
+- Al romperlo, la ropa cae al piso.
+
+Las medias se ven sin el volumen extra de pierna que tienen en el jugador.
+
+### Mesa de estilado
+
+Por ahora es solo el mueble (orientable). Va a ser la mesa para **agregar apliques anclables a las prendas** (modelos 3D: moños, mariposas, bijouterie, chokers). Click derecho avisa que está en construcción.
 
 ## 10. Comandos
 
@@ -304,7 +324,7 @@ El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría 
 | Rayas superiores | Hilo / papel / papel (filas) |
 | Tres rayas | Hilo / hilo / papel (filas) |
 
-**Sin receta todavía (solo en creativo o con `/femclothes debug`):** Estación de Tintes, Guardarropas, Pollera, moldes de rango, torso, cuello, calce, red y arnés, molde de corte, y los patrones de corazones, estrellas, lunares y vichy.
+**Sin receta todavía (solo en creativo o con `/femclothes debug`):** Estación de Tintes, Guardarropas, Maniquí, Mesa de estilado, Pollera, moldes de rango, torso, cuello, calce, red y arnés, molde de corte, y los patrones de corazones, estrellas, lunares y vichy.
 
 Todo el contenido del mod está en su propia pestaña del inventario creativo: **FemClothes**.
 
@@ -316,6 +336,7 @@ Funciones planeadas que todavía no están:
 - Cadena de máquinas por tolvas, probada de punta a punta.
 - La prenda cargada visible encima de cada máquina y una pantallita con vista previa en el bloque.
 - Guardarropas: sistema de estilos guardados.
+- Mesa de estilado: apliques anclables (moños, mariposas, bijouterie, chokers).
 - La ropa en el brazo en primera persona.
 - Piernas redondeadas opcionales (versión 2).
 - Recetas para los ítems que hoy son solo de creativo.
@@ -332,7 +353,10 @@ Esta parte es para quien quiera entender o extender el mod.
 | `modelado` | Mesa de Modelado: bloque, block entity, pantalla, moldes de corte, `ComboCorte`, `PrendaModelado` (aplica un corte a una prenda). |
 | `tinturas` | Estación de Tintes: cuadraditos (`Casilla`), capas, diseños, teñido. |
 | `sublimadora` | Sublimadora, remera y su `Variante` (largo/manga/cuello), estampas (`EstampaTextures`). |
-| `guardarropas` | Guardarropas. |
+| `guardarropas` | Guardarropas (modelo GeckoLib `wardrobe`, puerta por `OPEN`); `categoriaDe` reparte prendas en las 4 categorías y lo comparte el Maniquí. |
+| `maniqui` | Maniquí: 16 slots sincronizados al cliente, giro del plato calculado en el cliente (`ManiquiRenderer` gira el hueso `turntable` y la ropa con el mismo ángulo) y ropa dibujada con `GarmentFeatureRenderer.dibujarTela` sobre un modelo de jugador slim a escala 0.6. |
+| `estilado` | Mesa de estilado (solo el bloque por ahora). |
+| `bloque` | Genéricos de GeckoLib por nombre de asset: `ModeloGeo` (geo/atlas/animación) y `BloqueGeoItem` (ítem dibujado con la malla del bloque). |
 | `region` | Lado (izq./der./ambas), regiones de pintura (`RegionPintura`), `RegionResolver` (lee y escribe capas y colores por lado), `ModoMezcla`. |
 | `render` | Composición de texturas (`ClothingTextureCache`), geometría (`CuerpoGeometria`, layout de skin a 8x), generador de patrones (`PatronGenerador`, `Motivo`, `Repeticion`, `Variacion`), el renderer único de ropa (`GarmentFeatureRenderer`). |
 | `body` | Cuerpo base, ropa interior, perfil por jugador y su comando. |

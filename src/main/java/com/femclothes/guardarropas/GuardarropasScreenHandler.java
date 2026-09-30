@@ -9,7 +9,7 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.math.BlockPos;
 
 /**
- * Guardarropas — PLACEHOLDER: 4 slots de borrador (remera/pantalón/
+ * Guardarropas: 16 slots de borrador (4 por categoría: remera/pantalón/
  * medias/calientabrazos) + inventario del jugador. Extended (con
  * BlockPos): la lista de outfits guardados no cabe en slots simples,
  * viaja por NBT del block entity — mismo motivo que
@@ -35,6 +35,9 @@ public class GuardarropasScreenHandler extends ScreenHandler {
     public GuardarropasScreenHandler(int syncId, PlayerInventory playerInventory, GuardarropasBlockEntity be) {
         super(FemclothesScreenHandlers.GUARDARROPAS, syncId);
         this.be = be;
+        // Abre la puerta del modelo (2026-09-30) — mismo par onOpen/onClose
+        // que usan los cofres vanilla; del lado del cliente no hace nada.
+        be.onOpen(playerInventory.player);
 
         // Slot.canInsert() da true SIEMPRE por defecto — no llama solo a
         // Inventory.isValid() (esa la usan los hoppers, no el drag-and-drop
@@ -73,6 +76,12 @@ public class GuardarropasScreenHandler extends ScreenHandler {
             return true;
         }
         return be.onButtonClick(id);
+    }
+
+    @Override
+    public void onClosed(PlayerEntity player) {
+        super.onClosed(player);
+        be.onClose(player);
     }
 
     @Override

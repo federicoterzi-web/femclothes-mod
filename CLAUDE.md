@@ -33,6 +33,7 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 - `region/RegionPintura` — zonas (cuello = borde real del escote vía `ClothingTextureCache.mascaraBordeCuello`, pecho, mangas, sup/inf...).
 - `modelado/` — Modeladora: pines por rol (`ModeladoBlockEntity.ROLES`, `ModeladoScreenHandler.PIN_POS` con Y absoluta), `ComboCorte`, `PrendaModelado`.
 - `sublimadora/` — Sublimadora, remera y su `Variante`, estampas.
+- `maniqui/` — Maniquí: ropa en la figura vía `GarmentFeatureRenderer.dibujarTela` (modelo de jugador slim a 0.6, sin entidad). `bloque/` — `ModeloGeo`/`BloqueGeoItem` genéricos por nombre de asset.
 
 ## Trampas conocidas
 
@@ -51,6 +52,8 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 - **Fase C:** rotar el motivo, girar la grilla, espejo, distancia horizontal/vertical independiente del tamaño, desplazamiento X/Y, más escalones de tamaño.
 - **Fase D:** secuencia de alternancia escrita (ej. `1 1 2`), dirección de la alternancia, aleatorio con pesos, degradé con dirección y bandas, hasta 4 colores, paleta guardada y cuentagotas.
 - Reorganizar la interfaz en pestañas (Color / Patrón / Mezcla / Capas) para que entre todo.
+
+**Mesa de estilado** (bloque puesto el 2026-09-30, sin mecánica): apliques anclables a las prendas — modelos 3D (moños, mariposas), bijouterie, edición de chokers. Definir con el usuario anclajes, ítems y render antes de implementar.
 
 **Otros, sin empezar:**
 - Volumen 3D real en la ropa con 3D Skin Layers.

@@ -421,6 +421,38 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         }
     }
 
+    /**
+     * Solo la TELA de {@code prendas} (sin cuerpo base) sobre un modelo
+     * bípedo ya posado que no es de ninguna entidad — para el Maniquí
+     * (2026-09-30, "guarda y muestra la ropa... 16 slots, 4 por prenda"):
+     * la figura del modelo {@code mannequin} hace de cuerpo, así que acá no
+     * hay piel que reconstruir. Mismo orden por {@link Capa} y misma
+     * pollera que {@link #render}; las medias se dibujan sin el volumen de
+     * pierna (ese depende de la pierna real del jugador).
+     */
+    public static void dibujarTela(BipedEntityModel<?> biped, boolean slim, List<ItemStack> prendas,
+                                   MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
+        Map<Parte, List<Pieza>> porParte = new EnumMap<>(Parte.class);
+        for (ItemStack stack : prendas) {
+            // Ningún proveedor de PiezasDelMod mira la entidad hoy — solo
+            // la reciben por si el aspecto llegara a depender de ella.
+            for (Pieza pieza : PiezasDePrenda.de(stack, null)) {
+                porParte.computeIfAbsent(pieza.parte(), k -> new ArrayList<>()).add(pieza);
+            }
+        }
+        for (Map.Entry<Parte, List<Pieza>> entrada : porParte.entrySet()) {
+            Parte parte = entrada.getKey();
+            List<Pieza> piezas = entrada.getValue();
+            ModelPart delModelo = CuerpoGeometria.delJugador(biped, parte);
+            piezas.sort(Comparator.comparingInt(Pieza::capa));
+            for (Pieza pieza : piezas) {
+                dibujar(CuerpoGeometria.Superficie.TELA, parte, slim, pieza.textura(), pieza.dilatacion(),
+                        delModelo, matrices, vertexConsumers, luz);
+            }
+        }
+        dibujarPollera(prendas, biped, matrices, vertexConsumers, luz);
+    }
+
     public static List<ItemStack> equipadas(LivingEntity entidad) {
         List<ItemStack> out = new ArrayList<>();
         TrinketsApi.getTrinketComponent(entidad).ifPresent(c -> {

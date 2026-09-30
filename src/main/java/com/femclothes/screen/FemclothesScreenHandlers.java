@@ -50,6 +50,15 @@ public final class FemclothesScreenHandlers {
                     (syncId, inv, pos) -> com.femclothes.guardarropas.GuardarropasScreenHandler.deCliente(syncId, inv, pos),
                     net.minecraft.util.math.BlockPos.PACKET_CODEC));
 
+    /** Maniquí (2026-09-30): mismo patrón extended que GUARDARROPAS, para que el cliente apunte al block entity real. */
+    public static final net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<
+            com.femclothes.maniqui.ManiquiScreenHandler, net.minecraft.util.math.BlockPos> MANIQUI = Registry.register(
+            Registries.SCREEN_HANDLER,
+            Identifier.of("femclothes", "maniqui"),
+            new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<>(
+                    (syncId, inv, pos) -> com.femclothes.maniqui.ManiquiScreenHandler.deCliente(syncId, inv, pos),
+                    net.minecraft.util.math.BlockPos.PACKET_CODEC));
+
     public static void init() {
         // fuerza class-loading
     }
