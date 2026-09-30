@@ -29,9 +29,9 @@ public final class RedCuerpo {
      * Oscura ({@link PerfilCuerpo#TONO_AUTOMATICO} = salen del Base).
      */
     public record Elegir(String cuerpo, int tono, int claro, int oscuro, int rubor, int fuerza,
-                         String interior, boolean siempre) implements CustomPayload {
+                         String arriba, String abajo, int colorInterior, boolean siempre) implements CustomPayload {
         public static final Id<Elegir> ID = new Id<>(Identifier.of(Femclothes.MOD_ID, "elegir_cuerpo"));
-        /** A mano: son 8 campos y {@code PacketCodec.tuple} llega hasta 6. */
+        /** A mano: son 10 campos y {@code PacketCodec.tuple} llega hasta 6. */
         public static final PacketCodec<RegistryByteBuf, Elegir> CODEC = PacketCodec.of(
                 (e, buf) -> {
                     buf.writeString(e.cuerpo(), 32);
@@ -40,11 +40,13 @@ public final class RedCuerpo {
                     buf.writeInt(e.oscuro());
                     buf.writeInt(e.rubor());
                     buf.writeVarInt(e.fuerza());
-                    buf.writeString(e.interior(), 32);
+                    buf.writeString(e.arriba(), 32);
+                    buf.writeString(e.abajo(), 32);
+                    buf.writeInt(e.colorInterior());
                     buf.writeBoolean(e.siempre());
                 },
                 buf -> new Elegir(buf.readString(32), buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt(),
-                        buf.readVarInt(), buf.readString(32), buf.readBoolean()));
+                        buf.readVarInt(), buf.readString(32), buf.readString(32), buf.readInt(), buf.readBoolean()));
 
         @Override
         public Id<? extends CustomPayload> getId() { return ID; }
@@ -60,9 +62,12 @@ public final class RedCuerpo {
 
     private RedCuerpo() {}
 
-    private static RopaInterior interiorDe(String clave) {
-        for (RopaInterior r : RopaInterior.values()) if (r.clave.equals(clave)) return r;
-        return RopaInterior.BASICA;
+    private static RopaInterior interiorDe(Elegir e) {
+        InteriorArriba arriba = RopaInterior.DEFECTO.arriba();
+        for (InteriorArriba a : InteriorArriba.values()) if (a.clave.equals(e.arriba())) arriba = a;
+        InteriorAbajo abajo = RopaInterior.DEFECTO.abajo();
+        for (InteriorAbajo b : InteriorAbajo.values()) if (b.clave.equals(e.abajo())) abajo = b;
+        return new RopaInterior(arriba, abajo, e.colorInterior() & 0xFFFFFF);
     }
 
     public static void init() {
@@ -77,7 +82,7 @@ public final class RedCuerpo {
                     PerfilesDeCuerpo.poner(jugador, PerfilesDeCuerpo.de(jugador).conCuerpo(cuerpo)
                             .conTonos(payload.tono() & 0xFFFFFF, payload.claro() & 0xFFFFFF, payload.oscuro() & 0xFFFFFF, payload.rubor() & 0xFFFFFF,
                                     net.minecraft.util.math.MathHelper.clamp(payload.fuerza(), 0, 100))
-                            .conInterior(interiorDe(payload.interior()))
+                            .conInterior(interiorDe(payload))
                             .conSiempre(payload.siempre()));
                 }));
     }

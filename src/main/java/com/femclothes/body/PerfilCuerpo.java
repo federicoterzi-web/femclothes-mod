@@ -47,7 +47,7 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
      * cuerpo a alguien que no pidio nada.
      */
     public static final PerfilCuerpo DEFECTO =
-            new PerfilCuerpo(CuerpoBase.SKIN_REAL, TONO_DE_LA_SKIN, RopaInterior.BASICA, false,
+            new PerfilCuerpo(CuerpoBase.SKIN_REAL, TONO_DE_LA_SKIN, RopaInterior.DEFECTO, false,
                     TONO_AUTOMATICO, TONO_AUTOMATICO, TONO_AUTOMATICO, FUERZA_RUBOR_DEFECTO, false);
 
     public static final Codec<PerfilCuerpo> CODEC = RecordCodecBuilder.create(i -> i.group(
@@ -56,8 +56,15 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
             Codec.STRING.xmap(CuerpoBase::deClave, c -> c.clave)
                     .optionalFieldOf("cuerpo", CuerpoBase.SKIN_REAL).forGetter(PerfilCuerpo::cuerpo),
             Codec.INT.optionalFieldOf("tono", TONO_DE_LA_SKIN).forGetter(PerfilCuerpo::tono),
-            StringIdentifiable.createCodec(RopaInterior::values)
-                    .optionalFieldOf("interior", RopaInterior.BASICA).forGetter(PerfilCuerpo::interior),
+            // Ropa interior en dos partes + color (2026-09-30). "interior" es
+            // el valor viejo (un solo enum): solo se lee, para migrar.
+            Codec.STRING.optionalFieldOf("interior").forGetter(p -> java.util.Optional.empty()),
+            StringIdentifiable.createCodec(InteriorArriba::values).optionalFieldOf("interior_arriba")
+                    .forGetter(p -> java.util.Optional.of(p.interior().arriba())),
+            StringIdentifiable.createCodec(InteriorAbajo::values).optionalFieldOf("interior_abajo")
+                    .forGetter(p -> java.util.Optional.of(p.interior().abajo())),
+            Codec.INT.optionalFieldOf("interior_color")
+                    .forGetter(p -> java.util.Optional.of(p.interior().color())),
             Codec.BOOL.optionalFieldOf("elegido", false).forGetter(PerfilCuerpo::elegido),
             Codec.INT.optionalFieldOf("tono_claro", TONO_AUTOMATICO).forGetter(PerfilCuerpo::tonoClaro),
             Codec.INT.optionalFieldOf("tono_oscuro", TONO_AUTOMATICO).forGetter(PerfilCuerpo::tonoOscuro),
@@ -68,14 +75,21 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
             // Usar el cuerpo como skin aunque no haya ropa del mod (2026-09-29,
             // "un selector que directamente te deje esa skin de default").
             Codec.BOOL.optionalFieldOf("siempre", false).forGetter(PerfilCuerpo::siempre)
-    ).apply(i, PerfilCuerpo::new));
+    ).apply(i, (cuerpo, tono, viejo, arriba, abajo, color, elegido, claro, oscuro, rubor, fuerza, siempre) -> {
+        RopaInterior base = viejo.map(RopaInterior::deClaveVieja).orElse(RopaInterior.DEFECTO);
+        RopaInterior interior = new RopaInterior(arriba.orElse(base.arriba()), abajo.orElse(base.abajo()),
+                color.orElse(base.color()));
+        return new PerfilCuerpo(cuerpo, tono, interior, elegido, claro, oscuro, rubor, fuerza, siempre);
+    }));
 
     /** A mano: {@code PacketCodec.tuple} llega hasta 6 campos y son 9. */
     public static final PacketCodec<RegistryByteBuf, PerfilCuerpo> PACKET_CODEC = PacketCodec.of(
             (p, buf) -> {
                 buf.writeVarInt(p.cuerpo().ordinal());
                 buf.writeInt(p.tono());
-                buf.writeVarInt(p.interior().ordinal());
+                buf.writeVarInt(p.interior().arriba().ordinal());
+                buf.writeVarInt(p.interior().abajo().ordinal());
+                buf.writeInt(p.interior().color());
                 buf.writeBoolean(p.elegido());
                 buf.writeInt(p.tonoClaro());
                 buf.writeInt(p.tonoOscuro());
@@ -84,7 +98,8 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
                 buf.writeBoolean(p.siempre());
             },
             buf -> new PerfilCuerpo(CuerpoBase.values()[buf.readVarInt()], buf.readInt(),
-                    RopaInterior.values()[buf.readVarInt()], buf.readBoolean(),
+                    new RopaInterior(InteriorArriba.values()[buf.readVarInt()], InteriorAbajo.values()[buf.readVarInt()],
+                            buf.readInt()), buf.readBoolean(),
                     buf.readInt(), buf.readInt(), buf.readInt(), buf.readVarInt(), buf.readBoolean()));
 
     /** True si el tono todavia hay que sacarlo de la skin del jugador. */
@@ -120,7 +135,7 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
      * skin comparten sustrato, que es justo lo que se quiere.
      */
     public String clave() {
-        return cuerpo.clave + "/" + Integer.toHexString(tono) + "/" + interior.clave
+        return cuerpo.clave + "/" + Integer.toHexString(tono) + "/" + interior.clave()
                 + "/" + Integer.toHexString(tonoClaro) + "/" + Integer.toHexString(tonoOscuro) + "/" + Integer.toHexString(tonoRubor) + "/" + fuerzaRubor;
     }
 }
