@@ -21,7 +21,7 @@ public final class ManiquiMod {
                     .nonOpaque());
 
     public static final BloqueGeoItem MANIQUI_BLOCK_ITEM =
-            new BloqueGeoItem(MANIQUI_BLOCK, new Item.Settings(), "mannequin");
+            new BloqueGeoItem(MANIQUI_BLOCK, new Item.Settings(), "mannequin_item", "mannequin");
 
     public static final BlockEntityType<ManiquiBlockEntity> MANIQUI_BLOCK_ENTITY =
             BlockEntityType.Builder.create(ManiquiBlockEntity::new, MANIQUI_BLOCK).build();
@@ -31,6 +31,17 @@ public final class ManiquiMod {
         Registry.register(Registries.BLOCK, id, MANIQUI_BLOCK);
         Registry.register(Registries.ITEM, id, MANIQUI_BLOCK_ITEM);
         Registry.register(Registries.BLOCK_ENTITY_TYPE, id, MANIQUI_BLOCK_ENTITY);
+
+        // Sliders de pose libre (2026-09-30).
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S()
+                .register(PoseManiquiPayload.ID, PoseManiquiPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(PoseManiquiPayload.ID,
+                (payload, context) -> context.server().execute(() -> {
+                    if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof ManiquiBlockEntity be
+                            && be.canPlayerUse(context.player())) {
+                        be.setAngulo(payload.indice(), payload.grados());
+                    }
+                }));
     }
 
     private ManiquiMod() {}

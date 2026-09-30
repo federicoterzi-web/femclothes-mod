@@ -1,5 +1,6 @@
 package com.femclothes.maniqui;
 
+import com.femclothes.guardarropas.GuardarropasBlockEntity;
 import com.femclothes.guardarropas.GuardarropasScreenHandler;
 import com.femclothes.screen.FemclothesScreenHandlers;
 import net.minecraft.entity.player.PlayerEntity;
@@ -44,6 +45,10 @@ public class ManiquiScreenHandler extends ScreenHandler {
                     public boolean canInsert(ItemStack stack) { return be.isValid(index, stack); }
                 });
             }
+        }
+
+        for (int i = 0; i < GuardarropasBlockEntity.SLOTS_ARMADURA.length; i++) {
+            addSlot(GuardarropasScreenHandler.slotArmadura(be, i));
         }
 
         for (int i = 0; i < 3; i++) {

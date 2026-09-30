@@ -22,10 +22,17 @@ public class BloqueGeoItem extends BlockItem implements GeoItem {
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private final String modelo;
+    private final String geo;
 
     public BloqueGeoItem(Block block, Settings settings, String modelo) {
+        this(block, settings, modelo, modelo);
+    }
+
+    /** Con un {@code .geo.json} distinto del bloque (ver {@link ModeloGeo#ModeloGeo(String, String)}). */
+    public BloqueGeoItem(Block block, Settings settings, String geo, String modelo) {
         super(block, settings);
         this.modelo = modelo;
+        this.geo = geo;
     }
 
     @Override
@@ -43,7 +50,7 @@ public class BloqueGeoItem extends BlockItem implements GeoItem {
 
             @Override
             public net.minecraft.client.render.item.BuiltinModelItemRenderer getGeoItemRenderer() {
-                if (this.renderer == null) this.renderer = new GeoItemRenderer<>(new ModeloGeo<>(modelo));
+                if (this.renderer == null) this.renderer = new GeoItemRenderer<>(new ModeloGeo<>(geo, modelo));
                 return this.renderer;
             }
         });

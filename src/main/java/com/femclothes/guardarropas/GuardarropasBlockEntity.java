@@ -71,7 +71,46 @@ public class GuardarropasBlockEntity extends BlockEntity
     public static final int CHAQUETA = 4;
     public static final int CATEGORIAS = 5;
 
-    public static final int TAMANO = CATEGORIAS * POR_CATEGORIA;
+    /** Slots de prenda (5 categorías x 4 capas); la armadura va después. */
+    public static final int PRENDAS = CATEGORIAS * POR_CATEGORIA;
+
+    /**
+     * Columna de armadura (2026-09-30, "agreguemos una columna de slots de
+     * armadura"): casco, pechera, pantalones, botas — al FINAL (20..23), así
+     * los índices de las prendas no se corren. Entra en los outfits guardados
+     * y "Equipar" la pone en los slots de armadura del jugador.
+     */
+    public static final int ARMADURA_INICIO = PRENDAS;
+    public static final net.minecraft.entity.EquipmentSlot[] SLOTS_ARMADURA = {
+            net.minecraft.entity.EquipmentSlot.HEAD, net.minecraft.entity.EquipmentSlot.CHEST,
+            net.minecraft.entity.EquipmentSlot.LEGS, net.minecraft.entity.EquipmentSlot.FEET,
+    };
+
+    public static final int TAMANO = PRENDAS + SLOTS_ARMADURA.length;
+
+    /**
+     * ¿Entra {@code stack} en el slot {@code slot}? Prendas por categoría,
+     * armadura por su parte del cuerpo ({@code Equipment}: armaduras,
+     * élitros, calabaza, cabezas). Compartido con el Maniquí.
+     */
+    public static boolean esValidoEn(int slot, ItemStack stack) {
+        if (slot >= ARMADURA_INICIO) {
+            int i = slot - ARMADURA_INICIO;
+            if (i >= SLOTS_ARMADURA.length) return false;
+            net.minecraft.item.Equipment equipo = net.minecraft.item.Equipment.fromStack(stack);
+            return equipo != null && equipo.getSlotType() == SLOTS_ARMADURA[i];
+        }
+        int categoria = categoriaDe(stack);
+        return categoria >= 0 && categoria == slot / POR_CATEGORIA;
+    }
+
+    /** El slot de armadura que le toca a {@code stack}, o -1 si no es armadura. */
+    public static int slotArmaduraDe(ItemStack stack) {
+        for (int i = 0; i < SLOTS_ARMADURA.length; i++) {
+            if (esValidoEn(ARMADURA_INICIO + i, stack)) return ARMADURA_INICIO + i;
+        }
+        return -1;
+    }
 
     private final DefaultedList<ItemStack> items = DefaultedList.ofSize(TAMANO, ItemStack.EMPTY);
 
@@ -258,6 +297,17 @@ public class GuardarropasBlockEntity extends BlockEntity
                 equiparCategoria(componente, categoria, player);
             }
         });
+        // Armadura: mismo criterio (un slot vacío no desequipa; lo reemplazado
+        // vuelve al inventario del jugador).
+        for (int i = 0; i < SLOTS_ARMADURA.length; i++) {
+            ItemStack nueva = items.get(ARMADURA_INICIO + i);
+            if (nueva.isEmpty()) continue;
+            ItemStack anterior = player.getEquippedStack(SLOTS_ARMADURA[i]);
+            if (!anterior.isEmpty()) player.getInventory().offerOrDrop(anterior.copy());
+            player.equipStack(SLOTS_ARMADURA[i], nueva.copy());
+            items.set(ARMADURA_INICIO + i, ItemStack.EMPTY);
+        }
+        markDirty();
     }
 
     private void equiparCategoria(dev.emi.trinkets.api.TrinketComponent componente, int categoria, PlayerEntity player) {
@@ -308,8 +358,7 @@ public class GuardarropasBlockEntity extends BlockEntity
     /** Las 4 capas de una misma categoría comparten el mismo chequeo de tipo — el slot solo cambia en qué capa queda. */
     @Override
     public boolean isValid(int slot, ItemStack stack) {
-        int categoria = categoriaDe(stack);
-        return categoria >= 0 && categoria == slot / POR_CATEGORIA;
+        return esValidoEn(slot, stack);
     }
 
     @Override

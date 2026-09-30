@@ -356,23 +356,26 @@ El dibujo muestra la prenda que está en la Entrada, con su color. Si no hay nin
 
 ## 9. Guardarropas
 
-El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría (remera, pantalón/pollera, medias, calientabrazos, chaqueta), así se pueden probar juntas varias prendas del mismo tipo (un croptop sobre un remerón, un pantalón con una pollera y una calza), con vista previa. **Guardar outfit** y **Equipar** guardan y se ponen la combinación.
+El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría (remera, pantalón/pollera, medias, calientabrazos, chaqueta) y una columna de **armadura** (casco, pechera, pantalones, botas), así se pueden probar juntas varias prendas del mismo tipo (un croptop sobre un remerón, un pantalón con una pollera y una calza), con vista previa. **Guardar outfit** y **Equipar** guardan y se ponen la combinación, armadura incluida (lo que tenías puesto en ese lugar vuelve a tu inventario; un lugar vacío no te saca nada). La vista previa muestra también la armadura.
 
-Es un mueble con puerta: se pone de frente a quien lo coloca y la puerta se abre mientras alguien tiene la pantalla abierta.
+Es un mueble con puerta: se pone de frente a quien lo coloca y la puerta se abre hacia afuera mientras alguien tiene la pantalla abierta.
 
 *El sistema de estilos guardados todavía está en construcción.*
 
 ### Maniquí
 
-Exhibe un outfit completo. Mide casi dos bloques (necesita lugar libre arriba para ponerlo). Tiene los mismos 20 lugares que el Guardarropas (4 por categoría) y **la ropa se ve puesta en la figura**, en el mundo.
+Exhibe un outfit completo. Mide casi dos bloques (necesita lugar libre arriba para ponerlo). Tiene los mismos lugares que el Guardarropas (4 por categoría de prenda + la columna de armadura) y **todo se ve puesto en la figura**, en el mundo.
 
-- **Click derecho con una prenda:** se la pone en el primer lugar libre de su categoría.
-- **Click derecho con la mano vacía:** abre la pantalla (los 16 lugares, vista previa tuya con esa ropa, botones).
+- **Click derecho con una prenda o una pieza de armadura:** se la pone (la prenda en el primer lugar libre de su categoría; la armadura en su lugar, si está libre).
+- **Click derecho con la mano vacía:** abre la pantalla.
 - **Agachado con la mano vacía**, o botón **Girar/Detener:** el plato gira (una vuelta cada 14 segundos) y se detiene donde está.
-- **Intercambiar conmigo:** la ropa del maniquí pasa a tus slots de ropa y la tuya al maniquí, lugar por lugar. No se pierde nada.
-- Al romperlo, la ropa cae al piso.
+- **Intercambiar conmigo:** la ropa y la armadura del maniquí pasan a vos y las tuyas al maniquí, lugar por lugar. No se pierde nada.
+- **Pose:** el botón pasa por Parado, En jarra, Saludo, Brazos abiertos, Pasarela y Sentado (sentado, la figura baja y se apoya en el plato). Los **sliders** de la derecha mueven cabeza, brazos y piernas por separado (adelante/atrás y abrir); al tocar uno la pose pasa a **Libre**.
+- **Figura:** *maniquí* (liso, color madera) o *tu skin* (la de quien aprieta el botón; al ponerlo se guarda la de quien lo colocó).
+- **Armadura:** se ve como en un jugador (teñido del cuero, trims y brillo de encantamiento). La calabaza, las cabezas y los bloques van en la cabeza. Los élitros todavía no se dibujan.
+- Al romperlo, todo cae al piso.
 
-Las medias se ven sin el volumen extra de pierna que tienen en el jugador.
+Las medias se ven sin el volumen extra de pierna que tienen en el jugador. Con calce Pegado o Ajustado la figura se afina en esa parte para que la tela no quede adentro.
 
 ### Mesa de estilado
 

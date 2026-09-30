@@ -22,7 +22,17 @@ public class ModeloGeo<T extends GeoAnimatable> extends GeoModel<T> {
     private final Identifier animacion;
 
     public ModeloGeo(String nombre) {
-        this.geo = Identifier.of(Femclothes.MOD_ID, "geo/" + nombre + ".geo.json");
+        this(nombre, nombre);
+    }
+
+    /**
+     * Con un {@code .geo.json} propio y el atlas/animación de {@code nombre}
+     * — para el ícono del Maniquí, que usa una copia del geo sin partir
+     * (GeckoLib comparte los huesos entre todos los que usan el mismo geo, y
+     * el bloque esconde la figura; ver {@code ManiquiGeoModel}).
+     */
+    public ModeloGeo(String geo, String nombre) {
+        this.geo = Identifier.of(Femclothes.MOD_ID, "geo/" + geo + ".geo.json");
         this.textura = Identifier.of(Femclothes.MOD_ID, "textures/block/" + nombre + "_atlas.png");
         this.animacion = Identifier.of(Femclothes.MOD_ID, "animations/" + nombre + ".animation.json");
     }

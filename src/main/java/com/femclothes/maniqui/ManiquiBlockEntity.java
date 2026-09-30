@@ -54,12 +54,24 @@ public class ManiquiBlockEntity extends BlockEntity
 
     public static final int BTN_GIRAR = 0;
     public static final int BTN_INTERCAMBIAR = 1;
+    /** Pasa a la siguiente pose armada (2026-09-30, "que tenga poses"). */
+    public static final int BTN_POSE = 2;
+    /** Alterna figura de maniquí / skin de quien aprieta (2026-09-30, "dame las dos opciones"). */
+    public static final int BTN_FIGURA = 3;
 
     /** Una vuelta entera cada 14 s — lo mismo que {@code animation.mannequin.girar} del zip. */
     public static final float TICKS_POR_VUELTA = 14 * 20;
 
     private final DefaultedList<ItemStack> items = DefaultedList.ofSize(TAMANO, ItemStack.EMPTY);
     private boolean girando = false;
+
+    // ── pose y figura (2026-09-30) ────────────────────────────────────────
+    private PoseManiqui pose = PoseManiqui.PARADO;
+    private float[] angulos = PoseManiqui.PARADO.angulos();
+    /** true = la figura usa la skin de {@link #dueno}; false = textura de maniquí. */
+    private boolean figuraSkin = false;
+    @Nullable
+    private net.minecraft.component.type.ProfileComponent dueno;
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
@@ -72,6 +84,39 @@ public class ManiquiBlockEntity extends BlockEntity
     }
 
     public boolean girando() { return girando; }
+
+    public PoseManiqui pose() { return pose; }
+
+    /** Ángulo {@code i} de la pose, en grados (ver el orden en {@link PoseManiqui}). */
+    public float angulo(int i) { return angulos[i]; }
+
+    public boolean figuraSkin() { return figuraSkin; }
+
+    @Nullable
+    public net.minecraft.component.type.ProfileComponent dueno() { return dueno; }
+
+    /** Guarda el perfil (con la skin) de quien lo puso o eligió "su skin". */
+    public void setDueno(com.mojang.authlib.GameProfile perfil) {
+        this.dueno = new net.minecraft.component.type.ProfileComponent(perfil);
+        markDirty();
+    }
+
+    public void aplicarPose(PoseManiqui nueva) {
+        float[] a = nueva.angulos();
+        if (a == null) return;
+        pose = nueva;
+        angulos = a;
+        markDirty();
+    }
+
+    /** Un slider de la pantalla: cambia un ángulo y la pose pasa a LIBRE. */
+    public void setAngulo(int i, float grados) {
+        if (i < 0 || i >= PoseManiqui.ANGULOS || Float.isNaN(grados)) return;
+        float[] r = PoseManiqui.RANGO[i];
+        angulos[i] = Math.max(r[0], Math.min(r[1], grados));
+        pose = PoseManiqui.LIBRE;
+        markDirty();
+    }
 
     public void alternarGiro() {
         girando = !girando;
@@ -95,11 +140,21 @@ public class ManiquiBlockEntity extends BlockEntity
 
     public float anguloVisible() { return anguloVisible; }
 
-    /** Las prendas puestas, sin huecos — lo que dibuja el renderer. */
+    /** Las prendas puestas, sin huecos ni armadura — lo que dibuja el renderer como ropa. */
     public List<ItemStack> prendasPuestas() {
         List<ItemStack> out = new ArrayList<>();
-        for (ItemStack s : items) if (!s.isEmpty()) out.add(s);
+        for (int i = 0; i < GuardarropasBlockEntity.PRENDAS; i++) {
+            if (!items.get(i).isEmpty()) out.add(items.get(i));
+        }
         return out;
+    }
+
+    /** La pieza de armadura de ese slot del cuerpo (HEAD/CHEST/LEGS/FEET), o vacío. */
+    public ItemStack armadura(net.minecraft.entity.EquipmentSlot slot) {
+        for (int i = 0; i < GuardarropasBlockEntity.SLOTS_ARMADURA.length; i++) {
+            if (GuardarropasBlockEntity.SLOTS_ARMADURA[i] == slot) return items.get(GuardarropasBlockEntity.ARMADURA_INICIO + i);
+        }
+        return ItemStack.EMPTY;
     }
 
     /**
@@ -108,7 +163,13 @@ public class ManiquiBlockEntity extends BlockEntity
      */
     public boolean ponerPrenda(ItemStack stack) {
         int categoria = GuardarropasBlockEntity.categoriaDe(stack);
-        if (categoria < 0) return false;
+        if (categoria < 0) {
+            // Armadura (2026-09-30): a su slot, si está libre.
+            int slot = GuardarropasBlockEntity.slotArmaduraDe(stack);
+            if (slot < 0 || !items.get(slot).isEmpty()) return false;
+            setStack(slot, stack.copyWithCount(1));
+            return true;
+        }
         for (int capa = 0; capa < POR_CATEGORIA; capa++) {
             int slot = categoria * POR_CATEGORIA + capa;
             if (items.get(slot).isEmpty()) {
@@ -141,6 +202,13 @@ public class ManiquiBlockEntity extends BlockEntity
                 }
             }
         });
+        // Armadura: slot por slot, vacíos incluidos (2026-09-30).
+        for (int i = 0; i < GuardarropasBlockEntity.SLOTS_ARMADURA.length; i++) {
+            net.minecraft.entity.EquipmentSlot parte = GuardarropasBlockEntity.SLOTS_ARMADURA[i];
+            ItemStack delJugador = player.getEquippedStack(parte).copy();
+            player.equipStack(parte, items.get(GuardarropasBlockEntity.ARMADURA_INICIO + i).copy());
+            items.set(GuardarropasBlockEntity.ARMADURA_INICIO + i, delJugador);
+        }
         markDirty();
     }
 
@@ -151,6 +219,18 @@ public class ManiquiBlockEntity extends BlockEntity
         }
         if (id == BTN_INTERCAMBIAR) {
             intercambiarCon(player);
+            return true;
+        }
+        if (id == BTN_POSE) {
+            aplicarPose(pose.siguiente());
+            return true;
+        }
+        if (id == BTN_FIGURA) {
+            figuraSkin = !figuraSkin;
+            // "Tu skin" = la de quien aprieta (así sirve también en maniquíes
+            // puestos antes de esto, sin dueño guardado).
+            if (figuraSkin) dueno = new net.minecraft.component.type.ProfileComponent(player.getGameProfile());
+            markDirty();
             return true;
         }
         return false;
@@ -208,8 +288,7 @@ public class ManiquiBlockEntity extends BlockEntity
 
     @Override
     public boolean isValid(int slot, ItemStack stack) {
-        int categoria = GuardarropasBlockEntity.categoriaDe(stack);
-        return categoria >= 0 && categoria == slot / POR_CATEGORIA;
+        return GuardarropasBlockEntity.esValidoEn(slot, stack);
     }
 
     @Override
@@ -258,6 +337,15 @@ public class ManiquiBlockEntity extends BlockEntity
         // ya los deja vacíos del lado del cliente.
         Inventories.writeNbt(nbt, items, registries);
         nbt.putBoolean("Girando", girando);
+        nbt.putString("Pose", pose.name());
+        net.minecraft.nbt.NbtList lista = new net.minecraft.nbt.NbtList();
+        for (float a : angulos) lista.add(net.minecraft.nbt.NbtFloat.of(a));
+        nbt.put("Angulos", lista);
+        nbt.putBoolean("FiguraSkin", figuraSkin);
+        if (dueno != null) {
+            net.minecraft.component.type.ProfileComponent.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, dueno)
+                    .result().ifPresent(e -> nbt.put("Dueno", e));
+        }
     }
 
     @Override
@@ -266,6 +354,16 @@ public class ManiquiBlockEntity extends BlockEntity
         items.clear();
         Inventories.readNbt(nbt, items, registries);
         girando = nbt.getBoolean("Girando");
+        pose = nbt.contains("Pose") ? PoseManiqui.porNombre(nbt.getString("Pose")) : PoseManiqui.PARADO;
+        float[] base = PoseManiqui.PARADO.angulos();
+        net.minecraft.nbt.NbtList lista = nbt.getList("Angulos", net.minecraft.nbt.NbtElement.FLOAT_TYPE);
+        for (int i = 0; i < base.length && i < lista.size(); i++) base[i] = lista.getFloat(i);
+        angulos = base;
+        figuraSkin = nbt.getBoolean("FiguraSkin");
+        dueno = nbt.contains("Dueno")
+                ? net.minecraft.component.type.ProfileComponent.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, nbt.get("Dueno"))
+                        .result().orElse(null)
+                : null;
     }
 
     @Override

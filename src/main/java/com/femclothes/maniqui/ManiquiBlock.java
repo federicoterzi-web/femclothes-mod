@@ -36,7 +36,8 @@ import org.jetbrains.annotations.Nullable;
  * y la forma de selección/colisión sube hasta la cabeza (como un cerco).
  *
  * <ul>
- *   <li>click derecho con una prenda: se la pone (primera capa libre de su categoría);</li>
+ *   <li>click derecho con una prenda: se la pone (primera capa libre de su categoría);
+ *       con una pieza de armadura, en su slot si está libre;</li>
  *   <li>click derecho con la mano vacía: abre la pantalla (16 slots, girar, intercambiar);</li>
  *   <li>agachado con la mano vacía: arranca/detiene el giro del plato.</li>
  * </ul>
@@ -101,7 +102,8 @@ public class ManiquiBlock extends BlockWithEntity {
         if (!(world.getBlockEntity(pos) instanceof ManiquiBlockEntity be)) {
             return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
-        if (com.femclothes.guardarropas.GuardarropasBlockEntity.categoriaDe(stack) < 0) {
+        if (com.femclothes.guardarropas.GuardarropasBlockEntity.categoriaDe(stack) < 0
+                && com.femclothes.guardarropas.GuardarropasBlockEntity.slotArmaduraDe(stack) < 0) {
             return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
         if (world.isClient) return ItemActionResult.SUCCESS;
@@ -125,6 +127,17 @@ public class ManiquiBlock extends BlockWithEntity {
         }
         player.openHandledScreen(be);
         return ActionResult.SUCCESS;
+    }
+
+    /** Guarda la skin de quien lo pone, para la figura "skin" (2026-09-30). */
+    @Override
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable net.minecraft.entity.LivingEntity placer,
+                         ItemStack itemStack) {
+        super.onPlaced(world, pos, state, placer, itemStack);
+        if (!world.isClient && placer instanceof PlayerEntity jugador
+                && world.getBlockEntity(pos) instanceof ManiquiBlockEntity be) {
+            be.setDueno(jugador.getGameProfile());
+        }
     }
 
     @Override

@@ -19,6 +19,37 @@ public class GuardarropasScreenHandler extends ScreenHandler {
 
     private static final int PX = 100;
     public static final int M_MEDIO = 19 + PX;
+    /** X de la columna de armadura: después de las 5 categorías, con un hueco de 6. */
+    public static final int X_ARMADURA = M_MEDIO + GuardarropasBlockEntity.CATEGORIAS * 20 + 6;
+
+    private static final net.minecraft.util.Identifier[] FONDO_ARMADURA = {
+            net.minecraft.screen.PlayerScreenHandler.EMPTY_HELMET_SLOT_TEXTURE,
+            net.minecraft.screen.PlayerScreenHandler.EMPTY_CHESTPLATE_SLOT_TEXTURE,
+            net.minecraft.screen.PlayerScreenHandler.EMPTY_LEGGINGS_SLOT_TEXTURE,
+            net.minecraft.screen.PlayerScreenHandler.EMPTY_BOOTS_SLOT_TEXTURE,
+    };
+
+    /**
+     * Los 4 slots de la columna de armadura (2026-09-30), para el Guardarropas
+     * y el Maniquí: canInsert delega en isValid (trampa conocida, CLAUDE.md),
+     * uno por ítem, y el dibujito vanilla de la pieza cuando está vacío.
+     */
+    public static Slot slotArmadura(net.minecraft.inventory.Inventory inv, int i) {
+        int index = GuardarropasBlockEntity.ARMADURA_INICIO + i;
+        return new Slot(inv, index, X_ARMADURA, 20 + i * 20) {
+            @Override
+            public boolean canInsert(ItemStack stack) { return inv.isValid(index, stack); }
+
+            @Override
+            public int getMaxItemCount() { return 1; }
+
+            @Override
+            public com.mojang.datafixers.util.Pair<net.minecraft.util.Identifier, net.minecraft.util.Identifier> getBackgroundSprite() {
+                return com.mojang.datafixers.util.Pair.of(
+                        net.minecraft.screen.PlayerScreenHandler.BLOCK_ATLAS_TEXTURE, FONDO_ARMADURA[i]);
+            }
+        };
+    }
     private static final int INV_START = GuardarropasBlockEntity.TAMANO;
 
     public final GuardarropasBlockEntity be;
@@ -58,6 +89,8 @@ public class GuardarropasScreenHandler extends ScreenHandler {
                 });
             }
         }
+
+        for (int i = 0; i < GuardarropasBlockEntity.SLOTS_ARMADURA.length; i++) addSlot(slotArmadura(be, i));
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 9; j++) {

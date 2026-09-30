@@ -145,18 +145,40 @@ public class GuardarropasScreen extends HandledScreen<GuardarropasScreenHandler>
         if (jugador == null) return;
 
         List<ItemStack> prendas = new ArrayList<>();
-        for (int slot = 0; slot < GuardarropasBlockEntity.TAMANO; slot++) {
+        for (int slot = 0; slot < GuardarropasBlockEntity.PRENDAS; slot++) {
             ItemStack stack = handler.be.getStack(slot);
             if (!stack.isEmpty()) prendas.add(stack);
         }
 
         int x1 = this.x + PREVIEW_X1_LOCAL, y1 = this.y + PREVIEW_Y1_LOCAL;
         int x2 = this.x + PREVIEW_X2_LOCAL, y2 = this.y + PREVIEW_Y2_LOCAL;
+        dibujarConOutfit(context, jugador, handler.be, prendas, x1, y1, x2, y2, anguloVista, mouseY);
+    }
+
+    /**
+     * El preview del jugador con las prendas Y la armadura de {@code inv}
+     * (2026-09-30, columna de armadura): la armadura se pone de mentira en
+     * el inventario del jugador SOLO del cliente, directo en la lista (sin
+     * equipStack: nada de sonidos ni eventos), y se devuelve en el mismo
+     * frame. Una pieza vacía en el outfit deja ver la que el jugador tiene
+     * puesta, igual que "Equipar" no desequipa nada.
+     */
+    static void dibujarConOutfit(DrawContext context, PlayerEntity jugador, net.minecraft.inventory.Inventory inv,
+                                 List<ItemStack> prendas, int x1, int y1, int x2, int y2,
+                                 float angulo, int mouseY) {
+        var armadura = jugador.getInventory().armor;
+        ItemStack[] antes = new ItemStack[armadura.size()];
+        for (int i = 0; i < antes.length; i++) antes[i] = armadura.get(i);
         GarmentFeatureRenderer.previewOverride = prendas;
         try {
-            PreviewJugador.dibujar(context, jugador, x1, y1, x2, y2, 35, anguloVista, (float) mouseY);
+            for (int i = 0; i < GuardarropasBlockEntity.SLOTS_ARMADURA.length; i++) {
+                ItemStack pieza = inv.getStack(GuardarropasBlockEntity.ARMADURA_INICIO + i);
+                if (!pieza.isEmpty()) armadura.set(GuardarropasBlockEntity.SLOTS_ARMADURA[i].getEntitySlotId(), pieza);
+            }
+            PreviewJugador.dibujar(context, jugador, x1, y1, x2, y2, 35, angulo, (float) mouseY);
         } finally {
             GarmentFeatureRenderer.previewOverride = null;
+            for (int i = 0; i < antes.length; i++) armadura.set(i, antes[i]);
         }
     }
 
@@ -176,11 +198,18 @@ public class GuardarropasScreen extends HandledScreen<GuardarropasScreenHandler>
     static void dibujarMarcosGrilla(DrawContext context, int x, int y) {
         for (int categoria = 0; categoria < GuardarropasBlockEntity.CATEGORIAS; categoria++) {
             for (int capa = 0; capa < GuardarropasBlockEntity.POR_CATEGORIA; capa++) {
-                int sx = x + M_MEDIO + categoria * 20 - 1, sy = y + 20 + capa * 20 - 1;
-                context.fill(sx, sy, sx + 18, sy + 18, 0xFF373737);
-                context.fill(sx + 1, sy + 1, sx + 18, sy + 18, 0xFFFFFFFF);
-                context.fill(sx + 1, sy + 1, sx + 17, sy + 17, 0xFF8B8B8B);
+                marcoSlot(context, x + M_MEDIO + categoria * 20 - 1, y + 20 + capa * 20 - 1);
             }
         }
+        // Columna de armadura (2026-09-30).
+        for (int i = 0; i < GuardarropasBlockEntity.SLOTS_ARMADURA.length; i++) {
+            marcoSlot(context, x + GuardarropasScreenHandler.X_ARMADURA - 1, y + 20 + i * 20 - 1);
+        }
+    }
+
+    private static void marcoSlot(DrawContext context, int sx, int sy) {
+        context.fill(sx, sy, sx + 18, sy + 18, 0xFF373737);
+        context.fill(sx + 1, sy + 1, sx + 18, sy + 18, 0xFFFFFFFF);
+        context.fill(sx + 1, sy + 1, sx + 17, sy + 17, 0xFF8B8B8B);
     }
 }

@@ -21,5 +21,10 @@ public class ManiquiGeoModel extends ModeloGeo<ManiquiBlockEntity> {
         super.setCustomAnimations(be, instanceId, state);
         GeoBone plato = getAnimationProcessor().getBone("turntable");
         if (plato != null) plato.setRotY(be.anguloVisible());
+        // La figura rígida del zip se reemplaza por la articulada de
+        // ManiquiRenderer (2026-09-30, poses). El ícono del ítem la sigue
+        // mostrando: usa el ModeloGeo genérico, no este.
+        GeoBone figura = getAnimationProcessor().getBone("figura");
+        if (figura != null) figura.setHidden(true);
     }
 }
