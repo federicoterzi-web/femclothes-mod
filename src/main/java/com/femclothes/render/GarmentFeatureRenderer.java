@@ -161,7 +161,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             }
         }
 
-        dibujarPollera(prendas, biped, matrices, vertexConsumers, luz);
+        dibujarPollera(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta);
     }
 
     private static final Identifier POLLERA_BASE = Identifier.of("femclothes",
@@ -183,8 +183,9 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
      * "forma primero, balanceo después" otra vez, hasta confirmar que esta
      * forma de paneles en abanico se ve bien parada quieta.
      */
-    private static void dibujarPollera(List<ItemStack> prendas, BipedEntityModel<?> biped, MatrixStack matrices,
-                                       VertexConsumerProvider vertexConsumers, int luz) {
+    private static void dibujarPollera(List<ItemStack> prendas, LivingEntity entidad, BipedEntityModel<?> biped,
+                                       MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz,
+                                       float tickDelta) {
         ItemStack stack = prendas.stream()
                 .filter(s -> s.getItem() instanceof com.femclothes.item.PolleraItem)
                 .findFirst().orElse(null);
@@ -202,9 +203,14 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         matrices.push();
         delJugador.rotate(matrices);
         VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getArmorCutoutNoCull(textura));
+        // Movimiento (2026-09-30, "habria que animarlas segun el movimiento"):
+        // la misma inercia que usa la capa vanilla (ver CapaMalla#movimiento).
+        CapaMalla.Movimiento mov = entidad instanceof AbstractClientPlayerEntity jugador && previewOverride == null
+                ? CapaMalla.movimiento(jugador, tickDelta) : CapaMalla.Movimiento.QUIETO;
         PolleraMalla.dibujar(matrices, buffer, luz,
                 com.femclothes.item.PolleraItem.forma(stack), com.femclothes.item.PolleraItem.largo(stack),
-                dilatacion, biped.rightLeg.pitch - biped.body.pitch, biped.leftLeg.pitch - biped.body.pitch);
+                dilatacion, biped.rightLeg.pitch - biped.body.pitch, biped.leftLeg.pitch - biped.body.pitch, mov,
+                previewOverride == null ? com.femclothes.client.TwirlCliente.progreso(entidad, tickDelta) : -1f);
         matrices.pop();
     }
 

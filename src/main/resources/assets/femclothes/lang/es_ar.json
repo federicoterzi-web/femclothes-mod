@@ -464,5 +464,7 @@
   "femclothes.modelado.rol.largo_capa": "Largo",
   "femclothes.modelado.rol.ruedo_capa": "Ruedo",
   "femclothes.modelado.rol.capucha_capa": "Capucha",
-  "femclothes.modelado.rol.cuello_capa": "Cuello"
+  "femclothes.modelado.rol.cuello_capa": "Cuello",
+  "key.femclothes.twirl": "Girar (con pollera)",
+  "key.categories.femclothes": "FemClothes"
 }

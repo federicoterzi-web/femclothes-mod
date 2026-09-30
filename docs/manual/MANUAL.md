@@ -53,7 +53,7 @@ Cada máquina **no consume la prenda ni los moldes**: la prenda sale modificada 
 
 **El ícono muestra la prenda de verdad.** Los íconos de remera, pantalón, pollera, capa, medias y calientabrazos son de 64×64 y se arman con la misma tela que se ve puesta: aparecen las capas y los patrones de Tintes, cada manga o pierna con su color, las redes y los arneses, las fotos de la Sublimadora y el largo real (manga corta, crop, short, zoquete). La remera tiene un dibujo por cuello (redondo, V, polera).
 
-**La pollera** es una malla propia que baja desde la cintura y se abre hacia el ruedo. Puede ser **campana** (lisa) o **tableada** (pliegues en V) y tiene 6 largos, del micro hasta el tobillo. Al caminar, el ruedo se corre para afuera donde pasa cada pierna, así no la atraviesa; con `/femclothesdebug pollera rigida` queda quieta y un poco más ancha (`abierta` vuelve al modo normal; es para comparar). Su tela tiene el mismo formato que las demás prendas, así que se tiñe con patrones y zonas, se estampa y se le puede poner red.
+**La pollera** es una malla propia que baja desde la cintura y se abre hacia el ruedo. Puede ser **campana** (lisa) o **tableada** (pliegues en V) y tiene 6 largos, del micro hasta el tobillo. **Se mueve con vos:** la tela acompaña a cada pierna al caminar (va y viene con el paso y nunca la atraviesa), el ruedo queda atrás al caminar o correr, se abre al caer, se achica al saltar, se balancea de costado y se retuerce un poco con cada paso (la misma inercia que usa la capa vanilla). Con `/femclothesdebug pollera rigida` queda quieta, sin piernas ni movimiento y un poco más ancha (`abierta` vuelve al modo normal; es para comparar). **Twirl:** con una pollera puesta, apretá **R** (se cambia en Controles → FemClothes → "Girar (con pollera)") y el personaje da una vuelta entera mientras la pollera se abre casi horizontal y gira arrastrada; los demás jugadores también lo ven. Su tela tiene el mismo formato que las demás prendas, así que se tiñe con patrones y zonas, se estampa y se le puede poner red.
 
 **La capa** cuelga de los hombros y se mueve igual que la capa vanilla (la misma cuenta: se levanta al correr, rebota con los saltos, se balancea de costado y se abre al agacharte). Va en su propio slot de Trinkets, **Espalda**. Tiene 6 largos (de la cintura al tobillo), ruedo **recto** o **redondeado** (las puntas suben en arco), **capucha** caída sobre la espalda y **cuello alto** detrás de la nuca; todo se elige en la Modeladora. El **forro** (la cara de adentro) se tiñe y se estampa aparte del exterior. **La del mod manda:** con una capa del mod puesta, la capa vanilla (de Minecraft o de Optifine/Minecon) no se dibuja; con élitros puestos es al revés, se ven los élitros y la del mod se esconde.
 
@@ -360,7 +360,7 @@ El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría 
 | `/femclothesdebug skin` | Cicla skins de prueba (Steve, Alex, Zuri, Noor, Kai) y la tuya. |
 | `/femclothesdebug slim` / `ancho` / `automodelo` | Fuerza brazos finos, anchos, o los de la skin. |
 | `/femclothesdebug reset` | Vuelve a tu skin. |
-| `/femclothesdebug pollera abierta` / `rigida` | Cómo se comporta la pollera con las piernas: se abre donde pasan o queda quieta y más ancha. Solo para vos, para comparar. |
+| `/femclothesdebug pollera abierta` / `rigida` | Abierta: la pollera sigue las piernas y se mueve con el cuerpo. Rígida: quieta, sin piernas ni movimiento, más ancha. Solo para vos, para comparar. |
 
 ## 11. Recetas
 

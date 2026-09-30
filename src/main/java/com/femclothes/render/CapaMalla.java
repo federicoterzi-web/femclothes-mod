@@ -37,9 +37,18 @@ public final class CapaMalla {
 
     private static final int COLS = 10, FILAS = 8;
 
-    /** Aplica a {@code matrices} lo mismo que la capa vanilla antes de dibujarse. */
-    public static void giros(MatrixStack matrices, AbstractClientPlayerEntity p, float h) {
-        matrices.translate(0.0F, 0.0F, 0.125F);
+    /**
+     * Lo que la capa vanilla lee del jugador para moverse, ya acotado igual
+     * que en {@code CapeFeatureRenderer}: {@code atras} = velocidad hacia
+     * adelante (0..150), {@code vertical} = caída/subida (-6..32, sin el paso),
+     * {@code lado} = velocidad de costado (-20..20), {@code paso} = el vaivén
+     * de la caminata (-32..32). También lo usa la pollera ({@link PolleraMalla}).
+     */
+    public record Movimiento(float atras, float vertical, float lado, float paso) {
+        public static final Movimiento QUIETO = new Movimiento(0f, 0f, 0f, 0f);
+    }
+
+    public static Movimiento movimiento(AbstractClientPlayerEntity p, float h) {
         double d = MathHelper.lerp(h, p.prevCapeX, p.capeX) - MathHelper.lerp(h, p.prevX, p.getX());
         double e = MathHelper.lerp(h, p.prevCapeY, p.capeY) - MathHelper.lerp(h, p.prevY, p.getY());
         double m = MathHelper.lerp(h, p.prevCapeZ, p.capeZ) - MathHelper.lerp(h, p.prevZ, p.getZ());
@@ -50,11 +59,19 @@ public final class CapaMalla {
         float r = MathHelper.clamp((float) (d * o + m * q0) * 100.0F, 0.0F, 150.0F);
         float s = MathHelper.clamp((float) (d * q0 - m * o) * 100.0F, -20.0F, 20.0F);
         float t = MathHelper.lerp(h, p.prevStrideDistance, p.strideDistance);
-        q += MathHelper.sin(MathHelper.lerp(h, p.prevHorizontalSpeed, p.horizontalSpeed) * 6.0F) * 32.0F * t;
+        float paso = MathHelper.sin(MathHelper.lerp(h, p.prevHorizontalSpeed, p.horizontalSpeed) * 6.0F) * 32.0F * t;
+        return new Movimiento(r, q, s, paso);
+    }
+
+    /** Aplica a {@code matrices} lo mismo que la capa vanilla antes de dibujarse. */
+    public static void giros(MatrixStack matrices, AbstractClientPlayerEntity p, float h) {
+        matrices.translate(0.0F, 0.0F, 0.125F);
+        Movimiento mv = movimiento(p, h);
+        float q = mv.vertical() + mv.paso();
         if (p.isInSneakingPose()) q += 25.0F;
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(6.0F + r / 2.0F + q));
-        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(s / 2.0F));
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F - s / 2.0F));
+        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(6.0F + mv.atras() / 2.0F + q));
+        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(mv.lado() / 2.0F));
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F - mv.lado() / 2.0F));
     }
 
     /** El paño (exterior + forro + cantos) y la capucha, ya dentro de {@link #giros}. */

@@ -29,11 +29,16 @@ import net.minecraft.client.util.math.MatrixStack;
  * de la pollera tiene el layout de una caja de torso y la tiñen, estampan y
  * perforan las mismas rutinas que al resto de las prendas.
  *
- * <h2>Piernas</h2>
+ * <h2>Piernas y movimiento</h2>
  * {@link #piernasAbiertas} (2026-09-29, "probaria las dos"; se cambia con
- * {@code /femclothesdebug pollera abierta|rigida}): abierta = el ruedo se
- * corre hacia afuera donde pasa cada pierna, rígida = no se mueve pero es
- * más ancha adelante y atrás.
+ * {@code /femclothesdebug pollera abierta|rigida}): abierta = la tela
+ * acompaña a cada pierna (va y viene con el paso y nunca la atraviesa) y se
+ * mueve con el cuerpo; rígida = quieta, sin piernas ni movimiento, más ancha
+ * adelante y atrás. El movimiento (2026-09-30, "habria que animarlas segun
+ * el movimiento") usa la inercia de la capa vanilla ({@link CapaMalla#movimiento}):
+ * el ruedo queda atrás al caminar/correr, se abre al caer, se achica al
+ * saltar, se balancea de costado y se retuerce un poco con cada paso. Todo
+ * crece hacia el ruedo (la cintura no se mueve).
  *
  * <p>Coordenadas: las del torso del jugador (píxeles, Y hacia abajo, el
  * frente en -Z), dibujadas después de {@code ModelPart.rotate} del torso.
@@ -59,19 +64,41 @@ public final class PolleraMalla {
      * @param pitchIzq   ídem izquierda
      */
     public static void dibujar(MatrixStack matrices, VertexConsumer vc, int luz, PolleraForma forma,
-                               PolleraLargo largo, float dil, float pitchDer, float pitchIzq) {
+                               PolleraLargo largo, float dil, float pitchDer, float pitchIzq,
+                               CapaMalla.Movimiento mov, float twirl) {
         float[][][] p = new float[FILAS + 1][COLUMNAS + 1][];
         float l = largo.pixeles;
         float a0 = 4f + dil + 0.1f, b0 = 2f + dil + 0.1f;
         float vueloX = 0.8f + 0.18f * l, vueloZ = 1.2f + 0.26f * l;
-        if (!piernasAbiertas) vueloZ *= 1.5f;
+        if (!piernasAbiertas) {
+            vueloZ *= 1.5f;
+            mov = CapaMalla.Movimiento.QUIETO;
+        }
         boolean tableada = forma == PolleraForma.TABLEADA;
+        // Cuánto se mueve el ruedo (en px, a t = 1): hacia atrás con la
+        // velocidad, de costado con el giro, y cuánto se abre al caer.
+        float atras = l * 0.5f * Math.min(1f, mov.atras() / 80f);
+        float costado = -l * 0.3f * mov.lado() / 20f;
+        float abrir = mov.vertical() > 0f ? 0.6f * Math.min(1f, mov.vertical() / 20f)
+                : -0.12f * Math.min(1f, -mov.vertical() / 6f);
+        float giro = 0.18f * mov.paso() / 32f;
+        // Twirl (2026-09-30, "que se abran y giren"): la campana se abre casi
+        // horizontal a mitad de la vuelta y el ruedo queda atrasado respecto
+        // del giro del cuerpo (la tela arrastra). Vale también en rígida.
+        if (twirl >= 0f) {
+            float fuerza = (float) Math.sin(Math.PI * twirl);
+            abrir = Math.max(abrir, 1.3f * fuerza);
+            giro += 0.7f * fuerza;
+            atras *= 1f - fuerza;
+        }
 
         for (int f = 0; f <= FILAS; f++) {
             float t = f / (float) FILAS;
             float y = Y_CINTURA + t * l;
             float curva = (float) Math.pow(t, 1.15);
-            float a = a0 + vueloX * curva, b = b0 + vueloZ * curva;
+            float peso = (float) Math.pow(t, 1.6);
+            float a = (a0 + vueloX * curva) * (1f + abrir * peso), b = (b0 + vueloZ * curva) * (1f + abrir * peso);
+            float cosG = (float) Math.cos(giro * t), sinG = (float) Math.sin(giro * t);
             // De caja (4) a casi elipse (2.4) hacia el ruedo.
             float n = 4f - 1.6f * t;
             for (int c = 0; c <= COLUMNAS; c++) {
@@ -90,11 +117,22 @@ public final class PolleraMalla {
                         z += nz / len * amp * tri;
                     }
                 }
+                // Vaivén del paso: la tela se retuerce un poco alrededor del eje del cuerpo.
+                float xg = x * cosG - z * sinG, zg = x * sinG + z * cosG;
+                x = xg;
+                z = zg;
+                float yy = y;
                 if (piernasAbiertas && y > Y_CADERA) {
                     z = abrirPorPierna(x, y, z, -1.9f, pitchDer);
                     z = abrirPorPierna(x, y, z, 1.9f, pitchIzq);
                 }
-                p[f][c] = new float[]{x, y, z, (16f + s) / 64f, (20f + 12f * t) / 64f};
+                // Inercia: el ruedo se queda atrás (+Z) y de costado; al irse
+                // para atrás/afuera también sube un poco (la tela no se estira).
+                float dz = atras * peso, dx = costado * peso;
+                z += dz;
+                x += dx;
+                yy -= (dz * 0.35f + Math.abs(dx) * 0.2f + abrir * l * 0.2f * peso);
+                p[f][c] = new float[]{x, yy, z, (16f + s) / 64f, (20f + 12f * t) / 64f};
             }
         }
 
@@ -141,9 +179,11 @@ public final class PolleraMalla {
         float d = Math.min((y - Y_CADERA) / cos, 12f);
         float centro = d * (float) Math.sin(pitch);
         float margen = 2f * cos + 0.5f;
-        float objetivo = z;
-        if (z < 0f) objetivo = Math.min(z, centro - margen);
-        else objetivo = Math.max(z, centro + margen);
+        // Acompaña a la pierna (2026-09-30, "no veo que funcione"): antes solo
+        // se corría si la pierna la atravesaba, y casi nunca pasaba.
+        float objetivo = z + centro * 0.6f;
+        if (z < 0f) objetivo = Math.min(objetivo, centro - margen);
+        else objetivo = Math.max(objetivo, centro + margen);
         // Tope: con la pierna casi horizontal (sentado) no hacer una carpa infinita.
         objetivo = Math.max(-12f, Math.min(12f, objetivo));
         return z + (objetivo - z) * peso;

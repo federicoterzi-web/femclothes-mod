@@ -464,5 +464,7 @@
   "femclothes.modelado.rol.largo_capa": "Length",
   "femclothes.modelado.rol.ruedo_capa": "Hem",
   "femclothes.modelado.rol.capucha_capa": "Hood",
-  "femclothes.modelado.rol.cuello_capa": "Collar"
+  "femclothes.modelado.rol.cuello_capa": "Collar",
+  "key.femclothes.twirl": "Twirl (with skirt)",
+  "key.categories.femclothes": "FemClothes"
 }
