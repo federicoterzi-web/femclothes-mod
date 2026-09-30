@@ -275,7 +275,7 @@
   "femclothes.tinturas.tooltip.fijar": "Save the current mix as a preset",
   "femclothes.tinturas.tooltip.lado": "Choose which side it applies to",
   "femclothes.tinturas.tooltip.tamano": "Change the pattern's size",
-  "femclothes.tinturas.tooltip.angulo": "Rotate the pattern",
+  "femclothes.tinturas.tooltip.angulo": "Rotate the pattern: the stripes, or the whole motif grid",
   "femclothes.tinturas.tooltip.posicion": "Move the pattern stripe",
   "femclothes.tinturas.tooltip.forma": "Change the pattern's shape",
   "femclothes.tinturas.tooltip.invertir": "Invert the pattern's colors",
@@ -512,5 +512,11 @@
   "femclothes.maniqui.eje.6": "Right leg ↕ %s°",
   "femclothes.maniqui.eje.7": "Right leg open %s°",
   "femclothes.maniqui.eje.8": "Left leg ↕ %s°",
-  "femclothes.maniqui.eje.9": "Left leg open %s°"
+  "femclothes.maniqui.eje.9": "Left leg open %s°",
+  "femclothes.tinturas.giro_motivo": "Turn %s°",
+  "femclothes.tinturas.tooltip.giro_motivo": "Turns each motif in place (Angle turns the whole grid)",
+  "femclothes.tinturas.distancia_h": "↔ %s%%",
+  "femclothes.tinturas.distancia_v": "↕ %s%%",
+  "femclothes.tinturas.tooltip.distancia_h": "Horizontal spacing between motifs (or vertical stripes): 50% touching, 300% triple",
+  "femclothes.tinturas.tooltip.distancia_v": "Vertical spacing between motifs (or horizontal stripes): 50% touching, 300% triple"
 }

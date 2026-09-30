@@ -273,7 +273,7 @@
   "femclothes.tinturas.tooltip.fijar": "Guardá la mezcla actual como un preset",
   "femclothes.tinturas.tooltip.lado": "Elegí a qué lado aplica",
   "femclothes.tinturas.tooltip.tamano": "Cambiar el tamaño del patrón",
-  "femclothes.tinturas.tooltip.angulo": "Rotar el patrón",
+  "femclothes.tinturas.tooltip.angulo": "Rotar el patrón: las rayas, o toda la grilla de motivos",
   "femclothes.tinturas.tooltip.posicion": "Mover la franja del patrón",
   "femclothes.tinturas.tooltip.forma": "Cambiar la forma del patrón",
   "femclothes.tinturas.tooltip.invertir": "Invertir los colores del patrón",
@@ -512,5 +512,11 @@
   "femclothes.maniqui.eje.6": "Pierna der. ↕ %s°",
   "femclothes.maniqui.eje.7": "Pierna der. abrir %s°",
   "femclothes.maniqui.eje.8": "Pierna izq. ↕ %s°",
-  "femclothes.maniqui.eje.9": "Pierna izq. abrir %s°"
+  "femclothes.maniqui.eje.9": "Pierna izq. abrir %s°",
+  "femclothes.tinturas.giro_motivo": "Giro %s°",
+  "femclothes.tinturas.tooltip.giro_motivo": "Gira cada motivo en su lugar (el Ángulo gira toda la grilla)",
+  "femclothes.tinturas.distancia_h": "↔ %s%%",
+  "femclothes.tinturas.distancia_v": "↕ %s%%",
+  "femclothes.tinturas.tooltip.distancia_h": "Distancia horizontal entre motivos (o entre rayas verticales): 50% pegados, 300% el triple",
+  "femclothes.tinturas.tooltip.distancia_v": "Distancia vertical entre motivos (o entre rayas horizontales): 50% pegados, 300% el triple"
 }

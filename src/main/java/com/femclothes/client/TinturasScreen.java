@@ -76,6 +76,8 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
     private ButtonWidget btnOrden;
     private ButtonWidget btnTamano;
     private ButtonWidget btnAngulo;
+    private ButtonWidget btnGiro, btnGiroAtras, btnGiroAdelante;
+    private DistanciaSlider sliderDistH, sliderDistV;
     private ButtonWidget btnPosicion;
     private ButtonWidget btnForma;
     private ButtonWidget btnSemilla;
@@ -214,6 +216,19 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
         btnSemilla = boton(M_MEDIO + 86, 272, 32, Text.translatable("femclothes.tinturas.boton.semilla"),
                 "femclothes.tinturas.tooltip.semilla", TinturasBlockEntity.BTN_SEMILLA);
         btnInvertir = boton(M_MEDIO + 120, 272, 116, Text.empty(), "femclothes.tinturas.tooltip.invertir", TinturasBlockEntity.BTN_INVERTIR);
+
+        // Fila 4 (2026-09-30, "que los patrones si se puedan girar y que haya
+        // un slider vertical y horizontal para ponerlos mas juntos"): giro de
+        // cada motivo en su lugar (el Ángulo de arriba gira la grilla) y la
+        // distancia horizontal/vertical.
+        btnGiroAtras = boton(M_MEDIO, 292, 14, Text.literal("<"), "femclothes.tinturas.tooltip.giro_motivo", TinturasBlockEntity.BTN_GIRO_MOTIVO_ATRAS);
+        btnGiro = boton(M_MEDIO + 15, 292, 48, Text.empty(), "femclothes.tinturas.tooltip.giro_motivo", TinturasBlockEntity.BTN_GIRO_MOTIVO);
+        btnGiroAdelante = boton(M_MEDIO + 64, 292, 14, Text.literal(">"), "femclothes.tinturas.tooltip.giro_motivo", TinturasBlockEntity.BTN_GIRO_MOTIVO);
+        TinturasBlockEntity.Casilla inicial = handler.be.casilla(handler.be.seleccionada());
+        sliderDistH = new DistanciaSlider(this.x + M_MEDIO + 80, this.y + 292, 77, 16, true, inicial.distanciaH);
+        sliderDistV = new DistanciaSlider(this.x + M_MEDIO + 159, this.y + 292, 77, 16, false, inicial.distanciaV);
+        this.addDrawableChild(sliderDistH);
+        this.addDrawableChild(sliderDistV);
 
         // Teñir, ENCIMA de la flecha Entrada->Salida (2026-09-28, "la unica
         // forma de activacion de la maquina es saliendo de la gui o
@@ -365,6 +380,7 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
         btnTamano.setMessage(Text.translatable(casilla.tamano.traduccion()));
         btnAngulo.setMessage(Text.translatable("femclothes.tinturas.angulo", Math.round(casilla.angulo)));
         btnPosicion.setMessage(Text.translatable("femclothes.tinturas.posicion", Math.round(casilla.posicion * 100)));
+        btnGiro.setMessage(Text.translatable("femclothes.tinturas.giro_motivo", Math.round(casilla.giroMotivo)));
         // Molde de motivo: el botón muestra/cicla la Repetición; de rayas, la Forma.
         com.femclothes.render.Motivo motivo = be.motivoSeleccionado();
         if (motivo != null) {
@@ -375,6 +391,9 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
             btnForma.setTooltip(Tooltip.of(Text.translatable("femclothes.tinturas.tooltip.forma")));
         }
         // Azar también sirve para Variación: Aleatorio (re-sortea los colores).
+        // El giro de cada motivo no tiene sentido en rayas ni en el vichy (simétrico).
+        boolean giraMotivo = motivo != null && !motivo.esProcedural();
+        btnGiro.active = btnGiroAtras.active = btnGiroAdelante.active = giraMotivo;
         btnSemilla.active = (motivo != null && casilla.repeticion == com.femclothes.render.Repeticion.DISPERSO)
                 || (casilla.variacion == com.femclothes.render.Variacion.ALEATORIO && casilla.colores > 1);
 
@@ -404,6 +423,8 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
             for (int canal = 0; canal < TinturasBlockEntity.CANALES; canal++) {
                 sliders[canal].sincronizarDesdeServidor(be.nivelBorrador(canal));
             }
+            sliderDistH.sincronizar(casilla.distanciaH);
+            sliderDistV.sincronizar(casilla.distanciaV);
         }
 
         for (int i = 0; i < btnChinchetas.length; i++) {
@@ -713,6 +734,50 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
             return super.isPointWithinBounds(x - 8, y - 8, 32, 32, pointX, pointY);
         }
         return super.isPointWithinBounds(x, y, width, height, pointX, pointY);
+    }
+
+    /**
+     * Distancia horizontal o vertical del patrón (2026-09-30): de pegados
+     * (50 %) al triple (300 %), de a 5 %. Mismo mecanismo que los CMYK:
+     * cuantiza y solo manda el click cuando cambia el escalón.
+     */
+    private class DistanciaSlider extends SliderWidget {
+        private final boolean horizontal;
+        private int ultimoNivelEnviado;
+
+        DistanciaSlider(int x, int y, int width, int height, boolean horizontal, float distancia) {
+            super(x, y, width, height, Text.empty(), 0);
+            this.horizontal = horizontal;
+            sincronizar(distancia);
+            setTooltip(Tooltip.of(Text.translatable(horizontal
+                    ? "femclothes.tinturas.tooltip.distancia_h" : "femclothes.tinturas.tooltip.distancia_v")));
+        }
+
+        private int nivel() {
+            return Math.round((float) (this.value * (com.femclothes.render.DistribucionPatron.NIVELES - 1)));
+        }
+
+        void sincronizar(float distancia) {
+            int nivel = com.femclothes.render.DistribucionPatron.nivelDeDistancia(distancia);
+            this.value = nivel / (double) (com.femclothes.render.DistribucionPatron.NIVELES - 1);
+            this.ultimoNivelEnviado = nivel;
+            updateMessage();
+        }
+
+        @Override
+        protected void updateMessage() {
+            int porcentaje = Math.round(com.femclothes.render.DistribucionPatron.distanciaDeNivel(nivel()) * 100);
+            this.setMessage(Text.translatable(horizontal
+                    ? "femclothes.tinturas.distancia_h" : "femclothes.tinturas.distancia_v", porcentaje));
+        }
+
+        @Override
+        protected void applyValue() {
+            int nivel = nivel();
+            if (nivel == ultimoNivelEnviado) return;
+            ultimoNivelEnviado = nivel;
+            clickBoton((horizontal ? TinturasBlockEntity.BTN_DISTANCIA_H_BASE : TinturasBlockEntity.BTN_DISTANCIA_V_BASE) + nivel);
+        }
     }
 
     /** Un slider C/M/Y/K — cuantiza a NIVELES_MEZCLA pasos y solo manda el click cuando ese nivel cambia. */

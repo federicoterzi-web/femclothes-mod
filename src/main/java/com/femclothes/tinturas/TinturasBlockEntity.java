@@ -255,6 +255,18 @@ public class TinturasBlockEntity extends BlockEntity
         public boolean oculta = false;
         /** El patrón con el que quedó fijada (el molde ya volvió al almacén) — null = liso. */
         @Nullable public Identifier patronFijado = null;
+        /**
+         * Giro de cada motivo en su lugar y separación horizontal/vertical
+         * (2026-09-30, "que los patrones si se puedan girar y que haya un
+         * slider vertical y horizontal") — ver {@link com.femclothes.render.DistribucionPatron}.
+         */
+        public float giroMotivo = 0f;
+        public float distanciaH = 1f;
+        public float distanciaV = 1f;
+
+        public com.femclothes.render.DistribucionPatron distribucion() {
+            return new com.femclothes.render.DistribucionPatron(giroMotivo, distanciaH, distanciaV);
+        }
 
         public int color() { return colorDeMezcla(mezcla); }
 
@@ -283,6 +295,9 @@ public class TinturasBlockEntity extends BlockEntity
             c.fijada = fijada;
             c.oculta = oculta;
             c.patronFijado = patronFijado;
+            c.giroMotivo = giroMotivo;
+            c.distanciaH = distanciaH;
+            c.distanciaV = distanciaV;
             return c;
         }
 
@@ -307,6 +322,9 @@ public class TinturasBlockEntity extends BlockEntity
             c.putBoolean("Fijada", fijada);
             c.putBoolean("Oculta", oculta);
             if (patronFijado != null) c.putString("Patron", patronFijado.toString());
+            c.putFloat("GiroMotivo", giroMotivo);
+            c.putFloat("DistanciaH", distanciaH);
+            c.putFloat("DistanciaV", distanciaV);
             return c;
         }
 
@@ -325,6 +343,9 @@ public class TinturasBlockEntity extends BlockEntity
                 // Valor de una versión que ya no existe: queda el default.
             }
             r.angulo = c.getFloat("Angulo");
+            r.giroMotivo = c.getFloat("GiroMotivo");
+            r.distanciaH = c.contains("DistanciaH") ? c.getFloat("DistanciaH") : 1f;
+            r.distanciaV = c.contains("DistanciaV") ? c.getFloat("DistanciaV") : 1f;
             r.posicion = c.contains("Posicion") ? c.getFloat("Posicion") : 0.5f;
             r.invertido = c.getBoolean("Invertido");
             r.opacidad = c.contains("Opacidad") ? MathHelper.clamp(c.getInt("Opacidad"), PASO_OPACIDAD, 100) : 100;
@@ -833,7 +854,8 @@ public class TinturasBlockEntity extends BlockEntity
             for (int col = 1; col < cas.colores; col++) extras.add(cas.colorDe(col));
             capas.add(new RegionResolver.CapaPatron(patron, cas.color(), cas.tamano, cas.angulo, cas.posicion,
                     formaEfectiva(cas, patron), cas.invertido, region, cas.modo, cas.opacidad,
-                    cas.repeticion, cas.semilla, List.copyOf(extras), cas.contorno, cas.variacion));
+                    cas.repeticion, cas.semilla, List.copyOf(extras), cas.contorno, cas.variacion,
+                    false, cas.distribucion()));
         }
         return capas;
     }
@@ -894,6 +916,12 @@ public class TinturasBlockEntity extends BlockEntity
     /** Muestras de color (2026-09-30): los maneja TinturasScreenHandler, que tiene al jugador. */
     public static final int BTN_ENVASAR = BTN_VARIACION + 1;
     public static final int BTN_USAR_MUESTRA = BTN_ENVASAR + 1;
+    /** Giro de cada motivo en su lugar, de a 15° (2026-09-30), adelante/atrás. */
+    public static final int BTN_GIRO_MOTIVO = BTN_USAR_MUESTRA + 1;
+    public static final int BTN_GIRO_MOTIVO_ATRAS = BTN_GIRO_MOTIVO + 1;
+    /** + nivel (0..{@code DistribucionPatron.NIVELES}-1): sliders de distancia horizontal y vertical (2026-09-30). */
+    public static final int BTN_DISTANCIA_H_BASE = 170;
+    public static final int BTN_DISTANCIA_V_BASE = 230;
     /** + 0..2: qué color editan los sliders (click en su muestra). */
     public static final int BTN_EDITAR_COLOR_BASE = 90;
     /** + índice de cuadradito: lo selecciona para editar (click en su slot). */
@@ -921,6 +949,15 @@ public class TinturasBlockEntity extends BlockEntity
             sel.mezclaDe(sel.editando)[rel / NIVELES_MEZCLA] = rel % NIVELES_MEZCLA;
             return true;
         }
+        int niveles = com.femclothes.render.DistribucionPatron.NIVELES;
+        if (id >= BTN_DISTANCIA_H_BASE && id < BTN_DISTANCIA_H_BASE + niveles) {
+            sel.distanciaH = com.femclothes.render.DistribucionPatron.distanciaDeNivel(id - BTN_DISTANCIA_H_BASE);
+            return true;
+        }
+        if (id >= BTN_DISTANCIA_V_BASE && id < BTN_DISTANCIA_V_BASE + niveles) {
+            sel.distanciaV = com.femclothes.render.DistribucionPatron.distanciaDeNivel(id - BTN_DISTANCIA_V_BASE);
+            return true;
+        }
         if (id >= BTN_EDITAR_COLOR_BASE && id < BTN_EDITAR_COLOR_BASE + 3) {
             // Tocar una muestra apagada la prende (Colores sube hasta ahí).
             int i = id - BTN_EDITAR_COLOR_BASE;
@@ -940,6 +977,14 @@ public class TinturasBlockEntity extends BlockEntity
             }
             case BTN_ANGULO_ATRAS -> {
                 sel.angulo = (Math.round(sel.angulo) + 360 - 15) % 360;
+                return true;
+            }
+            case BTN_GIRO_MOTIVO -> {
+                sel.giroMotivo = (Math.round(sel.giroMotivo) + 360 + 15) % 360;
+                return true;
+            }
+            case BTN_GIRO_MOTIVO_ATRAS -> {
+                sel.giroMotivo = (Math.round(sel.giroMotivo) + 360 - 15) % 360;
                 return true;
             }
             case BTN_POSICION -> {
