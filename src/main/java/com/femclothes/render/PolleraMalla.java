@@ -74,7 +74,15 @@ public final class PolleraMalla {
         final Matrix4f[] aTorso = new Matrix4f[2];
 
         public Piernas(ModelPart torso, ModelPart der, ModelPart izq) {
-            Matrix4f mTorso = marco(torso);
+            this(marco(torso), der, izq);
+        }
+
+        /**
+         * Con un marco cualquiera en vez del torso (2026-09-30, la capa): {@code base}
+         * lleva de ese marco al del modelo, en píxeles.
+         */
+        public Piernas(Matrix4f base, ModelPart der, ModelPart izq) {
+            Matrix4f mTorso = base;
             ModelPart[] piernas = {der, izq};
             for (int i = 0; i < 2; i++) {
                 aTorso[i] = mTorso.invert(new Matrix4f()).mul(marco(piernas[i]));
@@ -281,7 +289,7 @@ public final class PolleraMalla {
     }
 
     /** ¿El punto (x, z) de la sección de la pierna cae adentro de la caja inflada con esquinas redondeadas? */
-    private static boolean dentroDePierna(float x, float z) {
+    static boolean dentroDePierna(float x, float z) {
         float lado = MEDIO_ANCHO_PIERNA - ESQUINA_PIERNA;
         float cx = Math.max(-lado, Math.min(lado, x)), cz = Math.max(-lado, Math.min(lado, z));
         float dx = x - cx, dz = z - cz;

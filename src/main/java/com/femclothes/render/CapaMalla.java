@@ -8,7 +8,8 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3f;
 
 /**
  * La capa del mod (2026-09-29, "capas... como las capas vanilla (misma
@@ -63,21 +64,103 @@ public final class CapaMalla {
         return new Movimiento(r, q, s, paso);
     }
 
-    /** Aplica a {@code matrices} lo mismo que la capa vanilla antes de dibujarse. */
-    public static void giros(MatrixStack matrices, AbstractClientPlayerEntity p, float h) {
-        matrices.translate(0.0F, 0.0F, 0.125F);
-        Movimiento mv = movimiento(p, h);
-        float q = mv.vertical() + mv.paso();
-        if (p.isInSneakingPose()) q += 25.0F;
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(6.0F + mv.atras() / 2.0F + q));
-        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(mv.lado() / 2.0F));
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F - mv.lado() / 2.0F));
+    // ── la tela doblada ─────────────────────────────────────────────────
+    // 2026-09-30, "es una placa tiesa, no hay render de tela": la capa
+    // vanilla es un cuboide rígido que gira entero desde los hombros, y esta
+    // la copiaba. Ahora el paño es una cadena de TRAMOS tramos: arriba sigue a
+    // la espalda y cada tramo se inclina un poco más que el anterior (la tela
+    // se curva y el ruedo es lo que más se levanta), con una onda que baja
+    // por la tela al moverse, un vaivén suave quieta, el balanceo de costado,
+    // y cada tramo se abre lo necesario para no atravesar las piernas.
+    // Sin estado: todo sale de la inercia de la capa vanilla y del tiempo.
+
+    private static final int TRAMOS = 16;
+    private static final float[] NODO_Y = new float[TRAMOS + 1], NODO_Z = new float[TRAMOS + 1], NODO_A = new float[TRAMOS + 1];
+    private static float tramo = 1f, corrimientoLado = 0f;
+    private static final float[] MUESTRAS_X = {-4.5f, -3f, -1.5f, 0f, 1.5f, 3f, 4.5f};
+
+    /**
+     * Arma la cadena para este frame. Coordenadas en píxeles en el marco de la
+     * capa (el de {@code CapeFeatureRenderer} después de su corrimiento de
+     * 2 px hacia atrás): y hacia abajo, z hacia atrás.
+     *
+     * @param piernas las piernas llevadas a este marco, o null
+     */
+    private static void doblar(float largo, Movimiento mv, boolean agachado, float tiempo,
+                               @Nullable PolleraMalla.Piernas piernas) {
+        float total = 6f + mv.atras() / 2f + mv.vertical() + mv.paso() + (agachado ? 25f : 0f);
+        float onda = Math.min(1f, mv.atras() / 60f) * 9f;
+        tramo = largo / TRAMOS;
+        corrimientoLado = (float) Math.sin(Math.toRadians(mv.lado() / 2f)) * 0.9f;
+        NODO_Y[0] = 0f;
+        NODO_Z[0] = 0f;
+        Vector3f v = new Vector3f();
+        for (int k = 0; k < TRAMOS; k++) {
+            float t = (k + 0.5f) / TRAMOS;
+            float grados = 6f + (total - 6f) * (0.3f + 0.9f * t)
+                    + onda * t * (float) Math.sin(tiempo * 0.45f - t * 6f)
+                    + 1.8f * t * (float) Math.sin(tiempo * 0.07f - t * 2.5f);
+            float a = (float) Math.toRadians(Math.max(2f, Math.min(160f, grados)));
+            // Se abre de a 3° hasta que ningún punto del borde del tramo quede adentro de una pierna.
+            for (int intento = 0; piernas != null && intento < 40; intento++) {
+                float y = NODO_Y[k] + tramo * (float) Math.cos(a), z = NODO_Z[k] + tramo * (float) Math.sin(a);
+                boolean choca = false;
+                for (float x : MUESTRAS_X) {
+                    for (int i = 0; i < 2 && !choca; i++) {
+                        piernas.aLocal[i].transformPosition(v.set(x + corrimientoLado * (k + 1) * tramo, y, z));
+                        choca = v.y > 0.5f && v.y < 12.5f && PolleraMalla.dentroDePierna(v.x, v.z);
+                    }
+                    if (choca) break;
+                }
+                if (!choca) break;
+                a += (float) Math.toRadians(3f);
+            }
+            NODO_A[k] = a;
+            NODO_Y[k + 1] = NODO_Y[k] + tramo * (float) Math.cos(a);
+            NODO_Z[k + 1] = NODO_Z[k] + tramo * (float) Math.sin(a);
+        }
+        NODO_A[TRAMOS] = NODO_A[TRAMOS - 1];
     }
 
-    /** El paño (exterior + forro + cantos) y la capucha, ya dentro de {@link #giros}. */
-    public static void dibujarPano(MatrixStack matrices, VertexConsumer vc, int luz, ItemStack stack) {
+    /**
+     * Local del cuboide vanilla (x -5..5, y = distancia bajando por la tela,
+     * z -1 exterior .. 0 forro) → marco de la capa, doblado. Devuelve x, y, z.
+     */
+    private static void doblado(float lx, float ly, float lz, float[] salida, float[] normal) {
+        float d = Math.max(0f, ly) / tramo;
+        int k = Math.min(TRAMOS - 1, (int) d);
+        float f = Math.min(1f, d - k);
+        float cy = NODO_Y[k] + (NODO_Y[k + 1] - NODO_Y[k]) * f;
+        float cz = NODO_Z[k] + (NODO_Z[k + 1] - NODO_Z[k]) * f;
+        // El ángulo, parejo entre tramos (así la tela no se quiebra en las uniones).
+        float ak = k == 0 ? NODO_A[0] : (NODO_A[k - 1] + NODO_A[k]) / 2f;
+        float ak1 = (NODO_A[k] + NODO_A[Math.min(TRAMOS, k + 1)]) / 2f;
+        float a = ak + (ak1 - ak) * f;
+        float sin = (float) Math.sin(a), cos = (float) Math.cos(a);
+        // Vuelta de 180° de la capa vanilla: x y z cambian de signo; w = cuánto se aleja de la espalda.
+        float w = -lz;
+        salida[0] = -lx + corrimientoLado * ly;
+        salida[1] = cy - w * sin;
+        salida[2] = cz + w * cos;
+        if (normal != null) {
+            float ny = normal[1], nz = -normal[2];
+            normal[0] = -normal[0];
+            normal[1] = ny * cos - nz * sin;
+            normal[2] = ny * sin + nz * cos;
+        }
+    }
+
+    /**
+     * El paño (exterior + forro + cantos) y la capucha, doblados como tela.
+     * {@code matrices} ya tiene el corrimiento de la capa (2 px hacia atrás, y
+     * el de agachado), sin giros: los pone {@link #doblar} vértice por vértice.
+     */
+    public static void dibujarPano(MatrixStack matrices, VertexConsumer vc, int luz, ItemStack stack,
+                                   Movimiento mv, boolean agachado, float tiempo,
+                                   @Nullable PolleraMalla.Piernas piernas) {
         MatrixStack.Entry e = matrices.peek();
         float largo = CapaItem.largo(stack).pixeles;
+        doblar(largo, mv, agachado, tiempo, piernas);
         boolean redondeado = CapaItem.ruedo(stack) == CapaRuedo.REDONDEADO;
         // Largo de cada columna: con ruedo redondeado las puntas suben en arco.
         float[] l = new float[COLS + 1];
@@ -153,6 +236,15 @@ public final class CapaMalla {
      * de la caja de detalles (u 24..40, v 2..6).
      */
     public static void dibujarCuello(MatrixStack matrices, VertexConsumer vc, int luz) {
+        sinDoblar = true;
+        try {
+            dibujarCuelloSinDoblar(matrices, vc, luz);
+        } finally {
+            sinDoblar = false;
+        }
+    }
+
+    private static void dibujarCuelloSinDoblar(MatrixStack matrices, VertexConsumer vc, int luz) {
         MatrixStack.Entry e = matrices.peek();
         int n = 12;
         float radio = 4.7f, alto = 3.5f;
@@ -180,8 +272,24 @@ public final class CapaMalla {
         v(vc, e, x3, y3, z3, u3, v3, luz, nx, ny, nz);
     }
 
+    private static final float[] PUNTO = new float[3], NORMAL = new float[3];
+    /** Mientras se dibuja el cuello (que no se dobla con la tela), los vértices van tal cual. */
+    private static boolean sinDoblar = false;
+
     private static void v(VertexConsumer vc, MatrixStack.Entry e, float x, float y, float z, float u, float vv,
                           int luz, float nx, float ny, float nz) {
+        if (!sinDoblar) {
+            NORMAL[0] = nx;
+            NORMAL[1] = ny;
+            NORMAL[2] = nz;
+            doblado(x, y, z, PUNTO, NORMAL);
+            x = PUNTO[0];
+            y = PUNTO[1];
+            z = PUNTO[2];
+            nx = NORMAL[0];
+            ny = NORMAL[1];
+            nz = NORMAL[2];
+        }
         vc.vertex(e.getPositionMatrix(), x / 16f, y / 16f, z / 16f)
                 .color(0xFFFFFFFF)
                 .texture(u, vv)

@@ -107,7 +107,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             }
         }
         // La capa no gobierna ninguna parte: se dibuja antes del corte de abajo.
-        dibujarCapa(prendas, entidad, matrices, vertexConsumers, luz, tickDelta);
+        dibujarCapa(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta);
         if (conCuerpo.isEmpty() && porParte.isEmpty()) return;
 
         Identifier cuerpo = texturaDelCuerpo(entidad, slim);
@@ -273,7 +273,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
      * vanilla); la capa vanilla se oculta mientras esté esta
      * ({@code CapeFeatureRendererMixin}).
      */
-    private static void dibujarCapa(List<ItemStack> prendas, LivingEntity entidad, MatrixStack matrices,
+    private static void dibujarCapa(List<ItemStack> prendas, LivingEntity entidad, BipedEntityModel<?> biped,
+                                    MatrixStack matrices,
                                     VertexConsumerProvider vertexConsumers, int luz, float tickDelta) {
         if (!(entidad instanceof AbstractClientPlayerEntity jugador)) return;
         ItemStack stack = capaDe(prendas);
@@ -281,11 +282,16 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         if (jugador.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST).isOf(net.minecraft.item.Items.ELYTRA)) return;
 
         VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getArmorCutoutNoCull(texturaCapa(stack)));
+        boolean agachado = jugador.isInSneakingPose();
+        // Tela (2026-09-30, "es una placa tiesa"): sin giros de matriz; CapaMalla
+        // dobla el paño tramo por tramo y lo hace chocar con las piernas.
+        float sy = agachado ? 1.85f : 0f, sz = 2f + (agachado ? 1.4f : 0f);
+        PolleraMalla.Piernas piernas = new PolleraMalla.Piernas(
+                new org.joml.Matrix4f().translation(0f, sy, sz), biped.rightLeg, biped.leftLeg);
         matrices.push();
-        CapaMalla.giros(matrices, jugador, tickDelta);
-        // El pivote del cloak vanilla agachado (PlayerEntityModel#setAngles).
-        if (jugador.isInSneakingPose()) matrices.translate(0f, 1.85f / 16f, 1.4f / 16f);
-        CapaMalla.dibujarPano(matrices, buffer, luz, stack);
+        matrices.translate(0f, sy / 16f, sz / 16f);
+        CapaMalla.dibujarPano(matrices, buffer, luz, stack, CapaMalla.movimiento(jugador, tickDelta), agachado,
+                jugador.age + tickDelta, piernas);
         matrices.pop();
 
         if (com.femclothes.item.CapaItem.cuelloAlto(stack)) {
