@@ -69,6 +69,17 @@ public final class FemclothesItems {
     /** Capa personalizable (2026-09-29, "seria una nueva categoria de ropa"). */
     public static final CapaItem CAPA = register("capa", new CapaItem(new Item.Settings().maxCount(16)));
 
+    /**
+     * Hoodie oversize, primera prenda de la categoría Chaqueta (2026-09-30).
+     * Sale de fábrica largo, con manga larga, cuello redondo y calce
+     * Oversize — todo cambiable en la Modeladora como una remera.
+     */
+    public static final ChaquetaItem CHAQUETA = register("chaqueta", new ChaquetaItem(new Item.Settings().maxCount(16)
+            .component(com.femclothes.sublimadora.ModItems.VARIANTE, new com.femclothes.sublimadora.Variante(
+                    com.femclothes.sublimadora.Variante.Largo.LARGO, com.femclothes.sublimadora.Variante.Manga.LARGA,
+                    com.femclothes.sublimadora.Variante.Cuello.REDONDO))
+            .component(FemclothesComponents.CALCE, Calce.OVERSIZE)));
+
     /** Muestra de color de la Estación de Tintes (2026-09-30), ver {@link MuestraColorItem}. */
     public static final MuestraColorItem TINTE_MEZCLA = register("tinte_mezcla",
             new MuestraColorItem(new Item.Settings().maxCount(16)));

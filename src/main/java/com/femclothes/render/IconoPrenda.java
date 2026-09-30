@@ -85,7 +85,7 @@ public final class IconoPrenda {
     @Nullable
     private static String plantillaDe(ItemStack stack) {
         var item = stack.getItem();
-        if (item == com.femclothes.sublimadora.ModItems.REMERA) {
+        if (item instanceof com.femclothes.sublimadora.RemeraItem) { // la chaqueta usa la plantilla de la remera
             return "remera_" + com.femclothes.sublimadora.RemeraItem.variante(stack).cuello().asString();
         }
         if (item == com.femclothes.item.FemclothesItems.PANTALON) return "pantalon";

@@ -487,5 +487,10 @@
   "femclothes.maniqui.detener": "Stop",
   "femclothes.maniqui.intercambiar": "Swap with me",
   "femclothes.maniqui.sin_lugar": "The mannequin has no room left for that garment",
-  "femclothes.estilado.en_construccion": "Styling Table: appliqués are still under construction"
+  "femclothes.estilado.en_construccion": "Styling Table: appliqués are still under construction",
+  "item.femclothes.chaqueta": "Jacket",
+  "item.femclothes.chaqueta.hoodie": "Hoodie",
+  "femclothes.chaqueta.tooltip.capucha": "Hood: %s to put it up or down",
+  "key.femclothes.capucha": "Hood up/down",
+  "trinkets.slot.torso.chaqueta": "Jacket"
 }

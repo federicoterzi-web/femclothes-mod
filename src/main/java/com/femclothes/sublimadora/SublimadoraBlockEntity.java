@@ -546,7 +546,8 @@ public class SublimadoraBlockEntity extends BlockEntity
         remera = stack.copyWithCount(1);
         // La categoría de fijadas sigue automáticamente lo que se carga
         // — a pedido, ver el javadoc de {@link #categoria}.
-        categoria = remera.getItem();
+        // La chaqueta comparte los diseños de la remera (misma tela, 2026-09-30).
+        categoria = remera.getItem() instanceof RemeraItem ? ModItems.REMERA : remera.getItem();
         sincronizar();
         return true;
     }

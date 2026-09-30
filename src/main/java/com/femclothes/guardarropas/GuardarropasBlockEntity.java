@@ -64,7 +64,12 @@ public class GuardarropasBlockEntity extends BlockEntity
     public static final int PANTALON = 1;
     public static final int MEDIAS = 2;
     public static final int CALIENTABRAZOS = 3;
-    public static final int CATEGORIAS = 4;
+    /**
+     * Chaquetas (2026-09-30): quinta categoría, al FINAL — sus 4 slots van
+     * del 16 al 19, así los guardados de antes (0..15) no se corren.
+     */
+    public static final int CHAQUETA = 4;
+    public static final int CATEGORIAS = 5;
 
     public static final int TAMANO = CATEGORIAS * POR_CATEGORIA;
 
@@ -94,6 +99,8 @@ public class GuardarropasBlockEntity extends BlockEntity
      * con una pollera y una calza". Compartido con el Maniquí.
      */
     public static int categoriaDe(ItemStack stack) {
+        // Antes que RemeraItem: la chaqueta hereda de la remera pero va en su columna.
+        if (stack.getItem() instanceof com.femclothes.item.ChaquetaItem) return CHAQUETA;
         if (stack.getItem() instanceof RemeraItem) return REMERA;
         if (stack.getItem() instanceof PantalonItem || stack.getItem() instanceof PolleraItem) return PANTALON;
         if (stack.isOf(FemclothesItems.SOCKS_SOLID)) return MEDIAS;
@@ -221,8 +228,8 @@ public class GuardarropasBlockEntity extends BlockEntity
     }
 
     /** Grupo/slot de Trinkets de cada categoría, en el orden de REMERA..CALIENTABRAZOS — compartido con el Maniquí. */
-    public static final String[] GRUPO = {"torso", "piernas", "socks", "arms"};
-    public static final String[] NOMBRE_SLOT = {"prenda", "exterior", "pair", "armwarmer"};
+    public static final String[] GRUPO = {"torso", "piernas", "socks", "arms", "torso"};
+    public static final String[] NOMBRE_SLOT = {"prenda", "exterior", "pair", "armwarmer", "chaqueta"};
 
     /** El inventario de Trinkets de una categoría del jugador, o null si ese slot no existe (datapack sin cargar). */
     @Nullable

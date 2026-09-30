@@ -201,7 +201,8 @@ public final class CapaMalla {
             quad(vc, e, luz, xa, l[c], -1, ua, 0, xb, l[c + 1], -1, ub, 0,
                     xb, l[c + 1], 0, ub, 1 / 64f, xa, l[c], 0, ua, 1 / 64f, 0, 1, 0);
         }
-        if (CapaItem.capucha(stack)) dibujarCapucha(vc, e, luz);
+        // Con la capucha puesta (tecla, 2026-09-30) la dibuja CuelloYCapucha en la cabeza.
+        if (CapaItem.capucha(stack) && !com.femclothes.item.ChaquetaItem.capuchaArriba(stack)) dibujarCapucha(vc, e, luz);
     }
 
     /**
@@ -247,16 +248,24 @@ public final class CapaMalla {
     private static void dibujarCuelloSinDoblar(MatrixStack matrices, VertexConsumer vc, int luz) {
         MatrixStack.Entry e = matrices.peek();
         int n = 12;
-        float radio = 4.7f, alto = 3.5f;
+        // 2026-09-30, "el cuello alto de la capa hay q abrirlo porque se esconde
+        // en la cabeza": antes era media vuelta de radio 4.7 centrada en la
+        // NUCA (z = 2 en este espacio, ver translate de giros), así que pasaba
+        // por el medio de la cabeza (8 de profundidad: su centro queda 4 px
+        // adelante de la nuca). Ahora se centra en la cabeza, rodea la parte
+        // de atrás por fuera del sombrero de la skin (radio 5.3 abajo) y se
+        // abre hacia arriba (6.6), como un cuello de capa de verdad.
+        float centro = 2f - 4f, abajo = 5.3f, arriba = 6.6f, alto = 3.5f;
         for (int k = 0; k < n; k++) {
             double f0 = Math.PI * k / n, f1 = Math.PI * (k + 1) / n;
-            // En el espacio del cuboide girado, la nuca queda en z = 2 (ver translate de giros).
-            float x0 = (float) (radio * Math.cos(f0)), z0 = 2f - (float) (radio * Math.sin(f0));
-            float x1 = (float) (radio * Math.cos(f1)), z1 = 2f - (float) (radio * Math.sin(f1));
+            float c0 = (float) Math.cos(f0), s0 = (float) Math.sin(f0);
+            float c1 = (float) Math.cos(f1), s1 = (float) Math.sin(f1);
             float u0 = (24f + 16f * k / n) / 64f, u1 = (24f + 16f * (k + 1) / n) / 64f;
-            float nx = (float) Math.cos((f0 + f1) / 2), nz = -(float) Math.sin((f0 + f1) / 2);
-            quad(vc, e, luz, x0, -alto, z0, u0, 2 / 64f, x1, -alto, z1, u1, 2 / 64f,
-                    x1, 0.3f, z1, u1, 6 / 64f, x0, 0.3f, z0, u0, 6 / 64f, nx, 0, nz);
+            float nx = (float) Math.cos((f0 + f1) / 2), nz = (float) Math.sin((f0 + f1) / 2);
+            quad(vc, e, luz, arriba * c0, -alto, centro + arriba * s0, u0, 2 / 64f,
+                    arriba * c1, -alto, centro + arriba * s1, u1, 2 / 64f,
+                    abajo * c1, 0.3f, centro + abajo * s1, u1, 6 / 64f,
+                    abajo * c0, 0.3f, centro + abajo * s0, u0, 6 / 64f, nx, 0, nz);
         }
     }
 

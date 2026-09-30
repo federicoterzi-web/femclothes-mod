@@ -49,6 +49,7 @@ public final class PiezasDelMod {
         PiezasDePrenda.registrar(FemclothesItems.SOCKS_SOLID, PiezasDelMod::medias);
         PiezasDePrenda.registrar(FemclothesItems.PANTALON, PiezasDelMod::pantalon);
         PiezasDePrenda.registrar(ModItems.REMERA, PiezasDelMod::remera);
+        PiezasDePrenda.registrar(FemclothesItems.CHAQUETA, PiezasDelMod::chaqueta);
         PiezasDePrenda.registrar(FemclothesItems.CALIENTABRAZOS, PiezasDelMod::calientabrazos);
         PiezasDePrenda.registrar(FemclothesItems.POLLERA, PiezasDelMod::pollera);
     }
@@ -169,6 +170,28 @@ public final class PiezasDelMod {
      * sigue al cuerpo sin geometria extra y queda recortada a la tela sola.
      */
     private static List<Pieza> remera(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
+        return piezasDeRemera(stack, Capa.TORSO_EXTERIOR, false, null);
+    }
+
+    /**
+     * Hoodie (2026-09-30, categoría Chaqueta): las mismas piezas que la
+     * remera — comparte tela, corte y todo lo de las máquinas, ver
+     * {@code ChaquetaItem} — pero en {@code Capa.CHAQUETA}, con puños y
+     * ruedo elásticos y el bolsillo canguro y los ribs pintados sobre la
+     * tela ya compuesta ({@link com.femclothes.render.DetallesHoodie}). La
+     * capucha y los cordones son geometría aparte
+     * ({@code GarmentFeatureRenderer#dibujarCapucha}).
+     */
+    private static List<Pieza> chaqueta(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
+        Variante variante = RemeraItem.variante(stack);
+        return piezasDeRemera(stack, Capa.CHAQUETA, true, textura -> com.femclothes.render.DetallesHoodie.pintar(
+                textura, variante.largo().filas,
+                RemeraItem.manga(stack, Lado.IZQUIERDA).filas, RemeraItem.manga(stack, Lado.DERECHA).filas));
+    }
+
+    private static List<Pieza> piezasDeRemera(ItemStack stack, int capa, boolean elastico,
+                                              @org.jetbrains.annotations.Nullable
+                                              java.util.function.UnaryOperator<Identifier> detalles) {
         Variante variante = RemeraItem.variante(stack);
         Variante varianteBase = new Variante(variante.largo(), Variante.Manga.LARGA, variante.cuello());
         // La remera es Lado.AMBAS siempre para PATRON (un solo color, un
@@ -183,10 +206,11 @@ public final class PiezasDelMod {
         // Si todavia no se pudo componer -la foto no bajo- se usa la lisa,
         // que es lo correcto mientras tanto.
         if (textura == null) textura = varianteBase.texturaCuerpo();
+        if (detalles != null) textura = detalles.apply(textura);
 
         float dilatacion = Calce.dilatacionEfectiva(stack);
         List<Pieza> piezas = new ArrayList<>(3);
-        piezas.add(new Pieza(Parte.TORSO, Capa.TORSO_EXTERIOR, textura, dilatacion, 0, variante.largo().filas));
+        piezas.add(new Pieza(Parte.TORSO, capa, textura, dilatacion, 0, variante.largo().filas, false, elastico));
         // Mangas POR LADO (2026-09-24, "vamos con mangas distintas") — cada
         // brazo lee su propio valor (RemeraItem#manga, izquierda vive en
         // Variante, derecha es un override aparte) y se recorta
@@ -196,11 +220,11 @@ public final class PiezasDelMod {
         com.femclothes.item.PatronRed red = com.femclothes.item.PatronRed.leer(stack);
         int filasIzq = RemeraItem.manga(stack, Lado.IZQUIERDA).filas;
         if (filasIzq > 0) {
-            piezas.add(new Pieza(Parte.BRAZO_IZQ, Capa.TORSO_EXTERIOR, recortarMangaYCachear(textura, Parte.BRAZO_IZQ, filasIzq, red), dilatacion, 0, filasIzq));
+            piezas.add(new Pieza(Parte.BRAZO_IZQ, capa, recortarMangaYCachear(textura, Parte.BRAZO_IZQ, filasIzq, red), dilatacion, 0, filasIzq, false, elastico));
         }
         int filasDer = RemeraItem.manga(stack, Lado.DERECHA).filas;
         if (filasDer > 0) {
-            piezas.add(new Pieza(Parte.BRAZO_DER, Capa.TORSO_EXTERIOR, recortarMangaYCachear(textura, Parte.BRAZO_DER, filasDer, red), dilatacion, 0, filasDer));
+            piezas.add(new Pieza(Parte.BRAZO_DER, capa, recortarMangaYCachear(textura, Parte.BRAZO_DER, filasDer, red), dilatacion, 0, filasDer, false, elastico));
         }
         return piezas;
     }

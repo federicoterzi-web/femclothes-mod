@@ -153,6 +153,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             dibujarPiezas(parte, slim, piezas, conVolumen, delJugador, matrices, vertexConsumers, luz);
         }
 
+        // Cuello de polera, capucha y cordones del hoodie (2026-09-30).
+        CuelloYCapucha.dibujar(prendas, biped, matrices, vertexConsumers, luz);
         dibujarPollera(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta);
     }
 
@@ -382,6 +384,9 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             // Una pierna entera no cuelga por debajo del pie (quedaría enterrada).
             if (pierna && hasta >= 12) colgado = 0;
             if (hasta == desde) colgado = 0;
+            // Elástico (puños y ruedo del hoodie): la banda sostiene la tela,
+            // no cuelga — la caída queda como globo arriba de la banda.
+            if (pieza.elastico()) colgado = 0;
 
             float[] fila = new float[12];
             boolean uniforme = true;
@@ -392,6 +397,9 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                         float t = (f - desde + 1) / (float) (hasta - desde);
                         d += caida * t * (float) Math.sqrt(t);
                     }
+                    // La banda elástica aprieta: 40 % de la holgura, nunca por
+                    // dentro del cuerpo (0.05 de aire).
+                    if (pieza.elastico() && f == hasta - 1) d = Math.max(0.05F, base * 0.4F);
                     if (exterior[f] != Float.NEGATIVE_INFINITY) d = Math.max(d, exterior[f] + SEPARACION_CAPAS);
                 }
                 fila[f] = d;
@@ -425,7 +433,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     }
 
     /** Como {@link #dibujar}, para cuando la ModelPart ya viene resuelta (CUERPO segmentado). */
-    private static void dibujarModelPart(ModelPart nuestra, CuerpoGeometria.Superficie superficie,
+    static void dibujarModelPart(ModelPart nuestra, CuerpoGeometria.Superficie superficie,
                                 Identifier textura, ModelPart delJugador, MatrixStack matrices,
                                 VertexConsumerProvider vertexConsumers, int luz) {
         VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getArmorCutoutNoCull(textura));
@@ -670,6 +678,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             piezas.sort(Comparator.comparingInt(Pieza::capa));
             dibujarPiezas(parte, slim, piezas, null, delModelo, matrices, vertexConsumers, luz);
         }
+        CuelloYCapucha.dibujar(prendas, biped, matrices, vertexConsumers, luz);
         // Sin entidad: la pollera queda quieta (sin inercia ni twirl).
         dibujarPollera(prendas, null, biped, matrices, vertexConsumers, luz, 0f);
     }

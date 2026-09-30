@@ -487,5 +487,10 @@
   "femclothes.maniqui.detener": "Detener",
   "femclothes.maniqui.intercambiar": "Intercambiar conmigo",
   "femclothes.maniqui.sin_lugar": "El maniquí no tiene más lugar para esa prenda",
-  "femclothes.estilado.en_construccion": "Mesa de estilado: los apliques todavía están en construcción"
+  "femclothes.estilado.en_construccion": "Mesa de estilado: los apliques todavía están en construcción",
+  "item.femclothes.chaqueta": "Chaqueta",
+  "item.femclothes.chaqueta.hoodie": "Hoodie",
+  "femclothes.chaqueta.tooltip.capucha": "Capucha: %s para subirla o bajarla",
+  "key.femclothes.capucha": "Subir/bajar capucha",
+  "trinkets.slot.torso.chaqueta": "Chaqueta"
 }

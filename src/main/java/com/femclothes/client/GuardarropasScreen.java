@@ -164,5 +164,23 @@ public class GuardarropasScreen extends HandledScreen<GuardarropasScreenHandler>
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         context.drawTexture(TEXTURE, this.x, this.y, 0, 0,
                 this.backgroundWidth, this.backgroundHeight, this.backgroundWidth, this.backgroundHeight);
+        dibujarMarcosGrilla(context, this.x, this.y);
+    }
+
+    /**
+     * Marcos de la grilla de 5 categorías x 4 capas (2026-09-30, quinta
+     * columna = chaquetas): el fondo {@code guardarropas.png} solo trae la
+     * fila de 4 de la versión vieja, así que se dibujan por código — los
+     * usan el Guardarropas y el Maniquí (mismas posiciones de slot).
+     */
+    static void dibujarMarcosGrilla(DrawContext context, int x, int y) {
+        for (int categoria = 0; categoria < GuardarropasBlockEntity.CATEGORIAS; categoria++) {
+            for (int capa = 0; capa < GuardarropasBlockEntity.POR_CATEGORIA; capa++) {
+                int sx = x + M_MEDIO + categoria * 20 - 1, sy = y + 20 + capa * 20 - 1;
+                context.fill(sx, sy, sx + 18, sy + 18, 0xFF373737);
+                context.fill(sx + 1, sy + 1, sx + 18, sy + 18, 0xFFFFFFFF);
+                context.fill(sx + 1, sy + 1, sx + 17, sy + 17, 0xFF8B8B8B);
+            }
+        }
     }
 }

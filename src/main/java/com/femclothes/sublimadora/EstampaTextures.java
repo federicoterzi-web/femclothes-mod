@@ -337,7 +337,7 @@ public final class EstampaTextures {
     /** Que prenda estampable es este stack, o null si no lo es. */
     @Nullable
     private static Prenda prendaDe(ItemStack stack) {
-        if (stack.getItem() == ModItems.REMERA) return deLaRemera(RemeraItem.variante(stack));
+        if (stack.getItem() instanceof RemeraItem) return deLaRemera(RemeraItem.variante(stack));
         if (stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID) return MEDIAS;
         // Pantalón usa el mismo UV de pierna que las medias (misma Parte.
         // PIERNA_*) — el mapeo de caras es idéntico, se reusa tal cual.

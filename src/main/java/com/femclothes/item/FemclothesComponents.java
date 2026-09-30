@@ -490,6 +490,16 @@ public final class FemclothesComponents {
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capa_cuello"),
             ComponentType.<Boolean>builder().codec(com.mojang.serialization.Codec.BOOL).packetCodec(PacketCodecs.BOOL).build());
 
+    /**
+     * Capucha puesta en la cabeza (true) o caída en la espalda (ausente/false)
+     * de una chaqueta (2026-09-30, hoodie "con tecla para subir/bajar"). Vive
+     * en el stack equipado: el servidor la cambia (ver {@code util/RedCapucha})
+     * y Trinkets la sincroniza a todos.
+     */
+    public static final ComponentType<Boolean> CAPUCHA_ARRIBA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capucha_arriba"),
+            ComponentType.<Boolean>builder().codec(com.mojang.serialization.Codec.BOOL).packetCodec(PacketCodecs.BOOL).build());
+
     /** La mezcla C/M/Y/K/T de una muestra de color (2026-09-30), 5 niveles de 0..20. */
     public static final ComponentType<java.util.List<Integer>> MEZCLA_COLOR = Registry.register(
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "mezcla_color"),

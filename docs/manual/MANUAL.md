@@ -50,20 +50,23 @@ Cada máquina **no consume la prenda ni los moldes**: la prenda sale modificada 
 | Calientabrazos | Brazos | Cobertura arriba y abajo (por lado), calce, trama | Sí | Sí |
 | Pollera | Piernas (exterior) | Forma (campana o tableada), largo (6), calce, trama | Sí | Sí (frente y espalda) |
 | Capa | Espalda | Largo (6), ruedo (recto o redondeado), capucha, cuello alto | Sí (exterior, forro y detalles por separado) | Sí (Frente = exterior, Espalda = forro) |
+| Chaqueta (Hoodie) | Chaqueta | Igual que la remera (en las máquinas cuenta como remera) | Sí | Sí (frente y espalda) |
 
-**Capas de dibujo.** Las prendas se dibujan en orden fijo, así una no borra a la otra: cuerpo base → medias → calientabrazos → pantalón → remera → pollera. Donde una prenda no tiene tela (una media corta, una remera sin mangas) se ve lo que hay abajo.
+**Capas de dibujo.** Las prendas se dibujan en orden fijo, así una no borra a la otra: cuerpo base → medias → calientabrazos → pantalón → remera → pollera → chaqueta. Donde una prenda no tiene tela (una media corta, una remera sin mangas) se ve lo que hay abajo.
 
 **El ícono muestra la prenda de verdad.** Los íconos de remera, pantalón, pollera, capa, medias y calientabrazos son de 64×64 y se arman con la misma tela que se ve puesta: aparecen las capas y los patrones de Tintes, cada manga o pierna con su color, las redes y los arneses, las fotos de la Sublimadora y el largo real (manga corta, crop, short, zoquete). La remera tiene un dibujo por cuello (redondo, V, polera).
 
-**La pollera** es una malla propia que baja desde la cintura y se abre hacia el ruedo. Puede ser **campana** (lisa) o **tableada** (pliegues en V) y tiene 6 largos, del micro hasta el tobillo. **Se mueve con vos:** la tela choca con las piernas (con su forma y su pose reales: caminando, agachada, sentada o nadando, la pierna la empuja hacia afuera y nunca la atraviesa), el ruedo queda atrás al caminar o correr, se abre al caer, se achica al saltar, se balancea de costado y se retuerce un poco con cada paso (la misma inercia que usa la capa vanilla). Con `/femclothesdebug pollera rigida` queda quieta, sin piernas ni movimiento y un poco más ancha (`abierta` vuelve al modo normal; es para comparar). **Twirl:** con una pollera puesta, apretá **R** (se cambia en Controles → FemClothes → "Girar (con pollera)") y el personaje da una vuelta entera mientras la pollera se abre casi horizontal y gira arrastrada; los demás jugadores también lo ven. Su tela tiene el mismo formato que las demás prendas, así que se tiñe con patrones y zonas, se estampa y se le puede poner red.
+**La pollera** es una malla propia que baja desde la cintura y se abre hacia el ruedo. Puede ser **campana** (lisa) o **tableada** (pliegues en V) y tiene 6 largos, del micro hasta el tobillo. **Se mueve con vos:** la tela choca con las piernas (con su forma y su pose reales: caminando, agachada, sentada o nadando, la pierna la empuja hacia afuera y nunca la atraviesa), el ruedo queda atrás al caminar o correr, se abre al caer, se achica al saltar, se balancea de costado y se retuerce un poco con cada paso (la misma inercia que usa la capa vanilla). Con `/femclothesdebug pollera rigida` queda quieta, sin piernas ni movimiento y un poco más ancha (`abierta` vuelve al modo normal; es para comparar). **Twirl:** con una pollera puesta, apretá **R** (se cambia en Controles → FemClothes → "Girar (con pollera)") y el personaje da una vuelta entera con los brazos abiertos mientras la pollera se abre casi horizontal y gira arrastrada; los demás jugadores también lo ven. Su tela tiene el mismo formato que las demás prendas, así que se tiñe con patrones y zonas, se estampa y se le puede poner red.
 
-**La capa** cuelga de los hombros y se mueve como tela: usa la misma inercia que la capa vanilla (se levanta al correr, rebota con los saltos, se balancea de costado y se abre al agacharte), pero no es una placa rígida: arriba sigue a la espalda y se va curvando hacia el ruedo, le baja una onda al moverte, se mece un poco quieta y se abre lo necesario para no atravesar las piernas. Va en su propio slot de Trinkets, **Espalda**. Tiene 6 largos (de la cintura al tobillo), ruedo **recto** o **redondeado** (las puntas suben en arco), **capucha** caída sobre la espalda y **cuello alto** detrás de la nuca; todo se elige en la Modeladora. El **forro** (la cara de adentro) se tiñe y se estampa aparte del exterior. **La del mod manda:** con una capa del mod puesta, la capa vanilla (de Minecraft o de Optifine/Minecon) no se dibuja; con élitros puestos es al revés, se ven los élitros y la del mod se esconde.
+**La capa** cuelga de los hombros y se mueve como tela: usa la misma inercia que la capa vanilla (se levanta al correr, rebota con los saltos, se balancea de costado y se abre al agacharte), pero no es una placa rígida: arriba sigue a la espalda y se va curvando hacia el ruedo, le baja una onda al moverte, se mece un poco quieta y se abre lo necesario para no atravesar las piernas. Va en su propio slot de Trinkets, **Espalda**. Tiene 6 largos (de la cintura al tobillo), ruedo **recto** o **redondeado** (las puntas suben en arco), **capucha** caída sobre la espalda (con **H** te la ponés) y **cuello alto** abierto detrás de la cabeza; todo se elige en la Modeladora. El **forro** (la cara de adentro) se tiñe y se estampa aparte del exterior. **La del mod manda:** con una capa del mod puesta, la capa vanilla (de Minecraft o de Optifine/Minecon) no se dibuja; con élitros puestos es al revés, se ven los élitros y la del mod se esconde.
 
 **Varias prendas del mismo tipo.** Cada slot de Trinkets tiene **4 lugares**: se pueden llevar a la vez un croptop sobre un remerón largo, o medias de red debajo de unas medias cortas.
 
-**La remera** sale en los 16 colores de lana. Su nombre cambia según el corte (croptop, musculosa, polera, remerón, remera) y el resto del corte aparece en el tooltip.
+**La remera** sale en los 16 colores de lana. Su nombre cambia según el corte (croptop, musculosa, polera, remerón, remera) y el resto del corte aparece en el tooltip. Con el cuello **polera** lleva un **cuellito** alto en 3D alrededor del cuello (acanalado, del color de la remera; tapa la barbilla, no la boca).
 
-**Prendas viejas (armadura).** Hay cuatro prendas de una versión anterior que se equipan en los slots de armadura: Medias 3/4, Medias de Red, Traje de Maid y Buzo Oversize. No pasan por las máquinas.
+**Chaquetas.** Categoría nueva que va **encima de la remera y de la pollera**, en su propio slot de Trinkets (**Chaqueta**, 4 lugares). La primera es el **Hoodie**: sale largo, con manga larga y calce **Oversize**, y tiene bolsillo canguro, puños y ruedo **elásticos** (la última fila aprieta y la tela hace globo arriba, sin colgar), **cordones** y **capucha**. **Capucha:** apretá **H** (Controles → FemClothes → "Subir/bajar capucha") para ponértela o bajarla; los demás lo ven. La misma tecla sube y baja la capucha de la **capa**. En las máquinas el hoodie se trata como una remera: la Modeladora le cambia largo, mangas, cuello, calce y trama con los mismos moldes, Tintes usa las zonas de la remera y la Sublimadora estampa frente y espalda (comparte los diseños guardados de la remera). La capucha y los cordones son lisos, del color base (no llevan patrones ni fotos todavía).
+
+**Prendas viejas (armadura).** Hay prendas de una versión anterior que se equipan en los slots de armadura: Medias 3/4, Medias de Red y Traje de Maid. No pasan por las máquinas. El Buzo Oversize viejo se reemplazó por el Hoodie: su receta ahora da el nuevo y ya no aparece en la pestaña.
 
 ## 4. Cuerpo base y ropa interior
 
@@ -353,7 +356,7 @@ El dibujo muestra la prenda que está en la Entrada, con su color. Si no hay nin
 
 ## 9. Guardarropas
 
-El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría (remera, pantalón/pollera, medias, calientabrazos), así se pueden probar juntas varias prendas del mismo tipo (un croptop sobre un remerón, un pantalón con una pollera y una calza), con vista previa. **Guardar outfit** y **Equipar** guardan y se ponen la combinación.
+El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría (remera, pantalón/pollera, medias, calientabrazos, chaqueta), así se pueden probar juntas varias prendas del mismo tipo (un croptop sobre un remerón, un pantalón con una pollera y una calza), con vista previa. **Guardar outfit** y **Equipar** guardan y se ponen la combinación.
 
 Es un mueble con puerta: se pone de frente a quien lo coloca y la puerta se abre mientras alguien tiene la pantalla abierta.
 
@@ -361,7 +364,7 @@ Es un mueble con puerta: se pone de frente a quien lo coloca y la puerta se abre
 
 ### Maniquí
 
-Exhibe un outfit completo. Mide casi dos bloques (necesita lugar libre arriba para ponerlo). Tiene los mismos 16 lugares que el Guardarropas (4 por categoría) y **la ropa se ve puesta en la figura**, en el mundo.
+Exhibe un outfit completo. Mide casi dos bloques (necesita lugar libre arriba para ponerlo). Tiene los mismos 20 lugares que el Guardarropas (4 por categoría) y **la ropa se ve puesta en la figura**, en el mundo.
 
 - **Click derecho con una prenda:** se la pone en el primer lugar libre de su categoría.
 - **Click derecho con la mano vacía:** abre la pantalla (los 16 lugares, vista previa tuya con esa ropa, botones).
@@ -413,7 +416,7 @@ Por ahora es solo el mueble (orientable). Va a ser la mesa para **agregar apliqu
 | Medias 3/4 (armadura) | 4 lanas blancas: `L _ L / L _ L` |
 | Medias de Red (armadura) | 4 hilos: `H _ H / H _ H` |
 | Traje de Maid (armadura) | 8 lanas blancas alrededor de 1 lana negra |
-| Buzo Oversize (armadura) | 8 lanas blancas: `L L L / L L L / L _ L` |
+| Hoodie (chaqueta) | 8 lanas blancas: `L L L / L L L / L _ L` (la receta del Buzo Oversize viejo) |
 | Mesa de Modelado | 3 papeles, hilo + tijeras + hilo, 3 tablones de roble |
 | Sublimadora | Hierro alrededor, un pistón en el medio y un horno abajo |
 | Molde de manga | Papel + hilo (sin forma) |

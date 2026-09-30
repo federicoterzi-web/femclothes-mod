@@ -30,6 +30,7 @@ public class Femclothes implements ModInitializer {
         ComandoCuerpo.init();
         com.femclothes.body.RedCuerpo.init();
         com.femclothes.util.RedTwirl.init();
+        com.femclothes.util.RedCapucha.init();
         com.femclothes.util.DebugMaquinas.init();
         FemclothesScreenHandlers.init();
         com.femclothes.modelado.ModeladoMod.register();
@@ -68,6 +69,7 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.estilado.EstiladoMod.ESTILADO_BLOCK_ITEM);
             // Prendas.
             entries.add(com.femclothes.sublimadora.ModItems.REMERA);
+            entries.add(FemclothesItems.CHAQUETA);
             entries.add(FemclothesItems.SOCKS_34);
             entries.add(FemclothesItems.SOCKS_SOLID);
             entries.add(FemclothesItems.FISHNET_SOCKS);
@@ -86,7 +88,8 @@ public class Femclothes implements ModInitializer {
             entries.add(FemclothesItems.CALIENTABRAZOS);
             entries.add(FemclothesItems.CAPA);
             entries.add(FemclothesItems.MAID_OUTFIT);
-            entries.add(FemclothesItems.OVERSIZED_HOODIE);
+            // El Buzo Oversize viejo (armadura) se reemplazó por el hoodie
+            // (2026-09-30): sigue registrado para no romper mundos, fuera de la pestaña.
             entries.add(FemclothesItems.PATTERN_STRIPE_TOP);
             entries.add(FemclothesItems.PATTERN_STRIPE_ALT);
             entries.add(FemclothesItems.PATTERN_TRIPLE_STRIPE);

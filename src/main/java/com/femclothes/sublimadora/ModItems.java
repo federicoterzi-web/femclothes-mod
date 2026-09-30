@@ -103,7 +103,7 @@ public final class ModItems {
     public static boolean esEstampable(net.minecraft.item.ItemStack stack) {
         // A pedido (2026-09-19, "hace todas las prendas sublimables") —
         // pantalón y calientabrazos se suman a remera/medias.
-        return stack.getItem() == REMERA
+        return stack.getItem() instanceof RemeraItem // la chaqueta también (2026-09-30)
                 || stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID
                 || stack.getItem() == com.femclothes.item.FemclothesItems.PANTALON
                 || stack.getItem() == com.femclothes.item.FemclothesItems.CALIENTABRAZOS

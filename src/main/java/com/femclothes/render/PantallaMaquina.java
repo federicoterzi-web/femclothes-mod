@@ -316,7 +316,7 @@ public final class PantallaMaquina {
         // que aparece en la pantallita?"): el mismo que el inventario y la mesa.
         NativeImage nuevo = IconoPrenda.copia(stack);
         if (nuevo != null) return nuevo;
-        if (stack.getItem() == com.femclothes.sublimadora.ModItems.REMERA) {
+        if (stack.getItem() instanceof com.femclothes.sublimadora.RemeraItem) {
             return com.femclothes.sublimadora.EstampaTextures.iconoParaPantalla(stack);
         }
         Identifier iconoBase;

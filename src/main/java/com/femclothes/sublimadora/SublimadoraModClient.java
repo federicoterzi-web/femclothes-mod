@@ -28,6 +28,9 @@ public class SublimadoraModClient implements ClientModInitializer {
         // Ícono de 64x64 con la tela real (2026-09-29); el de antes queda de respaldo.
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.REMERA,
                 new com.femclothes.client.IconoPrendaItemRenderer(new RemeraItemRenderer()));
+        // La chaqueta (2026-09-30) se dibuja con el mismo ícono que la remera de su corte.
+        BuiltinItemRendererRegistry.INSTANCE.register(com.femclothes.item.FemclothesItems.CHAQUETA,
+                new com.femclothes.client.IconoPrendaItemRenderer(new RemeraItemRenderer()));
 
         // El icono lo tine vanilla con el proveedor de color: item/generated
         // le pone tintIndex 0 a layer0, igual que a una armadura de cuero.
@@ -37,7 +40,7 @@ public class SublimadoraModClient implements ClientModInitializer {
         // costo un rato en este repo. Vanilla usa -1 para "sin tinte".
         net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry.ITEM.register(
                 (stack, capa) -> capa == 0 ? 0xFF000000 | RemeraItem.color(stack) : -1,
-                ModItems.REMERA);
+                ModItems.REMERA, com.femclothes.item.FemclothesItems.CHAQUETA);
 
         // La remera puesta sobre el cuerpo ya NO se registra aca. La dibuja
         // el GarmentFeatureRenderer de FemClothes junto con el resto de la
