@@ -452,6 +452,52 @@ public final class FemclothesComponents {
                     .packetCodec(com.femclothes.modelado.ComboCorte.PACKET_CODEC)
                     .build());
 
+    /** Largo de la pollera (§{@link PolleraLargo}); ausente = MEDIO. */
+    public static final ComponentType<PolleraLargo> POLLERA_LARGO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "pollera_largo"),
+            ComponentType.<PolleraLargo>builder()
+                    .codec(StringIdentifiable.createCodec(PolleraLargo::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PolleraLargo.values()[i], Enum::ordinal))
+                    .build());
+
+    /** Forma de la pollera (§{@link PolleraForma}); ausente = CAMPANA. */
+    public static final ComponentType<PolleraForma> POLLERA_FORMA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "pollera_forma"),
+            ComponentType.<PolleraForma>builder()
+                    .codec(StringIdentifiable.createCodec(PolleraForma::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PolleraForma.values()[i], Enum::ordinal))
+                    .build());
+
+    // ── capa (2026-09-29) — ausentes = Medio / Recto / sin capucha / sin cuello ──
+    public static final ComponentType<CapaLargo> CAPA_LARGO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capa_largo"),
+            ComponentType.<CapaLargo>builder()
+                    .codec(StringIdentifiable.createCodec(CapaLargo::values))
+                    .packetCodec(PacketCodecs.indexed(i -> CapaLargo.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<CapaRuedo> CAPA_RUEDO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capa_ruedo"),
+            ComponentType.<CapaRuedo>builder()
+                    .codec(StringIdentifiable.createCodec(CapaRuedo::values))
+                    .packetCodec(PacketCodecs.indexed(i -> CapaRuedo.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<Boolean> CAPA_CAPUCHA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capa_capucha"),
+            ComponentType.<Boolean>builder().codec(com.mojang.serialization.Codec.BOOL).packetCodec(PacketCodecs.BOOL).build());
+    public static final ComponentType<Boolean> CAPA_CUELLO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capa_cuello"),
+            ComponentType.<Boolean>builder().codec(com.mojang.serialization.Codec.BOOL).packetCodec(PacketCodecs.BOOL).build());
+
+    /** La mezcla C/M/Y/K/T de una muestra de color (2026-09-30), 5 niveles de 0..20. */
+    public static final ComponentType<java.util.List<Integer>> MEZCLA_COLOR = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "mezcla_color"),
+            ComponentType.<java.util.List<Integer>>builder()
+                    .codec(com.mojang.serialization.Codec.INT.listOf())
+                    .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
+                    .build());
+
     public static void init() {
         // fuerza class-loading
     }

@@ -160,6 +160,21 @@ public class SublimadoraBlockEntity extends BlockEntity
     private static final float PASO_ANGULO = 15f;
     /** Que cara esta configurando la pantalla ahora mismo. */
     private Estampa.Cara seleccion = Estampa.Cara.FRENTE;
+    /**
+     * Chincheta por cara (2026-09-28, "cambiemos la gui de la sublimadora
+     * para hacerla sintonizar con sus bloques hermanos"): mismo criterio
+     * que los cuadraditos de Tintes — solo se estampan las caras FIJADAS
+     * que tengan foto; la vista previa muestra las fijadas más la que se
+     * está editando.
+     */
+    private final boolean[] caraFijada = { false, false };
+    /**
+     * Simetría lateral (2026-09-28, "a la sublimadora hay que agregarle
+     * simetria lateral para medias y cubrebrazos"): el lado izquierdo lleva
+     * el espejo del derecho. Solo cuenta en prendas de a pares, ver
+     * {@link #admiteSimetria}.
+     */
+    private boolean simetria = false;
 
     /**
      * "Save por cada prenda" (a pedido, 2026-09-19): una combinación
@@ -171,9 +186,25 @@ public class SublimadoraBlockEntity extends BlockEntity
     public record EstampaFijada(float escalaFrente, float xFrente, float yFrente, float anguloFrente,
                                  float escalaEspalda, float xEspalda, float yEspalda, float anguloEspalda) {}
 
-    public static final int FIJADAS_MAXIMO = 8;
-    private final java.util.Map<net.minecraft.item.Item, java.util.List<EstampaFijada>> fijadasPorItem = new java.util.HashMap<>();
-    private final java.util.Map<net.minecraft.item.Item, Integer> seleccionadaPorItem = new java.util.HashMap<>();
+    /**
+     * Un diseño guardado con nombre (2026-09-28, mismo sistema que
+     * Modeladora/Tintes: "Guardar diseño" + 8 casilleros, click carga,
+     * click derecho borra) — reemplaza a las "fijadas" sin nombre, que se
+     * migran como diseños "#n" al leer un mundo viejo.
+     */
+    public record DisenoEstampa(String nombre, EstampaFijada ajuste, boolean fijadaFrente, boolean fijadaEspalda,
+                                boolean simetria) {}
+
+    /** Medias y calientabrazos: las prendas de a pares que tienen simetría lateral. */
+    public static boolean admiteSimetria(net.minecraft.item.Item item) {
+        return item == com.femclothes.item.FemclothesItems.SOCKS_SOLID
+                || item == com.femclothes.item.FemclothesItems.CALIENTABRAZOS;
+    }
+
+    public boolean simetria() { return simetria; }
+
+    public static final int DISENOS_MAXIMO = 8;
+    private final java.util.Map<net.minecraft.item.Item, java.util.List<DisenoEstampa>> disenosPorItem = new java.util.HashMap<>();
 
     /**
      * Qué "categoría" (en realidad el ÍTEM representativo — acá cada
@@ -273,6 +304,10 @@ public class SublimadoraBlockEntity extends BlockEntity
         // lo que le sincroniza el NBT.
         if (world.isClient) return;
 
+        // Luz del LED (2026-09-29, "hace que las luces de las maquinas iluminen").
+        com.femclothes.util.LuzMaquina.actualizar(world, pos, state,
+                be.estado == Estado.PRENSANDO || be.estado == Estado.LISTO);
+
         if (be.estado == Estado.LISTO) {
             be.empujarSalida(world, pos);
         }
@@ -321,7 +356,7 @@ public class SublimadoraBlockEntity extends BlockEntity
             // la proxima remera sin volver a cargarla.
             for (Estampa.Cara cara : Estampa.Cara.values()) {
                 java.util.UUID id = be.pendientes[cara.ordinal()];
-                if (id == null) continue;
+                if (id == null || !be.caraActiva(cara.ordinal())) continue;
                 int ci = cara.ordinal();
                 // "Cubrir" (full print, recorta en vez de encoger) se
                 // deriva de la escala en vez de ser un toggle aparte: a
@@ -331,7 +366,7 @@ public class SublimadoraBlockEntity extends BlockEntity
                 boolean cubrir = be.escalaBorrador[ci] >= Estampa.ESCALA_CUBRIR - 0.001f;
                 hecha = RemeraItem.estampar(hecha, cara,
                         new Estampa(id, be.escalaBorrador[ci], be.xBorrador[ci], be.yBorrador[ci],
-                                be.anguloBorrador[ci], cubrir));
+                                be.anguloBorrador[ci], cubrir, be.simetria && admiteSimetria(hecha.getItem())));
             }
             be.salida = hecha;
             be.remera = ItemStack.EMPTY;
@@ -432,15 +467,28 @@ public class SublimadoraBlockEntity extends BlockEntity
      * pantallita del bloque, así que se comparte acá — mismo criterio
      * de nombre que {@code TinturasBlockEntity#prendaDeVistaPrevia}.
      */
-    public ItemStack prendaDeVistaPrevia() {
-        if (!remera.isEmpty()) {
-            ItemStack copia = remera.copy();
+    public ItemStack prendaDeVistaPrevia() { return prendaDeVistaPrevia(false); }
+
+    /**
+     * {@code representativa}=true (la GUI, 2026-09-28): sin prenda cargada
+     * ni lista, muestra la de la categoría elegida con el borrador encima —
+     * mismo criterio que {@code TinturasBlockEntity#prendaDeVistaPrevia}.
+     * La pantallita del bloque sigue pidiendo solo prendas de verdad.
+     */
+    public ItemStack prendaDeVistaPrevia(boolean representativa) {
+        ItemStack base = !remera.isEmpty() ? remera
+                : representativa && salida.isEmpty() ? new ItemStack(categoria) : ItemStack.EMPTY;
+        if (!base.isEmpty()) {
+            ItemStack copia = base.copy();
             for (Estampa.Cara cara : Estampa.Cara.values()) {
                 java.util.UUID id = getFotoCargada(cara);
                 if (id == null) continue;
+                // Solo lo fijado más la cara que se está editando — lo que va a salir.
+                if (!caraFijada[cara.ordinal()] && cara != seleccion) continue;
                 boolean cubrir = getEscala(cara) >= Estampa.ESCALA_CUBRIR - 0.001f;
                 copia = RemeraItem.estampar(copia, cara,
-                        new Estampa(id, getEscala(cara), getX(cara), getY(cara), getAngulo(cara), cubrir));
+                        new Estampa(id, getEscala(cara), getX(cara), getY(cara), getAngulo(cara), cubrir,
+                                simetria && admiteSimetria(copia.getItem())));
             }
             return copia;
         }
@@ -562,9 +610,12 @@ public class SublimadoraBlockEntity extends BlockEntity
      * que cambiar de imagen significaba perder la anterior sin volver a
      * cargarla de afuera. Estos 9 son guardado nomás, ninguno alimenta un
      * prensado directo — se arrastran a Frente/Espalda como cualquier
-     * slot vanilla. Mismo tamaño que el almacén de Tinturas/Modeladora.
+     * slot vanilla. 27 (3 filas) desde 2026-09-28 ("quiero mas espacios
+     * de almacenamiento"), como el almacén de la Modeladora: la lista va al
+     * FINAL del inventario, así que agrandarla no corre ningún índice
+     * guardado.
      */
-    public static final int ALMACEN_TAMANO = 9;
+    public static final int ALMACEN_TAMANO = 27;
     public static final int SLOT_ALMACEN_INICIO = SLOT_SALIDA + 1;
     private final net.minecraft.util.collection.DefaultedList<ItemStack> almacen =
             net.minecraft.util.collection.DefaultedList.ofSize(ALMACEN_TAMANO, ItemStack.EMPTY);
@@ -952,22 +1003,50 @@ public class SublimadoraBlockEntity extends BlockEntity
     public static final int BTN_Y_MENOS = 6;
     public static final int BTN_ANGULO_MAS = 7;
     public static final int BTN_ANGULO_MENOS = 8;
-    public static final int BTN_FIJAR = 9;
-    /** Cicla la categoría de fijadas — ver el javadoc de {@link #categoria}. */
+    /** Cicla la categoría de diseños — ver el javadoc de {@link #categoria}. */
     public static final int BTN_CATEGORIA = 10;
-    public static final int BTN_FIJADA_BASE = 11; // .. + FIJADAS_MAXIMO
+    /** Click en el slot de foto de una cara: la elige para editar (+ Cara.ordinal()). */
+    public static final int BTN_ELEGIR_CARA_BASE = 20;
+    /** Chincheta de una cara (+ Cara.ordinal()). */
+    public static final int BTN_CHINCHETA_BASE = 22;
+    /** Botón Prensar — lo atiende SublimadoraScreenHandler (necesita avisarle al jugador). */
+    public static final int BTN_PRENSAR = 25;
+    /** Prende/apaga la simetría lateral (medias y calientabrazos). */
+    public static final int BTN_SIMETRIA = 26;
+    public static final int BTN_CARGAR_DISENO_BASE = 30; // .. + DISENOS_MAXIMO
+    public static final int BTN_BORRAR_DISENO_BASE = 40; // .. + DISENOS_MAXIMO
 
     public boolean onButtonClick(int id) {
-        if (id == BTN_FIJAR) {
-            fijar();
-            return true;
-        }
         if (id == BTN_CATEGORIA) {
             cambiarCategoria();
             return true;
         }
-        if (id >= BTN_FIJADA_BASE && id < BTN_FIJADA_BASE + FIJADAS_MAXIMO) {
-            return aplicarOQuitarFijada(id - BTN_FIJADA_BASE);
+        if (id >= BTN_ELEGIR_CARA_BASE && id < BTN_ELEGIR_CARA_BASE + 2) {
+            Estampa.Cara cara = Estampa.Cara.values()[id - BTN_ELEGIR_CARA_BASE];
+            if (cara == seleccion || estado == Estado.PRENSANDO) return false;
+            seleccion = cara;
+            sincronizar();
+            return true;
+        }
+        if (id >= BTN_CHINCHETA_BASE && id < BTN_CHINCHETA_BASE + 2) {
+            if (estado == Estado.PRENSANDO) return false;
+            int i = id - BTN_CHINCHETA_BASE;
+            caraFijada[i] = !caraFijada[i];
+            seleccion = Estampa.Cara.values()[i];
+            sincronizar();
+            return true;
+        }
+        if (id == BTN_SIMETRIA) {
+            if (estado == Estado.PRENSANDO || !admiteSimetria(categoria)) return false;
+            simetria = !simetria;
+            sincronizar();
+            return true;
+        }
+        if (id >= BTN_CARGAR_DISENO_BASE && id < BTN_CARGAR_DISENO_BASE + DISENOS_MAXIMO) {
+            return cargarDiseno(id - BTN_CARGAR_DISENO_BASE);
+        }
+        if (id >= BTN_BORRAR_DISENO_BASE && id < BTN_BORRAR_DISENO_BASE + DISENOS_MAXIMO) {
+            return borrarDiseno(id - BTN_BORRAR_DISENO_BASE);
         }
         return switch (id) {
             case BTN_SELECCION -> cambiarSeleccion();
@@ -983,53 +1062,68 @@ public class SublimadoraBlockEntity extends BlockEntity
         };
     }
 
-    /** La lista de fijadas de la categoría activa ahora mismo — ver {@link #categoria}. */
-    public java.util.List<EstampaFijada> fijadas() {
-        return fijadasPorItem.getOrDefault(categoria, java.util.List.of());
+    public boolean caraFijada(Estampa.Cara cara) { return caraFijada[cara.ordinal()]; }
+
+    /** Algo fijado para guardar como diseño. */
+    public boolean hayFijadas() { return caraFijada[0] || caraFijada[1]; }
+
+    /** Los diseños guardados de la categoría activa — ver {@link #categoria}. */
+    public java.util.List<DisenoEstampa> disenos() {
+        return disenosPorItem.getOrDefault(categoria, java.util.List.of());
     }
 
-    /** La seleccionada de la lista de arriba, o -1. */
-    public int fijadaSeleccionada() {
-        return seleccionadaPorItem.getOrDefault(categoria, -1);
+    /** Nombre del diseño de ese casillero (para el hover), o null si está vacío. */
+    @org.jetbrains.annotations.Nullable
+    public String nombreDiseno(int idx) {
+        java.util.List<DisenoEstampa> lista = disenos();
+        return idx >= 0 && idx < lista.size() ? lista.get(idx).nombre() : null;
     }
 
     public net.minecraft.item.Item categoria() { return categoria; }
 
-    /** Cicla la categoría de fijadas a mano — ver el javadoc de {@link #categoria}. */
+    /** Cicla la categoría a mano — ver el javadoc de {@link #categoria}. */
     private void cambiarCategoria() {
         int i = java.util.Arrays.asList(CATEGORIAS).indexOf(categoria);
         categoria = CATEGORIAS[(i + 1) % CATEGORIAS.length];
         sincronizar();
     }
 
-    /** Guarda el borrador actual (las dos caras) como una fijada nueva de la categoría activa. */
-    private void fijar() {
-        java.util.List<EstampaFijada> lista = fijadasPorItem.computeIfAbsent(categoria, k -> new java.util.ArrayList<>());
-        if (lista.size() >= FIJADAS_MAXIMO) return;
-        lista.add(new EstampaFijada(
+    /**
+     * Recibido desde {@link GuardarDisenoSublimadoraPayload}: guarda el
+     * ajuste de las dos caras y qué caras están fijadas, con nombre, en el
+     * próximo casillero libre de la categoría activa.
+     */
+    public boolean guardarDiseno(String nombreCrudo) {
+        java.util.List<DisenoEstampa> lista = disenosPorItem.computeIfAbsent(categoria, k -> new java.util.ArrayList<>());
+        if (!hayFijadas() || lista.size() >= DISENOS_MAXIMO) return false;
+        String nombre = nombreCrudo == null || nombreCrudo.isBlank() ? "#" + (lista.size() + 1) : nombreCrudo.trim();
+        if (nombre.length() > 24) nombre = nombre.substring(0, 24);
+        lista.add(new DisenoEstampa(nombre, new EstampaFijada(
                 escalaBorrador[0], xBorrador[0], yBorrador[0], anguloBorrador[0],
-                escalaBorrador[1], xBorrador[1], yBorrador[1], anguloBorrador[1]));
-        seleccionadaPorItem.put(categoria, lista.size() - 1);
+                escalaBorrador[1], xBorrador[1], yBorrador[1], anguloBorrador[1]),
+                caraFijada[0], caraFijada[1], simetria));
         sincronizar();
+        return true;
     }
 
-    /**
-     * Click en una fijada: si NO es la seleccionada, la aplica a las dos
-     * caras del borrador (mismo criterio que {@code TinturasBlockEntity}:
-     * clickear la ya seleccionada la borra en vez de reaplicarla).
-     */
-    private boolean aplicarOQuitarFijada(int idx) {
-        java.util.List<EstampaFijada> lista = fijadasPorItem.get(categoria);
-        if (lista == null || idx >= lista.size()) return false;
-        if (Integer.valueOf(idx).equals(seleccionadaPorItem.get(categoria))) {
-            lista.remove(idx);
-            seleccionadaPorItem.put(categoria, -1);
-        } else {
-            EstampaFijada f = lista.get(idx);
-            escalaBorrador[0] = f.escalaFrente(); xBorrador[0] = f.xFrente(); yBorrador[0] = f.yFrente(); anguloBorrador[0] = f.anguloFrente();
-            escalaBorrador[1] = f.escalaEspalda(); xBorrador[1] = f.xEspalda(); yBorrador[1] = f.yEspalda(); anguloBorrador[1] = f.anguloEspalda();
-            seleccionadaPorItem.put(categoria, idx);
-        }
+    private boolean cargarDiseno(int idx) {
+        java.util.List<DisenoEstampa> lista = disenos();
+        if (idx < 0 || idx >= lista.size() || estado == Estado.PRENSANDO) return false;
+        DisenoEstampa d = lista.get(idx);
+        EstampaFijada f = d.ajuste();
+        escalaBorrador[0] = f.escalaFrente(); xBorrador[0] = f.xFrente(); yBorrador[0] = f.yFrente(); anguloBorrador[0] = f.anguloFrente();
+        escalaBorrador[1] = f.escalaEspalda(); xBorrador[1] = f.xEspalda(); yBorrador[1] = f.yEspalda(); anguloBorrador[1] = f.anguloEspalda();
+        caraFijada[0] = d.fijadaFrente();
+        caraFijada[1] = d.fijadaEspalda();
+        simetria = d.simetria();
+        sincronizar();
+        return true;
+    }
+
+    private boolean borrarDiseno(int idx) {
+        java.util.List<DisenoEstampa> lista = disenosPorItem.get(categoria);
+        if (lista == null || idx < 0 || idx >= lista.size()) return false;
+        lista.remove(idx);
         sincronizar();
         return true;
     }
@@ -1066,6 +1160,8 @@ public class SublimadoraBlockEntity extends BlockEntity
         if (!remera.isEmpty()) todo.add(remera);
         for (ItemStack f : fotos) if (!f.isEmpty()) todo.add(f);
         if (!salida.isEmpty()) todo.add(salida);
+        // El almacén también (2026-09-28): antes sus fotos se perdían al romper la máquina.
+        for (ItemStack f : almacen) if (!f.isEmpty()) todo.add(f);
         return todo;
     }
 
@@ -1102,7 +1198,7 @@ public class SublimadoraBlockEntity extends BlockEntity
     public boolean intentarPrensar() {
         if (estado != Estado.REPOSO) return false;
         if (remera.isEmpty()) return false;
-        int caras = (fotos[0].isEmpty() ? 0 : 1) + (fotos[1].isEmpty() ? 0 : 1);
+        int caras = (caraActiva(0) ? 1 : 0) + (caraActiva(1) ? 1 : 0);
         if (caras == 0) return false;
         // Una dosis de cada color POR CARA: hacer las dos en una pasada
         // ahorra el ciclo, no la tinta.
@@ -1124,6 +1220,30 @@ public class SublimadoraBlockEntity extends BlockEntity
         progreso = 0;
         sincronizar();
         return true;
+    }
+
+    /** ¿Esta cara se estampa? Foto cargada y chincheta puesta. */
+    private boolean caraActiva(int i) {
+        return !fotos[i].isEmpty() && pendientes[i] != null && caraFijada[i];
+    }
+
+    /**
+     * Botón Prensar de la GUI (2026-09-28, como Teñir en Tintes): baja la
+     * tapa y arranca, igual que cerrarla a mano.
+     *
+     * @return null si arrancó; si no, el motivo.
+     */
+    @org.jetbrains.annotations.Nullable
+    public Text prensarDesdeGui() {
+        if (!intentarPrensar()) {
+            Text motivo = queFalta();
+            return motivo != null ? motivo : Text.translatable("femclothes.sublimadora.aviso.cargar");
+        }
+        if (world != null && getCachedState().get(SublimadoraBlock.OPEN)) {
+            world.setBlockState(pos, getCachedState().with(SublimadoraBlock.OPEN, false), net.minecraft.block.Block.NOTIFY_ALL);
+            world.playSound(null, pos, SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE, SoundCategory.BLOCKS, 1.2f, 1.0f);
+        }
+        return null;
     }
 
     /** Nombres de los cuatro tanques, para poder decir cual quedo vacio. */
@@ -1152,6 +1272,9 @@ public class SublimadoraBlockEntity extends BlockEntity
 
         if (remera.isEmpty() || (fotos[0].isEmpty() && fotos[1].isEmpty())) {
             return Text.translatable("femclothes.sublimadora.aviso.cargar");
+        }
+        if (!caraActiva(0) && !caraActiva(1)) {
+            return Text.translatable("femclothes.sublimadora.aviso.sin_fijar");
         }
         if (papelCargado < 1) {
             return Text.translatable("femclothes.sublimadora.aviso.papel");
@@ -1226,12 +1349,16 @@ public class SublimadoraBlockEntity extends BlockEntity
         nbt.putString("Categoria", net.minecraft.registry.Registries.ITEM.getId(categoria).toString());
         if (!salida.isEmpty()) nbt.put("Salida", salida.encode(registries));
 
-        net.minecraft.nbt.NbtList fijadasNbt = new net.minecraft.nbt.NbtList();
-        for (var entry : fijadasPorItem.entrySet()) {
+        for (int i = 0; i < 2; i++) nbt.putBoolean("CaraFijada" + i, caraFijada[i]);
+        nbt.putBoolean("Simetria", simetria);
+        net.minecraft.nbt.NbtList disenosNbt = new net.minecraft.nbt.NbtList();
+        for (var entry : disenosPorItem.entrySet()) {
             String claveItem = net.minecraft.registry.Registries.ITEM.getId(entry.getKey()).toString();
-            for (EstampaFijada f : entry.getValue()) {
+            for (DisenoEstampa d : entry.getValue()) {
+                EstampaFijada f = d.ajuste();
                 NbtCompound fc = new NbtCompound();
                 fc.putString("Item", claveItem);
+                fc.putString("Nombre", d.nombre());
                 fc.putFloat("EscalaF", f.escalaFrente());
                 fc.putFloat("XF", f.xFrente());
                 fc.putFloat("YF", f.yFrente());
@@ -1240,15 +1367,13 @@ public class SublimadoraBlockEntity extends BlockEntity
                 fc.putFloat("XE", f.xEspalda());
                 fc.putFloat("YE", f.yEspalda());
                 fc.putFloat("AnguloE", f.anguloEspalda());
-                fijadasNbt.add(fc);
+                fc.putBoolean("FijadaF", d.fijadaFrente());
+                fc.putBoolean("FijadaE", d.fijadaEspalda());
+                fc.putBoolean("Simetria", d.simetria());
+                disenosNbt.add(fc);
             }
         }
-        nbt.put("EstampaFijadas", fijadasNbt);
-        NbtCompound seleccionadasNbt = new NbtCompound();
-        for (var entry : seleccionadaPorItem.entrySet()) {
-            seleccionadasNbt.putInt(net.minecraft.registry.Registries.ITEM.getId(entry.getKey()).toString(), entry.getValue());
-        }
-        nbt.put("EstampaFijadaSeleccionada", seleccionadasNbt);
+        nbt.put("Disenos", disenosNbt);
         net.minecraft.inventory.Inventories.writeNbt(nbt, almacen, registries);
     }
 
@@ -1304,28 +1429,27 @@ public class SublimadoraBlockEntity extends BlockEntity
         }
         salida = nbt.contains("Salida") ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Salida")) : ItemStack.EMPTY;
 
-        fijadasPorItem.clear();
-        if (nbt.contains("EstampaFijadas")) {
-            net.minecraft.nbt.NbtList fijadasNbt = nbt.getList("EstampaFijadas", net.minecraft.nbt.NbtElement.COMPOUND_TYPE);
-            for (int i = 0; i < fijadasNbt.size(); i++) {
-                NbtCompound fc = fijadasNbt.getCompound(i);
-                net.minecraft.util.Identifier id = net.minecraft.util.Identifier.tryParse(fc.getString("Item"));
-                net.minecraft.item.Item item = id == null ? null : net.minecraft.registry.Registries.ITEM.get(id);
-                if (item == null || item == net.minecraft.item.Items.AIR) continue;
-                fijadasPorItem.computeIfAbsent(item, k -> new java.util.ArrayList<>()).add(new EstampaFijada(
-                        fc.getFloat("EscalaF"), fc.getFloat("XF"), fc.getFloat("YF"), fc.getFloat("AnguloF"),
-                        fc.getFloat("EscalaE"), fc.getFloat("XE"), fc.getFloat("YE"), fc.getFloat("AnguloE")));
-            }
-        }
-        seleccionadaPorItem.clear();
-        if (nbt.contains("EstampaFijadaSeleccionada")) {
-            NbtCompound seleccionadasNbt = nbt.getCompound("EstampaFijadaSeleccionada");
-            for (String clave : seleccionadasNbt.getKeys()) {
-                net.minecraft.util.Identifier id = net.minecraft.util.Identifier.tryParse(clave);
-                net.minecraft.item.Item item = id == null ? null : net.minecraft.registry.Registries.ITEM.get(id);
-                if (item == null || item == net.minecraft.item.Items.AIR) continue;
-                seleccionadaPorItem.put(item, seleccionadasNbt.getInt(clave));
-            }
+        // Sin la clave (mundo de antes de las chinchetas, 2026-09-28): las
+        // dos caras fijadas, que es como se comportaba — se estampaba
+        // toda cara con foto.
+        for (int i = 0; i < 2; i++) caraFijada[i] = !nbt.contains("CaraFijada" + i) || nbt.getBoolean("CaraFijada" + i);
+        simetria = nbt.getBoolean("Simetria");
+        disenosPorItem.clear();
+        // "EstampaFijadas" = las fijadas sin nombre de antes: se leen como diseños "#n".
+        boolean viejas = !nbt.contains("Disenos");
+        net.minecraft.nbt.NbtList disenosNbt = nbt.getList(viejas ? "EstampaFijadas" : "Disenos", net.minecraft.nbt.NbtElement.COMPOUND_TYPE);
+        for (int i = 0; i < disenosNbt.size(); i++) {
+            NbtCompound fc = disenosNbt.getCompound(i);
+            net.minecraft.util.Identifier id = net.minecraft.util.Identifier.tryParse(fc.getString("Item"));
+            net.minecraft.item.Item item = id == null ? null : net.minecraft.registry.Registries.ITEM.get(id);
+            if (item == null || item == net.minecraft.item.Items.AIR) continue;
+            java.util.List<DisenoEstampa> lista = disenosPorItem.computeIfAbsent(item, k -> new java.util.ArrayList<>());
+            if (lista.size() >= DISENOS_MAXIMO) continue;
+            String nombre = viejas || fc.getString("Nombre").isEmpty() ? "#" + (lista.size() + 1) : fc.getString("Nombre");
+            lista.add(new DisenoEstampa(nombre, new EstampaFijada(
+                    fc.getFloat("EscalaF"), fc.getFloat("XF"), fc.getFloat("YF"), fc.getFloat("AnguloF"),
+                    fc.getFloat("EscalaE"), fc.getFloat("XE"), fc.getFloat("YE"), fc.getFloat("AnguloE")),
+                    viejas || fc.getBoolean("FijadaF"), viejas || fc.getBoolean("FijadaE"), fc.getBoolean("Simetria")));
         }
         almacen.clear();
         net.minecraft.inventory.Inventories.readNbt(nbt, almacen, registries);

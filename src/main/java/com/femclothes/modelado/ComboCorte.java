@@ -83,8 +83,81 @@ public record ComboCorte(
         Optional<PatronRed> red,
         Optional<CapaIndexada> capaPatron,
         Lado lado,
-        Optional<Identifier> iconoOrigen
+        Optional<Identifier> iconoOrigen,
+        Optional<PolleraCorte> pollera
 ) {
+
+    /**
+     * Ejes de la pollera (2026-09-29, "quiero poder hacerle distintos
+     * largos" + forma campana/tableada): van juntos en un solo campo porque
+     * el codec de registros admite hasta 16.
+     */
+    public record PolleraCorte(Optional<com.femclothes.item.PolleraLargo> largo,
+                               Optional<com.femclothes.item.PolleraForma> forma,
+                               // La capa (2026-09-29) viaja en el mismo campo: el
+                               // codec de ComboCorte ya está en su tope de 16.
+                               Optional<com.femclothes.item.CapaLargo> capaLargo,
+                               Optional<com.femclothes.item.CapaRuedo> capaRuedo,
+                               Optional<Boolean> capaCapucha,
+                               Optional<Boolean> capaCuello) {
+        public PolleraCorte(Optional<com.femclothes.item.PolleraLargo> largo,
+                            Optional<com.femclothes.item.PolleraForma> forma) {
+            this(largo, forma, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        }
+
+        boolean vacio() {
+            return largo.isEmpty() && forma.isEmpty() && capaLargo.isEmpty() && capaRuedo.isEmpty()
+                    && capaCapucha.isEmpty() && capaCuello.isEmpty();
+        }
+
+        static final Codec<PolleraCorte> CODEC = RecordCodecBuilder.create(i -> i.group(
+                StringIdentifiable.createCodec(com.femclothes.item.PolleraLargo::values).optionalFieldOf("largo")
+                        .forGetter(PolleraCorte::largo),
+                StringIdentifiable.createCodec(com.femclothes.item.PolleraForma::values).optionalFieldOf("forma")
+                        .forGetter(PolleraCorte::forma),
+                StringIdentifiable.createCodec(com.femclothes.item.CapaLargo::values).optionalFieldOf("capa_largo")
+                        .forGetter(PolleraCorte::capaLargo),
+                StringIdentifiable.createCodec(com.femclothes.item.CapaRuedo::values).optionalFieldOf("capa_ruedo")
+                        .forGetter(PolleraCorte::capaRuedo),
+                Codec.BOOL.optionalFieldOf("capa_capucha").forGetter(PolleraCorte::capaCapucha),
+                Codec.BOOL.optionalFieldOf("capa_cuello").forGetter(PolleraCorte::capaCuello)
+        ).apply(i, PolleraCorte::new));
+    }
+
+    public static ComboCorte polleraLargo(com.femclothes.item.PolleraLargo v) {
+        return VACIO.conPollera(new PolleraCorte(Optional.of(v), Optional.empty()));
+    }
+
+    public static ComboCorte polleraForma(com.femclothes.item.PolleraForma v) {
+        return VACIO.conPollera(new PolleraCorte(Optional.empty(), Optional.of(v)));
+    }
+
+    public static ComboCorte capaLargo(com.femclothes.item.CapaLargo v) {
+        return VACIO.conPollera(new PolleraCorte(Optional.empty(), Optional.empty(), Optional.of(v),
+                Optional.empty(), Optional.empty(), Optional.empty()));
+    }
+
+    public static ComboCorte capaRuedo(com.femclothes.item.CapaRuedo v) {
+        return VACIO.conPollera(new PolleraCorte(Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.of(v), Optional.empty(), Optional.empty()));
+    }
+
+    public static ComboCorte capaCapucha(boolean v) {
+        return VACIO.conPollera(new PolleraCorte(Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.of(v), Optional.empty()));
+    }
+
+    public static ComboCorte capaCuello(boolean v) {
+        return VACIO.conPollera(new PolleraCorte(Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.empty(), Optional.of(v)));
+    }
+
+    public ComboCorte conPollera(PolleraCorte p) {
+        return new ComboCorte(remeraLargo, remeraManga, remeraCuello, pantalonTiro,
+                pantalonLargoSuperior, pantalonLargoInferior, mediasLargoSuperior, mediasLargoInferior,
+                calientabrazosCoberturaSuperior, calientabrazosCoberturaInferior, calce, red,
+                capaPatron, lado, iconoOrigen, Optional.of(p));
+    }
 
     /** Un molde de patrón en un índice de capa (0..2) — ver {@link #capaPatron}. */
     public record CapaIndexada(int indice, Identifier patronId) {}
@@ -94,7 +167,7 @@ public record ComboCorte(
             Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
             Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
             Optional.empty(),
-            Lado.AMBAS, Optional.empty());
+            Lado.AMBAS, Optional.empty(), Optional.empty());
 
     // ── factories: un campo poblado por llamada, evita el positional de 15 args ──
 
@@ -103,7 +176,7 @@ public record ComboCorte(
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(),
-                Lado.AMBAS, Optional.empty());
+                Lado.AMBAS, Optional.empty(), Optional.empty());
     }
 
     public static ComboCorte remeraManga(Variante.Manga v) {
@@ -116,7 +189,7 @@ public record ComboCorte(
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(),
-                lado, Optional.empty());
+                lado, Optional.empty(), Optional.empty());
     }
 
     public static ComboCorte remeraCuello(Variante.Cuello v) {
@@ -124,7 +197,7 @@ public record ComboCorte(
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(),
-                Lado.AMBAS, Optional.empty());
+                Lado.AMBAS, Optional.empty(), Optional.empty());
     }
 
     public static ComboCorte tiro(PantalonTiro t) {
@@ -132,7 +205,7 @@ public record ComboCorte(
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(),
-                Lado.AMBAS, Optional.empty());
+                Lado.AMBAS, Optional.empty(), Optional.empty());
     }
 
     public static ComboCorte pantalonSuperior(Botamanga v, Lado lado) {
@@ -140,7 +213,7 @@ public record ComboCorte(
                 Optional.of(v), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(),
-                lado, Optional.empty());
+                lado, Optional.empty(), Optional.empty());
     }
 
     public static ComboCorte pantalonInferior(Botamanga v, Lado lado) {
@@ -148,7 +221,7 @@ public record ComboCorte(
                 Optional.empty(), Optional.of(v), Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(),
-                lado, Optional.empty());
+                lado, Optional.empty(), Optional.empty());
     }
 
     public static ComboCorte mediasSuperior(Botamanga v, Lado lado) {
@@ -156,7 +229,7 @@ public record ComboCorte(
                 Optional.empty(), Optional.empty(), Optional.of(v), Optional.empty(),
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(),
-                lado, Optional.empty());
+                lado, Optional.empty(), Optional.empty());
     }
 
     public static ComboCorte mediasInferior(Botamanga v, Lado lado) {
@@ -164,7 +237,7 @@ public record ComboCorte(
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(v),
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(),
-                lado, Optional.empty());
+                lado, Optional.empty(), Optional.empty());
     }
 
     public static ComboCorte calientabrazosSuperior(Variante.Manga v, Lado lado) {
@@ -172,7 +245,7 @@ public record ComboCorte(
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.of(v), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(),
-                lado, Optional.empty());
+                lado, Optional.empty(), Optional.empty());
     }
 
     public static ComboCorte calientabrazosInferior(Variante.Manga v, Lado lado) {
@@ -180,7 +253,7 @@ public record ComboCorte(
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.of(v), Optional.empty(), Optional.empty(),
                 Optional.empty(),
-                lado, Optional.empty());
+                lado, Optional.empty(), Optional.empty());
     }
 
     /** Calce — a pedido, transversal a las 4 categorías, sin anclaje ni lado. */
@@ -189,7 +262,7 @@ public record ComboCorte(
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.empty(), Optional.of(v), Optional.empty(),
                 Optional.empty(),
-                Lado.AMBAS, Optional.empty());
+                Lado.AMBAS, Optional.empty(), Optional.empty());
     }
 
     /** Red — a pedido (2026-09-20), transversal a las 4 categorías, sin anclaje ni lado. */
@@ -198,7 +271,7 @@ public record ComboCorte(
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(v),
                 Optional.empty(),
-                Lado.AMBAS, Optional.empty());
+                Lado.AMBAS, Optional.empty(), Optional.empty());
     }
 
     /** Material en un índice de capa (2026-09-24) — transversal, sin lado (remera es AMBAS-únicamente para patrón). */
@@ -212,7 +285,7 @@ public record ComboCorte(
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.of(new CapaIndexada(indice, patronId)),
-                lado, Optional.empty());
+                lado, Optional.empty(), Optional.empty());
     }
 
     /**
@@ -230,7 +303,7 @@ public record ComboCorte(
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(),
-                Lado.AMBAS, Optional.empty());
+                Lado.AMBAS, Optional.empty(), Optional.empty());
     }
 
     public static ComboCorte coberturaExtremidad(Botamanga pantalon, Botamanga medias, Variante.Manga calientabrazos) {
@@ -242,7 +315,7 @@ public record ComboCorte(
                 Optional.of(calientabrazos), Optional.empty(),
                 Optional.empty(), Optional.empty(),
                 Optional.empty(),
-                Lado.AMBAS, Optional.empty());
+                Lado.AMBAS, Optional.empty(), Optional.empty());
     }
 
     /** Copia con {@link #iconoOrigen} puesto — ver {@code ModeladoBlockEntity#fijar}. */
@@ -251,7 +324,7 @@ public record ComboCorte(
                 pantalonLargoSuperior, pantalonLargoInferior, mediasLargoSuperior, mediasLargoInferior,
                 calientabrazosCoberturaSuperior, calientabrazosCoberturaInferior, calce, red,
                 capaPatron, lado,
-                Optional.of(id));
+                Optional.of(id), pollera);
     }
 
     public boolean estaVacio() {
@@ -260,7 +333,8 @@ public record ComboCorte(
                 && pantalonLargoSuperior.isEmpty() && pantalonLargoInferior.isEmpty()
                 && mediasLargoSuperior.isEmpty() && mediasLargoInferior.isEmpty()
                 && calientabrazosCoberturaSuperior.isEmpty() && calientabrazosCoberturaInferior.isEmpty()
-                && calce.isEmpty() && red.isEmpty() && capaPatron.isEmpty();
+                && calce.isEmpty() && red.isEmpty() && capaPatron.isEmpty()
+                && (pollera.isEmpty() || pollera.get().vacio());
     }
 
     private static final Codec<Lado> LADO_CODEC = Codec.STRING.xmap(Lado::valueOf, Enum::name);
@@ -298,7 +372,8 @@ public record ComboCorte(
             CAPA_INDEXADA_CODEC.optionalFieldOf("capa_patron")
                     .forGetter(ComboCorte::capaPatron),
             LADO_CODEC.optionalFieldOf("lado", Lado.AMBAS).forGetter(ComboCorte::lado),
-            Identifier.CODEC.optionalFieldOf("icono_origen").forGetter(ComboCorte::iconoOrigen)
+            Identifier.CODEC.optionalFieldOf("icono_origen").forGetter(ComboCorte::iconoOrigen),
+            PolleraCorte.CODEC.optionalFieldOf("pollera").forGetter(ComboCorte::pollera)
     ).apply(i, ComboCorte::new));
 
     public static final PacketCodec<ByteBuf, ComboCorte> PACKET_CODEC = PacketCodec.of(
@@ -323,6 +398,15 @@ public record ComboCorte(
                 buf.writeByte(combo.lado.ordinal());
                 buf.writeBoolean(combo.iconoOrigen.isPresent());
                 combo.iconoOrigen.ifPresent(id -> Identifier.PACKET_CODEC.encode(buf, id));
+                buf.writeBoolean(combo.pollera.isPresent());
+                combo.pollera.ifPresent(p -> {
+                    writeOptEnum(buf, p.largo());
+                    writeOptEnum(buf, p.forma());
+                    writeOptEnum(buf, p.capaLargo());
+                    writeOptEnum(buf, p.capaRuedo());
+                    writeOptBool(buf, p.capaCapucha());
+                    writeOptBool(buf, p.capaCuello());
+                });
             },
             buf -> new ComboCorte(
                     readOptEnum(buf, Variante.Largo.values()),
@@ -341,7 +425,22 @@ public record ComboCorte(
                             ? Optional.of(new CapaIndexada(buf.readInt(), Identifier.PACKET_CODEC.decode(buf)))
                             : Optional.empty(),
                     Lado.values()[buf.readByte()],
-                    buf.readBoolean() ? Optional.of(Identifier.PACKET_CODEC.decode(buf)) : Optional.empty()));
+                    buf.readBoolean() ? Optional.of(Identifier.PACKET_CODEC.decode(buf)) : Optional.empty(),
+                    buf.readBoolean() ? Optional.of(new PolleraCorte(
+                            readOptEnum(buf, com.femclothes.item.PolleraLargo.values()),
+                            readOptEnum(buf, com.femclothes.item.PolleraForma.values()),
+                            readOptEnum(buf, com.femclothes.item.CapaLargo.values()),
+                            readOptEnum(buf, com.femclothes.item.CapaRuedo.values()),
+                            readOptBool(buf), readOptBool(buf))) : Optional.empty()));
+
+    private static void writeOptBool(ByteBuf buf, Optional<Boolean> value) {
+        buf.writeByte(value.isEmpty() ? 0 : value.get() ? 2 : 1);
+    }
+
+    private static Optional<Boolean> readOptBool(ByteBuf buf) {
+        byte b = buf.readByte();
+        return b == 0 ? Optional.empty() : Optional.of(b == 2);
+    }
 
     private static <E extends Enum<E>> void writeOptEnum(ByteBuf buf, Optional<E> value) {
         buf.writeBoolean(value.isPresent());

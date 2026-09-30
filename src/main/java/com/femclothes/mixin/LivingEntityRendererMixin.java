@@ -81,4 +81,17 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, M extend
             CuerpoGeometria.delJugador(biped, parte).visible = true;
         }
     }
+
+    /**
+     * El twirl (2026-09-30): una vuelta entera alrededor del eje del cuerpo,
+     * después del giro normal del cuerpo. Ver {@code client/TwirlCliente}.
+     */
+    @Inject(method = "setupTransforms", at = @At("TAIL"))
+    private void femclothes$twirl(T entidad, MatrixStack matrices, float animationProgress, float bodyYaw,
+                                  float tickDelta, float scale, CallbackInfo ci) {
+        float p = com.femclothes.client.TwirlCliente.progreso(entidad, tickDelta);
+        if (p < 0f) return;
+        matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(
+                -com.femclothes.client.TwirlCliente.angulo(p)));
+    }
 }

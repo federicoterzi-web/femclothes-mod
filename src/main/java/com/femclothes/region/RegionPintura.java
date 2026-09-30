@@ -27,7 +27,11 @@ public enum RegionPintura implements StringIdentifiable {
     // 2026-09-27, capas por cuadradito: el cuadradito del medio de la
     // remera (MAT3) pinta el cuerpo entre cuello y borde, y el Tiro del
     // pantalón pinta la cintura (banda de torso + arranque de las piernas).
-    PECHO("pecho"), CINTURA("cintura");
+    PECHO("pecho"), CINTURA("cintura"),
+    // La capa (2026-09-29, "forro aparte"): exterior, forro y detalles
+    // (capucha + cuello alto), cada uno con su cuadradito en Tintes. Rects
+    // propios, no salen de una Parte (ver render.CapaMalla).
+    CAPA_EXTERIOR("capa_exterior"), CAPA_FORRO("capa_forro"), CAPA_DETALLES("capa_detalles");
 
     public final String clave;
 
@@ -68,7 +72,7 @@ public enum RegionPintura implements StringIdentifiable {
      */
     public Parte parte(Categoria cat) {
         return switch (this) {
-            case TODO -> null;
+            case TODO, CAPA_EXTERIOR, CAPA_FORRO, CAPA_DETALLES -> null;
             case CUELLO, BORDE_INFERIOR, PECHO, CINTURA -> Parte.TORSO;
             case MANGA_IZQ -> Parte.BRAZO_IZQ;
             case MANGA_DER -> Parte.BRAZO_DER;
@@ -80,7 +84,7 @@ public enum RegionPintura implements StringIdentifiable {
     /** Filas [desde,hasta) de las 12 de esa {@link Parte} que ocupa esta región. */
     private int[] filas() {
         return switch (this) {
-            case TODO, MANGA_IZQ, MANGA_DER -> new int[]{0, 12};
+            case TODO, MANGA_IZQ, MANGA_DER, CAPA_EXTERIOR, CAPA_FORRO, CAPA_DETALLES -> new int[]{0, 12};
             case CUELLO -> new int[]{0, FILAS_CUELLO};
             case BORDE_INFERIOR -> new int[]{12 - FILAS_BORDE, 12};
             case SUP_IZQ, SUP_DER -> new int[]{0, 6};
@@ -100,6 +104,24 @@ public enum RegionPintura implements StringIdentifiable {
      * caras (der+frente+izq+atrás juntas) a las filas que les tocan.
      */
     public List<CajaSkin.Rect> rects(Categoria cat, int escala) {
+        // Capa: en px de la textura de 64 (cuboide 10x16x1 en uv 0,0 y
+        // detalles 12x8x2 en uv 24,0). Exterior = cara del frente + la tapa
+        // de arriba y el canto derecho; forro = cara de atrás + tapa de abajo
+        // y canto izquierdo.
+        switch (this) {
+            case CAPA_EXTERIOR -> {
+                return List.of(new CajaSkin.Rect(0, escala, 11 * escala, 17 * escala),
+                        new CajaSkin.Rect(escala, 0, 11 * escala, escala));
+            }
+            case CAPA_FORRO -> {
+                return List.of(new CajaSkin.Rect(11 * escala, escala, 22 * escala, 17 * escala),
+                        new CajaSkin.Rect(11 * escala, 0, 21 * escala, escala));
+            }
+            case CAPA_DETALLES -> {
+                return List.of(new CajaSkin.Rect(24 * escala, 0, 52 * escala, 10 * escala));
+            }
+            default -> { }
+        }
         Parte parte = parte(cat);
         if (parte == null) return null;
         CajaSkin caja = LayoutSkin.base(parte, false).escalada(escala);

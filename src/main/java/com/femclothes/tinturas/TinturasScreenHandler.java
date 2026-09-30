@@ -46,7 +46,13 @@ public class TinturasScreenHandler extends ScreenHandler {
     public static final int ENTRADA_X = 48, SALIDA_X = 176, SLOT_Y_IO = 184;
 
     private static final int SLOT_ALMACEN_INICIO = 0;
-    private static final int SLOT_CASILLAS_INICIO = SLOT_ALMACEN_INICIO + TinturasBlockEntity.ALMACEN_TAMANO;
+    private static final int SLOT_CASILLAS_INICIO = SLOT_ALMACEN_INICIO + TinturasBlockEntity.ALMACEN_TOTAL;
+    /**
+     * Almacén en la columna IZQUIERDA, 5x6 debajo de Guardar diseño
+     * (2026-09-28, "quiero mas espacios de almacenamiento"): a la derecha
+     * ya no entraba más que la fila de 9.
+     */
+    public static final int ALMACEN_X = 8, ALMACEN_Y = 280, ALMACEN_COLUMNAS = 5;
     private static final int SLOT_CASILLAS_TAMANO =
             TinturasBlockEntity.CASILLAS * TinturasBlockEntity.Categoria.values().length;
     // Entrada/salida — a pedido (2026-09-21, "slot de entrada y de
@@ -82,8 +88,12 @@ public class TinturasScreenHandler extends ScreenHandler {
         // (dentro del esquema) aunque se agregue DESPUÉS acá. Columna
         // DERECHA, debajo de la vista previa de color — mismo criterio que
         // ModeladoScreenHandler (el storage vive a la derecha, no en medio).
-        for (int i = 0; i < TinturasBlockEntity.ALMACEN_TAMANO; i++) {
-            addSlot(new Slot(be, TinturasBlockEntity.ALMACEN_INICIO + i, M_DERECHA + i * 18, 200));
+        for (int i = 0; i < TinturasBlockEntity.ALMACEN_TOTAL; i++) {
+            int indice = TinturasBlockEntity.slotAlmacen(i);
+            addSlot(new Slot(be, indice, ALMACEN_X + (i % ALMACEN_COLUMNAS) * 18, ALMACEN_Y + (i / ALMACEN_COLUMNAS) * 18) {
+                @Override
+                public boolean canInsert(ItemStack stack) { return be.isValid(indice, stack); }
+            });
         }
 
         // Un slot de molde por CUADRADITO del esquema, por categoría
@@ -146,7 +156,7 @@ public class TinturasScreenHandler extends ScreenHandler {
      * esquema: sus 3 van en una fila fija dentro del hueco del dibujo.
      */
     public static int[] posCasilla(TinturasBlockEntity.Categoria cat, int i) {
-        if (cat == TinturasBlockEntity.Categoria.POLLERA) {
+        if (cat == TinturasBlockEntity.Categoria.POLLERA || cat == TinturasBlockEntity.Categoria.CAPA) {
             return new int[]{M_MEDIO + 84 + i * 28, 94};
         }
         int[] p = ModeladoScreenHandler.PIN_POS[cat.ordinal()][i];
@@ -155,7 +165,7 @@ public class TinturasScreenHandler extends ScreenHandler {
 
     /** Centro de la chincheta del cuadradito {@code i} (relativo al panel) — {@code PIN_BTN} de la Modeladora, o arriba a la derecha del slot en Pollera. */
     public static int[] posChincheta(TinturasBlockEntity.Categoria cat, int i) {
-        if (cat == TinturasBlockEntity.Categoria.POLLERA) {
+        if (cat == TinturasBlockEntity.Categoria.POLLERA || cat == TinturasBlockEntity.Categoria.CAPA) {
             int[] s = posCasilla(cat, i);
             return new int[]{s[0] + 17, s[1] - 1};
         }
@@ -202,7 +212,51 @@ public class TinturasScreenHandler extends ScreenHandler {
             if (motivo != null) player.sendMessage(motivo, true);
             return motivo == null;
         }
+        if (id == TinturasBlockEntity.BTN_ENVASAR || id == TinturasBlockEntity.BTN_USAR_MUESTRA) {
+            if (player.getWorld().isClient) return true;
+            net.minecraft.text.Text motivo = id == TinturasBlockEntity.BTN_ENVASAR ? envasar(player) : usarMuestra(player);
+            if (motivo != null) player.sendMessage(motivo, true);
+            return motivo == null;
+        }
         return be.onButtonClick(id);
+    }
+
+    /**
+     * Envasar (2026-09-30, "que la estacion de tintes genere un mezcla de
+     * color por si la gente se quiere pasar colores"): gasta un frasco de
+     * vidrio del inventario y da una muestra con el color que se está
+     * editando. No gasta tinta: es la receta del color, no tinta.
+     */
+    @org.jetbrains.annotations.Nullable
+    private net.minecraft.text.Text envasar(PlayerEntity player) {
+        var inv = player.getInventory();
+        int frasco = -1;
+        for (int i = 0; i < inv.size() && frasco < 0; i++) {
+            if (inv.getStack(i).isOf(net.minecraft.item.Items.GLASS_BOTTLE)) frasco = i;
+        }
+        if (frasco < 0 && !player.isCreative()) {
+            return net.minecraft.text.Text.translatable("femclothes.muestra.sin_frasco");
+        }
+        if (frasco >= 0 && !player.isCreative()) inv.getStack(frasco).decrement(1);
+        ItemStack muestra = com.femclothes.item.MuestraColorItem.con(
+                new ItemStack(com.femclothes.item.FemclothesItems.TINTE_MEZCLA), be.mezclaEnEdicion());
+        inv.offerOrDrop(muestra);
+        return null;
+    }
+
+    /** Usar muestra: la del cursor, o si no la primera del inventario; no se gasta. */
+    @org.jetbrains.annotations.Nullable
+    private net.minecraft.text.Text usarMuestra(PlayerEntity player) {
+        int[] mezcla = com.femclothes.item.MuestraColorItem.mezcla(getCursorStack());
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.size() && mezcla == null; i++) {
+            if (inv.getStack(i).isOf(com.femclothes.item.FemclothesItems.TINTE_MEZCLA)) {
+                mezcla = com.femclothes.item.MuestraColorItem.mezcla(inv.getStack(i));
+            }
+        }
+        if (mezcla == null) return net.minecraft.text.Text.translatable("femclothes.muestra.sin_muestra");
+        be.ponerMezclaEnEdicion(mezcla);
+        return null;
     }
 
     @Override

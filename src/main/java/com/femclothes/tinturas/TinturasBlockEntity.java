@@ -128,6 +128,8 @@ public class TinturasBlockEntity extends BlockEntity
     public static final int CASILLAS = 12;
     /** Pollera no tiene esquema: sus capas son 3 cuadraditos sueltos, todos de prenda entera. */
     public static final int CASILLAS_POLLERA = 3;
+    /** Capa (2026-09-29, "forro aparte"): Exterior, Forro y Detalles (capucha y cuello alto). */
+    public static final int CASILLAS_CAPA = 3;
     public static final int CASILLAS_INICIO = ALMACEN_FIN;
     public static final int TAMANO = CASILLAS_INICIO + CASILLAS * Categoria.values().length;
     /** Opacidad en pasos de 10% (10..100). */
@@ -153,6 +155,22 @@ public class TinturasBlockEntity extends BlockEntity
      * {@code SublimadoraBlockEntity.salida}.
      */
     public static final int SLOT_SALIDA = SLOT_TINTA_BASE + 4;
+    /**
+     * Almacén más grande (2026-09-28, "quiero mas espacios de
+     * almacenamiento"): los lugares nuevos van en una lista APARTE al
+     * final del inventario — el almacén de siempre (0..8) está al
+     * principio, y agrandarlo ahí corría los índices guardados de los
+     * moldes de los cuadraditos. En pantalla se ven los 30 juntos, en una
+     * grilla de 5x6 en la columna izquierda (ver TinturasScreenHandler).
+     */
+    public static final int ALMACEN_EXTRA = 21;
+    public static final int SLOT_ALMACEN_EXTRA = SLOT_SALIDA + 1;
+    public static final int ALMACEN_TOTAL = ALMACEN_TAMANO + ALMACEN_EXTRA;
+
+    /** Índice de inventario del lugar {@code i} (0..ALMACEN_TOTAL-1) del almacén, tal como se ve en pantalla. */
+    public static int slotAlmacen(int i) {
+        return i < ALMACEN_TAMANO ? ALMACEN_INICIO + i : SLOT_ALMACEN_EXTRA + (i - ALMACEN_TAMANO);
+    }
     /** Mismo orden que {@code C,M,Y,K} — duplicado de SublimadoraBlock.TINTES (paquete distinto). */
     private static final net.minecraft.item.Item[] TINTES = {
             net.minecraft.item.Items.CYAN_DYE, net.minecraft.item.Items.MAGENTA_DYE,
@@ -173,6 +191,8 @@ public class TinturasBlockEntity extends BlockEntity
     private ItemStack salida = ItemStack.EMPTY;
 
     private final DefaultedList<ItemStack> items = DefaultedList.ofSize(TAMANO, ItemStack.EMPTY);
+    /** Los lugares nuevos del almacén — ver {@link #ALMACEN_EXTRA}. */
+    private final DefaultedList<ItemStack> almacenExtra = DefaultedList.ofSize(ALMACEN_EXTRA, ItemStack.EMPTY);
 
     private final int[] cargas = new int[4];
     /**
@@ -226,6 +246,13 @@ public class TinturasBlockEntity extends BlockEntity
         /** Qué color (0..2) editan los sliders ahora. */
         public int editando = 0;
         public boolean fijada = false;
+        /**
+         * Ojo cerrado en el panel de capas (Fase B, 2026-09-28): sigue
+         * fijada y se guarda en los diseños, pero no se aplica al teñir, no
+         * gasta tinta y no sale en la vista previa — "oculta también al
+         * teñir", como en un editor de imágenes.
+         */
+        public boolean oculta = false;
         /** El patrón con el que quedó fijada (el molde ya volvió al almacén) — null = liso. */
         @Nullable public Identifier patronFijado = null;
 
@@ -254,6 +281,7 @@ public class TinturasBlockEntity extends BlockEntity
             c.variacion = variacion;
             c.editando = editando;
             c.fijada = fijada;
+            c.oculta = oculta;
             c.patronFijado = patronFijado;
             return c;
         }
@@ -277,6 +305,7 @@ public class TinturasBlockEntity extends BlockEntity
             c.putString("Variacion", variacion.name());
             c.putInt("Editando", editando);
             c.putBoolean("Fijada", fijada);
+            c.putBoolean("Oculta", oculta);
             if (patronFijado != null) c.putString("Patron", patronFijado.toString());
             return c;
         }
@@ -308,6 +337,7 @@ public class TinturasBlockEntity extends BlockEntity
             r.contorno = c.getBoolean("Contorno");
             r.editando = MathHelper.clamp(c.getInt("Editando"), 0, r.colores - 1);
             r.fijada = c.getBoolean("Fijada");
+            r.oculta = c.getBoolean("Oculta");
             r.patronFijado = c.contains("Patron") ? Identifier.tryParse(c.getString("Patron")) : null;
             return r;
         }
@@ -318,7 +348,8 @@ public class TinturasBlockEntity extends BlockEntity
      * tiene sus PROPIOS cuadraditos, orden y seleccionado, mismo espíritu
      * que {@code ModeladoBlockEntity.Categoria}.
      */
-    public enum Categoria { REMERA, PANTALON, MEDIAS, CALIENTABRAZOS, POLLERA }
+    /** Siempre al FINAL: los cuadraditos de cada categoría se guardan por índice (ver {@link #casillaSlot}). */
+    public enum Categoria { REMERA, PANTALON, MEDIAS, CALIENTABRAZOS, POLLERA, CAPA }
 
     private Categoria categoria = Categoria.REMERA;
     private final Casilla[][] casillas = new Casilla[Categoria.values().length][CASILLAS];
@@ -355,6 +386,14 @@ public class TinturasBlockEntity extends BlockEntity
     public static com.femclothes.region.RegionPintura regionDe(Categoria cat, int i) {
         if (i < 0 || i >= CASILLAS) return null;
         if (cat == Categoria.POLLERA) return i < CASILLAS_POLLERA ? com.femclothes.region.RegionPintura.TODO : null;
+        if (cat == Categoria.CAPA) {
+            return switch (i) {
+                case 0 -> com.femclothes.region.RegionPintura.CAPA_EXTERIOR;
+                case 1 -> com.femclothes.region.RegionPintura.CAPA_FORRO;
+                case 2 -> com.femclothes.region.RegionPintura.CAPA_DETALLES;
+                default -> null;
+            };
+        }
         boolean cruzado = cat == Categoria.MEDIAS || cat == Categoria.CALIENTABRAZOS;
         return switch (com.femclothes.modelado.ModeladoBlockEntity.ROLES[cat.ordinal()][i]) {
             case CUELLO -> com.femclothes.region.RegionPintura.CUELLO;
@@ -422,6 +461,7 @@ public class TinturasBlockEntity extends BlockEntity
         if (stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID) return Categoria.MEDIAS;
         if (stack.getItem() instanceof com.femclothes.item.CalientabrazosItem) return Categoria.CALIENTABRAZOS;
         if (stack.getItem() instanceof com.femclothes.item.PolleraItem) return Categoria.POLLERA;
+        if (stack.getItem() instanceof com.femclothes.item.CapaItem) return Categoria.CAPA;
         return null;
     }
 
@@ -529,6 +569,10 @@ public class TinturasBlockEntity extends BlockEntity
      */
     public static void tick(net.minecraft.world.World world, BlockPos pos, BlockState state, TinturasBlockEntity be) {
         if (!world.isClient && !be.salida.isEmpty()) be.empujarSalida();
+        // Luz del LED (2026-09-29, "hace que las luces de las maquinas iluminen"):
+        // mismo criterio que TinturasGeoModel#coloresLed.
+        com.femclothes.util.LuzMaquina.actualizar(world, pos, state,
+                be.estado == Estado.TINIENDO || (be.estado == Estado.REPOSO && !be.salida.isEmpty()));
         if (world.isClient || be.estado != Estado.TINIENDO) return;
 
         be.progreso++;
@@ -655,6 +699,20 @@ public class TinturasBlockEntity extends BlockEntity
     private Casilla casillaSeleccionada() { return casilla(seleccionada()); }
 
     /** Nivel del canal CMYK del cuadradito seleccionado — lo que muestran los sliders. */
+    /** Copia de la mezcla del color en edición del cuadradito seleccionado (para envasarla). */
+    public int[] mezclaEnEdicion() {
+        Casilla c = casillaSeleccionada();
+        return c.mezclaDe(c.editando).clone();
+    }
+
+    /** Pone {@code mezcla} en el color en edición del cuadradito seleccionado (una muestra de color). */
+    public void ponerMezclaEnEdicion(int[] mezcla) {
+        Casilla c = casillaSeleccionada();
+        int[] destino = c.mezclaDe(c.editando);
+        for (int i = 0; i < CANALES && i < mezcla.length; i++) destino[i] = MathHelper.clamp(mezcla[i], 0, NIVELES_MEZCLA - 1);
+        sincronizar();
+    }
+
     public int nivelBorrador(int canal) {
         Casilla c = casillaSeleccionada();
         return c.mezclaDe(c.editando)[canal];
@@ -727,6 +785,22 @@ public class TinturasBlockEntity extends BlockEntity
         return 0;
     }
 
+    /**
+     * Las filas del panel de capas (Fase B, 2026-09-28): los cuadraditos
+     * que participan (fijados + el seleccionado, ocultos incluidos), de la
+     * capa de ARRIBA (la que tapa) a la de abajo — como en un editor de
+     * imágenes.
+     */
+    public List<Integer> capasDelPanel() {
+        int c = categoria.ordinal();
+        List<Integer> filas = new ArrayList<>(CASILLAS);
+        for (int k = CASILLAS - 1; k >= 0; k--) {
+            int i = orden[c][k];
+            if (enBorrador(categoria, i)) filas.add(i);
+        }
+        return filas;
+    }
+
     /** Cuántas capas hay en la vista previa de la categoría actual. */
     public int capasEnBorrador() {
         int n = 0;
@@ -753,6 +827,7 @@ public class TinturasBlockEntity extends BlockEntity
             Casilla cas = casillas[c][i];
             Identifier patron;
             if (borrador ? !enBorrador(cat, i) : !cas.fijada) continue;
+            if (cas.oculta) continue;
             patron = patronEnBorrador(cat, i);
             List<Integer> extras = new ArrayList<>(2);
             for (int col = 1; col < cas.colores; col++) extras.add(cas.colorDe(col));
@@ -816,6 +891,9 @@ public class TinturasBlockEntity extends BlockEntity
     public static final int BTN_COLORES = BTN_SEMILLA + 1;
     public static final int BTN_CONTORNO = BTN_COLORES + 1;
     public static final int BTN_VARIACION = BTN_CONTORNO + 1;
+    /** Muestras de color (2026-09-30): los maneja TinturasScreenHandler, que tiene al jugador. */
+    public static final int BTN_ENVASAR = BTN_VARIACION + 1;
+    public static final int BTN_USAR_MUESTRA = BTN_ENVASAR + 1;
     /** + 0..2: qué color editan los sliders (click en su muestra). */
     public static final int BTN_EDITAR_COLOR_BASE = 90;
     /** + índice de cuadradito: lo selecciona para editar (click en su slot). */
@@ -823,6 +901,10 @@ public class TinturasBlockEntity extends BlockEntity
     /** + índice de cuadradito: su chincheta — ver {@link #chincheta}. */
     public static final int BTN_CHINCHETA_BASE = 60;
     /** + índice de diseño (0..{@link #DISENOS_MAXIMO}-1) — mismos valores que usa la Modeladora, sin colisión acá. */
+    /** Panel de capas (Fase B, 2026-09-28): ojo, subir y bajar de CADA fila — {@code base + cuadradito}. */
+    public static final int BTN_OJO_BASE = 110;
+    public static final int BTN_SUBIR_BASE = 130;
+    public static final int BTN_BAJAR_BASE = 150;
     public static final int BTN_CARGAR_DISENO_BASE = 300;
     public static final int BTN_BORRAR_DISENO_BASE = 320;
 
@@ -935,6 +1017,23 @@ public class TinturasBlockEntity extends BlockEntity
         if (id >= BTN_CHINCHETA_BASE && id < BTN_CHINCHETA_BASE + CASILLAS) {
             return chincheta(id - BTN_CHINCHETA_BASE);
         }
+        if (id >= BTN_OJO_BASE && id < BTN_OJO_BASE + CASILLAS) {
+            int i = id - BTN_OJO_BASE;
+            if (!enBorrador(categoria, i)) return false;
+            casilla(i).oculta = !casilla(i).oculta;
+            return true;
+        }
+        // Flechas de una fila del panel: la selecciona y la mueve (el orden
+        // es el mismo que usan ▼/▲ de abajo, ver mover).
+        if (id >= BTN_SUBIR_BASE && id < BTN_SUBIR_BASE + CASILLAS
+                || id >= BTN_BAJAR_BASE && id < BTN_BAJAR_BASE + CASILLAS) {
+            boolean subir = id < BTN_BAJAR_BASE;
+            int i = id - (subir ? BTN_SUBIR_BASE : BTN_BAJAR_BASE);
+            if (!enBorrador(categoria, i)) return false;
+            seleccionada[categoria.ordinal()] = i;
+            mover(subir ? 1 : -1);
+            return true;
+        }
         if (id >= BTN_CARGAR_DISENO_BASE && id < BTN_CARGAR_DISENO_BASE + DISENOS_MAXIMO) {
             return cargarDiseno(id - BTN_CARGAR_DISENO_BASE);
         }
@@ -981,17 +1080,20 @@ public class TinturasBlockEntity extends BlockEntity
 
     /** Mete {@code stack} entero en el almacén (apilando si se puede) — false y sin tocar nada si no entra. */
     private boolean guardarEnAlmacen(ItemStack stack) {
-        for (int s = ALMACEN_INICIO; s < ALMACEN_FIN; s++) {
-            ItemStack ahi = items.get(s);
+        // Todos los lugares en el orden de la pantalla (los 9 de siempre + los nuevos).
+        for (int i = 0; i < ALMACEN_TOTAL; i++) {
+            ItemStack ahi = getStack(slotAlmacen(i));
             if (!ahi.isEmpty() && ItemStack.areItemsAndComponentsEqual(ahi, stack)
                     && ahi.getCount() + stack.getCount() <= ahi.getMaxCount()) {
                 ahi.increment(stack.getCount());
                 return true;
             }
         }
-        for (int s = ALMACEN_INICIO; s < ALMACEN_FIN; s++) {
-            if (items.get(s).isEmpty()) {
-                items.set(s, stack.copy());
+        for (int i = 0; i < ALMACEN_TOTAL; i++) {
+            int s = slotAlmacen(i);
+            if (getStack(s).isEmpty()) {
+                if (s >= SLOT_ALMACEN_EXTRA) almacenExtra.set(s - SLOT_ALMACEN_EXTRA, stack.copy());
+                else items.set(s, stack.copy());
                 return true;
             }
         }
@@ -1188,6 +1290,10 @@ public class TinturasBlockEntity extends BlockEntity
         if (!hayFijadas(cat)) {
             return Text.translatable("femclothes.tinturas.aviso.sin_fijada_seleccionada");
         }
+        // Fijadas hay, pero todas con el ojo cerrado: no hay nada que aplicar.
+        if (capasDe(cat, false).isEmpty()) {
+            return Text.translatable("femclothes.tinturas.aviso.todas_ocultas");
+        }
 
         Garment garment = Garments.de(stack);
         if (garment != null && garment.regionesDe(Operacion.TENIR).isEmpty()
@@ -1200,7 +1306,7 @@ public class TinturasBlockEntity extends BlockEntity
         boolean[] canalUsado = new boolean[4];
         for (int i = 0; i < CASILLAS; i++) {
             Casilla cas = casillas[cat.ordinal()][i];
-            if (regionDe(cat, i) == null || !cas.fijada) continue;
+            if (regionDe(cat, i) == null || !cas.fijada || cas.oculta) continue;
             for (int col = 0; col < cas.colores; col++) {
                 // Solo C/M/Y/K — la transparencia (T) no gasta tinta.
                 for (int canal = 0; canal < 4; canal++) if (cas.mezclaDe(col)[canal] > 0) canalUsado[canal] = true;
@@ -1265,20 +1371,48 @@ public class TinturasBlockEntity extends BlockEntity
      * salió teñida, esa; si hay una cruda en la entrada, ESA con el
      * borrador encima; si no, el representativo de la categoría.
      */
-    public ItemStack prendaDeVistaPrevia() {
-        if (!salida.isEmpty()) return salida;
+    public ItemStack prendaDeVistaPrevia() { return prendaDeVistaPrevia(-1); }
+
+    /**
+     * Igual, con la zona del cuadradito {@code resaltada} (el que tiene el
+     * mouse encima en el esquema o en el panel de capas, -1 = ninguno)
+     * resaltada en 3D — Fase B (2026-09-28), "resto apagado": un velo
+     * oscuro sobre todo lo que NO es esa zona. Solo en esta copia de la
+     * vista previa, nunca en la prenda de verdad.
+     */
+    public ItemStack prendaDeVistaPrevia(int resaltada) {
+        if (!salida.isEmpty()) return conVelo(salida.copy(), categoriaDe(salida), resaltada);
         if (!prendaEntrada.isEmpty()) {
             Categoria cat = categoriaDe(prendaEntrada);
             if (cat != null) {
                 ItemStack copia = prendaEntrada.copy();
                 pintarStack(copia, capasDe(cat, true));
-                return copia;
+                return conVelo(copia, cat, resaltada);
             }
         }
         net.minecraft.item.Item item = itemRepresentativo(categoria);
         if (item == null) return ItemStack.EMPTY;
         ItemStack stack = new ItemStack(item);
         pintarStack(stack, capasDe(categoria, true));
+        return conVelo(stack, categoria, resaltada);
+    }
+
+    /** Opacidad del velo de "resto apagado" — lo de afuera de la zona queda al 40% de brillo. */
+    private static final int OPACIDAD_VELO = 60;
+
+    private ItemStack conVelo(ItemStack stack, @Nullable Categoria cat, int resaltada) {
+        if (resaltada < 0 || cat != categoria) return stack;
+        com.femclothes.region.RegionPintura region = regionDe(cat, resaltada);
+        // Prenda entera: no hay "resto" que apagar.
+        if (region == null || region == com.femclothes.region.RegionPintura.TODO) return stack;
+        List<RegionResolver.CapaPatron> capas = new ArrayList<>(
+                stack.getOrDefault(com.femclothes.item.FemclothesComponents.CAPAS_TINTE, List.of()));
+        capas.add(new RegionResolver.CapaPatron(null, 0x000000, TamanoPatron.GRANDE, 0f, 0.5f,
+                com.femclothes.render.PatronGenerador.Forma.ALTERNADO, false, region,
+                com.femclothes.region.ModoMezcla.MULTIPLICAR, OPACIDAD_VELO,
+                com.femclothes.render.Repeticion.GRILLA, 0, List.of(), false,
+                com.femclothes.render.Variacion.FIJO, true));
+        stack.set(com.femclothes.item.FemclothesComponents.CAPAS_TINTE, List.copyOf(capas));
         return stack;
     }
 
@@ -1312,14 +1446,16 @@ public class TinturasBlockEntity extends BlockEntity
             case MEDIAS -> com.femclothes.item.FemclothesItems.SOCKS_SOLID;
             case CALIENTABRAZOS -> com.femclothes.item.FemclothesItems.CALIENTABRAZOS;
             case POLLERA -> com.femclothes.item.FemclothesItems.POLLERA;
+            case CAPA -> com.femclothes.item.FemclothesItems.CAPA;
         };
     }
 
     // ── inventario (almacén + Activo) ────────────────────────────────
 
-    @Override public int size() { return TAMANO + 6; }
+    @Override public int size() { return SLOT_ALMACEN_EXTRA + ALMACEN_EXTRA; }
     @Override public boolean isEmpty() {
         for (ItemStack s : items) if (!s.isEmpty()) return false;
+        for (ItemStack s : almacenExtra) if (!s.isEmpty()) return false;
         if (!prendaEntrada.isEmpty() || !salida.isEmpty()) return false;
         for (int c : cargas) if (c > 0) return false;
         return true;
@@ -1327,6 +1463,7 @@ public class TinturasBlockEntity extends BlockEntity
 
     @Override
     public ItemStack getStack(int slot) {
+        if (slot >= SLOT_ALMACEN_EXTRA) return almacenExtra.get(slot - SLOT_ALMACEN_EXTRA);
         if (slot == SLOT_PRENDA_ENTRADA) return prendaEntrada;
         if (slot == SLOT_SALIDA) return salida;
         // Misma instancia entre llamadas — ver el javadoc de tintaSlotView.
@@ -1336,6 +1473,11 @@ public class TinturasBlockEntity extends BlockEntity
 
     @Override
     public ItemStack removeStack(int slot, int amount) {
+        if (slot >= SLOT_ALMACEN_EXTRA) {
+            ItemStack result = net.minecraft.inventory.Inventories.splitStack(almacenExtra, slot - SLOT_ALMACEN_EXTRA, amount);
+            if (!result.isEmpty()) markDirty();
+            return result;
+        }
         if (slot == SLOT_PRENDA_ENTRADA) {
             ItemStack resultado = prendaEntrada.split(amount);
             if (!resultado.isEmpty()) sincronizar();
@@ -1362,6 +1504,9 @@ public class TinturasBlockEntity extends BlockEntity
 
     @Override
     public ItemStack removeStack(int slot) {
+        if (slot >= SLOT_ALMACEN_EXTRA) {
+            return net.minecraft.inventory.Inventories.removeStack(almacenExtra, slot - SLOT_ALMACEN_EXTRA);
+        }
         if (slot == SLOT_PRENDA_ENTRADA) {
             ItemStack resultado = prendaEntrada;
             prendaEntrada = ItemStack.EMPTY;
@@ -1388,6 +1533,12 @@ public class TinturasBlockEntity extends BlockEntity
 
     @Override
     public void setStack(int slot, ItemStack stack) {
+        if (slot >= SLOT_ALMACEN_EXTRA) {
+            almacenExtra.set(slot - SLOT_ALMACEN_EXTRA, stack);
+            if (stack.getCount() > stack.getMaxCount()) stack.setCount(stack.getMaxCount());
+            sincronizar();
+            return;
+        }
         if (slot == SLOT_PRENDA_ENTRADA) {
             if (stack.isEmpty()) {
                 prendaEntrada = ItemStack.EMPTY;
@@ -1420,6 +1571,7 @@ public class TinturasBlockEntity extends BlockEntity
     // canPlayerUse ya está definido más abajo (sección "pantalla") — sirve para las dos interfaces (Inventory y el ScreenHandler).
     @Override
     public boolean isValid(int slot, ItemStack stack) {
+        if (slot >= SLOT_ALMACEN_EXTRA) return stack.getItem() instanceof ClothingPatternItem;
         if (slot == SLOT_PRENDA_ENTRADA) {
             // estado == REPOSO también acá (2026-09-21): mientras está
             // TINIENDO, prendaEntrada NO está vacía (sigue mostrando la
@@ -1442,6 +1594,7 @@ public class TinturasBlockEntity extends BlockEntity
     @Override
     public void clear() {
         items.clear();
+        almacenExtra.clear();
         prendaEntrada = ItemStack.EMPTY;
         salida = ItemStack.EMPTY;
         java.util.Arrays.fill(cargas, 0);
@@ -1567,6 +1720,10 @@ public class TinturasBlockEntity extends BlockEntity
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.writeNbt(nbt, registries);
         net.minecraft.inventory.Inventories.writeNbt(nbt, items, registries);
+        // Aparte, en su propio compuesto: Inventories escribe siempre en "Items".
+        NbtCompound extra = new NbtCompound();
+        net.minecraft.inventory.Inventories.writeNbt(extra, almacenExtra, registries);
+        nbt.put("AlmacenExtra", extra);
         if (!prendaEntrada.isEmpty()) nbt.put("PrendaEntrada", prendaEntrada.encode(registries));
         if (!salida.isEmpty()) nbt.put("Salida", salida.encode(registries));
         nbt.putString("Estado", estado.name());
@@ -1625,6 +1782,8 @@ public class TinturasBlockEntity extends BlockEntity
         super.readNbt(nbt, registries);
         items.clear();
         net.minecraft.inventory.Inventories.readNbt(nbt, items, registries);
+        almacenExtra.clear();
+        net.minecraft.inventory.Inventories.readNbt(nbt.getCompound("AlmacenExtra"), almacenExtra, registries);
         prendaEntrada = nbt.contains("PrendaEntrada")
                 ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("PrendaEntrada")) : ItemStack.EMPTY;
         salida = nbt.contains("Salida")

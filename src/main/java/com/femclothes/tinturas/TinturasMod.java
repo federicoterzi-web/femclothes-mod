@@ -26,7 +26,8 @@ public final class TinturasMod {
                     // block entity, modelo dye_station) — sin esto vanilla
                     // lo trata como cubo opaco sólido y cullea la cara del
                     // bloque de abajo (mismo bug que tuvo Modeladora).
-                    .nonOpaque());
+                    .nonOpaque()
+                    .luminance(com.femclothes.util.LuzMaquina::luminancia));
 
     public static final TinturasBlockItem TINTURAS_BLOCK_ITEM = new TinturasBlockItem(TINTURAS_BLOCK, new Item.Settings());
 

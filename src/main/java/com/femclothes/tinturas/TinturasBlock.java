@@ -52,7 +52,8 @@ public class TinturasBlock extends BlockWithEntity {
 
     public TinturasBlock(Settings settings) {
         super(settings);
-        setDefaultState(getStateManager().getDefaultState().with(FACING, Direction.NORTH));
+        setDefaultState(getStateManager().getDefaultState().with(FACING, Direction.NORTH)
+                .with(com.femclothes.util.LuzMaquina.LIT, false));
     }
 
     @Override
@@ -60,7 +61,7 @@ public class TinturasBlock extends BlockWithEntity {
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, com.femclothes.util.LuzMaquina.LIT);
     }
 
     @Override
@@ -89,6 +90,20 @@ public class TinturasBlock extends BlockWithEntity {
     }
 
     /** GeckoLib dibuja el bloque completo desde el block entity renderer (modelo dye_station). */
+    /** Cae con todo adentro, como una shulker (ver {@link com.femclothes.util.DropMaquina}). */
+    @Override
+    protected java.util.List<ItemStack> getDroppedStacks(BlockState state,
+            net.minecraft.loot.context.LootContextParameterSet.Builder builder) {
+        return com.femclothes.util.DropMaquina.drops(this, builder);
+    }
+
+    @Override
+    public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
+        com.femclothes.util.DropMaquina.enCreativo(world, pos, player, this,
+                !(world.getBlockEntity(pos) instanceof TinturasBlockEntity be) || be.isEmpty());
+        return super.onBreak(world, pos, state, player);
+    }
+
     @Override
     protected BlockRenderType getRenderType(BlockState state) {
         return BlockRenderType.INVISIBLE;

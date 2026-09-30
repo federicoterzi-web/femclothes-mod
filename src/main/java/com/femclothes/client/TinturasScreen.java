@@ -33,8 +33,12 @@ import java.util.List;
  *   Diseño, y los controles del cuadradito SELECCIONADO: modo de mezcla,
  *   opacidad, orden, tamaño/ángulo/posición/forma/invertir.</li>
  *   <li>Derecha: los 4 sliders CMYK del cuadradito seleccionado + su
- *   muestra de color + almacén de moldes.</li>
+ *   muestra de color + almacén de moldes, y abajo el panel de capas
+ *   (Fase B, 2026-09-28): una fila por capa, de la de arriba a la de
+ *   abajo, con ojo, muestra, nombre y ▲▼.</li>
  * </ul>
+ * Mouse encima de un cuadradito (o de su fila en el panel): el visor 3D
+ * apaga todo lo que no es su zona.
  * Click en un cuadradito lo selecciona; su chincheta lo fija (entra al
  * diseño que se aplica) — sin molde queda como color liso.
  */
@@ -47,6 +51,8 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
     private static final int M_DERECHA = TinturasScreenHandler.M_DERECHA;
     /** Etiquetas de los 5 sliders — el quinto es la Transparencia de la tinta (2026-09-28). */
     private static final String[] NOMBRE_CANAL = { "Cyan", "Magenta", "Yellow", "Key", "Transp." };
+    /** Color del líquido de cada tanque C/M/Y/K — los mismos que la Sublimadora. */
+    private static final int[] COLOR_TANQUE = { 0xFF1FB3D6, 0xFFD6287F, 0xFFE8C21E, 0xFF2A2A2A };
 
     /** Mismos esquemas que la Modeladora (reusados tal cual) — Pollera no tiene. */
     private static final Identifier[] TEXTURE_ESQUEMA = {
@@ -87,6 +93,8 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
     private final CanalSlider[] sliders = new CanalSlider[TinturasBlockEntity.CANALES];
     /** Qué cuadradito (y de qué categoría) mostraban los sliders el frame pasado — si cambió, se reposicionan. */
     private int casillaMostradaEnSliders = -1;
+    /** Hasta cuándo releer los sliders del servidor (después de "Usar muestra"). */
+    private long releerSlidersHasta = 0;
     private TinturasBlockEntity.Categoria categoriaMostradaEnSliders = null;
     /** Qué color (1..3) editaban los sliders el frame pasado. */
     private int editandoMostrado = -1;
@@ -111,6 +119,7 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
 
     @Override
     protected void init() {
+        EstiloPergamino.usarTema(EstiloPergamino.Tema.VERDIN);
         super.init();
 
         btnCategoria = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 20, TinturasScreenHandler.M_MEDIO_ANCHO, 14, Text.literal(""), b -> clickBoton(TinturasBlockEntity.BTN_CATEGORIA));
@@ -160,6 +169,17 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
         btnColores = boton(M_DERECHA + 6, 226, 74, Text.empty(), "femclothes.tinturas.tooltip.colores", TinturasBlockEntity.BTN_COLORES);
         btnContorno = boton(M_DERECHA + 82, 226, 74, Text.empty(), "femclothes.tinturas.tooltip.contorno", TinturasBlockEntity.BTN_CONTORNO);
         btnVariacion = boton(M_DERECHA + 6, 246, 150, Text.empty(), "femclothes.tinturas.tooltip.variacion", TinturasBlockEntity.BTN_VARIACION);
+        // Muestras de color (2026-09-30, "por si la gente se quiere pasar colores"), debajo de la muestra grande.
+        boton(M_DERECHA + 6, 204, 74, Text.translatable("femclothes.tinturas.boton.envasar"),
+                "femclothes.tinturas.tooltip.envasar", TinturasBlockEntity.BTN_ENVASAR);
+        ButtonWidget usar = new EstiloPergamino.BotonPergamino(this.x + M_DERECHA + 82, this.y + 204, 74, 16,
+                Text.translatable("femclothes.tinturas.boton.usar_muestra"), btn -> {
+            clickBoton(TinturasBlockEntity.BTN_USAR_MUESTRA);
+            // La mezcla nueva llega por la sincronización: los sliders se releen un rato.
+            releerSlidersHasta = System.currentTimeMillis() + 800;
+        });
+        usar.setTooltip(Tooltip.of(Text.translatable("femclothes.tinturas.tooltip.usar_muestra")));
+        this.addDrawableChild(usar);
 
         // Diseños guardados: mismo Y=214 que la Modeladora.
         for (int i = 0; i < btnDisenos.length; i++) {
@@ -230,6 +250,7 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && clickEnPanel(mouseX, mouseY)) return true;
         if (button == 0 && dentroDePreview(mouseX, mouseY)) {
             arrastrandoPreview = true;
         }
@@ -280,21 +301,39 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         refrescar();
         super.render(context, mouseX, mouseY, delta);
-        dibujarPreview(context, mouseX, mouseY);
+        dibujarPreview(context, mouseX, mouseY, casillaResaltada(mouseX, mouseY));
         // Chinchetas a mano, DESPUÉS de los slots/ítems/fantasmas (z=400
         // adentro de su renderWidget) — mismo criterio que ModeladoScreen.
         for (BotonChincheta b : btnChinchetas) {
             if (b.visible) b.render(context, mouseX, mouseY, delta);
         }
         drawMouseoverTooltip(context, mouseX, mouseY);
+        tooltipPanel(context, mouseX, mouseY);
     }
 
-    private void dibujarPreview(DrawContext context, int mouseX, int mouseY) {
+    /**
+     * Qué cuadradito resaltar en 3D (Fase B, 2026-09-28): el de la fila
+     * del panel con el mouse encima, o el del esquema (slot o chincheta).
+     * -1 = ninguno.
+     */
+    private int casillaResaltada(int mouseX, int mouseY) {
+        int[] fila = filaBajoMouse(mouseX, mouseY);
+        if (fila != null) return fila[0];
+        if (this.focusedSlot instanceof TinturasScreenHandler.CasillaSlot casilla && casilla.isEnabled()) {
+            return casilla.casilla;
+        }
+        for (int i = 0; i < btnChinchetas.length; i++) {
+            if (btnChinchetas[i].visible && btnChinchetas[i].isMouseOver(mouseX, mouseY)) return i;
+        }
+        return -1;
+    }
+
+    private void dibujarPreview(DrawContext context, int mouseX, int mouseY, int resaltada) {
         MinecraftClient client = MinecraftClient.getInstance();
         PlayerEntity jugador = client.player;
         if (jugador == null) return;
 
-        ItemStack prenda = handler.be.prendaDeVistaPrevia();
+        ItemStack prenda = handler.be.prendaDeVistaPrevia(resaltada);
         List<ItemStack> prendas = new ArrayList<>(GarmentFeatureRenderer.equipadas(jugador));
         if (!prenda.isEmpty()) {
             prendas.removeIf(s -> s.getItem().getClass() == prenda.getItem().getClass());
@@ -357,7 +396,8 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
 
         // Los sliders muestran la mezcla del cuadradito SELECCIONADO — si
         // cambió (otro cuadradito u otra categoría), se reposicionan a mano.
-        if (sel != casillaMostradaEnSliders || cat != categoriaMostradaEnSliders || casilla.editando != editandoMostrado) {
+        if (sel != casillaMostradaEnSliders || cat != categoriaMostradaEnSliders || casilla.editando != editandoMostrado
+                || System.currentTimeMillis() < releerSlidersHasta) {
             casillaMostradaEnSliders = sel;
             categoriaMostradaEnSliders = cat;
             editandoMostrado = casilla.editando;
@@ -407,8 +447,9 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
         // Qué se está editando: región del cuadradito seleccionado y su estado.
         com.femclothes.region.RegionPintura region = TinturasBlockEntity.regionDe(be.categoria(), be.seleccionada());
         if (region != null) {
-            Text estado = Text.translatable(be.casilla(be.seleccionada()).fijada
-                    ? "femclothes.tinturas.estado.fijada" : "femclothes.tinturas.estado.borrador");
+            TinturasBlockEntity.Casilla sel = be.casilla(be.seleccionada());
+            Text estado = Text.translatable(sel.oculta ? "femclothes.tinturas.estado.oculta"
+                    : sel.fijada ? "femclothes.tinturas.estado.fijada" : "femclothes.tinturas.estado.borrador");
             context.drawText(this.textRenderer, Text.translatable("femclothes.tinturas.editando",
                     Text.translatable(region.traduccion()), estado), M_MEDIO, 296, EstiloPergamino.TEXTO, false);
         }
@@ -419,6 +460,146 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
         context.drawBorder(x0 - 1, y0 - 1, x1 - x0 + 2, y1 - y0 + 2, 0xFF2A180C);
 
         context.drawText(this.textRenderer, hint(), M_DERECHA + 6, 190, EstiloPergamino.TEXTO, false);
+
+        dibujarPanelCapas(context, mouseX, mouseY);
+    }
+
+    // ── panel de capas (Fase B, 2026-09-28): "lista con ojo para ocultar,
+    // subir/bajar, click selecciona", columna derecha abajo ──
+    private static final int PANEL_X = M_DERECHA + 6, PANEL_Y = 268, PANEL_ANCHO = 150;
+    private static final int FILA_Y0 = PANEL_Y + 11, FILA_ALTO = 10;
+    /** Zonas de una fila, en x local relativa a PANEL_X. */
+    private static final int OJO_X1 = 11, SUBIR_X0 = PANEL_ANCHO - 20, BAJAR_X0 = PANEL_ANCHO - 10;
+    private static final int ZONA_OJO = 0, ZONA_NOMBRE = 1, ZONA_SUBIR = 2, ZONA_BAJAR = 3;
+
+    /** {cuadradito, zona} de la fila con el mouse encima, o null. */
+    @org.jetbrains.annotations.Nullable
+    private int[] filaBajoMouse(double mouseX, double mouseY) {
+        double lx = mouseX - this.x - PANEL_X, ly = mouseY - this.y - FILA_Y0;
+        if (lx < 0 || lx >= PANEL_ANCHO || ly < 0) return null;
+        List<Integer> filas = handler.be.capasDelPanel();
+        int f = (int) (ly / FILA_ALTO);
+        if (f >= filas.size()) return null;
+        int zona = lx < OJO_X1 ? ZONA_OJO : lx >= BAJAR_X0 ? ZONA_BAJAR : lx >= SUBIR_X0 ? ZONA_SUBIR : ZONA_NOMBRE;
+        return new int[]{filas.get(f), zona};
+    }
+
+    private boolean clickEnPanel(double mouseX, double mouseY) {
+        int[] fila = filaBajoMouse(mouseX, mouseY);
+        if (fila == null) return false;
+        int i = fila[0];
+        int id = switch (fila[1]) {
+            case ZONA_OJO -> TinturasBlockEntity.BTN_OJO_BASE + i;
+            case ZONA_SUBIR -> TinturasBlockEntity.BTN_SUBIR_BASE + i;
+            case ZONA_BAJAR -> TinturasBlockEntity.BTN_BAJAR_BASE + i;
+            default -> i == handler.be.seleccionada() ? -1 : TinturasBlockEntity.BTN_SELECCIONAR_BASE + i;
+        };
+        if (id >= 0) {
+            clickBoton(id);
+            this.client.getSoundManager().play(net.minecraft.client.sound.PositionedSoundInstance.master(
+                    net.minecraft.sound.SoundEvents.UI_BUTTON_CLICK, 1.0f));
+        }
+        return true;
+    }
+
+    /** Coordenadas LOCALES (drawForeground ya está corrido a this.x/this.y). */
+    private void dibujarPanelCapas(DrawContext c, int mouseX, int mouseY) {
+        TinturasBlockEntity be = handler.be;
+        TinturasBlockEntity.Categoria cat = be.categoria();
+        c.drawText(this.textRenderer, Text.translatable("femclothes.tinturas.capas"), PANEL_X, PANEL_Y, EstiloPergamino.TEXTO, false);
+        c.fill(PANEL_X, PANEL_Y + 9, PANEL_X + PANEL_ANCHO, PANEL_Y + 10, 0xFF6B4E2A);
+
+        List<Integer> filas = be.capasDelPanel();
+        if (filas.isEmpty()) {
+            c.drawText(this.textRenderer, Text.translatable("femclothes.tinturas.capas.vacio"),
+                    PANEL_X, FILA_Y0 + 1, EstiloPergamino.TEXTO_APAGADO, false);
+            return;
+        }
+        int[] bajo = filaBajoMouse(mouseX, mouseY);
+        for (int f = 0; f < filas.size(); f++) {
+            int i = filas.get(f);
+            TinturasBlockEntity.Casilla cas = be.casilla(i);
+            int y = FILA_Y0 + f * FILA_ALTO;
+            int x0 = PANEL_X, x1 = PANEL_X + PANEL_ANCHO;
+            boolean hover = bajo != null && bajo[0] == i;
+            if (i == be.seleccionada()) {
+                c.fill(x0, y, x1, y + FILA_ALTO, 0x40FFD24C);
+                c.drawBorder(x0, y, PANEL_ANCHO, FILA_ALTO, 0xFFC79A4B);
+            } else if (hover) {
+                c.fill(x0, y, x1, y + FILA_ALTO, 0x30FFFFFF);
+            }
+
+            dibujarOjo(c, x0 + 1, y + 1, !cas.oculta, hover && bajo[1] == ZONA_OJO);
+
+            // Muestra: una franja por color de la capa.
+            int mx0 = x0 + 12, mx1 = x0 + 21;
+            int n = Math.max(1, cas.colores);
+            for (int k = 0; k < n; k++) {
+                int a = mx0 + (mx1 - mx0) * k / n, b = mx0 + (mx1 - mx0) * (k + 1) / n;
+                dibujarMuestra(c, a, y + 1, b, y + 9, cas.colorDe(k));
+            }
+            c.drawBorder(mx0 - 1, y, mx1 - mx0 + 2, 10, 0xFF2A180C);
+            if (cas.oculta) c.fill(mx0, y + 1, mx1, y + 9, 0xA0D9B98A);
+
+            // Nombre: zona · patrón (o "liso"); sin fijar va en cursiva.
+            com.femclothes.region.RegionPintura region = TinturasBlockEntity.regionDe(cat, i);
+            Identifier patron = be.patronEnBorrador(cat, i);
+            ClothingPatternItem item = patron == null ? null : ClothingPatternItem.porId(patron);
+            Text detalle = item != null ? item.getName() : Text.translatable("femclothes.tinturas.capas.liso");
+            net.minecraft.text.MutableText nombre = Text.empty()
+                    .append(region == null ? Text.empty() : Text.translatable(region.traduccion()))
+                    .append(" · ").append(detalle);
+            if (!cas.fijada) nombre = nombre.formatted(net.minecraft.util.Formatting.ITALIC);
+            int anchoNombre = SUBIR_X0 - 24;
+            net.minecraft.text.StringVisitable recortado = this.textRenderer.trimToWidth(nombre, anchoNombre);
+            c.drawText(this.textRenderer, net.minecraft.util.Language.getInstance().reorder(recortado),
+                    x0 + 23, y + 1, cas.oculta ? EstiloPergamino.TEXTO_APAGADO : EstiloPergamino.TEXTO, false);
+
+            boolean puedeSubir = f > 0, puedeBajar = f < filas.size() - 1;
+            dibujarFlecha(c, "▲", x0 + SUBIR_X0, y, puedeSubir, hover && bajo[1] == ZONA_SUBIR);
+            dibujarFlecha(c, "▼", x0 + BAJAR_X0, y, puedeBajar, hover && bajo[1] == ZONA_BAJAR);
+        }
+    }
+
+    private void dibujarFlecha(DrawContext c, String flecha, int x, int y, boolean activa, boolean hover) {
+        if (hover && activa) c.fill(x, y, x + 10, y + FILA_ALTO, 0x40FFFFFF);
+        c.drawText(this.textRenderer, flecha, x + 2, y + 1,
+                activa ? (hover ? 0xFF6B4E2A : EstiloPergamino.TEXTO) : EstiloPergamino.TEXTO_APAGADO, false);
+    }
+
+    /** Ojo de 9x7 a mano (la fuente no trae uno): abierto con pupila, o cerrado con pestañas. */
+    private static void dibujarOjo(DrawContext c, int x, int y, boolean abierto, boolean hover) {
+        int col = hover ? 0xFFC79A4B : 0xFF3B2410;
+        if (abierto) {
+            c.fill(x, y + 3, x + 1, y + 4, col);
+            c.fill(x + 1, y + 2, x + 2, y + 3, col);
+            c.fill(x + 1, y + 4, x + 2, y + 5, col);
+            c.fill(x + 2, y + 1, x + 7, y + 2, col);
+            c.fill(x + 2, y + 5, x + 7, y + 6, col);
+            c.fill(x + 7, y + 2, x + 8, y + 3, col);
+            c.fill(x + 7, y + 4, x + 8, y + 5, col);
+            c.fill(x + 8, y + 3, x + 9, y + 4, col);
+            c.fill(x + 3, y + 2, x + 6, y + 5, col);
+        } else {
+            c.fill(x, y + 3, x + 9, y + 4, col);
+            c.fill(x + 1, y + 4, x + 2, y + 5, col);
+            c.fill(x + 4, y + 4, x + 5, y + 6, col);
+            c.fill(x + 7, y + 4, x + 8, y + 5, col);
+        }
+    }
+
+    private void tooltipPanel(DrawContext context, int mouseX, int mouseY) {
+        if (this.focusedSlot != null && this.focusedSlot.hasStack()) return;
+        int[] fila = filaBajoMouse(mouseX, mouseY);
+        if (fila == null) return;
+        String clave = switch (fila[1]) {
+            case ZONA_OJO -> handler.be.casilla(fila[0]).oculta
+                    ? "femclothes.tinturas.tooltip.ojo_mostrar" : "femclothes.tinturas.tooltip.ojo_ocultar";
+            case ZONA_SUBIR -> "femclothes.tinturas.tooltip.subir";
+            case ZONA_BAJAR -> "femclothes.tinturas.tooltip.bajar";
+            default -> null;
+        };
+        if (clave != null) context.drawTooltip(this.textRenderer, Text.translatable(clave), mouseX, mouseY);
     }
 
     /**
@@ -561,6 +742,45 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
             clickBoton(handler.be.botonMezcla(canal, nivel));
         }
 
+        /**
+         * Slider y tanque en uno (2026-09-29, "la subli tiene indicador de
+         * insumos, alguna forma de agregarsela a la tinturas fusionandola
+         * de alguna manera con los sliders?"): el canal del slider es el
+         * tanque — se llena con el color de la tinta según lo cargado
+         * (mismas barras que la Sublimadora) y a la derecha dice "n/64", en
+         * rojo si está vacío. El mango de madera marca la mezcla. La
+         * Transparencia no gasta tinta: canal vacío, sin número.
+         */
+        @Override
+        public void renderWidget(DrawContext c, int mouseX, int mouseY, float delta) {
+            int x0 = getX(), y0 = getY(), w = getWidth(), h = getHeight();
+            c.fill(x0 - 1, y0 - 1, x0 + w + 1, y0 + h + 1, 0xFF2A180C);
+            c.fill(x0, y0, x0 + w, y0 + h, 0xFF8A7556);
+            boolean tanque = canal < 4;
+            int carga = tanque ? handler.be.carga(canal) : 0;
+            if (tanque && carga > 0) {
+                int lleno = w * carga / TinturasBlockEntity.CARGA_MAXIMA;
+                c.fill(x0, y0, x0 + lleno, y0 + h, COLOR_TANQUE[canal]);
+                c.fill(x0, y0, x0 + lleno, y0 + 1, 0x40FFFFFF);   // brillo del líquido
+            }
+            // Mango: mismo recorrido que SliderWidget (8 px de ancho).
+            int mx = x0 + (int) (this.value * (w - 8));
+            EstiloPergamino.fondoBoton(c, mx, y0, 8, h, isHovered() || isFocused(), this.active);
+
+            var fuente = MinecraftClient.getInstance().textRenderer;
+            int ty = y0 + (h - 8) / 2;
+            Text m = getMessage();
+            // El texto pasa por encima del mango: sombra oscura para que se lea sobre cualquier tinta.
+            c.drawText(fuente, m, x0 + 5, ty + 1, 0xFF2A180C, false);
+            c.drawText(fuente, m, x0 + 4, ty, EstiloPergamino.TEXTO_CLARO, false);
+            if (tanque) {
+                String n = carga + "/" + TinturasBlockEntity.CARGA_MAXIMA;
+                int nx = x0 + w - 4 - fuente.getWidth(n);
+                c.drawText(fuente, n, nx + 1, ty + 1, 0xFF2A180C, false);
+                c.drawText(fuente, n, nx, ty, carga == 0 ? 0xFFFF5A48 : EstiloPergamino.TEXTO_CLARO, false);
+            }
+        }
+
         /** Refleja el nivel del cuadradito recién seleccionado SIN mandar un click. */
         void sincronizarDesdeServidor(int nivel) {
             this.value = nivel / (double) (TinturasBlockEntity.NIVELES_MEZCLA - 1);
@@ -604,7 +824,7 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
      * {@code ModeladoScreen.BotonChincheta}: hueca = no fijado, llena =
      * fijado (entra al diseño que se aplica).
      */
-    private static class BotonChincheta extends ButtonWidget {
+    static class BotonChincheta extends ButtonWidget {
         private boolean fijado;
         private long cambioMs = -1000;
 
