@@ -209,7 +209,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 ? CapaMalla.movimiento(jugador, tickDelta) : CapaMalla.Movimiento.QUIETO;
         PolleraMalla.dibujar(matrices, buffer, luz,
                 com.femclothes.item.PolleraItem.forma(stack), com.femclothes.item.PolleraItem.largo(stack),
-                dilatacion, biped.rightLeg.pitch - biped.body.pitch, biped.leftLeg.pitch - biped.body.pitch, mov,
+                dilatacion, new PolleraMalla.Piernas(biped.body, biped.rightLeg, biped.leftLeg), mov,
                 previewOverride == null ? com.femclothes.client.TwirlCliente.progreso(entidad, tickDelta) : -1f);
         matrices.pop();
     }
