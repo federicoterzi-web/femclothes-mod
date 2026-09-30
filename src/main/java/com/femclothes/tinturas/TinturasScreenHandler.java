@@ -156,7 +156,7 @@ public class TinturasScreenHandler extends ScreenHandler {
      * esquema: sus 3 van en una fila fija dentro del hueco del dibujo.
      */
     public static int[] posCasilla(TinturasBlockEntity.Categoria cat, int i) {
-        if (cat == TinturasBlockEntity.Categoria.POLLERA) {
+        if (cat == TinturasBlockEntity.Categoria.POLLERA || cat == TinturasBlockEntity.Categoria.CAPA) {
             return new int[]{M_MEDIO + 84 + i * 28, 94};
         }
         int[] p = ModeladoScreenHandler.PIN_POS[cat.ordinal()][i];
@@ -165,7 +165,7 @@ public class TinturasScreenHandler extends ScreenHandler {
 
     /** Centro de la chincheta del cuadradito {@code i} (relativo al panel) — {@code PIN_BTN} de la Modeladora, o arriba a la derecha del slot en Pollera. */
     public static int[] posChincheta(TinturasBlockEntity.Categoria cat, int i) {
-        if (cat == TinturasBlockEntity.Categoria.POLLERA) {
+        if (cat == TinturasBlockEntity.Categoria.POLLERA || cat == TinturasBlockEntity.Categoria.CAPA) {
             int[] s = posCasilla(cat, i);
             return new int[]{s[0] + 17, s[1] - 1};
         }

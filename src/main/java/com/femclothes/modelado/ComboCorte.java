@@ -93,12 +93,34 @@ public record ComboCorte(
      * el codec de registros admite hasta 16.
      */
     public record PolleraCorte(Optional<com.femclothes.item.PolleraLargo> largo,
-                               Optional<com.femclothes.item.PolleraForma> forma) {
+                               Optional<com.femclothes.item.PolleraForma> forma,
+                               // La capa (2026-09-29) viaja en el mismo campo: el
+                               // codec de ComboCorte ya está en su tope de 16.
+                               Optional<com.femclothes.item.CapaLargo> capaLargo,
+                               Optional<com.femclothes.item.CapaRuedo> capaRuedo,
+                               Optional<Boolean> capaCapucha,
+                               Optional<Boolean> capaCuello) {
+        public PolleraCorte(Optional<com.femclothes.item.PolleraLargo> largo,
+                            Optional<com.femclothes.item.PolleraForma> forma) {
+            this(largo, forma, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        }
+
+        boolean vacio() {
+            return largo.isEmpty() && forma.isEmpty() && capaLargo.isEmpty() && capaRuedo.isEmpty()
+                    && capaCapucha.isEmpty() && capaCuello.isEmpty();
+        }
+
         static final Codec<PolleraCorte> CODEC = RecordCodecBuilder.create(i -> i.group(
                 StringIdentifiable.createCodec(com.femclothes.item.PolleraLargo::values).optionalFieldOf("largo")
                         .forGetter(PolleraCorte::largo),
                 StringIdentifiable.createCodec(com.femclothes.item.PolleraForma::values).optionalFieldOf("forma")
-                        .forGetter(PolleraCorte::forma)
+                        .forGetter(PolleraCorte::forma),
+                StringIdentifiable.createCodec(com.femclothes.item.CapaLargo::values).optionalFieldOf("capa_largo")
+                        .forGetter(PolleraCorte::capaLargo),
+                StringIdentifiable.createCodec(com.femclothes.item.CapaRuedo::values).optionalFieldOf("capa_ruedo")
+                        .forGetter(PolleraCorte::capaRuedo),
+                Codec.BOOL.optionalFieldOf("capa_capucha").forGetter(PolleraCorte::capaCapucha),
+                Codec.BOOL.optionalFieldOf("capa_cuello").forGetter(PolleraCorte::capaCuello)
         ).apply(i, PolleraCorte::new));
     }
 
@@ -108,6 +130,26 @@ public record ComboCorte(
 
     public static ComboCorte polleraForma(com.femclothes.item.PolleraForma v) {
         return VACIO.conPollera(new PolleraCorte(Optional.empty(), Optional.of(v)));
+    }
+
+    public static ComboCorte capaLargo(com.femclothes.item.CapaLargo v) {
+        return VACIO.conPollera(new PolleraCorte(Optional.empty(), Optional.empty(), Optional.of(v),
+                Optional.empty(), Optional.empty(), Optional.empty()));
+    }
+
+    public static ComboCorte capaRuedo(com.femclothes.item.CapaRuedo v) {
+        return VACIO.conPollera(new PolleraCorte(Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.of(v), Optional.empty(), Optional.empty()));
+    }
+
+    public static ComboCorte capaCapucha(boolean v) {
+        return VACIO.conPollera(new PolleraCorte(Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.of(v), Optional.empty()));
+    }
+
+    public static ComboCorte capaCuello(boolean v) {
+        return VACIO.conPollera(new PolleraCorte(Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.empty(), Optional.of(v)));
     }
 
     public ComboCorte conPollera(PolleraCorte p) {
@@ -292,7 +334,7 @@ public record ComboCorte(
                 && mediasLargoSuperior.isEmpty() && mediasLargoInferior.isEmpty()
                 && calientabrazosCoberturaSuperior.isEmpty() && calientabrazosCoberturaInferior.isEmpty()
                 && calce.isEmpty() && red.isEmpty() && capaPatron.isEmpty()
-                && (pollera.isEmpty() || (pollera.get().largo().isEmpty() && pollera.get().forma().isEmpty()));
+                && (pollera.isEmpty() || pollera.get().vacio());
     }
 
     private static final Codec<Lado> LADO_CODEC = Codec.STRING.xmap(Lado::valueOf, Enum::name);
@@ -360,6 +402,10 @@ public record ComboCorte(
                 combo.pollera.ifPresent(p -> {
                     writeOptEnum(buf, p.largo());
                     writeOptEnum(buf, p.forma());
+                    writeOptEnum(buf, p.capaLargo());
+                    writeOptEnum(buf, p.capaRuedo());
+                    writeOptBool(buf, p.capaCapucha());
+                    writeOptBool(buf, p.capaCuello());
                 });
             },
             buf -> new ComboCorte(
@@ -380,7 +426,21 @@ public record ComboCorte(
                             : Optional.empty(),
                     Lado.values()[buf.readByte()],
                     buf.readBoolean() ? Optional.of(Identifier.PACKET_CODEC.decode(buf)) : Optional.empty(),
-                    buf.readBoolean() ? Optional.of(new PolleraCorte(readOptEnum(buf, com.femclothes.item.PolleraLargo.values()), readOptEnum(buf, com.femclothes.item.PolleraForma.values()))) : Optional.empty()));
+                    buf.readBoolean() ? Optional.of(new PolleraCorte(
+                            readOptEnum(buf, com.femclothes.item.PolleraLargo.values()),
+                            readOptEnum(buf, com.femclothes.item.PolleraForma.values()),
+                            readOptEnum(buf, com.femclothes.item.CapaLargo.values()),
+                            readOptEnum(buf, com.femclothes.item.CapaRuedo.values()),
+                            readOptBool(buf), readOptBool(buf))) : Optional.empty()));
+
+    private static void writeOptBool(ByteBuf buf, Optional<Boolean> value) {
+        buf.writeByte(value.isEmpty() ? 0 : value.get() ? 2 : 1);
+    }
+
+    private static Optional<Boolean> readOptBool(ByteBuf buf) {
+        byte b = buf.readByte();
+        return b == 0 ? Optional.empty() : Optional.of(b == 2);
+    }
 
     private static <E extends Enum<E>> void writeOptEnum(ByteBuf buf, Optional<E> value) {
         buf.writeBoolean(value.isPresent());

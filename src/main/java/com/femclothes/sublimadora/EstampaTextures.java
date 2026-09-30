@@ -323,6 +323,17 @@ public final class EstampaTextures {
                     new Cara(new int[] { 30, 20, 2, 12 }, new int[] { 14, 0, 2, 12 }, true),   // costado izq trasero
             });
 
+    /**
+     * La capa (2026-09-29, "forro aparte"): Frente = el exterior (la cara
+     * del frente del cuboide 10x16 de la capa vanilla, u 1..11) y Espalda =
+     * el forro (u 12..22), cada uno con su foto sobre un lienzo de 10x16.
+     */
+    private static final Prenda CAPA = new Prenda(com.femclothes.render.CuerpoGeometria.ESCALA_TELA, 10, 16, 0, 16,
+            new Cara[] {
+                    new Cara(new int[] { 1, 1, 10, 16 }, new int[] { 0, 0, 10, 16 }, false).principal_(),
+                    new Cara(new int[] { 12, 1, 10, 16 }, new int[] { 0, 0, 10, 16 }, true).espejada().principal_(),
+            });
+
     /** Que prenda estampable es este stack, o null si no lo es. */
     @Nullable
     private static Prenda prendaDe(ItemStack stack) {
@@ -333,6 +344,7 @@ public final class EstampaTextures {
         if (stack.getItem() == com.femclothes.item.FemclothesItems.PANTALON) return MEDIAS;
         if (stack.getItem() == com.femclothes.item.FemclothesItems.CALIENTABRAZOS) return BRAZO;
         if (stack.getItem() instanceof com.femclothes.item.PolleraItem) return POLLERA;
+        if (stack.getItem() instanceof com.femclothes.item.CapaItem) return CAPA;
         return null;   // ModItems.esEstampable tiene que decir lo mismo
     }
 

@@ -92,7 +92,7 @@ public class FemclothesClient implements ClientModInitializer {
         // el largo de verdad. La remera se registra en SublimadoraModClient.
         IconoPrendaItemRenderer icono = new IconoPrendaItemRenderer(null);
         for (var item : new net.minecraft.item.Item[]{FemclothesItems.PANTALON, FemclothesItems.POLLERA,
-                FemclothesItems.SOCKS_SOLID, FemclothesItems.CALIENTABRAZOS}) {
+                FemclothesItems.SOCKS_SOLID, FemclothesItems.CALIENTABRAZOS, FemclothesItems.CAPA}) {
             net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(item, icono);
         }
 

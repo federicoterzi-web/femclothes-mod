@@ -66,6 +66,9 @@ public final class FemclothesItems {
     // al nacer PantalonItem): un stack viejo en un mundo existente queda
     // como ítem desconocido, no rompe nada.
     // maxCount(16): mismo criterio que remera/medias/pantalón.
+    /** Capa personalizable (2026-09-29, "seria una nueva categoria de ropa"). */
+    public static final CapaItem CAPA = register("capa", new CapaItem(new Item.Settings().maxCount(16)));
+
     public static final CalientabrazosItem CALIENTABRAZOS = register("calientabrazos",
             new CalientabrazosItem(new Item.Settings().maxCount(16)));
 

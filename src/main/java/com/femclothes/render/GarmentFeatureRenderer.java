@@ -106,6 +106,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 porParte.computeIfAbsent(pieza.parte(), k -> new ArrayList<>()).add(pieza);
             }
         }
+        // La capa no gobierna ninguna parte: se dibuja antes del corte de abajo.
+        dibujarCapa(prendas, entidad, matrices, vertexConsumers, luz, tickDelta);
         if (conCuerpo.isEmpty() && porParte.isEmpty()) return;
 
         Identifier cuerpo = texturaDelCuerpo(entidad, slim);
@@ -244,6 +246,78 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             }
         };
         return ClothingTextureCache.composeGarmentCapas(POLLERA_BASE, colorBase, capasMascaraPollera,
+                ClothingTextureCache.Shading.NONE, encima);
+    }
+
+    private static final Identifier CAPA_BASE = Identifier.of("femclothes",
+            "textures/models/armor/capa_tela.png");
+
+    /** La capa del mod puesta en el slot espalda/capa, o null. */
+    @Nullable
+    public static ItemStack capaDe(List<ItemStack> prendas) {
+        for (ItemStack s : prendas) if (s.getItem() instanceof com.femclothes.item.CapaItem) return s;
+        return null;
+    }
+
+    /**
+     * La capa (2026-09-29, "capas... como las capas vanilla (misma dinamica
+     * de tela) pero usable y personalizable"): mismo marco y mismos giros que
+     * {@code CapeFeatureRenderer} (ver {@link CapaMalla#giros}), así que
+     * flamea igual que la vanilla. Con élitros puestos no se dibuja (como la
+     * vanilla); la capa vanilla se oculta mientras esté esta
+     * ({@code CapeFeatureRendererMixin}).
+     */
+    private static void dibujarCapa(List<ItemStack> prendas, LivingEntity entidad, MatrixStack matrices,
+                                    VertexConsumerProvider vertexConsumers, int luz, float tickDelta) {
+        if (!(entidad instanceof AbstractClientPlayerEntity jugador)) return;
+        ItemStack stack = capaDe(prendas);
+        if (stack == null || jugador.isInvisible()) return;
+        if (jugador.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST).isOf(net.minecraft.item.Items.ELYTRA)) return;
+
+        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getArmorCutoutNoCull(texturaCapa(stack)));
+        matrices.push();
+        CapaMalla.giros(matrices, jugador, tickDelta);
+        // El pivote del cloak vanilla agachado (PlayerEntityModel#setAngles).
+        if (jugador.isInSneakingPose()) matrices.translate(0f, 1.85f / 16f, 1.4f / 16f);
+        CapaMalla.dibujarPano(matrices, buffer, luz, stack);
+        matrices.pop();
+
+        if (com.femclothes.item.CapaItem.cuelloAlto(stack)) {
+            matrices.push();
+            matrices.translate(0f, 0f, 0.125f);
+            if (jugador.isInSneakingPose()) matrices.translate(0f, 1.85f / 16f, 1.4f / 16f);
+            matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(180f));
+            CapaMalla.dibujarCuello(matrices, buffer, luz);
+            matrices.pop();
+        }
+    }
+
+    /** La tela de la capa ya teñida y estampada (también la usa el ícono). */
+    public static Identifier texturaCapa(ItemStack stack) {
+        int colorBase = com.femclothes.region.RegionResolver.colorBase(stack, com.femclothes.region.Lado.IZQUIERDA);
+        java.util.List<com.femclothes.region.RegionResolver.CapaPatron> capas =
+                com.femclothes.region.RegionResolver.capasTinte(stack, com.femclothes.region.Lado.IZQUIERDA);
+        java.util.List<ClothingTextureCache.CapaMascara> mascaras = new java.util.ArrayList<>(capas.size());
+        for (com.femclothes.region.RegionResolver.CapaPatron capa : capas) {
+            net.minecraft.client.texture.NativeImage mascara = PatronGenerador.mascaraDeCapa("capa", capa);
+            if (!capa.lisa() && mascara == null) continue;
+            java.util.List<CajaSkin.Rect> region = capa.region() == com.femclothes.region.RegionPintura.TODO ? null
+                    : capa.region().rects(com.femclothes.tinturas.TinturasBlockEntity.Categoria.CAPA, CuerpoGeometria.ESCALA_TELA);
+            mascaras.add(ClothingTextureCache.CapaMascara.de(capa, mascara, region));
+        }
+        boolean estampada = com.femclothes.sublimadora.EstampaTextures.tieneEstampa(stack);
+        ClothingTextureCache.Encima encima = !estampada ? null : new ClothingTextureCache.Encima() {
+            @Override
+            public String clave() {
+                return "capa_" + com.femclothes.sublimadora.EstampaTextures.claveEstampas(stack);
+            }
+
+            @Override
+            public boolean aplicar(net.minecraft.client.texture.NativeImage destino) {
+                return com.femclothes.sublimadora.EstampaTextures.estampar(destino, stack);
+            }
+        };
+        return ClothingTextureCache.composeGarmentCapas(CAPA_BASE, colorBase, mascaras,
                 ClothingTextureCache.Shading.NONE, encima);
     }
 

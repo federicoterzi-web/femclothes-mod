@@ -104,6 +104,21 @@ public final class ModeladoMod {
     public static final MoldePolleraItem MOLDE_POLLERA_TABLEADA = new MoldePolleraItem(new Item.Settings().maxCount(1),
             com.femclothes.item.PolleraForma.TABLEADA);
 
+    // ── moldes de capa (a pedido 2026-09-29, "podemos agregar todo eso como patrones de corte?") ──
+    // Ruedo, capucha y cuello alto de la capa, cada uno para su pin. Exclusivos de la capa.
+    public static final MoldeCapaItem MOLDE_CAPA_RUEDO_RECTO = new MoldeCapaItem(new Item.Settings().maxCount(1),
+            MoldeCapaItem.Tipo.RUEDO_RECTO);
+    public static final MoldeCapaItem MOLDE_CAPA_RUEDO_REDONDEADO = new MoldeCapaItem(new Item.Settings().maxCount(1),
+            MoldeCapaItem.Tipo.RUEDO_REDONDEADO);
+    public static final MoldeCapaItem MOLDE_CAPA_CON_CAPUCHA = new MoldeCapaItem(new Item.Settings().maxCount(1),
+            MoldeCapaItem.Tipo.CON_CAPUCHA);
+    public static final MoldeCapaItem MOLDE_CAPA_SIN_CAPUCHA = new MoldeCapaItem(new Item.Settings().maxCount(1),
+            MoldeCapaItem.Tipo.SIN_CAPUCHA);
+    public static final MoldeCapaItem MOLDE_CAPA_CUELLO_ALTO = new MoldeCapaItem(new Item.Settings().maxCount(1),
+            MoldeCapaItem.Tipo.CUELLO_ALTO);
+    public static final MoldeCapaItem MOLDE_CAPA_SIN_CUELLO = new MoldeCapaItem(new Item.Settings().maxCount(1),
+            MoldeCapaItem.Tipo.SIN_CUELLO);
+
     public static void register() {
         Identifier bloqueId = Identifier.of(Femclothes.MOD_ID, "modelado");
         Registry.register(Registries.BLOCK, bloqueId, MODELADO_BLOCK);
@@ -142,6 +157,12 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_red_arnes_bandas"), MOLDE_RED_ARNES_BANDAS);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_pollera_campana"), MOLDE_POLLERA_CAMPANA);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_pollera_tableada"), MOLDE_POLLERA_TABLEADA);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_ruedo_recto"), MOLDE_CAPA_RUEDO_RECTO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_ruedo_redondeado"), MOLDE_CAPA_RUEDO_REDONDEADO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_con_capucha"), MOLDE_CAPA_CON_CAPUCHA);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_sin_capucha"), MOLDE_CAPA_SIN_CAPUCHA);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_cuello_alto"), MOLDE_CAPA_CUELLO_ALTO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_sin_cuello"), MOLDE_CAPA_SIN_CUELLO);
 
         // "Guardar diseño" con nombre (2026-09-27): el nombre viaja como paquete propio, ver GuardarDisenoPayload.
         PayloadTypeRegistry.playC2S().register(GuardarDisenoPayload.ID, GuardarDisenoPayload.CODEC);

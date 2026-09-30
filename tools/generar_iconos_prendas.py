@@ -14,7 +14,8 @@ Por cada ícono salen dos PNG en textures/item/icono/:
 
 Códigos (mismos que IconoPrenda.java):
   1 torso frente, 2 brazo derecho, 3 brazo izquierdo, 4 pierna derecha,
-  5 pierna izquierda, 6 torso espalda (el interior del cuello), 7 pollera.
+  5 pierna izquierda, 6 torso espalda (el interior del cuello), 7 pollera,
+  8 capa (exterior de la capa, visto de atrás).
 Visto de frente, el lado DERECHO del jugador queda a la izquierda del dibujo.
 
 Uso: python3 tools/generar_iconos_prendas.py (desde la raíz del repo).
@@ -27,7 +28,7 @@ from PIL import Image, ImageDraw, ImageFilter
 T = 64
 SALIDA = "src/main/resources/assets/femclothes/textures/item/icono"
 
-TORSO, BRAZO_DER, BRAZO_IZQ, PIERNA_DER, PIERNA_IZQ, TORSO_ATRAS, POLLERA = 1, 2, 3, 4, 5, 6, 7
+TORSO, BRAZO_DER, BRAZO_IZQ, PIERNA_DER, PIERNA_IZQ, TORSO_ATRAS, POLLERA, CAPA = 1, 2, 3, 4, 5, 6, 7, 8
 
 
 # ─── relieve ────────────────────────────────────────────────────────────────
@@ -247,6 +248,27 @@ def pollera():
     return v, mapa
 
 
+# ─── capa ───────────────────────────────────────────────────────────────────
+def capa():
+    """Vista de atrás, colgando de los hombros (2026-09-29): la capa más
+    larga; Java recorta desde abajo según el largo real."""
+    m = mascara([[(16, 4), (47, 4), (52, 8), (58, 61), (5, 61), (11, 8)]])
+    a = np.asarray(m) > 127
+    v = relieve(m, 2.2)
+    v = zona(v, "rectangle", 0.84, (11, 4, 52, 8))            # hombros
+    v = linea(v, [(12, 9), (51, 9)], 0.8)
+    for i, (xa, xb) in enumerate([(20, 16), (27, 25), (36, 38), (43, 47)]):
+        v = linea(v, [(xa, 12), (xb, 60)], 0.78 if i % 2 == 0 else 0.86, luz=True)
+    mapa = Mapa()
+    for y in range(T):
+        for x in range(T):
+            if not a[y, x]:
+                continue
+            x0, x1 = extension_fila(a, y, 0, 63)
+            mapa.poner(x, y, CAPA, (x - x0) / (x1 - x0 + 1), max(0.0, (y - 4) / 58))
+    return v, mapa
+
+
 # ─── medias ─────────────────────────────────────────────────────────────────
 MEDIA = [(0, 0), (14, 0), (14, 36), (26, 38), (29, 42), (27, 46), (4, 46), (0, 42)]
 
@@ -310,5 +332,6 @@ if __name__ == "__main__":
         guardar("remera_" + cuello, *remera(cuello))
     guardar("pantalon", *pantalon())
     guardar("pollera", *pollera())
+    guardar("capa", *capa())
     guardar("medias", *medias())
     guardar("calientabrazos", *calientabrazos())
