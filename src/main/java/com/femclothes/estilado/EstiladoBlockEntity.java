@@ -57,6 +57,11 @@ public class EstiladoBlockEntity extends BlockEntity
     public static final int BTN_ESCALA = 12, BTN_ESCALA_ATRAS = 13;
     /** Lo atiende el ScreenHandler: necesita al jugador para devolverle el retazo. */
     public static final int BTN_QUITAR = 14;
+    /**
+     * Pone o saca la textura del Molde de textura que esté en el slot del
+     * molde (2026-10-01, relieve: "pongamos un par de moldes de prueba").
+     */
+    public static final int BTN_TEXTURA = 15;
 
     public static final float ESCALA_MIN = 0.5f, ESCALA_MAX = 2.5f, PASO_ESCALA = 0.25f;
 
@@ -119,6 +124,7 @@ public class EstiladoBlockEntity extends BlockEntity
     }
 
     public boolean onButtonClick(int id) {
+        if (id == BTN_TEXTURA) return alternarTextura();
         List<Aplique> actuales = new ArrayList<>(apliques());
         if (id >= BTN_SELECCIONAR_BASE && id < BTN_SELECCIONAR_BASE + Aplique.MAXIMO_POR_PRENDA) {
             int i = id - BTN_SELECCIONAR_BASE;
@@ -137,6 +143,16 @@ public class EstiladoBlockEntity extends BlockEntity
             default -> { return false; }
         }
         guardarApliques(actuales);
+        return true;
+    }
+
+    /** Con un Molde de textura: si la prenda ya la tiene, se la saca; si no, se la pone. El molde no se gasta. */
+    private boolean alternarTextura() {
+        ItemStack prenda = items.get(SLOT_PRENDA);
+        if (prenda.isEmpty() || !(items.get(SLOT_MOLDE).getItem() instanceof com.femclothes.item.MoldeTexturaItem m)) return false;
+        if (prenda.get(FemclothesComponents.TEXTURA_TELA) == m.textura) prenda.remove(FemclothesComponents.TEXTURA_TELA);
+        else prenda.set(FemclothesComponents.TEXTURA_TELA, m.textura);
+        markDirty();
         return true;
     }
 
@@ -189,7 +205,8 @@ public class EstiladoBlockEntity extends BlockEntity
     public boolean isValid(int slot, ItemStack stack) {
         return switch (slot) {
             case SLOT_PRENDA -> Garments.esPrenda(stack);
-            case SLOT_MOLDE -> stack.getItem() instanceof MoldeApliqueItem;
+            case SLOT_MOLDE -> stack.getItem() instanceof MoldeApliqueItem
+                    || stack.getItem() instanceof com.femclothes.item.MoldeTexturaItem;
             case SLOT_RETAZO -> stack.getItem() instanceof RetazoApliqueItem;
             default -> false;
         };

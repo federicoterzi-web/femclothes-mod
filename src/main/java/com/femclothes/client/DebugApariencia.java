@@ -81,7 +81,8 @@ public final class DebugApariencia {
                     feedback(ctx.getSource());
                     return 1;
                 }))
-                .then(pollera());
+                .then(pollera())
+                .then(relieve());
     }
 
     /**
@@ -97,6 +98,25 @@ public final class DebugApariencia {
                 com.femclothes.render.PolleraMalla.piernasAbiertas = modo.equals("abierta");
                 ctx.getSource().sendFeedback(Text.literal("[femclothes debug] pollera " + modo
                         + (modo.equals("abierta") ? ": sigue las piernas y se mueve" : ": quieta, sin piernas ni movimiento")));
+                return 1;
+            }));
+        }
+        return raiz;
+    }
+
+    /**
+     * Estilo del relieve (2026-10-01, "podemos hacer una muestra de prueba de
+     * los dos?"): {@code suave} (superficie continua), {@code escalonado}
+     * (bloquecitos tipo 3D Skin Layers) o {@code apagado} (las cajas de
+     * siempre). Solo para quien lo usa, sin persistencia.
+     */
+    private static LiteralArgumentBuilder<FabricClientCommandSource> relieve() {
+        LiteralArgumentBuilder<FabricClientCommandSource> raiz = ClientCommandManager.literal("relieve");
+        for (com.femclothes.render.relieve.RelieveRender.Estilo e : com.femclothes.render.relieve.RelieveRender.Estilo.values()) {
+            String nombre = e.name().toLowerCase(java.util.Locale.ROOT);
+            raiz.then(ClientCommandManager.literal(nombre).executes(ctx -> {
+                com.femclothes.render.relieve.RelieveRender.estilo = e;
+                ctx.getSource().sendFeedback(Text.literal("[femclothes debug] relieve " + nombre));
                 return 1;
             }));
         }

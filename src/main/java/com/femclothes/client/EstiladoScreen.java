@@ -102,7 +102,12 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 () -> anguloVista = Math.floorMod(Math.round(anguloVista) - 45, 360));
         boton(X_DER + 131, 108, 31, Text.literal("⟳"), "femclothes.estilado.tooltip.vista",
                 () -> anguloVista = Math.floorMod(Math.round(anguloVista) + 45, 360));
+        // Textura de tela (2026-10-01, relieve): con un Molde de textura en el slot del molde.
+        btnTextura = boton(X_DER, 132, 162, Text.empty(), "femclothes.estilado.tooltip.textura",
+                () -> clickBoton(EstiladoBlockEntity.BTN_TEXTURA));
     }
+
+    private ButtonWidget btnTextura;
 
     // ── vista previa ───────────────────────────────────────────────────────
     private boolean dentroDeVista(double mx, double my) {
@@ -202,6 +207,8 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 Toque t = tocar(mx, my);
                 EstiladoBlockEntity be = handler.be;
                 if (be.getStack(EstiladoBlockEntity.SLOT_PRENDA).isEmpty()) aviso = Text.translatable("femclothes.estilado.aviso.prenda");
+                else if (be.getStack(EstiladoBlockEntity.SLOT_MOLDE).getItem() instanceof com.femclothes.item.MoldeTexturaItem)
+                    aviso = Text.translatable("femclothes.estilado.aviso.textura");
                 else if (be.getStack(EstiladoBlockEntity.SLOT_MOLDE).isEmpty()) aviso = Text.translatable("femclothes.estilado.aviso.molde");
                 else if (be.getStack(EstiladoBlockEntity.SLOT_RETAZO).isEmpty() && !com.femclothes.util.DebugMaquinas.gratis()) aviso = Text.translatable("femclothes.estilado.aviso.retazo");
                 else if (be.apliques().size() >= Aplique.MAXIMO_POR_PRENDA) aviso = Text.translatable("femclothes.estilado.aviso.lleno");
@@ -247,6 +254,20 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         btnGiro.setMessage(Text.translatable("femclothes.estilado.giro", hay ? Math.round(apliques.get(sel).giro()) : 0));
         btnEscala.setMessage(Text.translatable("femclothes.estilado.escala",
                 hay ? Math.round(apliques.get(sel).escala() * 100) : 100));
+
+        ItemStack prendaPuesta = be.getStack(EstiladoBlockEntity.SLOT_PRENDA);
+        com.femclothes.item.TexturaTela actual = prendaPuesta.getOrDefault(
+                com.femclothes.item.FemclothesComponents.TEXTURA_TELA, com.femclothes.item.TexturaTela.LISA);
+        if (be.getStack(EstiladoBlockEntity.SLOT_MOLDE).getItem() instanceof com.femclothes.item.MoldeTexturaItem mt
+                && !prendaPuesta.isEmpty()) {
+            btnTextura.active = true;
+            btnTextura.setMessage(Text.translatable(actual == mt.textura ? "femclothes.estilado.textura.quitar"
+                    : "femclothes.estilado.textura.poner", Text.translatable(mt.textura.traduccion())));
+        } else {
+            btnTextura.active = false;
+            btnTextura.setMessage(Text.translatable("femclothes.estilado.textura.actual",
+                    Text.translatable(actual.traduccion())));
+        }
 
         super.render(context, mouseX, mouseY, delta);
         dibujarVista(context);

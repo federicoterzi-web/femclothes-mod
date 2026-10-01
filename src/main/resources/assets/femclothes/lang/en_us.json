@@ -568,5 +568,21 @@
   "femclothes.estilado.tooltip.quitar": "Remove the selected appliqué and get its scrap back",
   "femclothes.estilado.tooltip.vista": "Turn the view",
   "femclothes.debug.gratis.si": "[femclothes] Machines need NO supplies (debug): no ink, paper, scraps or bottles required or used",
-  "femclothes.debug.gratis.no": "[femclothes] Machines require and use supplies again"
+  "femclothes.debug.gratis.no": "[femclothes] Machines require and use supplies again",
+  "item.femclothes.estrogenos": "Estrogens",
+  "item.femclothes.molde_textura_fruncido": "Texture Mould: Gathered",
+  "item.femclothes.molde_textura_acolchado": "Texture Mould: Quilted",
+  "femclothes.estrogenos.tooltip": "Each dose raises the bust one size (shown by the body relief)",
+  "femclothes.estrogenos.dosis": "Bust: size %s of %s",
+  "femclothes.estrogenos.maximo": "You already reached the maximum size",
+  "femclothes.textura_tela.lisa": "Plain",
+  "femclothes.textura_tela.fruncido": "Gathered",
+  "femclothes.textura_tela.acolchado": "Quilted",
+  "femclothes.textura_tela.molde.tooltip": "At the Styling Table, Texture button: gives the fabric volume (not consumed)",
+  "femclothes.estilado.textura.poner": "Apply texture: %s",
+  "femclothes.estilado.textura.quitar": "Remove texture: %s",
+  "femclothes.estilado.textura.actual": "Texture: %s",
+  "femclothes.estilado.tooltip.textura": "With a Texture Mould in the mould slot: applies or removes that fabric texture",
+  "femclothes.estilado.aviso.textura": "With a Texture Mould, use the Texture button",
+  "femclothes.cuerpo.relieve": " · bust +%s · definition %s%%"
 }

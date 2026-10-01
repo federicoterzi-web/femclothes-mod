@@ -10,6 +10,8 @@ version = project.mod_version
 group = project.maven_group
 
 loom {
+    // Relieve (2026-10-01): acceso a las caras de ModelPart.Cuboid.
+    accessWidenerPath = file("src/main/resources/femclothes.accesswidener")
     runs {
         client {
             // Nombre de jugador fijo. Sin esto Loom estrena uno al azar

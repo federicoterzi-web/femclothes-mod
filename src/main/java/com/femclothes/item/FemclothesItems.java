@@ -91,6 +91,14 @@ public final class FemclothesItems {
             .component(FemclothesComponents.CALCE, Calce.OVERSIZE)));
 
     /** Muestra de color de la Estación de Tintes (2026-09-30), ver {@link MuestraColorItem}. */
+    /** Estrógenos (2026-10-01): cada dosis sube un talle el busto del relieve. */
+    public static final EstrogenosItem ESTROGENOS = register("estrogenos",
+            new EstrogenosItem(new Item.Settings().maxCount(16)));
+    /** Moldes de textura de tela (2026-10-01, relieve), se usan en la Mesa de estilado. */
+    public static final MoldeTexturaItem MOLDE_TEXTURA_FRUNCIDO = register("molde_textura_fruncido",
+            new MoldeTexturaItem(TexturaTela.FRUNCIDO, new Item.Settings().maxCount(1)));
+    public static final MoldeTexturaItem MOLDE_TEXTURA_ACOLCHADO = register("molde_textura_acolchado",
+            new MoldeTexturaItem(TexturaTela.ACOLCHADO, new Item.Settings().maxCount(1)));
     public static final MuestraColorItem TINTE_MEZCLA = register("tinte_mezcla",
             new MuestraColorItem(new Item.Settings().maxCount(16)));
     public static final CalientabrazosItem CALIENTABRAZOS = register("calientabrazos",

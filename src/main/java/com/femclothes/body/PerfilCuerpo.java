@@ -24,7 +24,18 @@ import net.minecraft.util.StringIdentifiable;
  */
 public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, boolean elegido,
                            int tonoClaro, int tonoOscuro, int tonoRubor, int fuerzaRubor,
-                           boolean siempre) {
+                           boolean siempre, int busto, int definicion) {
+
+    /** Busto que suman los Estrógenos (2026-10-01): 0..{@link #BUSTO_MAXIMO}, sobre el del cuerpo. */
+    public static final int BUSTO_MAXIMO = 5;
+    /** Cuánto se marcan los músculos del relieve, en % (2026-10-01). */
+    public static final int DEFINICION_DEFECTO = 100, DEFINICION_MAXIMA = 200;
+
+    /** Sin busto ni definición (lo de antes del relieve). */
+    public PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, boolean elegido,
+                        int tonoClaro, int tonoOscuro, int tonoRubor, int fuerzaRubor, boolean siempre) {
+        this(cuerpo, tono, interior, elegido, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre, 0, DEFINICION_DEFECTO);
+    }
 
     /**
      * Tono "sin elegir": lo saca de la skin del jugador.
@@ -74,15 +85,18 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
             Codec.INT.optionalFieldOf("fuerza_rubor", FUERZA_RUBOR_DEFECTO).forGetter(PerfilCuerpo::fuerzaRubor),
             // Usar el cuerpo como skin aunque no haya ropa del mod (2026-09-29,
             // "un selector que directamente te deje esa skin de default").
-            Codec.BOOL.optionalFieldOf("siempre", false).forGetter(PerfilCuerpo::siempre)
-    ).apply(i, (cuerpo, tono, viejo, arriba, abajo, color, elegido, claro, oscuro, rubor, fuerza, siempre) -> {
+            Codec.BOOL.optionalFieldOf("siempre", false).forGetter(PerfilCuerpo::siempre),
+            // Relieve (2026-10-01): busto de los Estrógenos y definición de los músculos.
+            Codec.INT.optionalFieldOf("busto", 0).forGetter(PerfilCuerpo::busto),
+            Codec.INT.optionalFieldOf("definicion", DEFINICION_DEFECTO).forGetter(PerfilCuerpo::definicion)
+    ).apply(i, (cuerpo, tono, viejo, arriba, abajo, color, elegido, claro, oscuro, rubor, fuerza, siempre, busto, definicion) -> {
         RopaInterior base = viejo.map(RopaInterior::deClaveVieja).orElse(RopaInterior.DEFECTO);
         RopaInterior interior = new RopaInterior(arriba.orElse(base.arriba()), abajo.orElse(base.abajo()),
                 color.orElse(base.color()));
-        return new PerfilCuerpo(cuerpo, tono, interior, elegido, claro, oscuro, rubor, fuerza, siempre);
+        return new PerfilCuerpo(cuerpo, tono, interior, elegido, claro, oscuro, rubor, fuerza, siempre, busto, definicion);
     }));
 
-    /** A mano: {@code PacketCodec.tuple} llega hasta 6 campos y son 9. */
+    /** A mano: {@code PacketCodec.tuple} llega hasta 6 campos y son 11. */
     public static final PacketCodec<RegistryByteBuf, PerfilCuerpo> PACKET_CODEC = PacketCodec.of(
             (p, buf) -> {
                 buf.writeVarInt(p.cuerpo().ordinal());
@@ -96,11 +110,14 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
                 buf.writeInt(p.tonoRubor());
                 buf.writeVarInt(p.fuerzaRubor());
                 buf.writeBoolean(p.siempre());
+                buf.writeVarInt(p.busto());
+                buf.writeVarInt(p.definicion());
             },
             buf -> new PerfilCuerpo(CuerpoBase.values()[buf.readVarInt()], buf.readInt(),
                     new RopaInterior(InteriorArriba.values()[buf.readVarInt()], InteriorAbajo.values()[buf.readVarInt()],
                             buf.readInt()), buf.readBoolean(),
-                    buf.readInt(), buf.readInt(), buf.readInt(), buf.readVarInt(), buf.readBoolean()));
+                    buf.readInt(), buf.readInt(), buf.readInt(), buf.readVarInt(), buf.readBoolean(),
+                    buf.readVarInt(), buf.readVarInt()));
 
     /** True si el tono todavia hay que sacarlo de la skin del jugador. */
     public boolean tonoDerivado() {
@@ -108,24 +125,34 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
     }
 
     public PerfilCuerpo conCuerpo(CuerpoBase c) {
-        return new PerfilCuerpo(c, tono, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre);
+        return new PerfilCuerpo(c, tono, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre, busto, definicion);
     }
 
     public PerfilCuerpo conTono(int rgb) {
-        return new PerfilCuerpo(cuerpo, rgb, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre);
+        return new PerfilCuerpo(cuerpo, rgb, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre, busto, definicion);
     }
 
     /** Los tres colores de una vez (la GUI de elegir cuerpo). */
     public PerfilCuerpo conTonos(int base, int claro, int oscuro, int rubor, int fuerza) {
-        return new PerfilCuerpo(cuerpo, base, interior, true, claro, oscuro, rubor, fuerza, siempre);
+        return new PerfilCuerpo(cuerpo, base, interior, true, claro, oscuro, rubor, fuerza, siempre, busto, definicion);
     }
 
     public PerfilCuerpo conSiempre(boolean valor) {
-        return new PerfilCuerpo(cuerpo, tono, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, valor);
+        return new PerfilCuerpo(cuerpo, tono, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, valor, busto, definicion);
+    }
+
+    public PerfilCuerpo conBusto(int b) {
+        return new PerfilCuerpo(cuerpo, tono, interior, elegido, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre,
+                Math.max(0, Math.min(BUSTO_MAXIMO, b)), definicion);
+    }
+
+    public PerfilCuerpo conDefinicion(int d) {
+        return new PerfilCuerpo(cuerpo, tono, interior, elegido, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre,
+                busto, Math.max(0, Math.min(DEFINICION_MAXIMA, d)));
     }
 
     public PerfilCuerpo conInterior(RopaInterior r) {
-        return new PerfilCuerpo(cuerpo, tono, r, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre);
+        return new PerfilCuerpo(cuerpo, tono, r, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre, busto, definicion);
     }
 
     /**

@@ -283,7 +283,10 @@ public class ElegirCuerpoScreen extends Screen {
                 new com.femclothes.body.RopaInterior(interiorArriba, interiorAbajo, colorDeZona(ZONA_INTERIOR)), true,
                 tonos[1] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[1],
                 tonos[2] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[2],
-                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3], fuerzaRubor, siempre);
+                tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3], fuerzaRubor, siempre,
+                // El relieve que ya tiene (busto de los Estrógenos, definición).
+                com.femclothes.body.PerfilesDeCuerpo.de(jugador).busto(),
+                com.femclothes.body.PerfilesDeCuerpo.de(jugador).definicion());
         // Sin ropa: solo el cuerpo que se está eligiendo.
         GarmentFeatureRenderer.previewOverride = List.of();
         try {

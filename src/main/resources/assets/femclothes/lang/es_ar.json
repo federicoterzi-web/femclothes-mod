@@ -568,5 +568,21 @@
   "femclothes.estilado.tooltip.quitar": "Quitar el aplique elegido y recuperar su retazo",
   "femclothes.estilado.tooltip.vista": "Girar la vista",
   "femclothes.debug.gratis.si": "[femclothes] Máquinas SIN insumos (debug): no piden ni gastan tinta, papel, retazos ni frascos",
-  "femclothes.debug.gratis.no": "[femclothes] Las máquinas vuelven a pedir y gastar insumos"
+  "femclothes.debug.gratis.no": "[femclothes] Las máquinas vuelven a pedir y gastar insumos",
+  "item.femclothes.estrogenos": "Estrógenos",
+  "item.femclothes.molde_textura_fruncido": "Molde de textura: fruncido",
+  "item.femclothes.molde_textura_acolchado": "Molde de textura: acolchado",
+  "femclothes.estrogenos.tooltip": "Cada dosis sube un talle el busto (se ve con el relieve)",
+  "femclothes.estrogenos.dosis": "Busto: talle %s de %s",
+  "femclothes.estrogenos.maximo": "Ya llegaste al talle máximo",
+  "femclothes.textura_tela.lisa": "Lisa",
+  "femclothes.textura_tela.fruncido": "Fruncido",
+  "femclothes.textura_tela.acolchado": "Acolchado",
+  "femclothes.textura_tela.molde.tooltip": "En la Mesa de estilado, botón Textura: le da volumen a la tela (no se gasta)",
+  "femclothes.estilado.textura.poner": "Poner textura: %s",
+  "femclothes.estilado.textura.quitar": "Quitar textura: %s",
+  "femclothes.estilado.textura.actual": "Textura: %s",
+  "femclothes.estilado.tooltip.textura": "Con un Molde de textura en el slot del molde: pone o saca esa textura de tela",
+  "femclothes.estilado.aviso.textura": "Con un Molde de textura, usá el botón Textura",
+  "femclothes.cuerpo.relieve": " · busto +%s · definición %s%%"
 }

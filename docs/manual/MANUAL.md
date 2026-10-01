@@ -95,6 +95,20 @@ La **primera vez que te ponés una prenda** del mod se abre la pantalla **Elegí
 
 Los cuerpos dibujados están en alta resolución (6 veces la de una skin común). Cada uno está pintado para brazos anchos (classic) o finos (slim). Si tu skin tiene los otros, la textura se adapta sola; tus brazos no cambian de ancho.
 
+### Relieve (volumen del cuerpo y de la ropa)
+
+El cuerpo y la ropa ya no son cajas planas: **los costados de torso, brazos y piernas tienen relieve** (la cabeza y las tapas, no).
+
+- **Forma del cuerpo:** cada cuerpo trae la suya: pectorales, abdominales y brazos marcados en Atlético y Musculoso; panza redonda en Gordito, Osito y Panda; cola y cintura en los femeninos (Fem con curvas, la más marcada); pecho de pelaje en Lobo y Zorro; felinos atléticos. **Definición** (0 a 200 %, de fábrica 100 %) marca más o menos los músculos: `/femclothes definicion <n>`.
+- **Busto:** los cuerpos femeninos traen uno de fábrica y los **Estrógenos** suman: cada dosis (se toma como una poción) sube un talle, hasta 5 más (`/femclothes busto <0..5>` lo fija a mano). El **binder** lo aplana y el top **deportivo** lo sujeta un poco.
+- **La ropa sigue al cuerpo según el calce:** **Pegado** lo copia como una segunda piel; **Ajustado** casi igual; **Normal** marca lo que sobresale y "puentea" los huecos (entre los pectorales, el escote); **Suelto** y **Oversize** apenas. Una prenda nunca queda por dentro de la de abajo.
+- **Arrugas automáticas** en codos, rodillas, cintura, axilas, muñecas y tobillos, más marcadas cuanto más holgado el calce (Pegado no arruga).
+- **Detalles en relieve por prenda:** el **hoodie** tiene el bolsillo canguro con su costura, rib en el ruedo y los puños y la costura de la sisa; el **pantalón**, costuras laterales, bolsillos de atrás, pretina y bragueta; las **medias**, tejido acanalado.
+- **Textura de tela** con un **Molde de textura** en la Mesa de estilado: **Fruncido** (pliegues finos verticales) o **Acolchado** (almohadones en rombo).
+- **Dos estilos para comparar** (solo para vos): `/femclothesdebug relieve suave` (superficie continua, el de fábrica), `escalonado` (bloquecitos de medio píxel, como 3D Skin Layers) y `apagado` (las cajas de antes).
+
+El relieve se ve donde el mod dibuja el cuerpo: debajo de la ropa del mod, o en todo el cuerpo con **Usar siempre como mi skin**. En el Maniquí la ropa tiene arrugas y detalles, pero la figura no tiene forma.
+
 ### Comandos
 
 Sin permisos especiales, cada quien cambia el propio:
@@ -108,6 +122,8 @@ Sin permisos especiales, cada quien cambia el propio:
 | `/femclothes interior color <rgb>` | Color de la ropa interior, como número (ej. `16777215` = blanco). |
 | `/femclothes tono skin` | Tono de piel tomado de tu propia skin (el valor por defecto). |
 | `/femclothes tono <número>` | Tono de piel a mano, como color RGB en decimal (ej. 14329120). |
+| `/femclothes busto <0..5>` | Talle de busto que suman los Estrógenos. |
+| `/femclothes definicion <0..200>` | Cuánto se marcan los músculos del relieve, en %. |
 | `/femclothes ver` | Muestra tu configuración actual. |
 | `/femclothes reset` | Vuelve todo al valor por defecto. |
 
@@ -393,6 +409,8 @@ Pone **apliques 3D** (moño, mariposa, flor) sobre cualquier prenda del mod. Cli
 - **Lista de apliques** (hasta **6 por prenda**): click en uno lo elige (otra vez lo suelta). Con uno elegido: **Giro** `<` `>` de a 15°, **Tamaño** `<` `>` de 50 % a 250 % de a 25 %, y **Quitar**, que devuelve un retazo con sus mismos colores.
 - Si falta algo, el texto de abajo avisa qué (prenda, molde, retazo, prenda llena, click fuera de la tela).
 
+**Textura de tela.** Con un **Molde de textura** (Fruncido o Acolchado) en el slot del molde, el botón **Textura** le pone esa textura en relieve a la prenda, o se la saca si ya la tiene (el molde no se gasta). Ver Relieve en la sección 4.
+
 Los apliques viajan en la prenda (componente `femclothes:apliques`) y se ven en el jugador, en el Maniquí y en el Guardarropas, siguiendo la pose de la parte donde están (brazo, pierna, cabeza o torso) y por fuera del calce de la prenda.
 
 **Colores.** Cada modelo tiene 3 zonas: moño = alas / nudo / colas; mariposa = alas de arriba / alas de abajo y lunares / cuerpo y antenas; flor = pétalos / centro / hojas. Por ahora los colores salen del retazo (lisos); en creativo hay tres retazos de muestra. Más adelante la Estación de Tintes va a teñir retazos con patrones, y los apliques van a tener física (colas, alas, pétalos).
@@ -421,6 +439,7 @@ Los apliques viajan en la prenda (componente `femclothes:apliques`) y se ven en 
 | `/femclothesdebug skin` | Cicla skins de prueba (Steve, Alex, Zuri, Noor, Kai) y la tuya. |
 | `/femclothesdebug slim` / `ancho` / `automodelo` | Fuerza brazos finos, anchos, o los de la skin. |
 | `/femclothesdebug reset` | Vuelve a tu skin. |
+| `/femclothesdebug relieve suave` / `escalonado` / `apagado` | Estilo del relieve del cuerpo y la ropa: continuo, en bloquecitos tipo 3D Skin Layers, o las cajas planas de antes. Solo para vos, para comparar. |
 | `/femclothesdebug pollera abierta` / `rigida` | Abierta: la pollera choca con las piernas y se mueve con el cuerpo. Rígida: quieta, sin piernas ni movimiento, más ancha. Solo para vos, para comparar. |
 
 ## 11. Recetas
@@ -444,7 +463,7 @@ Los apliques viajan en la prenda (componente `femclothes:apliques`) y se ven en 
 | Rayas superiores | Hilo / papel / papel (filas) |
 | Tres rayas | Hilo / hilo / papel (filas) |
 
-**Sin receta todavía (solo en creativo o con `/femclothes debug`):** Estación de Tintes, Guardarropas, Maniquí, Mesa de estilado, Pollera, moldes de rango, torso, cuello, calce, red, arnés, pollera y capa, molde de corte, la Capa, y los patrones de corazones, estrellas, lunares y vichy.
+**Sin receta todavía (solo en creativo o con `/femclothes debug`):** Estación de Tintes, Guardarropas, Maniquí, Mesa de estilado, Pollera, Estrógenos, moldes de textura, moldes de rango, torso, cuello, calce, red, arnés, pollera y capa, molde de corte, la Capa, y los patrones de corazones, estrellas, lunares y vichy.
 
 Todo el contenido del mod está en su propia pestaña del inventario creativo: **FemClothes**.
 
@@ -492,6 +511,10 @@ Esta parte es para quien quiera entender o extender el mod.
 **Apliques.** `render/ApliqueRenderer` dibuja los `.geo.json` de GeckoLib (`tools/generar_apliques.py`: miran a −Z, espalda en z = 0, atlas de 96×32 con una columna de 32 px por zona) recorriendo huesos y cubos a mano, en la misma pila de matrices que la ropa: `ModelPart.rotate` de la parte, el punto del click corrido hacia afuera por la dilatación del calce, y una base (derecha, arriba, atrás) que apunta −Z a la normal de la cara. El atlas se tiñe por columna y se cachea por terna de colores. La Mesa ubica el click invirtiendo la matriz de cada parte que guarda `GarmentFeatureRenderer.capturaPoses` durante el render de la vista previa (rayo de pantalla contra la caja de la pieza, cara de salida = la que se ve).
 
 **Máquinas que se guardan enteras.** `util/DropMaquina`: los 4 bloques sobreescriben `getDroppedStacks` (romper a mano y explosiones) y devuelven el ítem con todo el NBT del block entity en `minecraft:block_entity_data` más sus componentes (la tinta); `BlockItem` lo vuelve a cargar al colocarla. Ya no hay loot tables ni `onStateReplaced` que desparrame. En creativo, `onBreak` tira el ítem si la máquina no está vacía.
+
+## C2. Relieve
+
+`render/relieve`: un `MapaRelieve` guarda alturas (px de skin, hacia afuera) de los 4 costados de torso, brazos y piernas en grillas de 4 celdas por px (caras en el orden de la skin: costado −x, frente, costado +x, espalda). `RelieveCuerpo` arma el del cuerpo con una receta por `CuerpoBase` (`Forma`: pecho, abdomen, panza, cola, brazos, piernas, cintura, busto de fábrica) más el busto y la definición del `PerfilCuerpo` y la ropa interior. `RelieveTela` arma el de cada pieza sobre el de abajo: envolvente con radio y pendiente según el calce (Pegado = copia), arrugas por calce, `TexturaTela` (componente `femclothes:textura_tela`) y el archivo `textures/models/relieve/<id>.png` (gris en el layout de la skin; `tools/generar_relieve_prendas.py`). `RelieveRender` reemplaza a `ModelPart.render` (vía `forEachCuboid` y las caras del cuboide, abiertas con `femclothes.accesswidener`): reconoce cada cara por sus UV y la parte en una grilla desplazada (suave, con normales del relieve) o en bloquecitos (escalonado). `GarmentFeatureRenderer` pone el contexto (`RelieveRender.actual`) alrededor del cuerpo y de cada pieza, encadenando las piezas de adentro hacia afuera.
 
 ## C. Capas de color (Estación de Tintes)
 

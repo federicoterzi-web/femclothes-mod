@@ -509,6 +509,15 @@ public final class FemclothesComponents {
                     .build());
 
     /** Los 3 colores de zona (RGB) de un retazo de aplique (2026-10-01). */
+    /**
+     * Volumen propio de la tela (2026-10-01, relieve) — ver {@link TexturaTela}.
+     * Se pone con un Molde de textura en la Mesa de estilado.
+     */
+    public static final ComponentType<TexturaTela> TEXTURA_TELA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "textura_tela"),
+            ComponentType.<TexturaTela>builder().codec(TexturaTela.CODEC)
+                    .packetCodec(PacketCodecs.VAR_INT.xmap(i -> TexturaTela.values()[i], TexturaTela::ordinal)).build());
+
     public static final ComponentType<java.util.List<Integer>> COLORES_APLIQUE = Registry.register(
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "colores_aplique"),
             ComponentType.<java.util.List<Integer>>builder()

@@ -68,6 +68,16 @@ public final class ComandoCuerpo {
                 .then(tono)
                 .then(CommandManager.literal("reset").executes(ctx ->
                         aplicar(ctx.getSource(), p -> PerfilCuerpo.DEFECTO)))
+                // Relieve (2026-10-01): busto (lo que suman los Estrógenos) y
+                // cuánto se marcan los músculos, para probar sin la GUI.
+                .then(CommandManager.literal("busto").then(CommandManager.argument("tamano",
+                                IntegerArgumentType.integer(0, PerfilCuerpo.BUSTO_MAXIMO))
+                        .executes(ctx -> aplicar(ctx.getSource(),
+                                p -> p.conBusto(IntegerArgumentType.getInteger(ctx, "tamano"))))))
+                .then(CommandManager.literal("definicion").then(CommandManager.argument("porcentaje",
+                                IntegerArgumentType.integer(0, PerfilCuerpo.DEFINICION_MAXIMA))
+                        .executes(ctx -> aplicar(ctx.getSource(),
+                                p -> p.conDefinicion(IntegerArgumentType.getInteger(ctx, "porcentaje"))))))
                 .then(CommandManager.literal("ver").executes(ctx -> ver(ctx.getSource())))
                 // Vuelve a abrir la GUI de elegir cuerpo (2026-09-29).
                 .then(CommandManager.literal("elegir").executes(ctx -> {
@@ -105,6 +115,7 @@ public final class ComandoCuerpo {
                         ? Text.translatable("femclothes.cuerpo.tono_de_la_skin")
                         : Text.literal("#" + String.format("%06X", perfil.tono())),
                 Text.translatable(perfil.interior().arriba().traduccion()).append(" + ")
-                        .append(Text.translatable(perfil.interior().abajo().traduccion())));
+                        .append(Text.translatable(perfil.interior().abajo().traduccion())))
+                .append(Text.translatable("femclothes.cuerpo.relieve", perfil.busto(), perfil.definicion()));
     }
 }

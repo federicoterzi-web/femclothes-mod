@@ -22,6 +22,7 @@
     "trinkets": "*",
     "geckolib": ">=4.5.0"
   },
+  "accessWidener": "femclothes.accesswidener",
   "mixins": [
     "femclothes.mixins.json"
   ],

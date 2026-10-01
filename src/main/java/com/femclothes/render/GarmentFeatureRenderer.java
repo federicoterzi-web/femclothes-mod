@@ -119,9 +119,12 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         // recorrido sea estable: dos frames no pueden dibujar en distinto
         // orden dos piezas de la misma capa.
         Map<Parte, List<Pieza>> porParte = new EnumMap<>(Parte.class);
+        // De qué prenda sale cada pieza: el relieve mira su calce, su textura y su archivo de extrusión.
+        Map<Pieza, ItemStack> origen = new java.util.IdentityHashMap<>();
         for (ItemStack stack : prendas) {
             for (Pieza pieza : PiezasDePrenda.de(stack, entidad)) {
                 porParte.computeIfAbsent(pieza.parte(), k -> new ArrayList<>()).add(pieza);
+                origen.put(pieza, stack);
             }
         }
         // La capa no gobierna ninguna parte: se dibuja antes del corte de abajo.
@@ -132,6 +135,11 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         }
 
         Identifier cuerpo = texturaDelCuerpo(entidad, slim);
+        // Relieve del cuerpo (2026-10-01): músculos, curvas y busto del perfil.
+        com.femclothes.render.relieve.MapaRelieve mapaCuerpo =
+                com.femclothes.render.relieve.RelieveRender.estilo == com.femclothes.render.relieve.RelieveRender.Estilo.APAGADO
+                        ? com.femclothes.render.relieve.MapaRelieve.PLANO
+                        : com.femclothes.render.relieve.RelieveCuerpo.de(perfilDe(entidad), slim);
 
         for (Parte parte : Parte.values()) {
             boolean llevaCuerpo = cuerpo != null && conCuerpo.contains(parte)
@@ -154,6 +162,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             }
 
             if (llevaCuerpo) {
+                com.femclothes.render.relieve.RelieveRender.actual =
+                        new com.femclothes.render.relieve.RelieveRender.Contexto(parte, mapaCuerpo);
                 List<CuerpoGeometria.SegmentoCuerpo> segmentos = segmentosCuerpo(piezas);
                 if (conVolumen != null) {
                     dibujarModelPart(CuerpoGeometria.cuerpoConVolumenDePierna(parte, conVolumen.dilatacion(),
@@ -170,8 +180,10 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                             delJugador, matrices, vertexConsumers, luz);
                 }
             }
+            com.femclothes.render.relieve.RelieveRender.actual = null;
             if (piezas == null) continue;
-            dibujarPiezas(parte, slim, piezas, conVolumen, delJugador, matrices, vertexConsumers, luz);
+            dibujarPiezas(parte, slim, piezas, conVolumen, delJugador, matrices, vertexConsumers, luz,
+                    llevaCuerpo ? mapaCuerpo : com.femclothes.render.relieve.MapaRelieve.PLANO, origen);
         }
 
         // Cuello de polera, capucha y cordones del hoodie (2026-09-30).
@@ -388,7 +400,14 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
      */
     private static void dibujarPiezas(Parte parte, boolean slim, List<Pieza> piezas, @Nullable Pieza conVolumen,
                                       ModelPart delModelo, MatrixStack matrices,
-                                      VertexConsumerProvider vertexConsumers, int luz) {
+                                      VertexConsumerProvider vertexConsumers, int luz,
+                                      com.femclothes.render.relieve.MapaRelieve debajo, Map<Pieza, ItemStack> origen) {
+        // Relieve (2026-10-01): cada tela envuelve a lo de abajo (el cuerpo o
+        // la pieza anterior) según su calce, y suma arrugas, textura y extrusión.
+        com.femclothes.render.relieve.MapaRelieve previo = debajo;
+        boolean conRelieve = com.femclothes.render.relieve.RelieveRender.estilo
+                != com.femclothes.render.relieve.RelieveRender.Estilo.APAGADO;
+        try {
         boolean pierna = parte == Parte.PIERNA_DER || parte == Parte.PIERNA_IZQ;
         // Lo más afuera que ya hay dibujado en cada fila (12 + lo que puede colgar).
         float[] exterior = new float[12 + 4];
@@ -398,6 +417,17 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             int desde = Math.max(0, Math.min(12, pieza.filaDesde()));
             int hasta = Math.max(desde, Math.min(12, pieza.filaHasta()));
             float base = pieza.dilatacion();
+            if (conRelieve && parte != Parte.CABEZA) {
+                ItemStack prenda = origen.get(pieza);
+                previo = com.femclothes.render.relieve.RelieveTela.de(previo, com.femclothes.item.Calce.de(base),
+                        prenda == null ? com.femclothes.item.TexturaTela.LISA
+                                : prenda.getOrDefault(com.femclothes.item.FemclothesComponents.TEXTURA_TELA,
+                                        com.femclothes.item.TexturaTela.LISA),
+                        prenda == null ? null : com.femclothes.render.relieve.RelieveTela.extrusionDe(
+                                net.minecraft.registry.Registries.ITEM.getId(prenda.getItem())));
+                com.femclothes.render.relieve.RelieveRender.actual =
+                        new com.femclothes.render.relieve.RelieveRender.Contexto(parte, previo);
+            }
 
             if (pieza == conVolumen) {
                 dibujarModelPart(CuerpoGeometria.telaConVolumenDePierna(parte, base),
@@ -455,6 +485,9 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             for (int f = desde; f < hasta; f++) exterior[f] = Math.max(exterior[f], fila[f]);
             for (int k = 0; k < colgado; k++) exterior[hasta + k] = Math.max(exterior[hasta + k], dilColgado);
         }
+        } finally {
+            com.femclothes.render.relieve.RelieveRender.actual = null;
+        }
     }
 
     /** Copia la pose ya calculada de la parte del jugador y dibuja la nuestra encima. */
@@ -474,6 +507,9 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         // va DESPUES o se pierde.
         float escala = superficie.escalaDeParte();
         nuestra.xScale = nuestra.yScale = nuestra.zScale = escala;
+        com.femclothes.render.relieve.RelieveRender.Contexto relieve =
+                com.femclothes.render.relieve.RelieveRender.aplica(com.femclothes.render.relieve.RelieveRender.actual)
+                        ? com.femclothes.render.relieve.RelieveRender.actual : null;
         if (ClothingTextureCache.esTranslucida(textura)) {
             // Transparencia real (2026-10-01): segunda pasada, después de todo
             // lo opaco — si no, la tela translúcida del torso escribe su
@@ -486,13 +522,23 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             TRANSLUCIDAS_PENDIENTES.add(() -> {
                 nuestra.setTransform(pose);
                 nuestra.xScale = nuestra.yScale = nuestra.zScale = escala;
-                nuestra.render(copia, vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura)),
-                        luz, OverlayTexture.DEFAULT_UV);
+                VertexConsumer vc = vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura));
+                if (relieve != null) {
+                    com.femclothes.render.relieve.RelieveRender.dibujar(nuestra, relieve, superficie.escala,
+                            copia, vc, luz, OverlayTexture.DEFAULT_UV);
+                } else {
+                    nuestra.render(copia, vc, luz, OverlayTexture.DEFAULT_UV);
+                }
             });
             return;
         }
         VertexConsumer buffer = vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura));
-        nuestra.render(matrices, buffer, luz, OverlayTexture.DEFAULT_UV);
+        if (relieve != null) {
+            com.femclothes.render.relieve.RelieveRender.dibujar(nuestra, relieve, superficie.escala,
+                    matrices, buffer, luz, OverlayTexture.DEFAULT_UV);
+        } else {
+            nuestra.render(matrices, buffer, luz, OverlayTexture.DEFAULT_UV);
+        }
     }
 
     /** Telas translúcidas de este dibujo, para la segunda pasada ({@link #dibujarTranslucidas}). */
@@ -724,11 +770,13 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     public static void dibujarTela(BipedEntityModel<?> biped, boolean slim, List<ItemStack> prendas,
                                    MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
         Map<Parte, List<Pieza>> porParte = new EnumMap<>(Parte.class);
+        Map<Pieza, ItemStack> origen = new java.util.IdentityHashMap<>();
         for (ItemStack stack : prendas) {
             // Ningún proveedor de PiezasDelMod mira la entidad hoy — solo
             // la reciben por si el aspecto llegara a depender de ella.
             for (Pieza pieza : PiezasDePrenda.de(stack, null)) {
                 porParte.computeIfAbsent(pieza.parte(), k -> new ArrayList<>()).add(pieza);
+                origen.put(pieza, stack);
             }
         }
         for (Map.Entry<Parte, List<Pieza>> entrada : porParte.entrySet()) {
@@ -736,7 +784,9 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             List<Pieza> piezas = entrada.getValue();
             ModelPart delModelo = CuerpoGeometria.delJugador(biped, parte);
             piezas.sort(Comparator.comparingInt(Pieza::capa));
-            dibujarPiezas(parte, slim, piezas, null, delModelo, matrices, vertexConsumers, luz);
+            // La figura del maniquí no tiene relieve: la tela arranca de la caja.
+            dibujarPiezas(parte, slim, piezas, null, delModelo, matrices, vertexConsumers, luz,
+                    com.femclothes.render.relieve.MapaRelieve.PLANO, origen);
         }
         CuelloYCapucha.dibujar(prendas, biped, matrices, vertexConsumers, luz);
         ApliqueRenderer.dibujar(prendas, biped, matrices, vertexConsumers, luz);

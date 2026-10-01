@@ -75,6 +75,9 @@ public class Femclothes implements ModInitializer {
             entries.add(FemclothesItems.MOLDE_APLIQUE_MONO);
             entries.add(FemclothesItems.MOLDE_APLIQUE_MARIPOSA);
             entries.add(FemclothesItems.MOLDE_APLIQUE_FLOR);
+            entries.add(FemclothesItems.MOLDE_TEXTURA_FRUNCIDO);
+            entries.add(FemclothesItems.MOLDE_TEXTURA_ACOLCHADO);
+            entries.add(FemclothesItems.ESTROGENOS);
             entries.add(com.femclothes.aplique.RetazoApliqueItem.conColores(
                     new ItemStack(FemclothesItems.RETAZO_APLIQUE), 0xE878A8, 0xF8D860, 0x58A868));
             entries.add(com.femclothes.aplique.RetazoApliqueItem.conColores(
