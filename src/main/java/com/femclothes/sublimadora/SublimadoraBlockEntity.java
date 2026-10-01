@@ -513,6 +513,7 @@ public class SublimadoraBlockEntity extends BlockEntity
 
     /** True si hay al menos una carga de cada color. */
     public boolean hayTinta() {
+        if (com.femclothes.util.DebugMaquinas.gratis()) return true;
         for (int i = 0; i < 4; i++) if (cargas[i] <= 0) return false;
         return true;
     }
@@ -1203,17 +1204,19 @@ public class SublimadoraBlockEntity extends BlockEntity
         if (caras == 0) return false;
         // Una dosis de cada color POR CARA: hacer las dos en una pasada
         // ahorra el ciclo, no la tinta.
-        for (int i = 0; i < 4; i++) if (cargas[i] < caras) return false;
+        // Debug sin insumos (DebugMaquinas.gratis): no pide ni gasta tinta ni papel.
+        boolean gratis = com.femclothes.util.DebugMaquinas.gratis();
+        if (!gratis) for (int i = 0; i < 4; i++) if (cargas[i] < caras) return false;
         // 1 papel por prensado (a las dos caras juntas, no una por cara —
         // es UNA hoja de papel de sublimacion, no una por lado) — a pedido
         // (2026-09-19, "usa papel y ya no consume la imagen").
-        if (papelCargado < 1) return false;
+        if (!gratis && papelCargado < 1) return false;
 
-        for (int i = 0; i < 4; i++) {
+        if (!gratis) for (int i = 0; i < 4; i++) {
             cargas[i] -= caras;
             tinta[i] = cargas[i] / (float) CARGA_MAXIMA;
         }
-        papelCargado -= 1;
+        if (!gratis) papelCargado -= 1;
         sincronizarVistaTanques();
         // Las fotos YA NO se consumen al cerrar la tapa (2026-09-19): quedan
         // cargadas para reimprimir la misma cara sin volver a subirla.
@@ -1277,7 +1280,7 @@ public class SublimadoraBlockEntity extends BlockEntity
         if (!caraActiva(0) && !caraActiva(1)) {
             return Text.translatable("femclothes.sublimadora.aviso.sin_fijar");
         }
-        if (papelCargado < 1) {
+        if (papelCargado < 1 && !com.femclothes.util.DebugMaquinas.gratis()) {
             return Text.translatable("femclothes.sublimadora.aviso.papel");
         }
         if (!hayTinta()) {

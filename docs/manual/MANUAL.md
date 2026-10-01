@@ -407,7 +407,8 @@ Los apliques viajan en la prenda (componente `femclothes:apliques`) y se ven en 
 |---|---|
 | `/femclothes debug instantaneo` | Las máquinas terminan al instante (la tinta y el papel se siguen gastando igual). |
 | `/femclothes debug normal` | Vuelve a los tiempos reales. |
-| `/femclothes debug ver` | Muestra en qué modo está. |
+| `/femclothes debug ver` | Muestra en qué modo está (tiempo e insumos). |
+| `/femclothes debug gratis [si\|no]` | Máquinas sin insumos: Tintes no pide ni gasta tinta, la Sublimadora ni tinta ni papel, la Mesa de estilado no pide retazo (sin retazo el aplique sale blanco) y Envasar no pide frasco. Sin `si`/`no` alterna. Es global (para todos) y se apaga al reiniciar el mundo. |
 | `/femclothes debug patrones` | Te da shulker boxes con uno de cada molde de patrón. |
 | `/femclothes debug moldes` | Te da shulker boxes con uno de cada molde de corte y de red (son 30: van en 2 shulkers). |
 | `/femclothes debug insumos` | Te da una shulker con 64 de cada uno de los 16 tintes y 64 de papel. |

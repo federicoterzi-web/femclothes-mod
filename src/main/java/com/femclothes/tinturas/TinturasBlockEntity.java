@@ -1395,13 +1395,13 @@ public class TinturasBlockEntity extends BlockEntity
             }
         }
         for (int canal = 0; canal < 4; canal++) {
-            if (canalUsado[canal] && cargas[canal] <= 0) {
+            if (canalUsado[canal] && cargas[canal] <= 0 && !com.femclothes.util.DebugMaquinas.gratis()) {
                 return Text.translatable("femclothes.tinturas.aviso.sin_tinte",
                         Text.translatable("femclothes.sublimadora.tinta." + NOMBRE_CANAL[canal]));
             }
         }
         for (int canal = 0; canal < 4; canal++) {
-            if (canalUsado[canal]) cargas[canal]--;
+            if (canalUsado[canal] && !com.femclothes.util.DebugMaquinas.gratis()) cargas[canal]--;
         }
         sincronizarVistaTanques();
 

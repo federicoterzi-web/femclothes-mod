@@ -566,5 +566,7 @@
   "femclothes.estilado.tooltip.giro": "Girar el aplique elegido (de a 15°)",
   "femclothes.estilado.tooltip.escala": "Achicar / agrandar el aplique elegido",
   "femclothes.estilado.tooltip.quitar": "Quitar el aplique elegido y recuperar su retazo",
-  "femclothes.estilado.tooltip.vista": "Girar la vista"
+  "femclothes.estilado.tooltip.vista": "Girar la vista",
+  "femclothes.debug.gratis.si": "[femclothes] Máquinas SIN insumos (debug): no piden ni gastan tinta, papel, retazos ni frascos",
+  "femclothes.debug.gratis.no": "[femclothes] Las máquinas vuelven a pedir y gastar insumos"
 }

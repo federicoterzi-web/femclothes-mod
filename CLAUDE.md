@@ -96,6 +96,8 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 
 **GUI de Guardarropas y Maniquí** (2026-09-30, "con el estilo del mod y los colores de sus acentos metalicos"): fondos de `tools/generar_textura_guardarropas.py` (importa las funciones de `generar_textura_tinturas.py`; temas `plata` = herrajes del wardrobe, `azul` = esmalte del mannequin) → `gui/container/guardarropas.png` y `maniqui.png`, con la grilla 5x4 + armadura + inventario horneados en las coordenadas de los handlers; `EstiloPergamino.Tema.PLATA`/`AZUL`, botones `BotonPergamino`, títulos en `TEXTO`, sliders de pose con riel de madera. Si se mueven slots, regenerar el fondo. Falta probar en el juego.
 
+**Debug sin insumos** (2026-10-01, "un comando pa q las estaciones no requieran insumos pa motivos de debug y experimentacion"): `/femclothes debug gratis [si|no]` → `DebugMaquinas.gratis()` (global, no se guarda), consultado en Tintes (`cargas` al teñir), Sublimadora (`intentarPrensar`, `hayTinta`, `queFalta`), Envasar (`TinturasScreenHandler.envasar`) y Mesa de estilado (`poner` + aviso de la pantalla). Si una máquina nueva gasta insumos, sumarla ahí.
+
 **Otros, sin empezar:**
 - Volumen 3D real en la ropa con 3D Skin Layers.
 - Cadena textil: el hueso `cargo` de las máquinas debería moverse solo con máquinas encadenadas de izquierda a derecha.

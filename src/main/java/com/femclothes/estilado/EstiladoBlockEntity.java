@@ -90,7 +90,9 @@ public class EstiladoBlockEntity extends BlockEntity
      */
     public boolean poner(Parte parte, float x, float y, float z, Direction cara) {
         ItemStack prenda = items.get(SLOT_PRENDA), molde = items.get(SLOT_MOLDE), retazo = items.get(SLOT_RETAZO);
-        if (prenda.isEmpty() || !(molde.getItem() instanceof MoldeApliqueItem m) || retazo.isEmpty()) return false;
+        // Debug sin insumos (DebugMaquinas.gratis): el retazo no hace falta ni se gasta (sin retazo, sale blanco).
+        boolean gratis = com.femclothes.util.DebugMaquinas.gratis();
+        if (prenda.isEmpty() || !(molde.getItem() instanceof MoldeApliqueItem m) || (retazo.isEmpty() && !gratis)) return false;
         if (!Garments.esPrenda(prenda) || !Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(z)) return false;
         List<Aplique> actuales = new ArrayList<>(apliques());
         if (actuales.size() >= Aplique.MAXIMO_POR_PRENDA) return false;
@@ -98,7 +100,7 @@ public class EstiladoBlockEntity extends BlockEntity
         y = MathHelper.clamp(y, -10, 14);
         z = MathHelper.clamp(z, -6, 6);
         actuales.add(new Aplique(m.modelo, parte, x, y, z, cara, 0f, 1f, RetazoApliqueItem.colores(retazo)));
-        retazo.decrement(1);
+        if (!gratis) retazo.decrement(1);
         seleccionado = actuales.size() - 1;
         guardarApliques(actuales);
         return true;

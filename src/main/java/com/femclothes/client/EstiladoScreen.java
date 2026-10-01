@@ -203,7 +203,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 EstiladoBlockEntity be = handler.be;
                 if (be.getStack(EstiladoBlockEntity.SLOT_PRENDA).isEmpty()) aviso = Text.translatable("femclothes.estilado.aviso.prenda");
                 else if (be.getStack(EstiladoBlockEntity.SLOT_MOLDE).isEmpty()) aviso = Text.translatable("femclothes.estilado.aviso.molde");
-                else if (be.getStack(EstiladoBlockEntity.SLOT_RETAZO).isEmpty()) aviso = Text.translatable("femclothes.estilado.aviso.retazo");
+                else if (be.getStack(EstiladoBlockEntity.SLOT_RETAZO).isEmpty() && !com.femclothes.util.DebugMaquinas.gratis()) aviso = Text.translatable("femclothes.estilado.aviso.retazo");
                 else if (be.apliques().size() >= Aplique.MAXIMO_POR_PRENDA) aviso = Text.translatable("femclothes.estilado.aviso.lleno");
                 else if (t == null) aviso = Text.translatable("femclothes.estilado.aviso.fuera");
                 else {

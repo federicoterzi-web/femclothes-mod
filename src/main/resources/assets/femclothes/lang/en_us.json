@@ -566,5 +566,7 @@
   "femclothes.estilado.tooltip.giro": "Turn the selected appliqué (15° steps)",
   "femclothes.estilado.tooltip.escala": "Shrink / enlarge the selected appliqué",
   "femclothes.estilado.tooltip.quitar": "Remove the selected appliqué and get its scrap back",
-  "femclothes.estilado.tooltip.vista": "Turn the view"
+  "femclothes.estilado.tooltip.vista": "Turn the view",
+  "femclothes.debug.gratis.si": "[femclothes] Machines need NO supplies (debug): no ink, paper, scraps or bottles required or used",
+  "femclothes.debug.gratis.no": "[femclothes] Machines require and use supplies again"
 }

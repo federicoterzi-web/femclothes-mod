@@ -234,10 +234,11 @@ public class TinturasScreenHandler extends ScreenHandler {
         for (int i = 0; i < inv.size() && frasco < 0; i++) {
             if (inv.getStack(i).isOf(net.minecraft.item.Items.GLASS_BOTTLE)) frasco = i;
         }
-        if (frasco < 0 && !player.isCreative()) {
+        boolean gratis = player.isCreative() || com.femclothes.util.DebugMaquinas.gratis();
+        if (frasco < 0 && !gratis) {
             return net.minecraft.text.Text.translatable("femclothes.muestra.sin_frasco");
         }
-        if (frasco >= 0 && !player.isCreative()) inv.getStack(frasco).decrement(1);
+        if (frasco >= 0 && !gratis) inv.getStack(frasco).decrement(1);
         ItemStack muestra = com.femclothes.item.MuestraColorItem.con(
                 new ItemStack(com.femclothes.item.FemclothesItems.TINTE_MEZCLA), be.mezclaEnEdicion());
         inv.offerOrDrop(muestra);

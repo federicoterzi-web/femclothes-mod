@@ -26,7 +26,19 @@ public final class DebugMaquinas {
 
     private static volatile boolean instantaneo = false;
 
+    /**
+     * Máquinas sin insumos (2026-10-01, "agregame un comando pa q las
+     * estaciones no requieran insumos pa motivos de debug y
+     * experimentacion"): Tintes no pide ni gasta tinta, la Sublimadora ni
+     * tinta ni papel, la Mesa de estilado no pide ni gasta retazo (sin
+     * retazo, el aplique sale blanco) y Envasar no pide frasco. Global,
+     * como {@link #instantaneo}, y no se guarda: al reiniciar vuelve a normal.
+     */
+    private static volatile boolean gratis = false;
+
     public static boolean instantaneo() { return instantaneo; }
+
+    public static boolean gratis() { return gratis; }
 
     /** La duración a usar de verdad: 1 tick si el modo debug está prendido, si no la real. */
     public static int duracion(int ticksReales) {
@@ -45,6 +57,10 @@ public final class DebugMaquinas {
                         .then(CommandManager.literal("instantaneo").executes(ctx -> cambiar(ctx.getSource(), true)))
                         .then(CommandManager.literal("normal").executes(ctx -> cambiar(ctx.getSource(), false)))
                         .then(CommandManager.literal("ver").executes(ctx -> ver(ctx.getSource())))
+                        .then(CommandManager.literal("gratis")
+                                .executes(ctx -> cambiarGratis(ctx.getSource(), !gratis))
+                                .then(CommandManager.literal("si").executes(ctx -> cambiarGratis(ctx.getSource(), true)))
+                                .then(CommandManager.literal("no").executes(ctx -> cambiarGratis(ctx.getSource(), false))))
                         .then(CommandManager.literal("patrones").executes(ctx -> darPatrones(ctx.getSource())))
                         .then(CommandManager.literal("moldes").executes(ctx -> darMoldes(ctx.getSource())))
                         .then(CommandManager.literal("insumos").executes(ctx -> darInsumos(ctx.getSource())))
@@ -153,6 +169,13 @@ public final class DebugMaquinas {
 
     private static int ver(ServerCommandSource fuente) {
         fuente.sendFeedback(() -> Text.translatable("femclothes.debug.maquinas." + (instantaneo ? "instantaneo" : "normal")), false);
+        fuente.sendFeedback(() -> Text.translatable("femclothes.debug.gratis." + (gratis ? "si" : "no")), false);
+        return 1;
+    }
+
+    private static int cambiarGratis(ServerCommandSource fuente, boolean valor) {
+        gratis = valor;
+        fuente.sendFeedback(() -> Text.translatable("femclothes.debug.gratis." + (valor ? "si" : "no")), true);
         return 1;
     }
 }
