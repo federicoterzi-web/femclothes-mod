@@ -248,11 +248,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         java.util.List<com.femclothes.region.RegionResolver.CapaPatron> capasPollera =
                 com.femclothes.region.RegionResolver.capasTinte(stack, com.femclothes.region.Lado.IZQUIERDA);
         java.util.List<ClothingTextureCache.CapaMascara> capasMascaraPollera = new java.util.ArrayList<>(capasPollera.size());
-        // Patrones desplegados según la forma y el largo (2026-10-01, ver PatronGenerador#desplegar).
-        String clavePollera = com.femclothes.render.PatronGenerador.clavePollera(
-                com.femclothes.item.PolleraItem.forma(stack), com.femclothes.item.PolleraItem.largo(stack));
         for (com.femclothes.region.RegionResolver.CapaPatron capa : capasPollera) {
-            net.minecraft.client.texture.NativeImage mascara = com.femclothes.render.PatronGenerador.mascaraDeCapa(clavePollera, capa);
+            net.minecraft.client.texture.NativeImage mascara = com.femclothes.render.PatronGenerador.mascaraDeCapa("pollera", capa);
             if (!capa.lisa() && mascara == null) continue;
             java.util.List<CajaSkin.Rect> region = capa.region() == com.femclothes.region.RegionPintura.TODO ? null
                     : capa.region().rects(com.femclothes.tinturas.TinturasBlockEntity.Categoria.POLLERA, CuerpoGeometria.ESCALA_TELA);

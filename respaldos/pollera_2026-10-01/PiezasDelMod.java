@@ -412,16 +412,32 @@ public final class PiezasDelMod {
     }
 
     /**
-     * La pollera no tiene piezas sobre la caja del torso: es toda malla
-     * ({@code render.PolleraMalla}, dibujada aparte). El cinto cuadrado que
-     * tenía (2026-09-17, banda lisa en las filas 9..12 del torso) se sacó el
-     * 2026-10-01 ("la base cuadrada de la pollera en el torso me queda con
-     * otro color y fea"): salía de la textura del pantalón con otro sombreado
-     * y sin los patrones; ahora la cintura de la malla es casi recta y tapa
-     * sola la unión con el torso.
+     * Cinto de la pollera: una banda lisa en las últimas filas del TORSO,
+     * mismo mecanismo que la banda de cintura del pantalón ({@link
+     * #pintarCintura}) — a pedido (2026-09-17), "para que una la pollera
+     * con la cintura": sin esto la geometría de la pollera (que arranca en
+     * {@code PolleraGeometria#OFFSET_ABAJO}, fila ~9 de las 12 del torso)
+     * nacía de golpe contra la remera/piel de arriba, sin nada que tape la
+     * costura. {@code Capa.POLLERA}=30, arriba de {@code TORSO_EXTERIOR}
+     * (25): el cinto se ve incluso con una remera puesta.
      */
     private static List<Pieza> pollera(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
-        return List.of();
+        float dilatacion = Calce.dilatacionEfectiva(stack);
+        return List.of(new Pieza(Parte.TORSO, Capa.POLLERA, texturaCintoPollera(stack), dilatacion, 9, 12));
+    }
+
+    private static Identifier texturaCintoPollera(ItemStack stack) {
+        int colorBase = RegionResolver.colorBase(stack, Lado.IZQUIERDA);
+        Identifier base = PantalonItem.TEXTURA_BASE;
+        ClothingTextureCache.Encima ajustes = new ClothingTextureCache.Encima() {
+            @Override public String clave() { return "pollera_cinto"; }
+            @Override public boolean aplicar(NativeImage destino) {
+                pintarCintura(destino, colorBase, 3, List.of());
+                return true;
+            }
+        };
+        return ClothingTextureCache.composeGarment(base, colorBase, null, 0,
+                ClothingTextureCache.Shading.LEGS, ajustes);
     }
 
     /**

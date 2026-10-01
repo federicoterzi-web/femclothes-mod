@@ -29,8 +29,7 @@ import org.joml.Vector3f;
  * <h2>Tela</h2>
  * El perímetro recorre la franja de caras de la caja del TORSO de la skin
  * (u 16..40: costado derecho, frente, costado izquierdo, espalda — el mismo
- * orden y sentido que la caja) y el largo va de v 20 a 32, repartidos por
- * largo de tela de la pollera quieta (ver {@link Perfil}, 2026-10-01). Así la textura
+ * orden y sentido que la caja) y el largo va de v 20 a 32. Así la textura
  * de la pollera tiene el layout de una caja de torso y la tiñen, estampan y
  * perforan las mismas rutinas que al resto de las prendas.
  *
@@ -61,8 +60,6 @@ public final class PolleraMalla {
     private static final int TABLAS = 12;
     /** Largo del perímetro de la caja del torso en la textura (4+8+4+8). */
     private static final float PERIMETRO = 24f;
-    /** Columnas del centro del frente (s = 8) y de la espalda (s = 20). */
-    private static final int COL_FRENTE = COLUMNAS / 3, COL_ESPALDA = COLUMNAS * 5 / 6;
 
     /**
      * Las dos piernas del modelo, para que la tela choque con ellas
@@ -114,10 +111,7 @@ public final class PolleraMalla {
                                CapaMalla.Movimiento mov, float twirl) {
         float[][][] p = new float[FILAS + 1][COLUMNAS + 1][];
         float l = largo.pixeles;
-        // Nunca más pegada que Normal: la cintura (sección casi recta) tiene
-        // que pasar por fuera de las esquinas del torso.
-        float holgura = Math.max(dil, 0.25f);
-        float a0 = 4f + holgura + 0.1f, b0 = 2f + holgura + 0.1f;
+        float a0 = 4f + dil + 0.1f, b0 = 2f + dil + 0.1f;
         float vueloX = 0.8f + 0.18f * l, vueloZ = 1.2f + 0.26f * l;
         if (!piernasAbiertas) {
             vueloZ *= 1.5f;
@@ -142,17 +136,31 @@ public final class PolleraMalla {
             atras *= 1f - fuerza;
         }
 
-        // La tela sale del perfil QUIETO (no del que se mueve): así el dibujo
-        // no "nada" sobre la pollera cuando la tela se balancea.
-        Perfil perfil = perfil(forma, largo);
         for (int f = 0; f <= FILAS; f++) {
             float t = f / (float) FILAS;
             float y = Y_CINTURA + t * l;
+            float curva = (float) Math.pow(t, 1.15);
             float peso = (float) Math.pow(t, 1.6);
+            float a = (a0 + vueloX * curva) * (1f + abrir * peso), b = (b0 + vueloZ * curva) * (1f + abrir * peso);
             float cosG = (float) Math.cos(giro * t), sinG = (float) Math.sin(giro * t);
-            float[][] anillo = anillo(t, a0, b0, vueloX, vueloZ, l, abrir, tableada);
+            // De caja (4) a casi elipse (2.4) hacia el ruedo.
+            float n = 4f - 1.6f * t;
             for (int c = 0; c <= COLUMNAS; c++) {
-                float x = anillo[c][0], z = anillo[c][1];
+                float s = c * PERIMETRO / COLUMNAS;
+                float[] q = seccion(s, a, b, n);
+                float x = q[0], z = q[1];
+                if (tableada) {
+                    // Zigzag: 4 columnas por tabla, picos afuera/adentro alternados.
+                    float fase = (s * TABLAS / PERIMETRO) % 1f;
+                    float tri = (fase < 0.5f ? fase * 2f : 2f - fase * 2f) * 2f - 1f;
+                    float amp = (0.45f + 0.035f * l) * t;
+                    float nx = x / (a * a), nz = z / (b * b);
+                    float len = (float) Math.sqrt(nx * nx + nz * nz);
+                    if (len > 1e-4f) {
+                        x += nx / len * amp * tri;
+                        z += nz / len * amp * tri;
+                    }
+                }
                 // Vaivén del paso: la tela se retuerce un poco alrededor del eje del cuerpo.
                 float xg = x * cosG - z * sinG, zg = x * sinG + z * cosG;
                 x = xg;
@@ -164,7 +172,7 @@ public final class PolleraMalla {
                 z += dz;
                 x += dx;
                 yy -= (dz * 0.35f + Math.abs(dx) * 0.2f + abrir * l * 0.2f * peso);
-                p[f][c] = new float[]{x, yy, z, perfil.u[f][c] / 64f, perfil.v[f] / 64f};
+                p[f][c] = new float[]{x, yy, z, (16f + s) / 64f, (20f + 12f * t) / 64f};
             }
         }
 
@@ -180,144 +188,6 @@ public final class PolleraMalla {
                 emitir(vc, e, p, f + 1, c, luz, ov);
             }
         }
-    }
-
-    /**
-     * Un anillo de la malla a la altura {@code t} (0 = cintura, 1 = ruedo),
-     * sin movimiento: la sección redondeada que se abre hacia abajo y, en la
-     * tableada, el zigzag de las tablas. Columna 0 y {@link #COLUMNAS} son
-     * el mismo punto (la costura).
-     */
-    private static float[][] anillo(float t, float a0, float b0, float vueloX, float vueloZ, float l,
-                                    float abrir, boolean tableada) {
-        float curva = (float) Math.pow(t, 1.15);
-        float peso = (float) Math.pow(t, 1.6);
-        float a = (a0 + vueloX * curva) * (1f + abrir * peso), b = (b0 + vueloZ * curva) * (1f + abrir * peso);
-        // De caja (12, casi recta: la cintura tapa las esquinas del torso
-        // ahora que no hay cinto, 2026-10-01) a casi elipse (2.4) en el ruedo.
-        float n = 2.4f + 9.6f * (1f - t) * (1f - t);
-        float[][] out = new float[COLUMNAS + 1][];
-        for (int c = 0; c <= COLUMNAS; c++) {
-            float s = c * PERIMETRO / COLUMNAS;
-            float[] q = seccion(s, a, b, n);
-            float x = q[0], z = q[1];
-            if (tableada) {
-                // Zigzag: 4 columnas por tabla, picos afuera/adentro alternados.
-                float fase = (s * TABLAS / PERIMETRO) % 1f;
-                float tri = (fase < 0.5f ? fase * 2f : 2f - fase * 2f) * 2f - 1f;
-                float amp = (0.45f + 0.035f * l) * t;
-                float nx = x / (a * a), nz = z / (b * b);
-                float len = (float) Math.sqrt(nx * nx + nz * nz);
-                if (len > 1e-4f) {
-                    x += nx / len * amp * tri;
-                    z += nz / len * amp * tri;
-                }
-            }
-            out[c] = new float[]{x, z};
-        }
-        return out;
-    }
-
-    /**
-     * Cómo se reparte la tela sobre la pollera quieta (2026-10-01, "alguna
-     * forma de acomodar las UVs de las polleras para que los patrones no se
-     * deformen?"). Antes la textura se repartía por la posición sobre la
-     * caja del torso: los costados del ruedo (casi la mitad de la vuelta)
-     * recibían 1/6 de la tela cada uno y los 12 px de alto se estiraban o
-     * aplastaban según el largo. Ahora:
-     * <ul>
-     *   <li>u: en cada anillo, proporcional al largo de tela recorrido (un
-     *       px de textura mide lo mismo de frente que de costado);</li>
-     *   <li>v: proporcional al largo de tela bajando desde la cintura (no a
-     *       la altura), así las filas de textura miden lo mismo en toda la
-     *       pollera.</li>
-     * </ul>
-     * Lo que queda (el ruedo es más ancho que la cintura y los 24 px de
-     * textura dan la vuelta en todas las filas) lo corrige
-     * {@code PatronGenerador}, que dibuja los patrones de la pollera ya
-     * "desplegados" con {@link #circunferenciaEn} y {@link Perfil#largoTela}.
-     *
-     * <p>Sin calce (la dilatación cambia la vuelta en décimas) y con las
-     * piernas abiertas, la forma de siempre.
-     */
-    public static final class Perfil {
-        /** u (px de skin, 16..40) por fila y columna. */
-        final float[][] u = new float[FILAS + 1][COLUMNAS + 1];
-        /** v (px de skin, 20..32) por fila. */
-        final float[] v = new float[FILAS + 1];
-        /** Vuelta de cada anillo, en px de tela. */
-        final float[] vuelta = new float[FILAS + 1];
-        /** Fracción del largo de tela (0..1) en cada fila. */
-        final float[] fraccion = new float[FILAS + 1];
-        /** Largo de la tela de la cintura al ruedo, en px. */
-        public float largoTela;
-
-        /** Vuelta (px de tela) a la fracción {@code q} (0 = cintura, 1 = ruedo) del largo de tela. */
-        public float circunferenciaEn(float q) {
-            if (q <= 0f) return vuelta[0];
-            for (int f = 1; f <= FILAS; f++) {
-                if (q <= fraccion[f]) {
-                    float tramo = fraccion[f] - fraccion[f - 1];
-                    float k = tramo <= 1e-6f ? 0f : (q - fraccion[f - 1]) / tramo;
-                    return vuelta[f - 1] + (vuelta[f] - vuelta[f - 1]) * k;
-                }
-            }
-            return vuelta[FILAS];
-        }
-    }
-
-    private static final java.util.Map<String, Perfil> PERFILES = new java.util.HashMap<>();
-
-    public static Perfil perfil(PolleraForma forma, PolleraLargo largo) {
-        return PERFILES.computeIfAbsent(forma + "|" + largo, k -> calcularPerfil(forma, largo));
-    }
-
-    private static Perfil calcularPerfil(PolleraForma forma, PolleraLargo largo) {
-        Perfil pf = new Perfil();
-        float l = largo.pixeles;
-        float a0 = 4.35f, b0 = 2.35f;
-        float vueloX = 0.8f + 0.18f * l, vueloZ = 1.2f + 0.26f * l;
-        boolean tableada = forma == PolleraForma.TABLEADA;
-        float[][][] anillos = new float[FILAS + 1][][];
-        for (int f = 0; f <= FILAS; f++) anillos[f] = anillo(f / (float) FILAS, a0, b0, vueloX, vueloZ, l, 0f, tableada);
-
-        // u: largo recorrido sobre cada anillo, con el centro del frente
-        // clavado en u 24 y el de la espalda en u 36 (cada mitad de la vuelta
-        // = 12 px de textura): si no, el centro se correría de fila en fila y
-        // las rayas verticales saldrían torcidas.
-        for (int f = 0; f <= FILAS; f++) {
-            float[] acum = new float[COLUMNAS + 1];
-            for (int c = 1; c <= COLUMNAS; c++) {
-                float dx = anillos[f][c][0] - anillos[f][c - 1][0], dz = anillos[f][c][1] - anillos[f][c - 1][1];
-                acum[c] = acum[c - 1] + (float) Math.sqrt(dx * dx + dz * dz);
-            }
-            float total = acum[COLUMNAS];
-            float frente = acum[COL_FRENTE], espalda = acum[COL_ESPALDA];
-            float mitadIzq = espalda - frente, mitadDer = total - mitadIzq;
-            pf.vuelta[f] = total;
-            for (int c = 0; c <= COLUMNAS; c++) {
-                if (c < COL_FRENTE) pf.u[f][c] = 24f - 12f * (frente - acum[c]) / mitadDer;
-                else if (c <= COL_ESPALDA) pf.u[f][c] = 24f + 12f * (acum[c] - frente) / mitadIzq;
-                else pf.u[f][c] = 36f + 12f * (acum[c] - espalda) / mitadDer;
-            }
-        }
-        // v: largo de tela bajando (promedio de todas las columnas).
-        float[] bajada = new float[FILAS + 1];
-        float dy = l / FILAS;
-        for (int f = 1; f <= FILAS; f++) {
-            float suma = 0f;
-            for (int c = 0; c < COLUMNAS; c++) {
-                float dx = anillos[f][c][0] - anillos[f - 1][c][0], dz = anillos[f][c][1] - anillos[f - 1][c][1];
-                suma += (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
-            }
-            bajada[f] = bajada[f - 1] + suma / COLUMNAS;
-        }
-        pf.largoTela = bajada[FILAS];
-        for (int f = 0; f <= FILAS; f++) {
-            pf.fraccion[f] = bajada[f] / pf.largoTela;
-            pf.v[f] = 20f + 12f * pf.fraccion[f];
-        }
-        return pf;
     }
 
     /**

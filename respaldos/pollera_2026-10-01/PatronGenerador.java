@@ -235,7 +235,7 @@ public final class PatronGenerador {
     public static NativeImage mascaraPara(String prenda, Forma forma, float anguloGrados,
                                           int grosorBase, TamanoPatron tamano, float posicion, int semilla,
                                           float distancia, boolean simetria) {
-        List<Caja> cajas = cajasDe(prenda);
+        List<Caja> cajas = CAJAS_POR_PRENDA.get(prenda);
         if (cajas == null) return null;
 
         int grosor = Math.max(1, Math.round(grosorBase * tamano.escala));
@@ -274,7 +274,7 @@ public final class PatronGenerador {
             int inicioBloque = Math.round(posPaso / 100f * Math.max(0, largo - bloque));
             double minFinal = min;
             boolean simetrica = simetria && caja == TORSO;
-            recorrer(caja, img, desplegar(prenda, caja, simetrica, (lx, ly) -> {
+            recorrer(caja, img, (lx, ly) -> {
                 int lxEspejado = espejar ? Math.floorMod(3 * cuarto - lx, w) : lx;
                 if (simetrica) lxEspejado = reflejoTorso(lxEspejado, w);
                 int d = (int) Math.round(lxEspejado * sin + ly * cos - minFinal);
@@ -289,7 +289,7 @@ public final class PatronGenerador {
                         ? Math.floorDiv(dRaya - inicioBloque, periodo) : Math.floorDiv(dRaya, periodo);
                 int cob = opaco || esContorno ? 255 : 0;
                 return pixelMascara(cob, esContorno, indice, 0, semilla, ly, h);
-            }));
+            });
         }
 
         CACHE.put(key, img);
@@ -344,51 +344,6 @@ public final class PatronGenerador {
     /** Altura (0 arriba .. 255 abajo) de este pixel dentro de su pieza. */
     public static int altura(int pixel) { return (pixel >> 16) & 0xFF; }
 
-    /**
-     * Clave de prenda de la pollera para {@link #mascaraDeCapa}: los
-     * patrones dependen de la forma y del largo (ver {@link #desplegar}).
-     */
-    public static String clavePollera(com.femclothes.item.PolleraForma forma, com.femclothes.item.PolleraLargo largo) {
-        return "pollera:" + forma.name() + ":" + largo.name();
-    }
-
-    private static List<Caja> cajasDe(String prenda) {
-        return CAJAS_POR_PRENDA.get(prenda.startsWith("pollera:") ? "pollera" : prenda);
-    }
-
-    /**
-     * Patrones de la pollera sin deformar (2026-10-01, "alguna forma de
-     * acomodar las UVs de las polleras para que los patrones no se
-     * deformen?"): la tela da la vuelta entera en los 24 px de textura en
-     * todas las filas, pero el ruedo es mucho más ancho que la cintura (y el
-     * largo de tela no son 12 px). Acá cada pixel de la textura se lleva a
-     * dónde cae en la tela desplegada de esa pollera ({@link PolleraMalla.Perfil}):
-     * en horizontal, la distancia al centro del frente por la vuelta de esa
-     * fila / 24; en vertical, la fracción del largo de tela. El patrón se
-     * evalúa ahí, así que en la textura queda "abierto en abanico" y sobre
-     * la pollera los lunares salen redondos y las rayas parejas. La costura
-     * queda en el centro de la espalda, como en una pollera de verdad.
-     *
-     * <p>Con simetría, la mitad izquierda lee la derecha espejada antes de
-     * desplegar (el reflejo del torso no sirve: la media vuelta ya no mide 96).
-     */
-    private static ValorTira desplegar(String prenda, Caja caja, boolean simetria, ValorTira f) {
-        if (!prenda.startsWith("pollera:") || caja != TORSO) return f;
-        String[] partes = prenda.split(":");
-        PolleraMalla.Perfil perfil = PolleraMalla.perfil(com.femclothes.item.PolleraForma.valueOf(partes[1]),
-                com.femclothes.item.PolleraLargo.valueOf(partes[2]));
-        int w = caja.x1() - caja.x0(), h = caja.alto();
-        int centro = w / 3, mitad = w / 2;
-        float alto = perfil.largoTela / 12f;
-        return (lx, ly) -> {
-            int d = Math.floorMod(lx - centro + mitad, w) - mitad;
-            if (simetria && d >= 0) d = -1 - d;
-            float q = Math.max(0f, Math.min(1f, (ly + 0.5f) / h));
-            float ancho = perfil.circunferenciaEn(q) / 24f;
-            return f.valor(centro + Math.round(d * ancho), Math.round(ly * alto));
-        };
-    }
-
     private static NativeImage mascaraVacia() {
         NativeImage img = new NativeImage(LADO_ATLAS, LADO_ATLAS, true);
         for (int y = 0; y < LADO_ATLAS; y++) for (int x = 0; x < LADO_ATLAS; x++) img.setColor(x, y, 0);
@@ -427,7 +382,7 @@ public final class PatronGenerador {
     /** Capa lisa con degradé: cubre todas las cajas de la prenda, con la altura en el canal azul. */
     @org.jetbrains.annotations.Nullable
     public static NativeImage mascaraGradiente(String prenda) {
-        List<Caja> cajas = cajasDe(prenda);
+        List<Caja> cajas = CAJAS_POR_PRENDA.get(prenda);
         if (cajas == null) return null;
         String key = prenda + "|gradiente";
         NativeImage cacheada = CACHE.get(key);
@@ -476,7 +431,7 @@ public final class PatronGenerador {
     public static NativeImage mascaraMotivo(String prenda, Motivo motivo, double escala,
                                             Repeticion repeticion, int semilla, float posicion,
                                             float anguloGrilla, DistribucionPatron dist) {
-        List<Caja> cajas = cajasDe(prenda);
+        List<Caja> cajas = CAJAS_POR_PRENDA.get(prenda);
         if (cajas == null) return null;
         double k = Math.max(0.75, Math.round(escala * 4) / 4.0);
         int posPaso = Math.round(Math.max(0f, Math.min(1f, posicion)) * 20);
@@ -497,7 +452,7 @@ public final class PatronGenerador {
             // frente 64 | izq 32 | atrás 64.
             double centroFrente = caja == TORSO ? 64 : cuarto * 1.5;
             boolean simetrica = dist.simetria() && caja == TORSO;
-            recorrer(caja, img, desplegar(prenda, caja, simetrica, (lx, ly) -> {
+            recorrer(caja, img, (lx, ly) -> {
                 int u = espejar ? Math.floorMod(3 * cuarto - lx, w) : lx;
                 if (simetrica) u = reflejoTorso(u, w);
                 int rol = motivo.esProcedural()
@@ -506,7 +461,7 @@ public final class PatronGenerador {
                                 posPaso / 20.0, centroFrente, grillaPaso, dist, celda);
                 int cob = rol == ROL_NADA ? 0 : rol == ROL_MEDIO ? 128 : 255;
                 return pixelMascara(cob, rol == ROL_CONTORNO, celda[0], celda[1], semilla, ly, h);
-            }));
+            });
         }
         CACHE.put(key, img);
         return img;
