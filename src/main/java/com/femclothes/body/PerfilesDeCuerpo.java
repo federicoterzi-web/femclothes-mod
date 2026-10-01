@@ -52,12 +52,13 @@ public final class PerfilesDeCuerpo {
     }
 
     /**
-     * Estrógenos vencidos (2026-10-01, "que los efectos duren 24 hs"): una vez
-     * por segundo, a quien se le pasó el tiempo le vuelve el busto del cuerpo.
-     * Cuenta el reloj del mundo, así que no avanza con el server apagado.
+     * Estrógenos vencidos (2026-10-01, "la duracion es 24 horas reloj"): una
+     * vez por segundo, a quien se le pasó la hora le vuelve el busto del
+     * cuerpo. Es hora real: si el plazo venció con el mundo cerrado, vence al
+     * entrar.
      */
     private static void vencerEstrogenos(net.minecraft.server.MinecraftServer servidor) {
-        long ahora = servidor.getOverworld().getTime();
+        long ahora = System.currentTimeMillis();
         for (net.minecraft.server.network.ServerPlayerEntity jugador : servidor.getPlayerManager().getPlayerList()) {
             PerfilCuerpo perfil = de(jugador);
             if (perfil.busto() > 0 && ahora >= perfil.estrogenosHasta()) {

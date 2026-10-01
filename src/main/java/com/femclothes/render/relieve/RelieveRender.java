@@ -59,14 +59,7 @@ public final class RelieveRender {
 
     /** La altura de la cara con el busto corrido por el rebote. */
     static float altura(Contexto c, int cara, float fu, float fv) {
-        Rebote r = c.rebote();
-        if (r != null && cara == 1 && c.parte() == Parte.TORSO) {
-            float w = RelieveCuerpo.mascaraBusto(r.busto(), fu, fv);
-            if (w > 0f) {
-                fu -= r.dx() * w;
-                fv -= r.dy() * w;
-            }
-        }
+        // El busto rebota aparte (BustoRender): el relieve queda quieto.
         return c.mapa().altura(c.parte(), cara, fu, fv);
     }
 

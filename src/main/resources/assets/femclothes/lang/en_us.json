@@ -572,7 +572,7 @@
   "item.femclothes.estrogenos": "Estrogens",
   "item.femclothes.molde_textura_fruncido": "Texture Mould: Gathered",
   "item.femclothes.molde_textura_acolchado": "Texture Mould: Quilted",
-  "femclothes.estrogenos.tooltip": "Each dose adds one bust size (3 at most). Lasts 24 h since the last dose",
+  "femclothes.estrogenos.tooltip": "Each dose adds one bust size (5 at most). Lasts 24 real hours since the last dose",
   "femclothes.estrogenos.dosis": "Estrogens: size %s of %s, for 24 h",
   "femclothes.textura_tela.lisa": "Plain",
   "femclothes.textura_tela.fruncido": "Gathered",

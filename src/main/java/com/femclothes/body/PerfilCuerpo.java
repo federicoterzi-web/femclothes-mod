@@ -28,13 +28,14 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
 
     /**
      * Dosis de Estrógenos acumuladas (2026-10-01, "3 tamaños de mamas... a
-     * traves de la acumulacion de tres ingestas"): 0..{@link #BUSTO_MAXIMO},
+     * traves de la acumulacion de tres ingestas" → "le demos 5 tamaños a los
+     * pechos llegando a uno bastante mas grande"): 0..{@link #BUSTO_MAXIMO},
      * cada una un talle de busto sobre el del cuerpo. Vencen en
-     * {@code estrogenosHasta} (tiempo del mundo, en ticks).
+     * {@code estrogenosHasta} (hora real, en milisegundos desde 1970).
      */
-    public static final int BUSTO_MAXIMO = 3;
-    /** "que los efectos duren 24 hs": un día de Minecraft (24 h del reloj del juego). */
-    public static final long DURACION_ESTROGENOS = 24000L;
+    public static final int BUSTO_MAXIMO = 5;
+    /** "la duracion es 24 horas reloj": 24 horas reales, corren aunque el mundo esté cerrado. */
+    public static final long DURACION_ESTROGENOS = 24L * 60 * 60 * 1000;
     /** Cuánto se marcan los músculos del relieve, en % (2026-10-01). */
     public static final int DEFINICION_DEFECTO = 100, DEFINICION_MAXIMA = 200;
 
@@ -151,7 +152,7 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
         return new PerfilCuerpo(cuerpo, tono, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, valor, busto, definicion, estrogenosHasta);
     }
 
-    /** Dosis de Estrógenos {@code b} que vencen en el tick {@code hasta} del mundo (0 dosis = sin efecto). */
+    /** Dosis de Estrógenos {@code b} que vencen en {@code hasta} (milisegundos reales; 0 dosis = sin efecto). */
     public PerfilCuerpo conBusto(int b, long hasta) {
         int dosis = Math.max(0, Math.min(BUSTO_MAXIMO, b));
         return new PerfilCuerpo(cuerpo, tono, interior, elegido, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre,

@@ -58,13 +58,14 @@ public final class RelieveCuerpo {
     }
 
     /** Tope del busto (base del cuerpo + Estrógenos), en las unidades de {@link Forma#busto}. */
-    public static final float BUSTO_MAXIMO = 6f;
+    public static final float BUSTO_MAXIMO = 10f;
     /**
      * Cuánto busto suma cada dosis acumulada de Estrógenos (2026-10-01, "3
-     * tamaños de mamas... a traves de la acumulacion de tres ingestas"):
-     * chico, mediano, grande.
+     * tamaños de mamas... a traves de la acumulacion de tres ingestas" → "le
+     * demos 5 tamaños a los pechos llegando a uno bastante mas grande"): el
+     * último salta bastante más que los otros.
      */
-    private static final float[] BUSTO_POR_DOSIS = {0f, 1.5f, 3f, 4.5f};
+    private static final float[] BUSTO_POR_DOSIS = {0f, 1.3f, 2.6f, 3.9f, 5.4f, 8f};
 
     private static final Map<String, MapaRelieve> CACHE = new HashMap<>();
 
@@ -117,20 +118,17 @@ public final class RelieveCuerpo {
                     h += 0.32f * f.abdomen() * def * abs;
                     // Panza: una cúpula grande y baja.
                     h += 0.9f * f.panza() * domo(fu, fv, 0.5f, 0.66f, 0.48f, 0.36f);
-                    // Busto: más redondo abajo que arriba (cae un poco).
-                    if (busto > 0) {
-                        float ru = 0.2f + 0.015f * busto;
-                        float arriba = 0.22f + 0.02f * busto, abajo = 0.12f + 0.02f * busto;
-                        float cv = 0.3f + 0.01f * busto;
-                        float b = 0.28f * busto * sujecion;
-                        h += b * (pecho(fu, fv, 0.28f, cv, ru, arriba, abajo) + pecho(fu, fv, 0.72f, cv, ru, arriba, abajo));
-                    }
+                    // El busto ya no va en el relieve (2026-10-01, "sacaria los pechos
+                    // de la normal de la skin reconstruida porque se superponen"):
+                    // es geometría propia, estilo Only Jugs — ver render.relieve.BustoRender.
                 } else if (espalda) {
                     // Omóplatos y, abajo, el principio de la cola.
                     h += 0.3f * f.pecho() * def * (bulto(fu, fv, 0.3f, 0.22f, 0.2f, 0.14f, 1.5f)
                             + bulto(fu, fv, 0.7f, 0.22f, 0.2f, 0.14f, 1.5f));
-                    h += 0.35f * f.cola() * (bulto(fu, fv, 0.3f, 0.97f, 0.26f, 0.12f, 1f)
-                            + bulto(fu, fv, 0.7f, 0.97f, 0.26f, 0.12f, 1f));
+                    // Nalgas (2026-10-01, "estan apareciendo en las piernas en lugar
+                    // del torso"): abajo de la espalda del torso, redondas.
+                    h += 0.8f * f.cola() * (domo(fu, fv, 0.29f, 0.86f, 0.27f, 0.17f)
+                            + domo(fu, fv, 0.71f, 0.86f, 0.27f, 0.17f));
                     h += 0.25f * f.panza() * domo(fu, fv, 0.5f, 0.75f, 0.5f, 0.3f);
                 } else {
                     // Costados: la panza asoma y la cintura de las curvas se angosta.
@@ -152,12 +150,22 @@ public final class RelieveCuerpo {
             }
             case PIERNA_DER, PIERNA_IZQ -> {
                 float m = f.piernas() * def;
-                if (frente) h += 0.3f * m * bulto(fu, fv, 0.5f, 0.27f, 0.45f, 0.22f, 1.2f);        // muslo
-                if (espalda) {
-                    h += 0.7f * f.cola() * bulto(fu, fv, 0.5f, 0.06f, 0.55f, 0.22f, 1f);            // cola
-                    h += 0.55f * m * bulto(fu, fv, 0.5f, 0.62f, 0.4f, 0.16f, 1.3f);                 // gemelos
+                // Muslos más definidos (2026-10-01, "quizas le daria mas definicion
+                // a los muslos"): cuádriceps en dos cabezas al frente, isquios
+                // atrás, el muslo de afuera y la rodilla marcada.
+                if (frente) {
+                    h += 0.5f * m * (bulto(fu, fv, 0.36f, 0.26f, 0.3f, 0.2f, 0.9f)
+                            + bulto(fu, fv, 0.66f, 0.3f, 0.28f, 0.18f, 0.9f));
+                    h += 0.2f * m * bulto(fu, fv, 0.5f, 0.47f, 0.3f, 0.05f, 1f);                     // rodilla
                 }
-                if (afuera) h += 0.35f * f.cintura() * bulto(fu, fv, 0.5f, 0.08f, 0.55f, 0.16f, 1f); // cadera
+                if (espalda) {
+                    h += 0.3f * m * bulto(fu, fv, 0.5f, 0.24f, 0.42f, 0.16f, 1f);                    // isquios
+                    h += 0.55f * m * bulto(fu, fv, 0.5f, 0.62f, 0.4f, 0.16f, 1.3f);                  // gemelos
+                }
+                if (afuera) {
+                    h += 0.35f * f.cintura() * bulto(fu, fv, 0.5f, 0.08f, 0.55f, 0.16f, 1f);         // cadera
+                    h += 0.35f * m * bulto(fu, fv, 0.5f, 0.27f, 0.45f, 0.2f, 1f);                    // muslo de afuera
+                }
                 // Arriba no se apaga: la cola sigue desde el torso.
                 return h * ventana(fu, 0.25f) * rampa(1f - fv, 0.06f);
             }
@@ -165,23 +173,6 @@ public final class RelieveCuerpo {
                 return 0f;
             }
         }
-    }
-
-    /**
-     * Cuánto pertenece el punto al busto (1 adentro, 0 lejos), para correrlo
-     * con el rebote: las mismas elipses del busto agrandadas, con borde suave
-     * (la tela de alrededor se estira en vez de cortarse).
-     */
-    public static float mascaraBusto(float busto, float fu, float fv) {
-        if (busto <= 0f) return 0f;
-        float ru = 0.2f + 0.015f * busto, rv = 0.17f + 0.02f * busto, cv = 0.3f + 0.01f * busto;
-        float m = 0f;
-        for (float cu : new float[]{0.28f, 0.72f}) {
-            float du = (fu - cu) / (ru * 1.5f), dv = (fv - cv) / (rv * 1.5f);
-            float d = (float) Math.sqrt(du * du + dv * dv);
-            m = Math.max(m, d <= 0.7f ? 1f : d >= 1f ? 0f : 1f - rampa((d - 0.7f) / 0.3f, 1f));
-        }
-        return m;
     }
 
     /** Lomita suave (1 − d²)^k en una elipse de radios ru × rv. */
@@ -199,14 +190,6 @@ public final class RelieveCuerpo {
         if (d2 >= 1f) return 0f;
         float s = (float) Math.sqrt(1f - d2);
         return s * s * (3f - 2f * s);
-    }
-
-    /** Un pecho: cúpula con más radio arriba (sube de a poco) que abajo (redondo). */
-    static float pecho(float fu, float fv, float cu, float cv, float ru, float rArriba, float rAbajo) {
-        float du = (fu - cu) / ru, dv = (fv - cv) / (fv < cv ? rArriba : rAbajo);
-        float d2 = du * du + dv * dv;
-        if (d2 >= 1f) return 0f;
-        return (float) Math.pow(1f - d2, 0.65f);
     }
 
     /** 0 en los bordes izquierdo/derecho de la cara, 1 adentro (suave). */

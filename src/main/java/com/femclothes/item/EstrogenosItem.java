@@ -57,7 +57,7 @@ public class EstrogenosItem extends Item {
         if (world instanceof ServerWorld servidor && user instanceof PlayerEntity jugador) {
             PerfilCuerpo perfil = PerfilesDeCuerpo.de(jugador);
             int dosis = Math.min(PerfilCuerpo.BUSTO_MAXIMO, perfil.busto() + 1);
-            long hasta = servidor.getServer().getOverworld().getTime() + PerfilCuerpo.DURACION_ESTROGENOS;
+            long hasta = System.currentTimeMillis() + PerfilCuerpo.DURACION_ESTROGENOS;
             PerfilesDeCuerpo.poner(jugador, perfil.conBusto(dosis, hasta));
             jugador.sendMessage(Text.translatable(perfil.busto() >= PerfilCuerpo.BUSTO_MAXIMO
                     ? "femclothes.estrogenos.renovado" : "femclothes.estrogenos.dosis",
