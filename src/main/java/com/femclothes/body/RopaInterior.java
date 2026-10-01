@@ -1,57 +1,51 @@
 package com.femclothes.body;
 
-import com.femclothes.Femclothes;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.StringIdentifiable;
-
 /**
- * Lo que trae puesto el cuerpo base.
+ * Lo que trae puesto el cuerpo base: una parte de arriba, una de abajo y su
+ * color — a pedido (2026-09-30, "me gustaria agregar un binder mas boxer?
+ * capaz se eligen las dos partes?"). Antes era un solo valor de 5
+ * (basica/slip/boxer/bralette/deportiva) y sus texturas nunca existieron, así
+ * que no se veía nada; los perfiles viejos se pasan con {@link #deClaveVieja}.
  *
- * Viene baked en la textura del sustrato y no como prenda, porque el sustrato
- * se dibuja siempre que haya cualquier prenda: si la ropa interior fuera una
- * prenda mas, un croptop sin nada abajo dejaria el torso desnudo. BASICA es
- * el fallback y por eso es el default — el jugador no tiene que elegir nada
- * para que el mod se comporte.
+ * <p>Va pintada en la textura del cuerpo y no como prenda, porque el cuerpo
+ * se dibuja siempre que haya cualquier prenda: si fuera una prenda más, un
+ * croptop sin nada abajo dejaría el torso desnudo. Es el mínimo que siempre
+ * está; lo personalizable (encaje, patrones, fotos) se hace con remeras y
+ * pantalones recortados en las máquinas.
  *
- * Los slots {@code torso/interior} y {@code piernas/interior} son otra cosa y
- * son posteriores: ahi va ropa interior TENIBLE, que se saca y se cambia. Lo
- * de aca es el minimo que siempre esta.
+ * <p>Las texturas son grises ({@code tools/generar_ropa_interior.py}) y se
+ * tiñen con {@link #color}, ver {@code CuerpoBaseTextures#superponer}.
  */
-public enum RopaInterior implements StringIdentifiable {
+public record RopaInterior(InteriorArriba arriba, InteriorAbajo abajo, int color) {
 
-    BASICA("basica"),
-    SLIP("slip"),
-    BOXER("boxer"),
-    BRALETTE("bralette"),
-    DEPORTIVA("deportiva");
+    /** Blanco roto: el color de siempre si nadie eligió otro. */
+    public static final int COLOR_DEFECTO = 0xF2EEE8;
 
-    public final String clave;
+    public static final RopaInterior DEFECTO = new RopaInterior(InteriorArriba.BRALETTE, InteriorAbajo.SLIP, COLOR_DEFECTO);
 
-    RopaInterior(String clave) {
-        this.clave = clave;
+    /** Los valores del enum viejo, guardados en perfiles de antes del 2026-09-30. */
+    public static RopaInterior deClaveVieja(String clave) {
+        return switch (clave) {
+            case "slip" -> new RopaInterior(InteriorArriba.NINGUNA, InteriorAbajo.SLIP, COLOR_DEFECTO);
+            case "boxer" -> new RopaInterior(InteriorArriba.NINGUNA, InteriorAbajo.BOXER, COLOR_DEFECTO);
+            case "deportiva" -> new RopaInterior(InteriorArriba.DEPORTIVO, InteriorAbajo.CULOTTE, COLOR_DEFECTO);
+            default -> DEFECTO;
+        };
     }
 
-    @Override
-    public String asString() {
-        return clave;
+    public RopaInterior conArriba(InteriorArriba a) {
+        return new RopaInterior(a, abajo, color);
     }
 
-    /**
-     * La textura, en layout de skin a 8x, que se dibuja ENCIMA del cuerpo.
-     *
-     * Tambien opcional: sin el png el cuerpo sale sin ropa interior pintada.
-     * Se compone aparte del cuerpo y no baked en cada uno para no multiplicar
-     * el arte por cinco cuerpos.
-     */
-    public Identifier textura() {
-        return Identifier.of(Femclothes.MOD_ID, "textures/entity/cuerpo/interior_" + clave + ".png");
+    public RopaInterior conAbajo(InteriorAbajo b) {
+        return new RopaInterior(arriba, b, color);
     }
 
-    public String traduccion() {
-        return "femclothes.interior." + clave;
+    public RopaInterior conColor(int rgb) {
+        return new RopaInterior(arriba, abajo, rgb & 0xFFFFFF);
     }
 
-    public RopaInterior siguiente() {
-        return values()[(ordinal() + 1) % values().length];
+    public String clave() {
+        return arriba.clave + "+" + abajo.clave + "#" + Integer.toHexString(color);
     }
 }

@@ -11,12 +11,10 @@ import net.minecraft.text.Text;
 /**
  * Elegir cuerpo base sin GUI.
  *
- * La GUI de primera interaccion —elegis cuerpo, tono y ropa interior con
- * preview la primera vez que te ponés una prenda— es lo que va arriba de
- * esto, y todavia no esta. Este comando existe para que el modelo de datos
- * se pueda probar en el juego mientras tanto: sin alguna forma de cambiar el
- * perfil, todos los jugadores se ven con el default y la mitad del sistema
- * queda sin ejercitar.
+ * La GUI de primera interaccion (2026-09-29, {@code ElegirCuerpoScreen}:
+ * salta la primera vez que te ponés una prenda) va arriba de esto; los
+ * comandos quedan para overridear directo, y {@code /femclothes elegir}
+ * vuelve a abrir la GUI.
  *
  * Sin permisos especiales: cada quien cambia el suyo. No es una operacion de
  * administrador, es la apariencia del propio jugador.
@@ -37,11 +35,23 @@ public final class ComandoCuerpo {
                     aplicar(ctx.getSource(), p -> p.conCuerpo(c))));
         }
 
-        LiteralArgumentBuilder<ServerCommandSource> interior = CommandManager.literal("interior");
-        for (RopaInterior r : RopaInterior.values()) {
-            interior.then(CommandManager.literal(r.clave).executes(ctx ->
-                    aplicar(ctx.getSource(), p -> p.conInterior(r))));
+        // Dos partes + color (2026-09-30): /femclothes interior arriba|abajo <tipo>, interior color <rgb>.
+        LiteralArgumentBuilder<ServerCommandSource> interiorArriba = CommandManager.literal("arriba");
+        for (InteriorArriba a : InteriorArriba.values()) {
+            interiorArriba.then(CommandManager.literal(a.clave).executes(ctx ->
+                    aplicar(ctx.getSource(), p -> p.conInterior(p.interior().conArriba(a)))));
         }
+        LiteralArgumentBuilder<ServerCommandSource> interiorAbajo = CommandManager.literal("abajo");
+        for (InteriorAbajo b : InteriorAbajo.values()) {
+            interiorAbajo.then(CommandManager.literal(b.clave).executes(ctx ->
+                    aplicar(ctx.getSource(), p -> p.conInterior(p.interior().conAbajo(b)))));
+        }
+        LiteralArgumentBuilder<ServerCommandSource> interior = CommandManager.literal("interior")
+                .then(interiorArriba)
+                .then(interiorAbajo)
+                .then(CommandManager.literal("color").then(CommandManager.argument("rgb", IntegerArgumentType.integer(0, 0xFFFFFF))
+                        .executes(ctx -> aplicar(ctx.getSource(),
+                                p -> p.conInterior(p.interior().conColor(IntegerArgumentType.getInteger(ctx, "rgb")))))));
 
         LiteralArgumentBuilder<ServerCommandSource> tono = CommandManager.literal("tono")
                 // "skin" y no un color: es volver a derivarlo de la propia
@@ -58,7 +68,14 @@ public final class ComandoCuerpo {
                 .then(tono)
                 .then(CommandManager.literal("reset").executes(ctx ->
                         aplicar(ctx.getSource(), p -> PerfilCuerpo.DEFECTO)))
-                .then(CommandManager.literal("ver").executes(ctx -> ver(ctx.getSource())));
+                .then(CommandManager.literal("ver").executes(ctx -> ver(ctx.getSource())))
+                // Vuelve a abrir la GUI de elegir cuerpo (2026-09-29).
+                .then(CommandManager.literal("elegir").executes(ctx -> {
+                    ServerPlayerEntity jugador = ctx.getSource().getPlayer();
+                    if (jugador == null) return 0;
+                    RedCuerpo.abrirEn(jugador);
+                    return 1;
+                }));
     }
 
     private interface Cambio {
@@ -87,6 +104,7 @@ public final class ComandoCuerpo {
                 perfil.tonoDerivado()
                         ? Text.translatable("femclothes.cuerpo.tono_de_la_skin")
                         : Text.literal("#" + String.format("%06X", perfil.tono())),
-                Text.translatable(perfil.interior().traduccion()));
+                Text.translatable(perfil.interior().arriba().traduccion()).append(" + ")
+                        .append(Text.translatable(perfil.interior().abajo().traduccion())));
     }
 }

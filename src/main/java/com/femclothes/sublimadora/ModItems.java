@@ -102,13 +102,15 @@ public final class ModItems {
      */
     public static boolean esEstampable(net.minecraft.item.ItemStack stack) {
         // A pedido (2026-09-19, "hace todas las prendas sublimables") —
-        // pantalón y calientabrazos se suman a remera/medias. Pollera queda
-        // afuera por ahora: su geometría (PolleraGeometria, paneles en
-        // abanico) no encaja en el mapeo Cara[] plano que usa EstampaTextures.
+        // pantalón y calientabrazos se suman a remera/medias.
         return stack.getItem() == REMERA
                 || stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID
                 || stack.getItem() == com.femclothes.item.FemclothesItems.PANTALON
-                || stack.getItem() == com.femclothes.item.FemclothesItems.CALIENTABRAZOS;
+                || stack.getItem() == com.femclothes.item.FemclothesItems.CALIENTABRAZOS
+                // La pollera nueva (2026-09-29, "quiero poder... sublimarla"):
+                // su tela es una caja de torso, ver EstampaTextures#POLLERA.
+                || stack.getItem() instanceof com.femclothes.item.PolleraItem
+                || stack.getItem() instanceof com.femclothes.item.CapaItem;
     }
 
     private static ComponentType<Estampa> registrarEstampa(String nombre) {

@@ -119,6 +119,60 @@ public final class CuerpoBaseTextures {
     @Nullable
     private static Integer tonoDe(LivingEntity entidad, PerfilCuerpo perfil) {
         if (!perfil.tonoDerivado()) return perfil.tono();
+        return tonoDeLaSkin(entidad);
+    }
+
+    private static final Map<Identifier, java.util.List<Integer>> PALETAS = new HashMap<>();
+    /** Distancia RGB mínima entre dos colores de la paleta: más cerca son "el mismo" con otro sombreado. */
+    private static final int DISTANCIA_PALETA = 40;
+
+    /**
+     * Hasta 5 colores de la skin del jugador, los más usados primero (2026-09-29,
+     * "poder seleccionar hasta 5 colores directamente de la skin"): cuenta los
+     * píxeles de la capa base (cabeza incluida) y va tomando los más
+     * frecuentes, salteando los que se parecen demasiado a uno ya tomado —
+     * así un osito da el marrón del pelaje, el beige de la pancita, los ojos...
+     * Lista vacía si la skin todavía no bajó.
+     */
+    public static java.util.List<Integer> paletaDeLaSkin(LivingEntity entidad) {
+        if (!(entidad instanceof AbstractClientPlayerEntity jugador)) return java.util.List.of();
+        SkinTextures skin = jugador.getSkinTextures();
+        java.util.List<Integer> hecha = PALETAS.get(skin.texture());
+        if (hecha != null) return hecha;
+        NativeImage img = SkinTextureAccess.tryGetImage(skin);
+        if (img == null) return java.util.List.of();
+        Map<Integer, Integer> cuenta = new HashMap<>();
+        for (int y = 0; y < Math.min(64, img.getHeight()); y++) {
+            for (int x = 0; x < Math.min(64, img.getWidth()); x++) {
+                boolean capaBase = (y < 16 && x < 32) || (y >= 16 && y < 32) || (y >= 48 && x >= 16 && x < 48);
+                if (!capaBase) continue;
+                int px = img.getColor(x, y);
+                if (((px >>> 24) & 0xFF) < 128) continue;
+                cuenta.merge(abgrARgb(px & 0xFFFFFF), 1, Integer::sum);
+            }
+        }
+        java.util.List<Map.Entry<Integer, Integer>> orden = new java.util.ArrayList<>(cuenta.entrySet());
+        orden.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+        java.util.List<Integer> paleta = new java.util.ArrayList<>(5);
+        for (Map.Entry<Integer, Integer> e : orden) {
+            int c = e.getKey();
+            boolean parecido = false;
+            for (int p : paleta) {
+                int dr = ((c >> 16) & 0xFF) - ((p >> 16) & 0xFF), dg = ((c >> 8) & 0xFF) - ((p >> 8) & 0xFF), db = (c & 0xFF) - (p & 0xFF);
+                if (dr * dr + dg * dg + db * db < DISTANCIA_PALETA * DISTANCIA_PALETA) { parecido = true; break; }
+            }
+            if (parecido) continue;
+            paleta.add(c);
+            if (paleta.size() == 5) break;
+        }
+        java.util.List<Integer> fija = java.util.List.copyOf(paleta);
+        PALETAS.put(skin.texture(), fija);
+        return fija;
+    }
+
+    /** El tono sacado de la skin (RGB), o null si la skin todavía no bajó — también lo muestra la GUI de elegir cuerpo. */
+    @Nullable
+    public static Integer tonoDeLaSkin(LivingEntity entidad) {
         if (!(entidad instanceof AbstractClientPlayerEntity jugador)) {
             return abgrARgb(SkinToneSampler.fallbackTone());
         }
@@ -129,7 +183,12 @@ public final class CuerpoBaseTextures {
     }
 
     private static NativeImage componer(PerfilCuerpo perfil, int tonoRgb, boolean slim) {
-        final int S = CuerpoGeometria.ESCALA_CUERPO;
+        NativeImage mascara = perfil.cuerpo().tieneTextura() ? mascaraPara(perfil.cuerpo(), slim) : null;
+        // A la escala de la máscara (2026-09-29, "texturas con mayor
+        // resolucion": las del zip vienen a 6x, 384x384): la geometría del
+        // cuerpo usa UV normalizadas, así que una textura más grande calza
+        // igual y solo gana detalle. Sin máscara (Tu skin), 1x como siempre.
+        final int S = mascara != null ? Math.max(1, mascara.getWidth() / LayoutSkin.LADO) : CuerpoGeometria.ESCALA_CUERPO;
         final int lado = LayoutSkin.LADO * S;
 
         NativeImage img = new NativeImage(lado, lado, true);
@@ -146,12 +205,247 @@ public final class CuerpoBaseTextures {
             // trae su propia tela.
             if (parte == Parte.CABEZA) continue;
             CajaSkin caja = LayoutSkin.base(parte, slim).escalada(S);
-            pintarCuerpo(img, caja, tonoRgb, parte);
+            if (perfil.cuerpo().tieneTextura()) {
+                // La mascara ya trae su propio sombreado: tono plano abajo,
+                // si no se sombrea dos veces.
+                for (CajaSkin.Rect cara : new CajaSkin.Rect[]{caja.arriba(), caja.abajo(), caja.derecha(),
+                        caja.frente(), caja.izquierda(), caja.atras()}) {
+                    pintarPlano(img, cara, tonoRgb);
+                }
+            } else {
+                pintarCuerpo(img, caja, tonoRgb, parte);
+            }
         }
 
-        multiplicar(img, perfil.cuerpo() == CuerpoBase.SKIN_REAL ? null : perfil.cuerpo().textura());
-        superponer(img, perfil.interior().textura());
+        if (mascara != null) colorearPorZonas(img, mascara, perfil.cuerpo().animal, tonoRgb,
+                perfil.tonoClaro(), perfil.tonoOscuro(), perfil.tonoRubor(),
+                perfil.fuerzaRubor() / 100f);
+        // Ropa interior en dos partes, teñida (2026-09-30): primero abajo, después arriba.
+        com.femclothes.body.RopaInterior interior = perfil.interior();
+        NativeImage sombra = mascara != null && !perfil.cuerpo().animal ? mascara : null;
+        superponer(img, interior.abajo().textura(), interior.color(), sombra);
+        if (interior.arriba().textura() != null) superponer(img, interior.arriba().textura(), interior.color(), sombra);
         return img;
+    }
+
+    /** Gris de referencia de una zona vacía (no hay píxeles de esa zona en la máscara). */
+    private static final float GRIS_NEUTRO = 180f;
+
+    /**
+     * Zonas de color de una máscara de animal, por su gris (2026-09-29, "la
+     * skin que uso yo es de un osito, entonces tiene un tono de pelaje y un
+     * tono en la pancita"): las máscaras del zip separan solas pelaje
+     * (80-160), zonas claras (pancita, hocico, manchas blancas: 165 para
+     * arriba) y oscuras (rayas, manchas negras: menos de 75). Los humanos
+     * son una sola zona, Base.
+     */
+    public static final int ZONA_BASE = 0, ZONA_CLARA = 1, ZONA_OSCURA = 2;
+    /**
+     * Rubor (2026-09-29, "y que pasa con una skin de colores frios?" → "3 por
+     * default, mas selector propio"): no es una zona por gris sino una
+     * cantidad por pixel — cuánto se aparta la máscara del gris hacia el
+     * rosado (R por encima de G/B). La máscara solo dice DÓNDE; el color
+     * sale del perfil o, en automático, del mismo color de la zona más
+     * saturado y oscuro ({@link #ruborAutomatico}), así en una skin azul o
+     * verde no aparecen manchas violetas.
+     */
+    public static final int ZONA_RUBOR = 3;
+    /** Diferencia R - (G+B)/2 de la máscara que cuenta como rubor pleno. */
+    // 10 y no 24 (2026-09-29, "no se si el blush esta aplicando, no veo cambios
+    // con el slider"): el rosado de las máscaras es suave (casi todo entre 4 y
+    // 12), así que con 24 el rubor pleno no llegaba ni a la mitad.
+    private static final float RUBOR_PLENO = 10f;
+    private static final int LIMITE_OSCURA = 75, LIMITE_CLARA = 165;
+
+    public static int zonaDe(int gris, boolean animal) {
+        if (!animal) return ZONA_BASE;
+        return gris < LIMITE_OSCURA ? ZONA_OSCURA : gris >= LIMITE_CLARA ? ZONA_CLARA : ZONA_BASE;
+    }
+
+    private static void pintarPlano(NativeImage img, CajaSkin.Rect r, int tonoRgb) {
+        int abgr = 0xFF000000 | ((tonoRgb & 0xFF) << 16) | (tonoRgb & 0xFF00) | ((tonoRgb >> 16) & 0xFF);
+        for (int y = Math.max(0, r.y0()); y < Math.min(r.y1(), img.getHeight()); y++) {
+            for (int x = Math.max(0, r.x0()); x < Math.min(r.x1(), img.getWidth()); x++) img.setColor(x, y, abgr);
+        }
+    }
+
+    /**
+     * Cada pixel del cuerpo toma el color de su zona, multiplicado por
+     * gris/(gris típico de esa zona): el pixel típico sale del color elegido
+     * y el sombreado de la máscara se conserva. Una zona Clara u Oscura sin
+     * color propio ({@code 0}) sale del color Base, con el gris de la Base
+     * como referencia (más clara o más oscura sola, como antes).
+     */
+    private static void colorearPorZonas(NativeImage img, NativeImage mascara, boolean animal,
+                                         int base, int claro, int oscuro, int rubor, float fuerzaRubor) {
+        float[] refs = referencias(mascara, animal);
+        int[] colores = {base, claro != 0 ? claro : base, oscuro != 0 ? oscuro : base};
+        float[] refUsada = {refs[ZONA_BASE], claro != 0 ? refs[ZONA_CLARA] : refs[ZONA_BASE],
+                oscuro != 0 ? refs[ZONA_OSCURA] : refs[ZONA_BASE]};
+        for (int y = 0; y < Math.min(img.getHeight(), mascara.getHeight()); y++) {
+            for (int x = 0; x < Math.min(img.getWidth(), mascara.getWidth()); x++) {
+                int m = mascara.getColor(x, y);
+                if (((m >> 24) & 0xFF) == 0) continue;
+                if (((img.getColor(x, y) >> 24) & 0xFF) == 0) continue;
+                int gris = grisDe(m);
+                int zona = zonaDe(gris, animal);
+                int c = colores[zona];
+                float k = gris / refUsada[zona];
+                int r = sombrear((c >> 16) & 0xFF, k), g = sombrear((c >> 8) & 0xFF, k), b = sombrear(c & 0xFF, k);
+                // Rubor: la máscara trae rosado donde va (rodillas, codos,
+                // pecho, cara); se mezcla hacia el color de rubor con el
+                // mismo sombreado.
+                int mr = m & 0xFF, mg = (m >> 8) & 0xFF, mb = (m >> 16) & 0xFF;
+                float cantidad = Math.min(1f, Math.max(0f, (mr - (mg + mb) / 2f) / RUBOR_PLENO)) * fuerzaRubor;
+                if (cantidad > 0f) {
+                    int rc = rubor != 0 ? rubor : ruborAutomatico(c);
+                    r = Math.round(r + (sombrear((rc >> 16) & 0xFF, k) - r) * cantidad);
+                    g = Math.round(g + (sombrear((rc >> 8) & 0xFF, k) - g) * cantidad);
+                    b = Math.round(b + (sombrear(rc & 0xFF, k) - b) * cantidad);
+                }
+                img.setColor(x, y, 0xFF000000 | (b << 16) | (g << 8) | r);
+            }
+        }
+    }
+
+    /**
+     * Un canal con el sombreado {@code k} de la máscara: para oscurecer se
+     * multiplica; para aclarar se va hacia el blanco — multiplicar un marrón
+     * x2 lo satura a naranja (la pancita automática del osito salía así).
+     */
+    private static int sombrear(int canal, float k) {
+        if (k <= 1f) return Math.round(canal * k);
+        float haciaBlanco = Math.min(1f, (k - 1f) * 0.6f);
+        return Math.min(255, Math.round(canal + (255 - canal) * haciaBlanco));
+    }
+
+    /**
+     * Rubor automático: el mismo color, más saturado y un poco más oscuro
+     * (en HSV: saturación ×1.35 + 0.08, brillo ×0.85). En la piel da un
+     * rosado tibio; en un azul, un azul más intenso.
+     */
+    public static int ruborAutomatico(int rgb) {
+        float r = ((rgb >> 16) & 0xFF) / 255f, g = ((rgb >> 8) & 0xFF) / 255f, b = (rgb & 0xFF) / 255f;
+        float max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b)), d = max - min;
+        float h = 0f;
+        if (d > 0f) {
+            if (max == r) h = ((g - b) / d) % 6f;
+            else if (max == g) h = (b - r) / d + 2f;
+            else h = (r - g) / d + 4f;
+            h /= 6f;
+            if (h < 0f) h += 1f;
+        }
+        float sat = max == 0f ? 0f : d / max;
+        sat = Math.min(1f, sat * 1.35f + 0.08f);
+        float val = max * 0.85f;
+        // HSV → RGB
+        float h6 = h * 6f;
+        int i = (int) Math.floor(h6) % 6;
+        float f = h6 - (float) Math.floor(h6);
+        float p = val * (1 - sat), q = val * (1 - f * sat), t = val * (1 - (1 - f) * sat);
+        float[] rgbF = switch (i) {
+            case 0 -> new float[]{val, t, p};
+            case 1 -> new float[]{q, val, p};
+            case 2 -> new float[]{p, val, t};
+            case 3 -> new float[]{p, q, val};
+            case 4 -> new float[]{t, p, val};
+            default -> new float[]{val, p, q};
+        };
+        int ri = Math.round(rgbF[0] * 255), gi = Math.round(rgbF[1] * 255), bi = Math.round(rgbF[2] * 255);
+        return (ri << 16) | (gi << 8) | bi;
+    }
+
+    /** Luminancia de un pixel ABGR de la máscara (en una gris, su valor). */
+    private static int grisDe(int abgr) {
+        int r = abgr & 0xFF, g = (abgr >> 8) & 0xFF, b = (abgr >> 16) & 0xFF;
+        return Math.min(255, (r * 299 + g * 587 + b * 114 + 500) / 1000);
+    }
+
+    private static final Map<NativeImage, float[]> REFERENCIAS = new java.util.IdentityHashMap<>();
+
+    /** Gris típico (mediana) de cada zona de la máscara; {@link #GRIS_NEUTRO} si la zona no tiene píxeles. */
+    private static float[] referencias(NativeImage mascara, boolean animal) {
+        float[] hechas = REFERENCIAS.get(mascara);
+        if (hechas != null) return hechas;
+        int[][] histo = new int[3][256];
+        int[] total = new int[3];
+        int w = mascara.getWidth(), h = mascara.getHeight();
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int m = mascara.getColor(x, y);
+                if (((m >> 24) & 0xFF) == 0) continue;
+                // Solo la capa BASE del cuerpo (lo que se dibuja): sin cabeza
+                // ni capas externas, que en el layout de 64x64 son las filas
+                // 0-15, 32-47 y las esquinas de abajo (la máscara puede venir
+                // a más resolución: se mira en coordenadas de 64).
+                int sx = x * LayoutSkin.LADO / w, sy = y * LayoutSkin.LADO / h;
+                boolean capaBase = (sy >= 16 && sy < 32) || (sy >= 48 && sx >= 16 && sx < 48);
+                if (!capaBase) continue;
+                int gris = grisDe(m);
+                int zona = zonaDe(gris, animal);
+                histo[zona][gris]++;
+                total[zona]++;
+            }
+        }
+        float[] refs = new float[3];
+        for (int z = 0; z < 3; z++) {
+            refs[z] = GRIS_NEUTRO;
+            int acumulado = 0;
+            for (int g = 0; g < 256 && total[z] > 0; g++) {
+                acumulado += histo[z][g];
+                if (acumulado * 2 >= total[z]) { refs[z] = Math.max(1, g); break; }
+            }
+        }
+        REFERENCIAS.put(mascara, refs);
+        return refs;
+    }
+
+    private static final Map<String, NativeImage> MASCARAS = new HashMap<>();
+
+    /**
+     * La mascara del cuerpo con los brazos del ancho de la skin del jugador
+     * (2026-09-29, "adaptar la textura sola"): cada mascara viene pintada
+     * para brazos classic o slim; si no coincide, cada cara del brazo se
+     * reescala a lo ancho (vecino mas cercano — de 4 a 3 se pierde una
+     * columna, de 3 a 4 se repite una).
+     */
+    @Nullable
+    public static NativeImage mascaraPara(CuerpoBase cuerpo, boolean slim) {
+        String clave = cuerpo.clave + "|" + slim;
+        NativeImage hecha = MASCARAS.get(clave);
+        if (hecha != null) return hecha;
+        NativeImage original = ClothingTextureCache.imagenBase(cuerpo.textura());
+        if (original == null) return null;
+        if (cuerpo.slim == slim) {
+            MASCARAS.put(clave, original);
+            return original;
+        }
+        NativeImage adaptada = new NativeImage(original.getWidth(), original.getHeight(), true);
+        adaptada.copyFrom(original);
+        int escala = Math.max(1, original.getWidth() / LayoutSkin.LADO);
+        for (Parte brazo : new Parte[]{Parte.BRAZO_DER, Parte.BRAZO_IZQ}) {
+            CajaSkin desde = LayoutSkin.base(brazo, cuerpo.slim).escalada(escala);
+            CajaSkin hacia = LayoutSkin.base(brazo, slim).escalada(escala);
+            // Primero se limpia el lugar de las dos versiones (la classic es mas ancha).
+            CajaSkin.Rect a = desde.todo(), b = hacia.todo();
+            for (int y = Math.min(a.y0(), b.y0()); y < Math.max(a.y1(), b.y1()); y++) {
+                for (int x = Math.min(a.x0(), b.x0()); x < Math.max(a.x1(), b.x1()); x++) adaptada.setColor(x, y, 0);
+            }
+            CajaSkin.Rect[] origen = {desde.arriba(), desde.abajo(), desde.derecha(), desde.frente(), desde.izquierda(), desde.atras()};
+            CajaSkin.Rect[] destino = {hacia.arriba(), hacia.abajo(), hacia.derecha(), hacia.frente(), hacia.izquierda(), hacia.atras()};
+            for (int k = 0; k < origen.length; k++) {
+                CajaSkin.Rect o = origen[k], d = destino[k];
+                for (int y = d.y0(); y < d.y1(); y++) {
+                    int oy = o.y0() + (y - d.y0()) * o.altoRect() / Math.max(1, d.altoRect());
+                    for (int x = d.x0(); x < d.x1(); x++) {
+                        int ox = o.x0() + (x - d.x0()) * o.anchoRect() / Math.max(1, d.anchoRect());
+                        adaptada.setColor(x, y, original.getColor(ox, oy));
+                    }
+                }
+            }
+        }
+        MASCARAS.put(clave, adaptada);
+        return adaptada;
     }
 
     /**
@@ -210,43 +504,51 @@ public final class CuerpoBaseTextures {
         return 0xFF000000 | (b << 16) | (g << 8) | r;
     }
 
-    /** El png del cuerpo elegido, como mapa de sombras. Si no esta, no pasa nada. */
-    private static void multiplicar(NativeImage img, @Nullable Identifier textura) {
-        if (textura == null) return;
-        NativeImage mapa = ClothingTextureCache.imagenBase(textura);
-        if (mapa == null) return;
-        for (int y = 0; y < Math.min(img.getHeight(), mapa.getHeight()); y++) {
-            for (int x = 0; x < Math.min(img.getWidth(), mapa.getWidth()); x++) {
-                int m = mapa.getColor(x, y);
-                if (((m >> 24) & 0xFF) == 0) continue;
-                int base = img.getColor(x, y);
-                if (((base >> 24) & 0xFF) == 0) continue;
-                int r = ((base & 0xFF) * (m & 0xFF)) / 255;
-                int g = (((base >> 8) & 0xFF) * ((m >> 8) & 0xFF)) / 255;
-                int b = (((base >> 16) & 0xFF) * ((m >> 16) & 0xFF)) / 255;
-                img.setColor(x, y, 0xFF000000 | (b << 16) | (g << 8) | r);
-            }
-        }
-    }
-
     /** La ropa interior, encima del cuerpo. Alfa parcial mezcla en vez de pisar. */
-    private static void superponer(NativeImage img, Identifier textura) {
+    /**
+     * Pinta la ropa interior encima del cuerpo. La textura es gris: el gris
+     * multiplica a {@code colorRgb}. Con {@code sombra} (la máscara de un
+     * cuerpo humano), la tela además toma el relieve del cuerpo — el pecho,
+     * la cola — relativo al gris medio de la máscara donde hay tela.
+     */
+    private static void superponer(NativeImage img, Identifier textura, int colorRgb, @Nullable NativeImage sombra) {
         NativeImage encima = ClothingTextureCache.imagenBase(textura);
         if (encima == null) return;
-        for (int y = 0; y < Math.min(img.getHeight(), encima.getHeight()); y++) {
-            for (int x = 0; x < Math.min(img.getWidth(), encima.getWidth()); x++) {
-                int px = encima.getColor(x, y);
-                int a = (px >> 24) & 0xFF;
-                if (a == 0) continue;
-                if (a == 255) {
-                    img.setColor(x, y, px);
-                    continue;
+        // El cuerpo puede estar a otra escala que la ropa interior (las
+        // máscaras HD van a 6x): se lee en la posición proporcional.
+        int ew = encima.getWidth(), eh = encima.getHeight(), iw = img.getWidth(), ih = img.getHeight();
+        int cr = (colorRgb >> 16) & 0xFF, cg = (colorRgb >> 8) & 0xFF, cb = colorRgb & 0xFF;
+        float ref = 0f;
+        if (sombra != null) {
+            long suma = 0, n = 0;
+            for (int y = 0; y < ih; y += 2) {
+                for (int x = 0; x < iw; x += 2) {
+                    if (((encima.getColor(x * ew / iw, y * eh / ih) >>> 24) & 0xFF) == 0) continue;
+                    suma += grisDe(sombra.getColor(x * sombra.getWidth() / iw, y * sombra.getHeight() / ih));
+                    n++;
                 }
-                int base = img.getColor(x, y);
-                int r = mezclar(base & 0xFF, px & 0xFF, a);
-                int g = mezclar((base >> 8) & 0xFF, (px >> 8) & 0xFF, a);
-                int b = mezclar((base >> 16) & 0xFF, (px >> 16) & 0xFF, a);
-                img.setColor(x, y, 0xFF000000 | (b << 16) | (g << 8) | r);
+            }
+            ref = n == 0 ? 0f : suma / (float) n;
+        }
+        for (int y = 0; y < ih; y++) {
+            for (int x = 0; x < iw; x++) {
+                int px = encima.getColor(x * ew / iw, y * eh / ih);
+                int a = (px >>> 24) & 0xFF;
+                if (a == 0) continue;
+                float f = (px & 0xFF) / 255f;
+                if (ref > 0f) {
+                    float g = grisDe(sombra.getColor(x * sombra.getWidth() / iw, y * sombra.getHeight() / ih));
+                    f *= Math.max(0.7f, Math.min(1.15f, g / ref));
+                }
+                int r = Math.min(255, Math.round(cr * f)), g2 = Math.min(255, Math.round(cg * f)),
+                        b = Math.min(255, Math.round(cb * f));
+                if (a < 255) {
+                    int base = img.getColor(x, y);
+                    r = mezclar(base & 0xFF, r, a);
+                    g2 = mezclar((base >> 8) & 0xFF, g2, a);
+                    b = mezclar((base >> 16) & 0xFF, b, a);
+                }
+                img.setColor(x, y, 0xFF000000 | (b << 16) | (g2 << 8) | r);
             }
         }
     }

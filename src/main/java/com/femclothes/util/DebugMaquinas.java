@@ -46,7 +46,13 @@ public final class DebugMaquinas {
                         .then(CommandManager.literal("normal").executes(ctx -> cambiar(ctx.getSource(), false)))
                         .then(CommandManager.literal("ver").executes(ctx -> ver(ctx.getSource())))
                         .then(CommandManager.literal("patrones").executes(ctx -> darPatrones(ctx.getSource())))
-                        .then(CommandManager.literal("moldes").executes(ctx -> darMoldes(ctx.getSource()))));
+                        .then(CommandManager.literal("moldes").executes(ctx -> darMoldes(ctx.getSource())))
+                        .then(CommandManager.literal("insumos").executes(ctx -> darInsumos(ctx.getSource())))
+                        .then(CommandManager.literal("kit").executes(ctx -> {
+                            darMoldes(ctx.getSource());
+                            darPatrones(ctx.getSource());
+                            return darInsumos(ctx.getSource());
+                        })));
     }
 
     /**
@@ -100,6 +106,26 @@ public final class DebugMaquinas {
         int cajas = darEnShulkers(jugador, contenido, "femclothes.debug.moldes.nombre");
         int cantidad = contenido.size();
         fuente.sendFeedback(() -> Text.translatable("femclothes.debug.moldes.entregado", cantidad, cajas), false);
+        return 1;
+    }
+
+    /**
+     * Shulker de insumos (2026-09-29, "agreguemos una shulker con un stack
+     * de cada color y uno de papel"): 64 de cada uno de los 16 tintes (los
+     * C/M/Y/K cargan la Estación de Tintes y la Sublimadora) y 64 de papel
+     * (Sublimadora). {@code kit} da moldes, patrones e insumos de una.
+     */
+    private static int darInsumos(ServerCommandSource fuente) {
+        net.minecraft.server.network.ServerPlayerEntity jugador = fuente.getPlayer();
+        if (jugador == null) return 0;
+
+        java.util.List<net.minecraft.item.ItemStack> contenido = new java.util.ArrayList<>();
+        for (net.minecraft.util.DyeColor color : net.minecraft.util.DyeColor.values()) {
+            contenido.add(new net.minecraft.item.ItemStack(net.minecraft.item.DyeItem.byColor(color), 64));
+        }
+        contenido.add(new net.minecraft.item.ItemStack(net.minecraft.item.Items.PAPER, 64));
+        darEnShulkers(jugador, contenido, "femclothes.debug.insumos.nombre");
+        fuente.sendFeedback(() -> Text.translatable("femclothes.debug.insumos.entregado"), false);
         return 1;
     }
 

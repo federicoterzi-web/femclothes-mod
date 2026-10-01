@@ -58,6 +58,12 @@ public final class PatronGenerador {
     private static final Caja BRAZO_IZQ = new Caja(256, 416, 384, 96, 32);
     // TORSO (u=16,v=16,ancho=8,prof=4): caras 2*prof+2*ancho=192 de ancho.
     private static final Caja TORSO = new Caja(128, 160, 320, 96, 32);
+    // La capa (2026-09-29, "capas... como las capas vanilla"): el paño es la
+    // caja 10x16x1 de la capa vanilla en uv 0,0 (exterior = frente, forro =
+    // atrás) y capucha/cuello salen de una caja de detalles 12x8x2 en uv 24,0
+    // (ver render.CapaMalla).
+    private static final Caja CAPA = new Caja(0, 8, 176, 128, 8);
+    private static final Caja CAPA_DETALLES = new Caja(192, 16, 416, 64, 16);
 
     /** El valor (pixel de máscara) de un punto de la tira de 4 caras, en coordenadas de la tira. */
     @FunctionalInterface
@@ -107,8 +113,7 @@ public final class PatronGenerador {
      * Qué cajas pinta un patrón para cada prenda — la pierna/brazo que
      * gobierna esa prenda (medias y pantalón comparten pierna, calienta-
      * brazos usa brazo, remera usa torso+los dos brazos). Prenda sin
-     * entrada acá (ej. "pollera", UV propio sin mapear todavía) → sin
-     * patrón procedural, cae a la prenda lisa como antes.
+     * entrada acá → sin patrón procedural, cae a la prenda lisa.
      */
     private static final Map<String, List<Caja>> CAJAS_POR_PRENDA = Map.of(
             "socks", List.of(PIERNA_DER, PIERNA_IZQ),
@@ -119,7 +124,12 @@ public final class PatronGenerador {
             // patrón de acá en vez de quedar SIEMPRE lisa.
             "pantalon", List.of(PIERNA_DER, PIERNA_IZQ, TORSO),
             "calientabrazos", List.of(BRAZO_DER, BRAZO_IZQ),
-            "remera", List.of(TORSO, BRAZO_DER, BRAZO_IZQ));
+            "remera", List.of(TORSO, BRAZO_DER, BRAZO_IZQ),
+            // La pollera nueva (2026-09-29, "quiero poder... teñirla"): su tela
+            // usa el layout de la caja del TORSO, envuelto en la campana (ver
+            // render.PolleraMalla), así que los patrones van en esa caja.
+            "pollera", List.of(TORSO),
+            "capa", List.of(CAPA, CAPA_DETALLES));
 
     /**
      * Dónde cae la rayita a lo largo del eje que le toca según

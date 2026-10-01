@@ -394,7 +394,26 @@ public final class RegionResolver {
                               RegionPintura region, ModoMezcla modo, int opacidad,
                               com.femclothes.render.Repeticion repeticion, int semilla,
                               java.util.List<Integer> extras, boolean contorno,
-                              com.femclothes.render.Variacion variacion) {
+                              com.femclothes.render.Variacion variacion,
+                              boolean fueraDeRegion) {
+        /**
+         * Una capa normal: pinta ADENTRO de su región. {@code fueraDeRegion}
+         * (Fase B, 2026-09-28, resaltar en 3D la zona con el mouse encima,
+         * "resto apagado") pinta al revés, todo MENOS su región — solo lo
+         * usa el velo de la vista previa de Tintes, nunca se guarda (no está
+         * en el {@link #CODEC}).
+         */
+        public CapaPatron(@Nullable Identifier patronId, int color, com.femclothes.item.TamanoPatron tamano,
+                           float angulo, float posicion,
+                           com.femclothes.render.PatronGenerador.Forma forma, boolean invertido,
+                           RegionPintura region, ModoMezcla modo, int opacidad,
+                           com.femclothes.render.Repeticion repeticion, int semilla,
+                           java.util.List<Integer> extras, boolean contorno,
+                           com.femclothes.render.Variacion variacion) {
+            this(patronId, color, tamano, angulo, posicion, forma, invertido, region, modo, opacidad,
+                    repeticion, semilla, extras, contorno, variacion, false);
+        }
+
         /**
          * Compatibilidad: una sola tinta (sin Color 2/3), sin contorno ni
          * variación — todas las capas de antes de la Fase 2 (2026-09-28).

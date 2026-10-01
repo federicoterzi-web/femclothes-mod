@@ -66,6 +66,12 @@ public final class FemclothesItems {
     // al nacer PantalonItem): un stack viejo en un mundo existente queda
     // como ítem desconocido, no rompe nada.
     // maxCount(16): mismo criterio que remera/medias/pantalón.
+    /** Capa personalizable (2026-09-29, "seria una nueva categoria de ropa"). */
+    public static final CapaItem CAPA = register("capa", new CapaItem(new Item.Settings().maxCount(16)));
+
+    /** Muestra de color de la Estación de Tintes (2026-09-30), ver {@link MuestraColorItem}. */
+    public static final MuestraColorItem TINTE_MEZCLA = register("tinte_mezcla",
+            new MuestraColorItem(new Item.Settings().maxCount(16)));
     public static final CalientabrazosItem CALIENTABRAZOS = register("calientabrazos",
             new CalientabrazosItem(new Item.Settings().maxCount(16)));
 

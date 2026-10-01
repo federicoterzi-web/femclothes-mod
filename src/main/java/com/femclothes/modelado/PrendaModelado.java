@@ -40,7 +40,8 @@ public final class PrendaModelado {
         if (combo.calce().isPresent() && (out.getItem() instanceof RemeraItem
                 || out.getItem() instanceof PantalonItem
                 || out.getItem() == FemclothesItems.SOCKS_SOLID
-                || out.getItem() instanceof CalientabrazosItem)) {
+                || out.getItem() instanceof CalientabrazosItem
+                || out.getItem() instanceof com.femclothes.item.PolleraItem)) {
             Calce.escribir(out, combo.calce().get());
             cambio = true;
         }
@@ -50,7 +51,8 @@ public final class PrendaModelado {
         if (combo.red().isPresent() && (out.getItem() instanceof RemeraItem
                 || out.getItem() instanceof PantalonItem
                 || out.getItem() == FemclothesItems.SOCKS_SOLID
-                || out.getItem() instanceof CalientabrazosItem)) {
+                || out.getItem() instanceof CalientabrazosItem
+                || out.getItem() instanceof com.femclothes.item.PolleraItem)) {
             PatronRed.escribir(out, combo.red().get());
             cambio = true;
         }
@@ -86,7 +88,9 @@ public final class PrendaModelado {
         if (combo.capaPatron().isPresent() && (out.getItem() instanceof RemeraItem
                 || out.getItem() instanceof PantalonItem
                 || out.getItem() == FemclothesItems.SOCKS_SOLID
-                || out.getItem() instanceof CalientabrazosItem)) {
+                || out.getItem() instanceof CalientabrazosItem
+                || out.getItem() instanceof com.femclothes.item.PolleraItem
+                || out.getItem() instanceof com.femclothes.item.CapaItem)) {
             var ci = combo.capaPatron().get();
             var patronItem = com.femclothes.item.ClothingPatternItem.porId(ci.patronId());
             var forma = patronItem != null ? patronItem.forma : com.femclothes.render.PatronGenerador.Forma.ALTERNADO;
@@ -132,6 +136,40 @@ public final class PrendaModelado {
             }
             if (combo.calientabrazosCoberturaInferior().isPresent()) {
                 CalientabrazosItem.setCoberturaInferior(out, lado, combo.calientabrazosCoberturaInferior().get());
+                cambio = true;
+            }
+        }
+
+        // Pollera (2026-09-29): largo y forma.
+        if (out.getItem() instanceof com.femclothes.item.PolleraItem && combo.pollera().isPresent()) {
+            var p = combo.pollera().get();
+            if (p.largo().isPresent()) {
+                com.femclothes.item.PolleraItem.setLargo(out, p.largo().get());
+                cambio = true;
+            }
+            if (p.forma().isPresent()) {
+                com.femclothes.item.PolleraItem.setForma(out, p.forma().get());
+                cambio = true;
+            }
+        }
+
+        // Capa (2026-09-29): largo, ruedo, capucha y cuello alto.
+        if (out.getItem() instanceof com.femclothes.item.CapaItem && combo.pollera().isPresent()) {
+            var p = combo.pollera().get();
+            if (p.capaLargo().isPresent()) {
+                com.femclothes.item.CapaItem.setLargo(out, p.capaLargo().get());
+                cambio = true;
+            }
+            if (p.capaRuedo().isPresent()) {
+                com.femclothes.item.CapaItem.setRuedo(out, p.capaRuedo().get());
+                cambio = true;
+            }
+            if (p.capaCapucha().isPresent()) {
+                com.femclothes.item.CapaItem.setCapucha(out, p.capaCapucha().get());
+                cambio = true;
+            }
+            if (p.capaCuello().isPresent()) {
+                com.femclothes.item.CapaItem.setCuelloAlto(out, p.capaCuello().get());
                 cambio = true;
             }
         }

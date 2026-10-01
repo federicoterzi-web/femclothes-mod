@@ -25,6 +25,7 @@ public final class ModBlocks {
                     .nonOpaque()                       // la tapa abierta sale del cubo
                     .sounds(BlockSoundGroup.METAL)
                     .pistonBehavior(PistonBehavior.BLOCK)
+                    .luminance(com.femclothes.util.LuzMaquina::luminancia)
     );
 
     // BlockItem propio para que el icono del inventario lo dibuje GeckoLib
@@ -40,5 +41,16 @@ public final class ModBlocks {
         Registry.register(Registries.BLOCK, id, SUBLIMADORA);
         Registry.register(Registries.ITEM, id, SUBLIMADORA_ITEM);
         Registry.register(Registries.BLOCK_ENTITY_TYPE, id, SUBLIMADORA_ENTITY);
+
+        // "Guardar diseño" con nombre (2026-09-28), mismo mecanismo que Tintes.
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S()
+                .register(GuardarDisenoSublimadoraPayload.ID, GuardarDisenoSublimadoraPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(GuardarDisenoSublimadoraPayload.ID,
+                (payload, context) -> context.server().execute(() -> {
+                    if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof SublimadoraBlockEntity be
+                            && be.canPlayerUse(context.player())) {
+                        be.guardarDiseno(payload.nombre());
+                    }
+                }));
     }
 }
