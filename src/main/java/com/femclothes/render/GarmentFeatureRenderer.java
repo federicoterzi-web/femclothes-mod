@@ -140,6 +140,11 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 com.femclothes.render.relieve.RelieveRender.estilo == com.femclothes.render.relieve.RelieveRender.Estilo.APAGADO
                         ? com.femclothes.render.relieve.MapaRelieve.PLANO
                         : com.femclothes.render.relieve.RelieveCuerpo.de(perfilDe(entidad), slim);
+        // Rebote del busto (2026-10-01, "fisicas estilo resorte"): uno por dibujo, para el cuerpo y las telas.
+        float busto = com.femclothes.render.relieve.RelieveCuerpo.bustoDe(perfilDe(entidad));
+        com.femclothes.render.relieve.RelieveRender.reboteActual = mapaCuerpo != com.femclothes.render.relieve.MapaRelieve.PLANO
+                && busto > 0f && entidad != null
+                ? com.femclothes.render.relieve.FisicaBusto.de(entidad, tickDelta, busto) : null;
 
         for (Parte parte : Parte.values()) {
             boolean llevaCuerpo = cuerpo != null && conCuerpo.contains(parte)
@@ -191,6 +196,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         // Apliques de la Mesa de estilado (2026-10-01).
         ApliqueRenderer.dibujar(prendas, biped, matrices, vertexConsumers, luz);
         dibujarTranslucidas();
+        com.femclothes.render.relieve.RelieveRender.reboteActual = null;
         dibujarPollera(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta);
         dibujarCapa(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta, true);
     }

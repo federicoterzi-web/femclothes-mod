@@ -8,6 +8,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsage;
 import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
@@ -21,11 +22,14 @@ import java.util.List;
 
 /**
  * Estrógenos (2026-10-01, "quiero agregar un item llamado estrogenos que
- * generara pechos de distintos tamaños en el cuerpo"): cada dosis (se toma
- * como una poción) sube un talle el busto del perfil de cuerpo, hasta
- * {@link PerfilCuerpo#BUSTO_MAXIMO}, sobre el busto que ya traiga el cuerpo.
- * Lo dibuja el relieve ({@code render.relieve.RelieveCuerpo}); con un binder
- * se ve aplanado. {@code /femclothes busto <n>} lo fija a mano.
+ * generara pechos de distintos tamaños en el cuerpo" → "3 tamaños de mamas
+ * con fisicas estilo resorte a traves de la acumulacion de tres ingestas y
+ * que los efectos duren 24 hs"): se toma como una poción; cada dosis suma un
+ * talle (chico, mediano, grande) hasta {@link PerfilCuerpo#BUSTO_MAXIMO} y
+ * deja el efecto por {@link PerfilCuerpo#DURACION_ESTROGENOS} desde la última
+ * toma (tomar con el talle máximo solo renueva el tiempo). Al vencer, el busto
+ * vuelve al del cuerpo ({@code PerfilesDeCuerpo#vencerEstrogenos}). Lo dibuja
+ * el relieve, con el rebote de {@code render.relieve.FisicaBusto}.
  */
 public class EstrogenosItem extends Item {
 
@@ -45,20 +49,19 @@ public class EstrogenosItem extends Item {
 
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
-        if (PerfilesDeCuerpo.de(user).busto() >= PerfilCuerpo.BUSTO_MAXIMO) {
-            if (!world.isClient) user.sendMessage(Text.translatable("femclothes.estrogenos.maximo"), true);
-            return TypedActionResult.fail(user.getStackInHand(hand));
-        }
         return ItemUsage.consumeHeldItem(world, user, hand);
     }
 
     @Override
     public ItemStack finishUsing(ItemStack stack, World world, LivingEntity user) {
-        if (!world.isClient && user instanceof PlayerEntity jugador) {
+        if (world instanceof ServerWorld servidor && user instanceof PlayerEntity jugador) {
             PerfilCuerpo perfil = PerfilesDeCuerpo.de(jugador);
-            int nuevo = Math.min(PerfilCuerpo.BUSTO_MAXIMO, perfil.busto() + 1);
-            PerfilesDeCuerpo.poner(jugador, perfil.conBusto(nuevo));
-            jugador.sendMessage(Text.translatable("femclothes.estrogenos.dosis", nuevo, PerfilCuerpo.BUSTO_MAXIMO), true);
+            int dosis = Math.min(PerfilCuerpo.BUSTO_MAXIMO, perfil.busto() + 1);
+            long hasta = servidor.getServer().getOverworld().getTime() + PerfilCuerpo.DURACION_ESTROGENOS;
+            PerfilesDeCuerpo.poner(jugador, perfil.conBusto(dosis, hasta));
+            jugador.sendMessage(Text.translatable(perfil.busto() >= PerfilCuerpo.BUSTO_MAXIMO
+                    ? "femclothes.estrogenos.renovado" : "femclothes.estrogenos.dosis",
+                    dosis, PerfilCuerpo.BUSTO_MAXIMO), true);
             world.playSound(null, jugador.getX(), jugador.getY(), jugador.getZ(),
                     SoundEvents.ITEM_HONEY_BOTTLE_DRINK, SoundCategory.PLAYERS, 0.8f, 1.2f);
             stack.decrementUnlessCreative(1, jugador);

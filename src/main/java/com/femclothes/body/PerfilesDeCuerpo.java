@@ -46,5 +46,24 @@ public final class PerfilesDeCuerpo {
         // fuerza class-loading: sin esto el attachment no queda registrado
         // hasta la primera lectura, y una lectura del cliente antes de que el
         // servidor lo registre llega sin tipo conocido.
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(servidor -> {
+            if (servidor.getTicks() % 20 == 0) vencerEstrogenos(servidor);
+        });
+    }
+
+    /**
+     * Estrógenos vencidos (2026-10-01, "que los efectos duren 24 hs"): una vez
+     * por segundo, a quien se le pasó el tiempo le vuelve el busto del cuerpo.
+     * Cuenta el reloj del mundo, así que no avanza con el server apagado.
+     */
+    private static void vencerEstrogenos(net.minecraft.server.MinecraftServer servidor) {
+        long ahora = servidor.getOverworld().getTime();
+        for (net.minecraft.server.network.ServerPlayerEntity jugador : servidor.getPlayerManager().getPlayerList()) {
+            PerfilCuerpo perfil = de(jugador);
+            if (perfil.busto() > 0 && ahora >= perfil.estrogenosHasta()) {
+                poner(jugador, perfil.conBusto(0, 0L));
+                jugador.sendMessage(net.minecraft.text.Text.translatable("femclothes.estrogenos.fin"), true);
+            }
+        }
     }
 }

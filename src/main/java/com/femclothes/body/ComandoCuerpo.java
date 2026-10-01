@@ -73,7 +73,9 @@ public final class ComandoCuerpo {
                 .then(CommandManager.literal("busto").then(CommandManager.argument("tamano",
                                 IntegerArgumentType.integer(0, PerfilCuerpo.BUSTO_MAXIMO))
                         .executes(ctx -> aplicar(ctx.getSource(),
-                                p -> p.conBusto(IntegerArgumentType.getInteger(ctx, "tamano"))))))
+                                p -> p.conBusto(IntegerArgumentType.getInteger(ctx, "tamano"),
+                                        ctx.getSource().getServer().getOverworld().getTime()
+                                                + PerfilCuerpo.DURACION_ESTROGENOS)))))
                 .then(CommandManager.literal("definicion").then(CommandManager.argument("porcentaje",
                                 IntegerArgumentType.integer(0, PerfilCuerpo.DEFINICION_MAXIMA))
                         .executes(ctx -> aplicar(ctx.getSource(),

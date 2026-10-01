@@ -100,7 +100,8 @@ Los cuerpos dibujados están en alta resolución (6 veces la de una skin común)
 El cuerpo y la ropa ya no son cajas planas: **los costados de torso, brazos y piernas tienen relieve** (la cabeza y las tapas, no).
 
 - **Forma del cuerpo:** cada cuerpo trae la suya: pectorales, abdominales y brazos marcados en Atlético y Musculoso; panza redonda en Gordito, Osito y Panda; cola y cintura en los femeninos (Fem con curvas, la más marcada); pecho de pelaje en Lobo y Zorro; felinos atléticos. **Definición** (0 a 200 %, de fábrica 100 %) marca más o menos los músculos: `/femclothes definicion <n>`.
-- **Busto:** los cuerpos femeninos traen uno de fábrica y los **Estrógenos** suman: cada dosis (se toma como una poción) sube un talle, hasta 5 más (`/femclothes busto <0..5>` lo fija a mano). El **binder** lo aplana y el top **deportivo** lo sujeta un poco.
+- **Busto:** los cuerpos femeninos traen uno de fábrica y los **Estrógenos** suman: se toman como una poción y se **acumulan en 3 tomas** (chico, mediano, grande). El efecto dura **24 h del reloj del juego (un día de Minecraft, 20 minutos reales) desde la última toma**; tomar con el talle máximo solo renueva el tiempo. Al vencer, el busto vuelve al del cuerpo. `/femclothes busto <0..3>` lo fija a mano (también por 24 h). El **binder** lo aplana y el top **deportivo** lo sujeta un poco.
+- **Física de resorte:** el busto rebota al saltar, caer y aterrizar, con cada paso al caminar o correr, y se balancea de costado al girar (y en el twirl). Cuanto más grande, más lento y más amplio. La ropa de encima rebota con él. Cada cliente lo simula para los jugadores que ve.
 - **La ropa sigue al cuerpo según el calce:** **Pegado** lo copia como una segunda piel; **Ajustado** casi igual; **Normal** marca lo que sobresale y "puentea" los huecos (entre los pectorales, el escote); **Suelto** y **Oversize** apenas. Una prenda nunca queda por dentro de la de abajo.
 - **Arrugas automáticas** en codos, rodillas, cintura, axilas, muñecas y tobillos, más marcadas cuanto más holgado el calce (Pegado no arruga).
 - **Detalles en relieve por prenda:** el **hoodie** tiene el bolsillo canguro con su costura, rib en el ruedo y los puños y la costura de la sisa; el **pantalón**, costuras laterales, bolsillos de atrás, pretina y bragueta; las **medias**, tejido acanalado.
@@ -122,7 +123,7 @@ Sin permisos especiales, cada quien cambia el propio:
 | `/femclothes interior color <rgb>` | Color de la ropa interior, como número (ej. `16777215` = blanco). |
 | `/femclothes tono skin` | Tono de piel tomado de tu propia skin (el valor por defecto). |
 | `/femclothes tono <número>` | Tono de piel a mano, como color RGB en decimal (ej. 14329120). |
-| `/femclothes busto <0..5>` | Talle de busto que suman los Estrógenos. |
+| `/femclothes busto <0..3>` | Dosis de Estrógenos (talle de busto), por 24 h del juego. |
 | `/femclothes definicion <0..200>` | Cuánto se marcan los músculos del relieve, en %. |
 | `/femclothes ver` | Muestra tu configuración actual. |
 | `/femclothes reset` | Vuelve todo al valor por defecto. |

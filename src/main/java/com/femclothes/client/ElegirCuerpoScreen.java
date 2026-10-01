@@ -286,7 +286,8 @@ public class ElegirCuerpoScreen extends Screen {
                 tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3], fuerzaRubor, siempre,
                 // El relieve que ya tiene (busto de los Estrógenos, definición).
                 com.femclothes.body.PerfilesDeCuerpo.de(jugador).busto(),
-                com.femclothes.body.PerfilesDeCuerpo.de(jugador).definicion());
+                com.femclothes.body.PerfilesDeCuerpo.de(jugador).definicion(),
+                com.femclothes.body.PerfilesDeCuerpo.de(jugador).estrogenosHasta());
         // Sin ropa: solo el cuerpo que se está eligiendo.
         GarmentFeatureRenderer.previewOverride = List.of();
         try {

@@ -57,8 +57,14 @@ public final class RelieveCuerpo {
         FORMAS.put(CuerpoBase.VACA, new Forma(0.3f, 0f, 0.7f, 0.5f, 0.3f, 0.4f, 0f, 0));
     }
 
-    /** Tope del busto (base del cuerpo + Estrógenos). */
-    public static final int BUSTO_MAXIMO = 6;
+    /** Tope del busto (base del cuerpo + Estrógenos), en las unidades de {@link Forma#busto}. */
+    public static final float BUSTO_MAXIMO = 6f;
+    /**
+     * Cuánto busto suma cada dosis acumulada de Estrógenos (2026-10-01, "3
+     * tamaños de mamas... a traves de la acumulacion de tres ingestas"):
+     * chico, mediano, grande.
+     */
+    private static final float[] BUSTO_POR_DOSIS = {0f, 1.5f, 3f, 4.5f};
 
     private static final Map<String, MapaRelieve> CACHE = new HashMap<>();
 
@@ -66,14 +72,15 @@ public final class RelieveCuerpo {
         return FORMAS.getOrDefault(cuerpo, FORMAS.get(CuerpoBase.ESTANDAR));
     }
 
-    /** El busto que se ve: el del cuerpo más el de los Estrógenos. */
-    public static int bustoDe(PerfilCuerpo perfil) {
-        return Math.min(BUSTO_MAXIMO, formaDe(perfil.cuerpo()).busto() + perfil.busto());
+    /** El busto que se ve: el del cuerpo más el de las dosis de Estrógenos. */
+    public static float bustoDe(PerfilCuerpo perfil) {
+        int dosis = Math.max(0, Math.min(BUSTO_POR_DOSIS.length - 1, perfil.busto()));
+        return Math.min(BUSTO_MAXIMO, formaDe(perfil.cuerpo()).busto() + BUSTO_POR_DOSIS[dosis]);
     }
 
     public static MapaRelieve de(PerfilCuerpo perfil, boolean slim) {
         Forma f = formaDe(perfil.cuerpo());
-        int busto = bustoDe(perfil);
+        float busto = bustoDe(perfil);
         float def = perfil.definicion() / 100f;
         // La ropa interior también da forma (2026-10-01): el binder aplana el
         // pecho y el top deportivo lo sujeta un poco.
@@ -90,7 +97,7 @@ public final class RelieveCuerpo {
 
     // ── la receta ──────────────────────────────────────────────────────────
 
-    static float altura(Forma f, int busto, float def, float sujecion, Parte parte, int cara, float fu, float fv, int ancho) {
+    static float altura(Forma f, float busto, float def, float sujecion, Parte parte, int cara, float fu, float fv, int ancho) {
         boolean frente = cara == 1, espalda = cara == 3;
         boolean derecha = parte == Parte.BRAZO_DER || parte == Parte.PIERNA_DER;
         // El costado de afuera de un brazo o una pierna.
@@ -158,6 +165,23 @@ public final class RelieveCuerpo {
                 return 0f;
             }
         }
+    }
+
+    /**
+     * Cuánto pertenece el punto al busto (1 adentro, 0 lejos), para correrlo
+     * con el rebote: las mismas elipses del busto agrandadas, con borde suave
+     * (la tela de alrededor se estira en vez de cortarse).
+     */
+    public static float mascaraBusto(float busto, float fu, float fv) {
+        if (busto <= 0f) return 0f;
+        float ru = 0.2f + 0.015f * busto, rv = 0.17f + 0.02f * busto, cv = 0.3f + 0.01f * busto;
+        float m = 0f;
+        for (float cu : new float[]{0.28f, 0.72f}) {
+            float du = (fu - cu) / (ru * 1.5f), dv = (fv - cv) / (rv * 1.5f);
+            float d = (float) Math.sqrt(du * du + dv * dv);
+            m = Math.max(m, d <= 0.7f ? 1f : d >= 1f ? 0f : 1f - rampa((d - 0.7f) / 0.3f, 1f));
+        }
+        return m;
     }
 
     /** Lomita suave (1 − d²)^k en una elipse de radios ru × rv. */

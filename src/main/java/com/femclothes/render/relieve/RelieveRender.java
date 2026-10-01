@@ -40,7 +40,35 @@ public final class RelieveRender {
     /** Escalón de altura del estilo escalonado (px). */
     private static final float ESCALON = 0.25f;
 
-    public record Contexto(Parte parte, MapaRelieve mapa) {}
+    /**
+     * Corrimiento del busto de este cuadro ({@link FisicaBusto}), en fracción
+     * de la cara del frente del torso; {@code busto} para saber qué zona se mueve.
+     */
+    public record Rebote(float busto, float dx, float dy) {}
+
+    public record Contexto(Parte parte, MapaRelieve mapa, @Nullable Rebote rebote) {
+        /** Con el rebote del dibujo en curso ({@link #reboteActual}). */
+        public Contexto(Parte parte, MapaRelieve mapa) {
+            this(parte, mapa, reboteActual);
+        }
+    }
+
+    /** El rebote del jugador que se está dibujando (lo pone {@code GarmentFeatureRenderer}). */
+    @Nullable
+    public static Rebote reboteActual;
+
+    /** La altura de la cara con el busto corrido por el rebote. */
+    static float altura(Contexto c, int cara, float fu, float fv) {
+        Rebote r = c.rebote();
+        if (r != null && cara == 1 && c.parte() == Parte.TORSO) {
+            float w = RelieveCuerpo.mascaraBusto(r.busto(), fu, fv);
+            if (w > 0f) {
+                fu -= r.dx() * w;
+                fv -= r.dy() * w;
+            }
+        }
+        return c.mapa().altura(c.parte(), cara, fu, fv);
+    }
 
     /**
      * El relieve del dibujo en curso: lo pone {@code GarmentFeatureRenderer}
@@ -116,9 +144,9 @@ public final class RelieveRender {
 
         Geo g = new Geo(e, vc, luz, ov, pa, ab, ad, n, escala, umin, umax, vmin, vmax);
         if (estilo == Estilo.ESCALONADO) {
-            escalonado(g, mapa, parte, caraIdx, ancho, fu0, fu1, fv0, fv1, nu, nv, tu, tv);
+            escalonado(g, ctx, caraIdx, ancho, fu0, fu1, fv0, fv1, nu, nv, tu, tv);
         } else {
-            suave(g, mapa, parte, caraIdx, ancho, fu0, fu1, fv0, fv1, nu, nv, tu, tv);
+            suave(g, ctx, caraIdx, ancho, fu0, fu1, fv0, fv1, nu, nv, tu, tv);
         }
     }
 
@@ -139,7 +167,7 @@ public final class RelieveRender {
         }
     }
 
-    private static void suave(Geo g, MapaRelieve mapa, Parte parte, int cara, int ancho,
+    private static void suave(Geo g, Contexto ctx, int cara, int ancho,
                               float fu0, float fu1, float fv0, float fv1, int nu, int nv, Vector3f tu, Vector3f tv) {
         Vector3f[][] p = new Vector3f[nu + 1][nv + 1];
         Vector3f[][] nor = new Vector3f[nu + 1][nv + 1];
@@ -148,11 +176,11 @@ public final class RelieveRender {
             float s = i / (float) nu, fu = fu0 + (fu1 - fu0) * s;
             for (int j = 0; j <= nv; j++) {
                 float t = j / (float) nv, fv = fv0 + (fv1 - fv0) * t;
-                float h = mapa.altura(parte, cara, fu, fv);
+                float h = altura(ctx, cara, fu, fv);
                 p[i][j] = g.punto(s, t, h);
                 // Normal del relieve: la de la cara inclinada por la pendiente (px/px).
-                float dx = (mapa.altura(parte, cara, fu + eu, fv) - mapa.altura(parte, cara, fu - eu, fv)) / 0.5f;
-                float dy = (mapa.altura(parte, cara, fu, fv + ev) - mapa.altura(parte, cara, fu, fv - ev)) / 0.5f;
+                float dx = (altura(ctx, cara, fu + eu, fv) - altura(ctx, cara, fu - eu, fv)) / 0.5f;
+                float dy = (altura(ctx, cara, fu, fv + ev) - altura(ctx, cara, fu, fv - ev)) / 0.5f;
                 nor[i][j] = new Vector3f(g.n()).sub(tu.x * dx, tu.y * dx, tu.z * dx).sub(tv.x * dy, tv.y * dy, tv.z * dy).normalize();
             }
         }
@@ -167,7 +195,7 @@ public final class RelieveRender {
         }
     }
 
-    private static void escalonado(Geo g, MapaRelieve mapa, Parte parte, int cara, int ancho,
+    private static void escalonado(Geo g, Contexto ctx, int cara, int ancho,
                                    float fu0, float fu1, float fv0, float fv1, int nu, int nv, Vector3f tu, Vector3f tv) {
         float du = (fu1 - fu0) / nu, dv = (fv1 - fv0) / nv;
         Vector3f menosTu = new Vector3f(tu).negate(), menosTv = new Vector3f(tv).negate();
@@ -176,24 +204,24 @@ public final class RelieveRender {
             for (int j = 0; j < nv; j++) {
                 float t0 = j / (float) nv, t1 = (j + 1) / (float) nv;
                 float fu = fu0 + du * (i + 0.5f), fv = fv0 + dv * (j + 0.5f);
-                float h = escalon(mapa, parte, cara, fu, fv);
+                float h = escalon(ctx, cara, fu, fv);
                 // Tapa del bloquecito.
                 g.vertice(g.punto(s0, t0, h), s0, t0, g.n());
                 g.vertice(g.punto(s0, t1, h), s0, t1, g.n());
                 g.vertice(g.punto(s1, t1, h), s1, t1, g.n());
                 g.vertice(g.punto(s1, t0, h), s1, t0, g.n());
                 // Paredes hacia los vecinos más bajos (la pared la pone el más alto).
-                pared(g, h, escalon(mapa, parte, cara, fu + du, fv), s1, t0, s1, t1, tu);
-                pared(g, h, escalon(mapa, parte, cara, fu - du, fv), s0, t1, s0, t0, menosTu);
-                pared(g, h, escalon(mapa, parte, cara, fu, fv + dv), s1, t1, s0, t1, tv);
-                pared(g, h, escalon(mapa, parte, cara, fu, fv - dv), s0, t0, s1, t0, menosTv);
+                pared(g, h, escalon(ctx, cara, fu + du, fv), s1, t0, s1, t1, tu);
+                pared(g, h, escalon(ctx, cara, fu - du, fv), s0, t1, s0, t0, menosTu);
+                pared(g, h, escalon(ctx, cara, fu, fv + dv), s1, t1, s0, t1, tv);
+                pared(g, h, escalon(ctx, cara, fu, fv - dv), s0, t0, s1, t0, menosTv);
             }
         }
     }
 
-    private static float escalon(MapaRelieve mapa, Parte parte, int cara, float fu, float fv) {
+    private static float escalon(Contexto ctx, int cara, float fu, float fv) {
         if (fu < 0f || fu > 1f) return 0f;
-        return Math.round(mapa.altura(parte, cara, fu, fv) / ESCALON) * ESCALON;
+        return Math.round(altura(ctx, cara, fu, fv) / ESCALON) * ESCALON;
     }
 
     private static void pared(Geo g, float h, float vecino, float sA, float tA, float sB, float tB, Vector3f normal) {

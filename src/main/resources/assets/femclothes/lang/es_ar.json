@@ -572,9 +572,8 @@
   "item.femclothes.estrogenos": "Estrógenos",
   "item.femclothes.molde_textura_fruncido": "Molde de textura: fruncido",
   "item.femclothes.molde_textura_acolchado": "Molde de textura: acolchado",
-  "femclothes.estrogenos.tooltip": "Cada dosis sube un talle el busto (se ve con el relieve)",
-  "femclothes.estrogenos.dosis": "Busto: talle %s de %s",
-  "femclothes.estrogenos.maximo": "Ya llegaste al talle máximo",
+  "femclothes.estrogenos.tooltip": "Cada dosis suma un talle de busto (3 como máximo). Dura 24 h desde la última toma",
+  "femclothes.estrogenos.dosis": "Estrógenos: talle %s de %s, por 24 h",
   "femclothes.textura_tela.lisa": "Lisa",
   "femclothes.textura_tela.fruncido": "Fruncido",
   "femclothes.textura_tela.acolchado": "Acolchado",
@@ -584,5 +583,7 @@
   "femclothes.estilado.textura.actual": "Textura: %s",
   "femclothes.estilado.tooltip.textura": "Con un Molde de textura en el slot del molde: pone o saca esa textura de tela",
   "femclothes.estilado.aviso.textura": "Con un Molde de textura, usá el botón Textura",
-  "femclothes.cuerpo.relieve": " · busto +%s · definición %s%%"
+  "femclothes.cuerpo.relieve": " · estrógenos %s · definición %s%%",
+  "femclothes.estrogenos.renovado": "Estrógenos: talle %s de %s, otras 24 h",
+  "femclothes.estrogenos.fin": "Se pasó el efecto de los Estrógenos"
 }

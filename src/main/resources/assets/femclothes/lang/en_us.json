@@ -572,9 +572,8 @@
   "item.femclothes.estrogenos": "Estrogens",
   "item.femclothes.molde_textura_fruncido": "Texture Mould: Gathered",
   "item.femclothes.molde_textura_acolchado": "Texture Mould: Quilted",
-  "femclothes.estrogenos.tooltip": "Each dose raises the bust one size (shown by the body relief)",
-  "femclothes.estrogenos.dosis": "Bust: size %s of %s",
-  "femclothes.estrogenos.maximo": "You already reached the maximum size",
+  "femclothes.estrogenos.tooltip": "Each dose adds one bust size (3 at most). Lasts 24 h since the last dose",
+  "femclothes.estrogenos.dosis": "Estrogens: size %s of %s, for 24 h",
   "femclothes.textura_tela.lisa": "Plain",
   "femclothes.textura_tela.fruncido": "Gathered",
   "femclothes.textura_tela.acolchado": "Quilted",
@@ -584,5 +583,7 @@
   "femclothes.estilado.textura.actual": "Texture: %s",
   "femclothes.estilado.tooltip.textura": "With a Texture Mould in the mould slot: applies or removes that fabric texture",
   "femclothes.estilado.aviso.textura": "With a Texture Mould, use the Texture button",
-  "femclothes.cuerpo.relieve": " · bust +%s · definition %s%%"
+  "femclothes.cuerpo.relieve": " · estrogens %s · definition %s%%",
+  "femclothes.estrogenos.renovado": "Estrogens: size %s of %s, 24 more hours",
+  "femclothes.estrogenos.fin": "The Estrogens wore off"
 }
