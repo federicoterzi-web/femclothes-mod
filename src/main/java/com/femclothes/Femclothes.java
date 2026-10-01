@@ -31,7 +31,6 @@ public class Femclothes implements ModInitializer {
         com.femclothes.body.RedCuerpo.init();
         com.femclothes.util.RedTwirl.init();
         com.femclothes.util.RedCapucha.init();
-        com.femclothes.util.DebugMaquinas.init();
         FemclothesScreenHandlers.init();
         com.femclothes.modelado.ModeladoMod.register();
         com.femclothes.tinturas.TinturasMod.register();
@@ -67,6 +66,13 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.guardarropas.GuardarropasMod.GUARDARROPAS_BLOCK_ITEM);
             entries.add(com.femclothes.maniqui.ManiquiMod.MANIQUI_BLOCK_ITEM);
             entries.add(com.femclothes.estilado.EstiladoMod.ESTILADO_BLOCK_ITEM);
+            // Máquinas creativas (2026-10-01): sin espera ni insumos, cargadas al colocarlas.
+            entries.add(com.femclothes.modelado.ModeladoMod.MODELADO_CREATIVA_ITEM);
+            entries.add(com.femclothes.tinturas.TinturasMod.TINTURAS_CREATIVA_ITEM);
+            entries.add(com.femclothes.sublimadora.ModBlocks.SUBLIMADORA_CREATIVA_ITEM);
+            entries.add(com.femclothes.estilado.EstiladoMod.ESTILADO_CREATIVA_ITEM);
+            // Kits (2026-10-01, antes /femclothes debug patrones|moldes|insumos).
+            for (ItemStack kit : com.femclothes.util.KitsCreativos.todos()) entries.add(kit);
             // Prendas.
             entries.add(com.femclothes.sublimadora.ModItems.REMERA);
             entries.add(FemclothesItems.CHAQUETA);

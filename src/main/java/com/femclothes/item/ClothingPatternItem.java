@@ -75,7 +75,7 @@ public class ClothingPatternItem extends Item {
         return POR_ID.get(patternId);
     }
 
-    /** Todos los patrones registrados — para el shulker de debug (ver {@code DebugMaquinas}). */
+    /** Todos los patrones registrados — para cargar la Estación de Tintes creativa y el kit de la pestaña creativa. */
     public static java.util.Collection<ClothingPatternItem> todos() {
         return POR_ID.values();
     }

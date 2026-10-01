@@ -52,6 +52,8 @@ public class FemclothesClient implements ClientModInitializer {
         // modelo) — sin cutout el recorte se rellena y queda un cuadrado.
         net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(
                 com.femclothes.modelado.ModeladoMod.MODELADO_BLOCK, net.minecraft.client.render.RenderLayer.getCutout());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(
+                com.femclothes.modelado.ModeladoMod.MODELADO_CREATIVA, net.minecraft.client.render.RenderLayer.getCutout());
 
         // El render de la Estación de Tintes lo hace GeckoLib desde el block
         // entity (modelo dye_station, assets reales bajados por el usuario).
@@ -60,6 +62,8 @@ public class FemclothesClient implements ClientModInitializer {
                 ctx -> new com.femclothes.tinturas.TinturasRenderer());
         net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(
                 com.femclothes.tinturas.TinturasMod.TINTURAS_BLOCK, net.minecraft.client.render.RenderLayer.getCutout());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(
+                com.femclothes.tinturas.TinturasMod.TINTURAS_CREATIVA, net.minecraft.client.render.RenderLayer.getCutout());
 
         PiezasDelMod.init();
         DebugApariencia.init();

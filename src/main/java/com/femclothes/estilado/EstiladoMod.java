@@ -23,14 +23,23 @@ public final class EstiladoMod {
     public static final BloqueGeoItem ESTILADO_BLOCK_ITEM =
             new BloqueGeoItem(ESTILADO_BLOCK, new Item.Settings(), "styling_table");
 
+    /** Versión creativa (2026-10-01): sin retazos y con todos los moldes a mano — ver {@code util.MaquinaCreativa}. */
+    public static final EstiladoBlock ESTILADO_CREATIVA = com.femclothes.util.MaquinaCreativa.creativa(new EstiladoBlock(
+            AbstractBlock.Settings.create().strength(2.5f, 4.0f).sounds(BlockSoundGroup.WOOD).nonOpaque()));
+    public static final BloqueGeoItem ESTILADO_CREATIVA_ITEM =
+            new BloqueGeoItem(ESTILADO_CREATIVA, new Item.Settings(), "styling_table");
+
     public static final BlockEntityType<EstiladoBlockEntity> ESTILADO_BLOCK_ENTITY =
-            BlockEntityType.Builder.create(EstiladoBlockEntity::new, ESTILADO_BLOCK).build();
+            BlockEntityType.Builder.create(EstiladoBlockEntity::new, ESTILADO_BLOCK, ESTILADO_CREATIVA).build();
 
     public static void register() {
         Identifier id = Identifier.of(Femclothes.MOD_ID, "mesa_estilado");
         Registry.register(Registries.BLOCK, id, ESTILADO_BLOCK);
         Registry.register(Registries.ITEM, id, ESTILADO_BLOCK_ITEM);
         Registry.register(Registries.BLOCK_ENTITY_TYPE, id, ESTILADO_BLOCK_ENTITY);
+        Identifier creativaId = Identifier.of(Femclothes.MOD_ID, "mesa_estilado_creativa");
+        Registry.register(Registries.BLOCK, creativaId, ESTILADO_CREATIVA);
+        Registry.register(Registries.ITEM, creativaId, ESTILADO_CREATIVA_ITEM);
 
         // Click en la vista 3D (2026-10-01).
         net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S()

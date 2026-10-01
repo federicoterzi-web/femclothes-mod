@@ -33,8 +33,14 @@ public final class ModeladoMod {
 
     public static final ModeladoBlockItem MODELADO_BLOCK_ITEM = new ModeladoBlockItem(MODELADO_BLOCK, new Item.Settings());
 
+    /** Versión creativa (2026-10-01): sin espera, viene con todos los moldes — ver {@code util.MaquinaCreativa}. */
+    public static final ModeladoBlock MODELADO_CREATIVA = com.femclothes.util.MaquinaCreativa.creativa(new ModeladoBlock(
+            AbstractBlock.Settings.create().strength(2.5f, 4.0f).sounds(BlockSoundGroup.WOOD).nonOpaque()
+                    .luminance(com.femclothes.util.LuzMaquina::luminancia)));
+    public static final ModeladoBlockItem MODELADO_CREATIVA_ITEM = new ModeladoBlockItem(MODELADO_CREATIVA, new Item.Settings());
+
     public static final BlockEntityType<ModeladoBlockEntity> MODELADO_BLOCK_ENTITY =
-            BlockEntityType.Builder.create(ModeladoBlockEntity::new, MODELADO_BLOCK).build();
+            BlockEntityType.Builder.create(ModeladoBlockEntity::new, MODELADO_BLOCK, MODELADO_CREATIVA).build();
 
     public static final MoldeDeCorteItem MOLDE_DE_CORTE = new MoldeDeCorteItem(new Item.Settings().maxCount(16));
 
@@ -124,6 +130,9 @@ public final class ModeladoMod {
         Registry.register(Registries.BLOCK, bloqueId, MODELADO_BLOCK);
         Registry.register(Registries.ITEM, bloqueId, MODELADO_BLOCK_ITEM);
         Registry.register(Registries.BLOCK_ENTITY_TYPE, bloqueId, MODELADO_BLOCK_ENTITY);
+        Identifier creativaId = Identifier.of(Femclothes.MOD_ID, "modelado_creativa");
+        Registry.register(Registries.BLOCK, creativaId, MODELADO_CREATIVA);
+        Registry.register(Registries.ITEM, creativaId, MODELADO_CREATIVA_ITEM);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_de_corte"), MOLDE_DE_CORTE);
 
 

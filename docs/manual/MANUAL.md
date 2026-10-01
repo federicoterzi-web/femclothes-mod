@@ -154,6 +154,18 @@ Las máquinas se pueden encadenar con tolvas (hoppers):
 
 Con tolva, la prenda **arranca sola** si hay un diseño fijado. Desde la interfaz, las tres tienen un botón sobre la flecha Entrada → Salida: **Modelar**, **Teñir** y **Prensar**. Además, la Modeladora arranca al cerrar la interfaz (solo si hay prenda en la Entrada, algo fijado y la Salida libre; si no, queda apagada) y la Sublimadora al cerrar la tapa. *(La cadena completa de máquinas todavía no se probó a fondo.)*
 
+
+### Máquinas creativas y kits
+
+En la pestaña creativa hay una **versión creativa** de cada máquina de confección: **Mesa de Modelado creativa**, **Estación de Tintes creativa**, **Sublimadora creativa** y **Mesa de estilado creativa**. Son iguales a las normales, pero:
+
+- **Se distinguen** por el color: madera violeta nacarada y herrajes dorados.
+- **No esperan:** el proceso termina al instante.
+- **No piden insumos:** Tintes no gasta tinta, Envasar no pide frasco, la Sublimadora no gasta tinta ni papel y la Mesa de estilado no pide retazo (sin retazo, el aplique sale blanco).
+- **Vienen cargadas una vez** al colocarlas: la Modeladora con uno de cada molde (los compartidos en el almacén general y los de cada prenda en su banco) y Tintes con uno de cada patrón en el almacén. La Mesa de estilado tiene un solo slot de molde, así que trae el botón **Molde ▸** para pasar por todos los moldes de aplique y de textura. Lo que saques o se gaste no vuelve. Si la rompés y la volvés a colocar, vuelve con lo que tenía, no se recarga.
+
+También hay **kits** (shulker boxes con nombre): **Kit: todos los patrones**, **Kit: todos los moldes** (en las cajas que hagan falta) y **Kit: insumos** (64 de cada tinte, papel y frascos).
+
 ## 6. Mesa de Modelado
 
 ![Mesa de Modelado, pantalón](img/captura_modelado_pantalon.png)
@@ -420,18 +432,7 @@ Los apliques viajan en la prenda (componente `femclothes:apliques`) y se ven en 
 
 **Para todos los jugadores** (cambian solo tu apariencia): ver la sección 4, `/femclothes elegir`, `cuerpo`, `interior`, `tono`, `ver`, `reset`.
 
-**Para operadores** (afectan a todo el servidor):
-
-| Comando | Qué hace |
-|---|---|
-| `/femclothes debug instantaneo` | Las máquinas terminan al instante (la tinta y el papel se siguen gastando igual). |
-| `/femclothes debug normal` | Vuelve a los tiempos reales. |
-| `/femclothes debug ver` | Muestra en qué modo está (tiempo e insumos). |
-| `/femclothes debug gratis [si\|no]` | Máquinas sin insumos: Tintes no pide ni gasta tinta, la Sublimadora ni tinta ni papel, la Mesa de estilado no pide retazo (sin retazo el aplique sale blanco) y Envasar no pide frasco. Sin `si`/`no` alterna. Es global (para todos) y se apaga al reiniciar el mundo. |
-| `/femclothes debug patrones` | Te da shulker boxes con uno de cada molde de patrón. |
-| `/femclothes debug moldes` | Te da shulker boxes con uno de cada molde de corte y de red (son 30: van en 2 shulkers). |
-| `/femclothes debug insumos` | Te da una shulker con 64 de cada uno de los 16 tintes y 64 de papel. |
-| `/femclothes debug kit` | Moldes, patrones e insumos de una sola vez. |
+Para probar sin esperas ni insumos ya no hay comandos: están las **máquinas creativas** y los **kits** de la pestaña creativa (ver sección 5).
 
 **Del cliente** (solo cambian lo que VOS ves, para probar):
 
@@ -464,7 +465,7 @@ Los apliques viajan en la prenda (componente `femclothes:apliques`) y se ven en 
 | Rayas superiores | Hilo / papel / papel (filas) |
 | Tres rayas | Hilo / hilo / papel (filas) |
 
-**Sin receta todavía (solo en creativo o con `/femclothes debug`):** Estación de Tintes, Guardarropas, Maniquí, Mesa de estilado, Pollera, Estrógenos, moldes de textura, moldes de rango, torso, cuello, calce, red, arnés, pollera y capa, molde de corte, la Capa, y los patrones de corazones, estrellas, lunares y vichy.
+**Sin receta todavía (solo en creativo):** las máquinas creativas y los kits, Estación de Tintes, Guardarropas, Maniquí, Mesa de estilado, Pollera, Estrógenos, moldes de textura, moldes de rango, torso, cuello, calce, red, arnés, pollera y capa, molde de corte, la Capa, y los patrones de corazones, estrellas, lunares y vichy.
 
 Todo el contenido del mod está en su propia pestaña del inventario creativo: **FemClothes**.
 

@@ -17,6 +17,7 @@ public class SublimadoraModClient implements ClientModInitializer {
         // La remera tiene alfa: sin cutout el recorte se rellena y queda un cuadrado.
         // Cubre el modelo JSON del item en el inventario y la variante sin GeckoLib.
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.SUBLIMADORA, RenderLayer.getCutout());
+        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.SUBLIMADORA_CREATIVA, RenderLayer.getCutout());
 
         // La remera la dibuja un renderer propio para poder estamparle la
         // foto. item/corte_<corte> no lo referencia ningun blockstate ni ningun

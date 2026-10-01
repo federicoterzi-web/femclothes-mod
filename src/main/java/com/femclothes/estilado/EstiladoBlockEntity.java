@@ -48,7 +48,8 @@ import java.util.List;
  * sus apliques al toque.
  */
 public class EstiladoBlockEntity extends BlockEntity
-        implements GeoBlockEntity, Inventory, ExtendedScreenHandlerFactory<BlockPos> {
+        implements GeoBlockEntity, Inventory, ExtendedScreenHandlerFactory<BlockPos>,
+        com.femclothes.util.MaquinaCreativa.Cargable {
 
     public static final int SLOT_PRENDA = 0, SLOT_MOLDE = 1, SLOT_RETAZO = 2, TAMANO = 3;
 
@@ -62,6 +63,12 @@ public class EstiladoBlockEntity extends BlockEntity
      * molde (2026-10-01, relieve: "pongamos un par de moldes de prueba").
      */
     public static final int BTN_TEXTURA = 15;
+    /**
+     * Mesa creativa (2026-10-01): pasa al siguiente molde (de aplique o de
+     * textura) sin tener que tenerlo — la mesa tiene un solo slot de molde,
+     * así que "todos los moldes adentro" es poder elegirlos acá.
+     */
+    public static final int BTN_SIGUIENTE_MOLDE = 16;
 
     public static final float ESCALA_MIN = 0.5f, ESCALA_MAX = 2.5f, PASO_ESCALA = 0.25f;
 
@@ -95,8 +102,8 @@ public class EstiladoBlockEntity extends BlockEntity
      */
     public boolean poner(Parte parte, float x, float y, float z, Direction cara) {
         ItemStack prenda = items.get(SLOT_PRENDA), molde = items.get(SLOT_MOLDE), retazo = items.get(SLOT_RETAZO);
-        // Debug sin insumos (DebugMaquinas.gratis): el retazo no hace falta ni se gasta (sin retazo, sale blanco).
-        boolean gratis = com.femclothes.util.DebugMaquinas.gratis();
+        // Mesa creativa (2026-10-01): el retazo no hace falta ni se gasta (sin retazo, sale blanco).
+        boolean gratis = com.femclothes.util.MaquinaCreativa.es(this);
         if (prenda.isEmpty() || !(molde.getItem() instanceof MoldeApliqueItem m) || (retazo.isEmpty() && !gratis)) return false;
         if (!Garments.esPrenda(prenda) || !Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(z)) return false;
         List<Aplique> actuales = new ArrayList<>(apliques());
@@ -125,6 +132,7 @@ public class EstiladoBlockEntity extends BlockEntity
 
     public boolean onButtonClick(int id) {
         if (id == BTN_TEXTURA) return alternarTextura();
+        if (id == BTN_SIGUIENTE_MOLDE) return siguienteMolde();
         List<Aplique> actuales = new ArrayList<>(apliques());
         if (id >= BTN_SELECCIONAR_BASE && id < BTN_SELECCIONAR_BASE + Aplique.MAXIMO_POR_PRENDA) {
             int i = id - BTN_SELECCIONAR_BASE;
@@ -154,6 +162,34 @@ public class EstiladoBlockEntity extends BlockEntity
         else prenda.set(FemclothesComponents.TEXTURA_TELA, m.textura);
         markDirty();
         return true;
+    }
+
+    /** Todos los moldes que entran en la mesa, en el orden del registro. */
+    private static List<net.minecraft.item.Item> moldes() {
+        List<net.minecraft.item.Item> lista = new ArrayList<>();
+        for (net.minecraft.item.Item item : net.minecraft.registry.Registries.ITEM) {
+            if (item instanceof MoldeApliqueItem || item instanceof com.femclothes.item.MoldeTexturaItem) lista.add(item);
+        }
+        return lista;
+    }
+
+    private boolean siguienteMolde() {
+        if (!com.femclothes.util.MaquinaCreativa.es(this)) return false;
+        List<net.minecraft.item.Item> lista = moldes();
+        if (lista.isEmpty()) return false;
+        int i = lista.indexOf(items.get(SLOT_MOLDE).getItem());
+        items.set(SLOT_MOLDE, new ItemStack(lista.get((i + 1) % lista.size())));
+        markDirty();
+        return true;
+    }
+
+    /** La mesa creativa viene con el primer molde puesto (los demás, con el botón). */
+    @Override
+    public void cargarCreativa() {
+        if (items.get(SLOT_MOLDE).isEmpty() && !moldes().isEmpty()) {
+            items.set(SLOT_MOLDE, new ItemStack(moldes().get(0)));
+            markDirty();
+        }
     }
 
     // ── GeckoLib ──────────────────────────────────────────────────────────

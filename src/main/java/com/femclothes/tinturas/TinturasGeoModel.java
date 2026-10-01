@@ -118,7 +118,7 @@ public class TinturasGeoModel extends GeoModel<TinturasBlockEntity> {
         // pintado encima) — a pedido (2026-09-21, "que muestre el
         // preview del setting de la ultima prenda seteada"); ya prioriza
         // salida > entrada+borrador > representativo, ver su javadoc.
-        Identifier id = com.femclothes.render.PantallaMaquina.con(TEX, com.femclothes.render.PantallaMaquina.PANEL_TINTURAS, be.vistaPreviaPersistente(), be.getPos());
+        Identifier id = com.femclothes.render.PantallaMaquina.con(com.femclothes.util.MaquinaCreativa.textura(TEX, com.femclothes.util.MaquinaCreativa.es(be)), com.femclothes.render.PantallaMaquina.PANEL_TINTURAS, be.vistaPreviaPersistente(), be.getPos());
         pintarViales(be, id);
         return id;
     }

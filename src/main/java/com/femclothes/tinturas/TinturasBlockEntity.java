@@ -87,7 +87,8 @@ import java.util.Map;
  * .reformarRemera}, que ya anticipaba esta estación.
  */
 public class TinturasBlockEntity extends BlockEntity
-        implements ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity, SidedInventory {
+        implements ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity, SidedInventory,
+        com.femclothes.util.MaquinaCreativa.Cargable {
 
     // Mismos índices/convención que SublimadoraBlockEntity.
     public static final int C = 0, M = 1, Y = 2, K = 3;
@@ -639,7 +640,7 @@ public class TinturasBlockEntity extends BlockEntity
             salpicarRodillo(servidor, pos, colorSplash);
         }
 
-        if (be.progreso < com.femclothes.util.DebugMaquinas.duracion(TICKS_TENIDO)) {
+        if (be.progreso < com.femclothes.util.MaquinaCreativa.duracion(be, TICKS_TENIDO)) {
             if (be.progreso % 20 == 0) be.sincronizar();
             return;
         }
@@ -1160,6 +1161,19 @@ public class TinturasBlockEntity extends BlockEntity
         return true;
     }
 
+    /**
+     * Estación de Tintes creativa (2026-10-01, "tengan adentro todos los
+     * patrones de cada maquina"): uno de cada patrón en el almacén.
+     */
+    @Override
+    public void cargarCreativa() {
+        for (com.femclothes.item.ClothingPatternItem p : com.femclothes.item.ClothingPatternItem.todos()) {
+            guardarEnAlmacen(new ItemStack(p));
+        }
+        markDirty();
+        sincronizar();
+    }
+
     /** Mete {@code stack} entero en el almacén (apilando si se puede) — false y sin tocar nada si no entra. */
     private boolean guardarEnAlmacen(ItemStack stack) {
         // Todos los lugares en el orden de la pantalla (los 9 de siempre + los nuevos).
@@ -1395,13 +1409,13 @@ public class TinturasBlockEntity extends BlockEntity
             }
         }
         for (int canal = 0; canal < 4; canal++) {
-            if (canalUsado[canal] && cargas[canal] <= 0 && !com.femclothes.util.DebugMaquinas.gratis()) {
+            if (canalUsado[canal] && cargas[canal] <= 0 && !com.femclothes.util.MaquinaCreativa.es(this)) {
                 return Text.translatable("femclothes.tinturas.aviso.sin_tinte",
                         Text.translatable("femclothes.sublimadora.tinta." + NOMBRE_CANAL[canal]));
             }
         }
         for (int canal = 0; canal < 4; canal++) {
-            if (canalUsado[canal] && !com.femclothes.util.DebugMaquinas.gratis()) cargas[canal]--;
+            if (canalUsado[canal] && !com.femclothes.util.MaquinaCreativa.es(this)) cargas[canal]--;
         }
         sincronizarVistaTanques();
 

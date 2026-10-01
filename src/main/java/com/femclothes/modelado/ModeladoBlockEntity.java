@@ -61,7 +61,8 @@ import java.util.Map;
  * (1, resultado) son genéricos, no por categoría.
  */
 public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
-        net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity {
+        net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity,
+        com.femclothes.util.MaquinaCreativa.Cargable {
 
     public static final int ALMACEN_INICIO = 0;
     public static final int ALMACEN_TAMANO = 27; // 3 filas x 9
@@ -993,6 +994,28 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
         return true;
     }
 
+    /**
+     * Modeladora creativa (2026-10-01, "tengan adentro todos los patrones de
+     * cada maquina"): uno de cada molde registrado, cada uno en su lugar
+     * (los compartidos en el almacén general, los exclusivos en el banco de
+     * su prenda).
+     */
+    @Override
+    public void cargarCreativa() {
+        for (Item item : net.minecraft.registry.Registries.ITEM) {
+            ItemStack molde = new ItemStack(item);
+            if (esMoldeCompartido(molde)) {
+                guardarMolde(Categoria.REMERA, molde);
+            } else {
+                for (Categoria c : Categoria.values()) {
+                    if (esMoldeExclusivoDe(molde, c)) guardarMolde(c, molde.copy());
+                }
+            }
+        }
+        markDirty();
+        sincronizar();
+    }
+
     /** Devuelve un molde al storage que le corresponde (mismas reglas que isValid: compartido -> almacén general, exclusivo de remera -> su banco). */
     private boolean guardarMolde(Categoria cat, ItemStack molde) {
         int[] lugares;
@@ -1182,7 +1205,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
                 // cliente) se vea avanzar en vivo, no solo al terminar —
                 // mismo intervalo que TinturasBlockEntity#tick.
                 if (be.progreso % 20 == 0) be.sincronizar();
-                if (be.progreso >= com.femclothes.util.DebugMaquinas.duracion(TICKS_PROCESO)) {
+                if (be.progreso >= com.femclothes.util.MaquinaCreativa.duracion(be, TICKS_PROCESO)) {
                     ItemStack resultado = be.procesar(be.items.get(PRENDA));
                     be.items.set(SALIDA, resultado);
                     be.items.set(PRENDA, ItemStack.EMPTY);

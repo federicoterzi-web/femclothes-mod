@@ -33,14 +33,24 @@ public final class ModBlocks {
     public static final SublimadoraBlockItem SUBLIMADORA_ITEM =
             new SublimadoraBlockItem(SUBLIMADORA, new Item.Settings());
 
+    /** Versión creativa (2026-10-01): sin espera, tinta ni papel — ver {@code util.MaquinaCreativa}. */
+    public static final Block SUBLIMADORA_CREATIVA = com.femclothes.util.MaquinaCreativa.creativa(new SublimadoraBlock(
+            AbstractBlock.Settings.create().strength(2.5f, 4.0f).nonOpaque().sounds(BlockSoundGroup.METAL)
+                    .pistonBehavior(PistonBehavior.BLOCK).luminance(com.femclothes.util.LuzMaquina::luminancia)));
+    public static final SublimadoraBlockItem SUBLIMADORA_CREATIVA_ITEM =
+            new SublimadoraBlockItem(SUBLIMADORA_CREATIVA, new Item.Settings());
+
     public static final BlockEntityType<SublimadoraBlockEntity> SUBLIMADORA_ENTITY =
-            BlockEntityType.Builder.create(SublimadoraBlockEntity::new, SUBLIMADORA).build();
+            BlockEntityType.Builder.create(SublimadoraBlockEntity::new, SUBLIMADORA, SUBLIMADORA_CREATIVA).build();
 
     public static void register() {
         Identifier id = Identifier.of(Femclothes.MOD_ID, "sublimadora");
         Registry.register(Registries.BLOCK, id, SUBLIMADORA);
         Registry.register(Registries.ITEM, id, SUBLIMADORA_ITEM);
         Registry.register(Registries.BLOCK_ENTITY_TYPE, id, SUBLIMADORA_ENTITY);
+        Identifier creativaId = Identifier.of(Femclothes.MOD_ID, "sublimadora_creativa");
+        Registry.register(Registries.BLOCK, creativaId, SUBLIMADORA_CREATIVA);
+        Registry.register(Registries.ITEM, creativaId, SUBLIMADORA_CREATIVA_ITEM);
 
         // "Guardar diseño" con nombre (2026-09-28), mismo mecanismo que Tintes.
         net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S()

@@ -22,7 +22,7 @@ public class SublimadoraItemGeoModel extends GeoModel<SublimadoraBlockItem> {
         Identifier.of(Femclothes.MOD_ID, "animations/sublimator.animation.json");
 
     @Override public Identifier getModelResource(SublimadoraBlockItem item) { return GEO; }
-    @Override public Identifier getTextureResource(SublimadoraBlockItem item) { return TEX; }
+    @Override public Identifier getTextureResource(SublimadoraBlockItem item) { return com.femclothes.util.MaquinaCreativa.textura(TEX, com.femclothes.util.MaquinaCreativa.es(item)); }
     @Override public Identifier getAnimationResource(SublimadoraBlockItem item) { return ANIM; }
 
     @Override

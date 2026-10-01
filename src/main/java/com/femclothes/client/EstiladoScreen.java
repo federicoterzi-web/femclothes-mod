@@ -105,6 +105,10 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         // Textura de tela (2026-10-01, relieve): con un Molde de textura en el slot del molde.
         btnTextura = boton(X_DER, 132, 162, Text.empty(), "femclothes.estilado.tooltip.textura",
                 () -> clickBoton(EstiladoBlockEntity.BTN_TEXTURA));
+        // Mesa creativa (2026-10-01): elegir cualquier molde sin tenerlo.
+        ButtonWidget moldeCreativo = boton(X_DER + 98, 44, 64, Text.translatable("femclothes.estilado.siguiente_molde"),
+                "femclothes.estilado.tooltip.siguiente_molde", () -> clickBoton(EstiladoBlockEntity.BTN_SIGUIENTE_MOLDE));
+        moldeCreativo.visible = com.femclothes.util.MaquinaCreativa.es(handler.be);
     }
 
     private ButtonWidget btnTextura;
@@ -210,7 +214,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 else if (be.getStack(EstiladoBlockEntity.SLOT_MOLDE).getItem() instanceof com.femclothes.item.MoldeTexturaItem)
                     aviso = Text.translatable("femclothes.estilado.aviso.textura");
                 else if (be.getStack(EstiladoBlockEntity.SLOT_MOLDE).isEmpty()) aviso = Text.translatable("femclothes.estilado.aviso.molde");
-                else if (be.getStack(EstiladoBlockEntity.SLOT_RETAZO).isEmpty() && !com.femclothes.util.DebugMaquinas.gratis()) aviso = Text.translatable("femclothes.estilado.aviso.retazo");
+                else if (be.getStack(EstiladoBlockEntity.SLOT_RETAZO).isEmpty() && !com.femclothes.util.MaquinaCreativa.es(be)) aviso = Text.translatable("femclothes.estilado.aviso.retazo");
                 else if (be.apliques().size() >= Aplique.MAXIMO_POR_PRENDA) aviso = Text.translatable("femclothes.estilado.aviso.lleno");
                 else if (t == null) aviso = Text.translatable("femclothes.estilado.aviso.fuera");
                 else {

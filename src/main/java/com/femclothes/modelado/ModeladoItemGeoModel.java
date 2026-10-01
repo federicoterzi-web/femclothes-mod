@@ -16,7 +16,7 @@ public class ModeladoItemGeoModel extends GeoModel<ModeladoBlockItem> {
             Identifier.of(Femclothes.MOD_ID, "animations/garment_shaper.animation.json");
 
     @Override public Identifier getModelResource(ModeladoBlockItem item) { return GEO; }
-    @Override public Identifier getTextureResource(ModeladoBlockItem item) { return TEX; }
+    @Override public Identifier getTextureResource(ModeladoBlockItem item) { return com.femclothes.util.MaquinaCreativa.textura(TEX, com.femclothes.util.MaquinaCreativa.es(item)); }
     @Override public Identifier getAnimationResource(ModeladoBlockItem item) { return ANIM; }
 
     @Override

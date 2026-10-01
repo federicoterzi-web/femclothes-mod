@@ -234,7 +234,7 @@ public class TinturasScreenHandler extends ScreenHandler {
         for (int i = 0; i < inv.size() && frasco < 0; i++) {
             if (inv.getStack(i).isOf(net.minecraft.item.Items.GLASS_BOTTLE)) frasco = i;
         }
-        boolean gratis = player.isCreative() || com.femclothes.util.DebugMaquinas.gratis();
+        boolean gratis = player.isCreative() || com.femclothes.util.MaquinaCreativa.es(be);
         if (frasco < 0 && !gratis) {
             return net.minecraft.text.Text.translatable("femclothes.muestra.sin_frasco");
         }

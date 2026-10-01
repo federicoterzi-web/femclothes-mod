@@ -38,6 +38,13 @@ public class ModeloGeo<T extends GeoAnimatable> extends GeoModel<T> {
     }
 
     @Override public Identifier getModelResource(T animatable) { return geo; }
-    @Override public Identifier getTextureResource(T animatable) { return textura; }
+    /** La versión creativa de una máquina (2026-10-01) usa la textura recoloreada — ver {@code util.MaquinaCreativa}. */
+    @Override
+    public Identifier getTextureResource(T animatable) {
+        boolean creativa = animatable instanceof net.minecraft.block.entity.BlockEntity be
+                ? com.femclothes.util.MaquinaCreativa.es(be)
+                : animatable instanceof net.minecraft.item.Item item && com.femclothes.util.MaquinaCreativa.es(item);
+        return com.femclothes.util.MaquinaCreativa.textura(textura, creativa);
+    }
     @Override public Identifier getAnimationResource(T animatable) { return animacion; }
 }

@@ -59,6 +59,15 @@ public class TinturasBlock extends BlockWithEntity {
     @Override
     protected MapCodec<? extends BlockWithEntity> getCodec() { return CODEC; }
 
+    /** Máquina creativa (2026-10-01): viene cargada al colocarla — ver {@code util.MaquinaCreativa}. */
+    @Override
+    public void onPlaced(net.minecraft.world.World world, net.minecraft.util.math.BlockPos pos, BlockState state,
+                         @org.jetbrains.annotations.Nullable net.minecraft.entity.LivingEntity placer,
+                         net.minecraft.item.ItemStack itemStack) {
+        super.onPlaced(world, pos, state, placer, itemStack);
+        com.femclothes.util.MaquinaCreativa.alColocar(world, pos, state, itemStack);
+    }
+
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         builder.add(FACING, com.femclothes.util.LuzMaquina.LIT);

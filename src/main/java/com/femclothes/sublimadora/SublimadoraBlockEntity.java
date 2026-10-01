@@ -347,7 +347,7 @@ public class SublimadoraBlockEntity extends BlockEntity
             if (world.getTime() % 20 == 0) be.sonar(SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), 0.25f, 2.0f);
         }
 
-        if (be.progreso >= com.femclothes.util.DebugMaquinas.duracion(TICKS_PRENSADO)) {
+        if (be.progreso >= com.femclothes.util.MaquinaCreativa.duracion(be, TICKS_PRENSADO)) {
             be.progreso = 0;
             be.estado = Estado.LISTO;
             ItemStack hecha = be.remera;
@@ -513,7 +513,7 @@ public class SublimadoraBlockEntity extends BlockEntity
 
     /** True si hay al menos una carga de cada color. */
     public boolean hayTinta() {
-        if (com.femclothes.util.DebugMaquinas.gratis()) return true;
+        if (com.femclothes.util.MaquinaCreativa.es(this)) return true;
         for (int i = 0; i < 4; i++) if (cargas[i] <= 0) return false;
         return true;
     }
@@ -1204,8 +1204,8 @@ public class SublimadoraBlockEntity extends BlockEntity
         if (caras == 0) return false;
         // Una dosis de cada color POR CARA: hacer las dos en una pasada
         // ahorra el ciclo, no la tinta.
-        // Debug sin insumos (DebugMaquinas.gratis): no pide ni gasta tinta ni papel.
-        boolean gratis = com.femclothes.util.DebugMaquinas.gratis();
+        // Sublimadora creativa (2026-10-01): no pide ni gasta tinta ni papel.
+        boolean gratis = com.femclothes.util.MaquinaCreativa.es(this);
         if (!gratis) for (int i = 0; i < 4; i++) if (cargas[i] < caras) return false;
         // 1 papel por prensado (a las dos caras juntas, no una por cara —
         // es UNA hoja de papel de sublimacion, no una por lado) — a pedido
@@ -1280,7 +1280,7 @@ public class SublimadoraBlockEntity extends BlockEntity
         if (!caraActiva(0) && !caraActiva(1)) {
             return Text.translatable("femclothes.sublimadora.aviso.sin_fijar");
         }
-        if (papelCargado < 1 && !com.femclothes.util.DebugMaquinas.gratis()) {
+        if (papelCargado < 1 && !com.femclothes.util.MaquinaCreativa.es(this)) {
             return Text.translatable("femclothes.sublimadora.aviso.papel");
         }
         if (!hayTinta()) {
