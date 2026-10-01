@@ -69,6 +69,16 @@ public final class FemclothesItems {
     /** Capa personalizable (2026-09-29, "seria una nueva categoria de ropa"). */
     public static final CapaItem CAPA = register("capa", new CapaItem(new Item.Settings().maxCount(16)));
 
+    // Apliques (2026-10-01, Mesa de estilado): moldes que no se gastan y el retazo con los colores.
+    public static final com.femclothes.aplique.MoldeApliqueItem MOLDE_APLIQUE_MONO = register("molde_aplique_mono",
+            new com.femclothes.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.femclothes.aplique.ModeloAplique.MONO));
+    public static final com.femclothes.aplique.MoldeApliqueItem MOLDE_APLIQUE_MARIPOSA = register("molde_aplique_mariposa",
+            new com.femclothes.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.femclothes.aplique.ModeloAplique.MARIPOSA));
+    public static final com.femclothes.aplique.MoldeApliqueItem MOLDE_APLIQUE_FLOR = register("molde_aplique_flor",
+            new com.femclothes.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.femclothes.aplique.ModeloAplique.FLOR));
+    public static final com.femclothes.aplique.RetazoApliqueItem RETAZO_APLIQUE = register("retazo_aplique",
+            new com.femclothes.aplique.RetazoApliqueItem(new Item.Settings().maxCount(64)));
+
     /**
      * Hoodie oversize, primera prenda de la categoría Chaqueta (2026-09-30).
      * Sale de fábrica largo, con manga larga, cuello redondo y calce

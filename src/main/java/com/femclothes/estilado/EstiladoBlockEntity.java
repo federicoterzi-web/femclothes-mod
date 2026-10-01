@@ -1,33 +1,261 @@
 package com.femclothes.estilado;
 
+import com.femclothes.aplique.Aplique;
+import com.femclothes.aplique.MoldeApliqueItem;
+import com.femclothes.aplique.RetazoApliqueItem;
+import com.femclothes.garment.Garments;
+import com.femclothes.garment.Parte;
+import com.femclothes.item.FemclothesComponents;
+import com.femclothes.item.FemclothesItems;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.Inventories;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
+import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Mesa de estilado — por ahora solo existe para que GeckoLib la dibuje
- * (modelo {@code styling_table}, sin huesos animados). Acá va a vivir el
- * estado de la mesa de apliques (2026-09-30, "una mesa para agregar
- * apliques anclables a las prendas... moños, mariposas... bijouterie,
- * edición de chokers") cuando se defina la mecánica.
+ * Mesa de estilado (2026-10-01, "que uno pueda poner cualquier prenda y
+ * agregarles modelos 3d anclados en la geometria de la prenda"): tres slots —
+ * la PRENDA, el MOLDE de aplique (forma, no se gasta) y el RETAZO (colores, se
+ * gasta uno por aplique). En la pantalla se hace click sobre la prenda en la
+ * vista 3D y ahí queda el aplique ({@link #poner}); los puestos se eligen de
+ * una lista para girarlos, agrandarlos o quitarlos (el retazo vuelve).
+ *
+ * <p>Se sincroniza al cliente: la vista previa dibuja la prenda del slot con
+ * sus apliques al toque.
  */
-public class EstiladoBlockEntity extends BlockEntity implements GeoBlockEntity {
+public class EstiladoBlockEntity extends BlockEntity
+        implements GeoBlockEntity, Inventory, ExtendedScreenHandlerFactory<BlockPos> {
+
+    public static final int SLOT_PRENDA = 0, SLOT_MOLDE = 1, SLOT_RETAZO = 2, TAMANO = 3;
+
+    public static final int BTN_SELECCIONAR_BASE = 0;          // + 0..5
+    public static final int BTN_GIRO = 10, BTN_GIRO_ATRAS = 11;
+    public static final int BTN_ESCALA = 12, BTN_ESCALA_ATRAS = 13;
+    /** Lo atiende el ScreenHandler: necesita al jugador para devolverle el retazo. */
+    public static final int BTN_QUITAR = 14;
+
+    public static final float ESCALA_MIN = 0.5f, ESCALA_MAX = 2.5f, PASO_ESCALA = 0.25f;
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
+    private final DefaultedList<ItemStack> items = DefaultedList.ofSize(TAMANO, ItemStack.EMPTY);
+    /** Qué aplique de la prenda editan los botones (-1 = ninguno). */
+    private int seleccionado = -1;
 
     public EstiladoBlockEntity(BlockPos pos, BlockState state) {
         super(EstiladoMod.ESTILADO_BLOCK_ENTITY, pos, state);
     }
 
+    public int seleccionado() { return seleccionado; }
+
+    public List<Aplique> apliques() {
+        List<Aplique> a = items.get(SLOT_PRENDA).get(FemclothesComponents.APLIQUES);
+        return a == null ? List.of() : a;
+    }
+
+    private void guardarApliques(List<Aplique> lista) {
+        ItemStack prenda = items.get(SLOT_PRENDA);
+        if (lista.isEmpty()) prenda.remove(FemclothesComponents.APLIQUES);
+        else prenda.set(FemclothesComponents.APLIQUES, List.copyOf(lista));
+        markDirty();
+    }
+
+    /**
+     * Pone un aplique donde se hizo click (lo valida el servidor): hace falta
+     * prenda, molde y retazo, y que la parte sea de la prenda. El punto se
+     * acota a la caja de esa parte, por si llega cualquier cosa.
+     */
+    public boolean poner(Parte parte, float x, float y, float z, Direction cara) {
+        ItemStack prenda = items.get(SLOT_PRENDA), molde = items.get(SLOT_MOLDE), retazo = items.get(SLOT_RETAZO);
+        if (prenda.isEmpty() || !(molde.getItem() instanceof MoldeApliqueItem m) || retazo.isEmpty()) return false;
+        if (!Garments.esPrenda(prenda) || !Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(z)) return false;
+        List<Aplique> actuales = new ArrayList<>(apliques());
+        if (actuales.size() >= Aplique.MAXIMO_POR_PRENDA) return false;
+        x = MathHelper.clamp(x, -8, 8);
+        y = MathHelper.clamp(y, -10, 14);
+        z = MathHelper.clamp(z, -6, 6);
+        actuales.add(new Aplique(m.modelo, parte, x, y, z, cara, 0f, 1f, RetazoApliqueItem.colores(retazo)));
+        retazo.decrement(1);
+        seleccionado = actuales.size() - 1;
+        guardarApliques(actuales);
+        return true;
+    }
+
+    /** Saca el aplique elegido y devuelve su retazo (con sus colores). */
+    public void quitar(PlayerEntity jugador) {
+        List<Aplique> actuales = new ArrayList<>(apliques());
+        if (seleccionado < 0 || seleccionado >= actuales.size()) return;
+        Aplique a = actuales.remove(seleccionado);
+        ItemStack retazo = RetazoApliqueItem.conColores(new ItemStack(FemclothesItems.RETAZO_APLIQUE),
+                a.color(0), a.color(1), a.color(2));
+        jugador.getInventory().offerOrDrop(retazo);
+        seleccionado = Math.min(seleccionado, actuales.size() - 1);
+        guardarApliques(actuales);
+    }
+
+    public boolean onButtonClick(int id) {
+        List<Aplique> actuales = new ArrayList<>(apliques());
+        if (id >= BTN_SELECCIONAR_BASE && id < BTN_SELECCIONAR_BASE + Aplique.MAXIMO_POR_PRENDA) {
+            int i = id - BTN_SELECCIONAR_BASE;
+            if (i >= actuales.size()) return false;
+            seleccionado = seleccionado == i ? -1 : i;
+            markDirty();
+            return true;
+        }
+        if (seleccionado < 0 || seleccionado >= actuales.size()) return false;
+        Aplique a = actuales.get(seleccionado);
+        switch (id) {
+            case BTN_GIRO -> actuales.set(seleccionado, a.conGiro((Math.round(a.giro()) + 15) % 360));
+            case BTN_GIRO_ATRAS -> actuales.set(seleccionado, a.conGiro((Math.round(a.giro()) + 345) % 360));
+            case BTN_ESCALA -> actuales.set(seleccionado, a.conEscala(Math.min(ESCALA_MAX, a.escala() + PASO_ESCALA)));
+            case BTN_ESCALA_ATRAS -> actuales.set(seleccionado, a.conEscala(Math.max(ESCALA_MIN, a.escala() - PASO_ESCALA)));
+            default -> { return false; }
+        }
+        guardarApliques(actuales);
+        return true;
+    }
+
+    // ── GeckoLib ──────────────────────────────────────────────────────────
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {}
 
     @Override
     public AnimatableInstanceCache getAnimatableInstanceCache() {
         return cache;
+    }
+
+    // ── Inventory ─────────────────────────────────────────────────────────
+    @Override public int size() { return TAMANO; }
+
+    @Override
+    public boolean isEmpty() {
+        for (ItemStack s : items) if (!s.isEmpty()) return false;
+        return true;
+    }
+
+    @Override public ItemStack getStack(int slot) { return items.get(slot); }
+
+    @Override
+    public ItemStack removeStack(int slot, int amount) {
+        ItemStack r = Inventories.splitStack(items, slot, amount);
+        if (!r.isEmpty()) {
+            if (slot == SLOT_PRENDA) seleccionado = -1;
+            markDirty();
+        }
+        return r;
+    }
+
+    @Override
+    public ItemStack removeStack(int slot) {
+        ItemStack r = Inventories.removeStack(items, slot);
+        if (slot == SLOT_PRENDA) seleccionado = -1;
+        markDirty();
+        return r;
+    }
+
+    @Override
+    public void setStack(int slot, ItemStack stack) {
+        items.set(slot, stack);
+        if (slot == SLOT_PRENDA) seleccionado = -1;
+        markDirty();
+    }
+
+    @Override
+    public boolean isValid(int slot, ItemStack stack) {
+        return switch (slot) {
+            case SLOT_PRENDA -> Garments.esPrenda(stack);
+            case SLOT_MOLDE -> stack.getItem() instanceof MoldeApliqueItem;
+            case SLOT_RETAZO -> stack.getItem() instanceof RetazoApliqueItem;
+            default -> false;
+        };
+    }
+
+    @Override
+    public int getMaxCount(ItemStack stack) {
+        return stack.getItem() instanceof RetazoApliqueItem ? 64 : 1;
+    }
+
+    @Override
+    public void clear() {
+        items.clear();
+        markDirty();
+    }
+
+    @Override
+    public void markDirty() {
+        super.markDirty();
+        if (world != null && !world.isClient) world.updateListeners(pos, getCachedState(), getCachedState(), 3);
+    }
+
+    @Override
+    public boolean canPlayerUse(PlayerEntity player) {
+        return world != null && world.getBlockEntity(pos) == this
+                && player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64.0;
+    }
+
+    // ── pantalla ──────────────────────────────────────────────────────────
+    @Override
+    public Text getDisplayName() {
+        return getCachedState().getBlock().getName();
+    }
+
+    @Override
+    @Nullable
+    public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
+        return new EstiladoScreenHandler(syncId, playerInventory, this);
+    }
+
+    @Override
+    public BlockPos getScreenOpeningData(ServerPlayerEntity player) {
+        return pos;
+    }
+
+    // ── persistencia y sincronización ─────────────────────────────────────
+    @Override
+    protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
+        super.writeNbt(nbt, registries);
+        Inventories.writeNbt(nbt, items, registries);
+        nbt.putInt("Seleccionado", seleccionado);
+    }
+
+    @Override
+    protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
+        super.readNbt(nbt, registries);
+        items.clear();
+        Inventories.readNbt(nbt, items, registries);
+        seleccionado = nbt.contains("Seleccionado") ? nbt.getInt("Seleccionado") : -1;
+    }
+
+    @Override
+    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
+        return createNbt(registries);
+    }
+
+    @Override
+    public Packet<ClientPlayPacketListener> toUpdatePacket() {
+        return BlockEntityUpdateS2CPacket.create(this);
     }
 }

@@ -6,7 +6,7 @@ Versión del mod: 0.1.0 · Minecraft 1.21.1 (Fabric) · Manual actualizado: {{FE
 
 FemClothes agrega ropa que se viste SOBRE el cuerpo del personaje: remeras, pantalones, medias, calientabrazos, polleras y capas que siguen la forma del modelo, se superponen en capas (una media debajo de un pantalón, una remera arriba de todo) y se pueden personalizar casi por completo: el corte, el color, los patrones, las estampas con fotos y hasta la trama de la tela (redes, encaje, arneses).
 
-La personalización pasa por cuatro máquinas, cada una con su trabajo (más el Maniquí para exhibir y la Mesa de estilado, en construcción):
+La personalización pasa por cuatro máquinas, cada una con su trabajo (más el Maniquí para exhibir y la Mesa de estilado para los apliques):
 
 | Máquina | Qué hace |
 |---|---|
@@ -15,7 +15,7 @@ La personalización pasa por cuatro máquinas, cada una con su trabajo (más el 
 | **Sublimadora** | Las ESTAMPAS: imprime fotos (del mod Camerapture) sobre la prenda. |
 | **Guardarropas** | COMBINAR prendas y guardar outfits. |
 | **Maniquí** | EXHIBIR un outfit: la ropa se ve puesta en la figura, que puede girar. |
-| **Mesa de estilado** | APLIQUES (moños, mariposas, bijouterie): en construcción. |
+| **Mesa de estilado** | APLIQUES 3D (moño, mariposa, flor) pegados a cualquier prenda. |
 
 ## 1. Requisitos e instalación
 
@@ -386,7 +386,16 @@ Las medias se ven sin el volumen extra de pierna que tienen en el jugador. Con c
 
 ### Mesa de estilado
 
-Por ahora es solo el mueble (orientable). Va a ser la mesa para **agregar apliques anclables a las prendas** (modelos 3D: moños, mariposas, bijouterie, chokers). Click derecho avisa que está en construcción.
+Pone **apliques 3D** (moño, mariposa, flor) sobre cualquier prenda del mod. Click derecho abre la pantalla (herrajes lila):
+
+- **Tres slots** arriba a la derecha: **Prenda**, **Molde** de aplique (la forma: moño, mariposa o flor; **no se gasta**) y **Retazo** de aplique (los **3 colores** del aplique; se gasta **uno por aplique**, hasta 64 en el slot).
+- **Vista 3D grande** a la izquierda con tu personaje vistiendo solo esa prenda. **Click izquierdo sobre la tela** = ahí queda el aplique, mirando hacia afuera de la cara tocada (con "arriba" hacia la cabeza). Una cruz marca dónde caería. **Click derecho y arrastrar** gira la vista (también los botones ⟲ ⟳).
+- **Lista de apliques** (hasta **6 por prenda**): click en uno lo elige (otra vez lo suelta). Con uno elegido: **Giro** `<` `>` de a 15°, **Tamaño** `<` `>` de 50 % a 250 % de a 25 %, y **Quitar**, que devuelve un retazo con sus mismos colores.
+- Si falta algo, el texto de abajo avisa qué (prenda, molde, retazo, prenda llena, click fuera de la tela).
+
+Los apliques viajan en la prenda (componente `femclothes:apliques`) y se ven en el jugador, en el Maniquí y en el Guardarropas, siguiendo la pose de la parte donde están (brazo, pierna, cabeza o torso) y por fuera del calce de la prenda.
+
+**Colores.** Cada modelo tiene 3 zonas: moño = alas / nudo / colas; mariposa = alas de arriba / alas de abajo y lunares / cuerpo y antenas; flor = pétalos / centro / hojas. Por ahora los colores salen del retazo (lisos); en creativo hay tres retazos de muestra. Más adelante la Estación de Tintes va a teñir retazos con patrones, y los apliques van a tener física (colas, alas, pétalos).
 
 ## 10. Comandos
 
@@ -445,7 +454,7 @@ Funciones planeadas que todavía no están:
 - Volumen 3D real en la ropa (integración con 3D Skin Layers).
 - Cadena de máquinas por tolvas, probada de punta a punta.
 - Guardarropas: sistema de estilos guardados.
-- Mesa de estilado: apliques anclables (moños, mariposas, bijouterie, chokers).
+- Mesa de estilado: retazos teñidos con patrones en Tintes, física de los apliques, más modelos (bijouterie, chokers) y recetas.
 - La ropa en el brazo en primera persona.
 - Piernas redondeadas opcionales (versión 2).
 - Recetas para los ítems que hoy son solo de creativo.
@@ -464,7 +473,8 @@ Esta parte es para quien quiera entender o extender el mod.
 | `sublimadora` | Sublimadora, remera y su `Variante` (largo/manga/cuello), estampas (`EstampaTextures`). |
 | `guardarropas` | Guardarropas (modelo GeckoLib `wardrobe`, puerta por `OPEN`); `categoriaDe` reparte prendas en las 4 categorías y lo comparte el Maniquí. |
 | `maniqui` | Maniquí: 16 slots sincronizados al cliente, giro del plato calculado en el cliente (`ManiquiRenderer` gira el hueso `turntable` y la ropa con el mismo ángulo) y ropa dibujada con `GarmentFeatureRenderer.dibujarTela` sobre un modelo de jugador slim a escala 0.6. |
-| `estilado` | Mesa de estilado (solo el bloque por ahora). |
+| `estilado` | Mesa de estilado: block entity con prenda/molde/retazo, pantalla y `PonerApliquePayload`. |
+| `aplique` | Apliques: `Aplique` (componente), `ModeloAplique`, molde y retazo. |
 | `bloque` | Genéricos de GeckoLib por nombre de asset: `ModeloGeo` (geo/atlas/animación) y `BloqueGeoItem` (ítem dibujado con la malla del bloque). |
 | `region` | Lado (izq./der./ambas), regiones de pintura (`RegionPintura`), `RegionResolver` (lee y escribe capas y colores por lado), `ModoMezcla`. |
 | `render` | Composición de texturas (`ClothingTextureCache`), geometría (`CuerpoGeometria`, layout de skin a 8x), generador de patrones (`PatronGenerador`, `Motivo`, `Repeticion`, `Variacion`), el renderer único de ropa (`GarmentFeatureRenderer`). |
@@ -477,6 +487,8 @@ Esta parte es para quien quiera entender o extender el mod.
 2. Cada prenda devuelve sus **piezas** (`PiezasDelMod`): qué parte del cuerpo cubre, en qué capa, con qué textura y qué filas de la caja son visibles (así se recortan largos sin generar un archivo por cada largo).
 3. La textura se **compone en tiempo real** sobre un atlas con el layout de la skin a escala 8x (512×512) y se cachea por combinación: color base, capas de color, estampas, recorte y red.
 4. **Pollera y capa van aparte**, con malla propia: `PolleraMalla` en el marco del torso y `CapaMalla`, una cadena de 16 tramos (`doblar`) que parte de la inercia de `CapeFeatureRenderer` (`CapaMalla.movimiento`), se curva hacia el ruedo, ondea y se abre para no atravesar las piernas (`PolleraMalla.Piernas` llevado al marco de la capa). La tela de la capa (`capa_tela.png`) usa el layout del cuboide de la capa vanilla (10×16×1 en uv 0,0: exterior u 1..11, forro u 12..22) más una caja de detalles 12×8×2 en uv 24,0 para capucha y cuello; `PatronGenerador` la pinta como las cajas `CAPA` y `CAPA_DETALLES` y las zonas son `RegionPintura.CAPA_EXTERIOR/CAPA_FORRO/CAPA_DETALLES`. `PlayerEntityCapasSkinMixin` apaga la capa vanilla (`isPartVisible(CAPE)`) mientras haya una del mod y no haya élitros.
+
+**Apliques.** `render/ApliqueRenderer` dibuja los `.geo.json` de GeckoLib (`tools/generar_apliques.py`: miran a −Z, espalda en z = 0, atlas de 96×32 con una columna de 32 px por zona) recorriendo huesos y cubos a mano, en la misma pila de matrices que la ropa: `ModelPart.rotate` de la parte, el punto del click corrido hacia afuera por la dilatación del calce, y una base (derecha, arriba, atrás) que apunta −Z a la normal de la cara. El atlas se tiñe por columna y se cachea por terna de colores. La Mesa ubica el click invirtiendo la matriz de cada parte que guarda `GarmentFeatureRenderer.capturaPoses` durante el render de la vista previa (rayo de pantalla contra la caja de la pieza, cara de salida = la que se ve).
 
 **Máquinas que se guardan enteras.** `util/DropMaquina`: los 4 bloques sobreescriben `getDroppedStacks` (romper a mano y explosiones) y devuelven el ítem con todo el NBT del block entity en `minecraft:block_entity_data` más sus componentes (la tinta); `BlockItem` lo vuelve a cargar al colocarla. Ya no hay loot tables ni `onStateReplaced` que desparrame. En creativo, `onBreak` tira el ítem si la máquina no está vacía.
 

@@ -500,6 +500,22 @@ public final class FemclothesComponents {
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capucha_arriba"),
             ComponentType.<Boolean>builder().codec(com.mojang.serialization.Codec.BOOL).packetCodec(PacketCodecs.BOOL).build());
 
+    /** Apliques puestos en una prenda (2026-10-01, Mesa de estilado) — ver {@code aplique/Aplique}. */
+    public static final ComponentType<java.util.List<com.femclothes.aplique.Aplique>> APLIQUES = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "apliques"),
+            ComponentType.<java.util.List<com.femclothes.aplique.Aplique>>builder()
+                    .codec(com.femclothes.aplique.Aplique.CODEC.listOf())
+                    .packetCodec(PacketCodecs.codec(com.femclothes.aplique.Aplique.CODEC.listOf()))
+                    .build());
+
+    /** Los 3 colores de zona (RGB) de un retazo de aplique (2026-10-01). */
+    public static final ComponentType<java.util.List<Integer>> COLORES_APLIQUE = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "colores_aplique"),
+            ComponentType.<java.util.List<Integer>>builder()
+                    .codec(com.mojang.serialization.Codec.INT.listOf())
+                    .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
+                    .build());
+
     /** La mezcla C/M/Y/K/T de una muestra de color (2026-09-30), 5 niveles de 0..20. */
     public static final ComponentType<java.util.List<Integer>> MEZCLA_COLOR = Registry.register(
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "mezcla_color"),

@@ -26,6 +26,7 @@ public class FemclothesClient implements ClientModInitializer {
         HandledScreens.register(FemclothesScreenHandlers.SUBLIMADORA, SublimadoraScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.GUARDARROPAS, GuardarropasScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.MANIQUI, ManiquiScreen::new);
+        HandledScreens.register(FemclothesScreenHandlers.ESTILADO, EstiladoScreen::new);
 
         // Los 3 bloques del zip "Bloque de sublimadora Minecraft" (2026-09-30):
         // Guardarropas y Mesa de estilado con el GeoModel genérico; el
@@ -119,6 +120,11 @@ public class FemclothesClient implements ClientModInitializer {
                 FemclothesItems.SOCKS_SOLID, FemclothesItems.CALIENTABRAZOS, FemclothesItems.CAPA}) {
             net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(item, icono);
         }
+
+        // Retazo de aplique (2026-10-01): el ícono provisorio se tiñe con la zona 1.
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> tintIndex == 0
+                ? 0xFF000000 | com.femclothes.aplique.RetazoApliqueItem.colores(stack).get(0) : -1,
+                FemclothesItems.RETAZO_APLIQUE);
 
         // TODO: acá también va el registro de la geometría custom del
         // buzo oversize y la falda del traje de maid vía Armor Model API

@@ -73,6 +73,15 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     @Nullable
     public static List<ItemStack> previewOverride;
 
+    /**
+     * Click en la vista 3D de la Mesa de estilado (2026-10-01): si no es null,
+     * el próximo {@link #render} guarda acá, por parte, la matriz que lleva del
+     * espacio local de esa parte (en bloques, como los cuboides de ModelPart)
+     * a coordenadas de pantalla de la GUI. Se setea y se lee en el mismo frame.
+     */
+    @Nullable
+    public static Map<Parte, org.joml.Matrix4f> capturaPoses;
+
     public GarmentFeatureRenderer(FeatureRendererContext<T, M> contexto) {
         super(contexto);
     }
@@ -85,6 +94,15 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         if (!(getContextModel() instanceof BipedEntityModel<?> biped)) return;
 
         List<ItemStack> prendas = previewOverride != null ? previewOverride : equipadas(entidad);
+        if (capturaPoses != null) {
+            for (Parte parte : Parte.values()) {
+                ModelPart p = CuerpoGeometria.delJugador(biped, parte);
+                org.joml.Matrix4f m = new org.joml.Matrix4f(matrices.peek().getPositionMatrix());
+                m.translate(p.pivotX / 16f, p.pivotY / 16f, p.pivotZ / 16f);
+                m.rotate(new org.joml.Quaternionf().rotationZYX(p.roll, p.yaw, p.pitch));
+                capturaPoses.put(parte, m);
+            }
+        }
         // En la vista previa de elegir cuerpo, el cuerpo va entero aunque no haya ropa.
         // Cuerpo entero: la vista previa de elegir cuerpo, o un perfil que usa
         // el cuerpo como skin aunque no haya ropa (2026-09-29, "un selector que
@@ -155,6 +173,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
 
         // Cuello de polera, capucha y cordones del hoodie (2026-09-30).
         CuelloYCapucha.dibujar(prendas, biped, matrices, vertexConsumers, luz);
+        // Apliques de la Mesa de estilado (2026-10-01).
+        ApliqueRenderer.dibujar(prendas, biped, matrices, vertexConsumers, luz);
         dibujarPollera(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta);
     }
 
@@ -679,6 +699,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             dibujarPiezas(parte, slim, piezas, null, delModelo, matrices, vertexConsumers, luz);
         }
         CuelloYCapucha.dibujar(prendas, biped, matrices, vertexConsumers, luz);
+        ApliqueRenderer.dibujar(prendas, biped, matrices, vertexConsumers, luz);
         // Sin entidad: la pollera queda quieta (sin inercia ni twirl).
         dibujarPollera(prendas, null, biped, matrices, vertexConsumers, luz, 0f);
     }

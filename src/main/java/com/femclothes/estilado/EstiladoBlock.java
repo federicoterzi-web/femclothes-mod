@@ -12,7 +12,6 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.Properties;
-import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -24,8 +23,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Mesa de estilado (2026-09-30): modelo GeckoLib {@code styling_table} del
- * zip, orientable. La mecánica de apliques todavía no está — click derecho
- * avisa que está en construcción.
+ * zip, orientable. Desde el 2026-10-01 pone apliques 3D en las prendas — ver
+ * {@link EstiladoBlockEntity}.
  */
 public class EstiladoBlock extends BlockWithEntity {
 
@@ -72,9 +71,18 @@ public class EstiladoBlock extends BlockWithEntity {
         return new EstiladoBlockEntity(pos, state);
     }
 
+    /** Abre la mesa (2026-10-01): prenda, molde y retazo, y click en la vista 3D. */
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (!world.isClient) player.sendMessage(Text.translatable("femclothes.estilado.en_construccion"), true);
+        if (!world.isClient && world.getBlockEntity(pos) instanceof EstiladoBlockEntity be) player.openHandledScreen(be);
         return ActionResult.SUCCESS;
+    }
+
+    @Override
+    protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+        if (!state.isOf(newState.getBlock()) && world.getBlockEntity(pos) instanceof EstiladoBlockEntity be) {
+            net.minecraft.util.ItemScatterer.spawn(world, pos, be);
+        }
+        super.onStateReplaced(state, world, pos, newState, moved);
     }
 }

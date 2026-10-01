@@ -31,6 +31,21 @@ public final class EstiladoMod {
         Registry.register(Registries.BLOCK, id, ESTILADO_BLOCK);
         Registry.register(Registries.ITEM, id, ESTILADO_BLOCK_ITEM);
         Registry.register(Registries.BLOCK_ENTITY_TYPE, id, ESTILADO_BLOCK_ENTITY);
+
+        // Click en la vista 3D (2026-10-01).
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S()
+                .register(PonerApliquePayload.ID, PonerApliquePayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(PonerApliquePayload.ID,
+                (payload, context) -> context.server().execute(() -> {
+                    var partes = com.femclothes.garment.Parte.values();
+                    var caras = net.minecraft.util.math.Direction.values();
+                    if (payload.parte() < 0 || payload.parte() >= partes.length
+                            || payload.cara() < 0 || payload.cara() >= caras.length) return;
+                    if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof EstiladoBlockEntity be
+                            && be.canPlayerUse(context.player())) {
+                        be.poner(partes[payload.parte()], payload.x(), payload.y(), payload.z(), caras[payload.cara()]);
+                    }
+                }));
     }
 
     private EstiladoMod() {}

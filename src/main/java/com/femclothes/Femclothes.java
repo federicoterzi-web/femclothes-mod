@@ -70,6 +70,17 @@ public class Femclothes implements ModInitializer {
             // Prendas.
             entries.add(com.femclothes.sublimadora.ModItems.REMERA);
             entries.add(FemclothesItems.CHAQUETA);
+            // Apliques (2026-10-01): los 3 moldes y retazos de prueba con colores
+            // de fábrica, hasta que Tintes los tiña (fase 4).
+            entries.add(FemclothesItems.MOLDE_APLIQUE_MONO);
+            entries.add(FemclothesItems.MOLDE_APLIQUE_MARIPOSA);
+            entries.add(FemclothesItems.MOLDE_APLIQUE_FLOR);
+            entries.add(com.femclothes.aplique.RetazoApliqueItem.conColores(
+                    new ItemStack(FemclothesItems.RETAZO_APLIQUE), 0xE878A8, 0xF8D860, 0x58A868));
+            entries.add(com.femclothes.aplique.RetazoApliqueItem.conColores(
+                    new ItemStack(FemclothesItems.RETAZO_APLIQUE), 0x78B8E8, 0xF2F2F6, 0x2E4A80));
+            entries.add(com.femclothes.aplique.RetazoApliqueItem.conColores(
+                    new ItemStack(FemclothesItems.RETAZO_APLIQUE), 0xC82828, 0x1E1E22, 0xE8C050));
             entries.add(FemclothesItems.SOCKS_34);
             entries.add(FemclothesItems.SOCKS_SOLID);
             entries.add(FemclothesItems.FISHNET_SOCKS);
