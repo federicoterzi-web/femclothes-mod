@@ -230,7 +230,7 @@ La Estación de Tintes pinta la prenda. En el bloque, la pantallita del frente m
 
 La máquina usa tinta **CMYK** (cian, magenta, amarillo y negro), que se carga con los tintes vanilla correspondientes: click derecho con el tinte en la mano, o por tolva desde atrás. Cada tanque guarda hasta 64 dosis. Cada teñido gasta **una dosis de cada canal** que use alguno de los colores fijados. Cuánta tinta queda se ve **dentro de cada slider C/M/Y/K**: el fondo del slider se llena con el color de la tinta según lo cargado y a la derecha dice `n/64` (en rojo si está vacío).
 
-Cada color se arma con 5 sliders de 0 a 100% en pasos de 5%: **Cyan, Magenta, Yellow, Key** (negro) y **Transparencia**. La transparencia no gasta tinta: al 100% hace un **recorte** (un agujero en la tela) y entre medio deja la tela **calada**, con un tramado fino de puntitos abiertos que se lee como tul. Va por color, así se puede, por ejemplo, calar solo los corazones de un patrón. Las muestras con transparencia se ven con fondo a cuadros.
+Cada color se arma con 5 sliders de 0 a 100% en pasos de 5%: **Cyan, Magenta, Yellow, Key** (negro) y **Transparencia**. La transparencia no gasta tinta: al 100% hace un **recorte** (un agujero en la tela) y entre medio la tela queda **translúcida de verdad** (como un tul o un voile: se ve el cuerpo o la prenda de abajo a través). Las prendas sin transparencia a medias se siguen dibujando como siempre; solo las que la tienen pasan al modo translúcido. Va por color, así se puede, por ejemplo, calar solo los corazones de un patrón. Las muestras con transparencia se ven con fondo a cuadros.
 
 ### Muestras de color
 
@@ -494,6 +494,8 @@ Esta parte es para quien quiera entender o extender el mod.
 **Máquinas que se guardan enteras.** `util/DropMaquina`: los 4 bloques sobreescriben `getDroppedStacks` (romper a mano y explosiones) y devuelven el ítem con todo el NBT del block entity en `minecraft:block_entity_data` más sus componentes (la tinta); `BlockItem` lo vuelve a cargar al colocarla. Ya no hay loot tables ni `onStateReplaced` que desparrame. En creativo, `onBreak` tira el ítem si la máquina no está vacía.
 
 ## C. Capas de color (Estación de Tintes)
+
+**Transparencia real.** Una capa con el canal T entre 1 y 254 (`CapaMascara.translucida`) hace que `ClothingTextureCache.composeGarmentCapas` componga sin `tramar` (bandera `componiendoTranslucida`, que también respetan las estampas y la banda de cintura) y sin achicar la textura, y la anota en `TRANSLUCIDAS`. `capaDeRender` elige `RenderLayer.getEntityTranslucent` para esas texturas (si no, `ArmorCutoutNoCull`). En `GarmentFeatureRenderer` las piezas translúcidas van a una segunda pasada (`dibujarTranslucidas`, de adentro hacia afuera) después de todo lo opaco, y la capa translúcida se dibuja al final.
 
 Cada capa es un `RegionResolver.CapaPatron` guardado en la lista `femclothes:capas_tinte` de la prenda: patrón opcional (sin patrón = liso), color principal y extras, tamaño, ángulo, posición, forma, invertido, región, modo de mezcla, opacidad, repetición, semilla, contorno, variación y la distribución (`DistribucionPatron`: giro de cada motivo, distancias horizontal/vertical, espejo, espejo alternado y simetría del torso). Las capas viejas de la Modeladora (componentes `pattern_*`, con variantes `right_*` para el lado derecho) se siguen leyendo.
 

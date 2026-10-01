@@ -26,7 +26,7 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 
 ## Mapa rápido del código
 
-- `render/GarmentFeatureRenderer` — único punto que dibuja toda la ropa, por capa (`garment/Capa`), sobre el cuerpo base. Render layer `ArmorCutoutNoCull` (alfa binario).
+- `render/GarmentFeatureRenderer` — único punto que dibuja toda la ropa, por capa (`garment/Capa`), sobre el cuerpo base. Render layer `ArmorCutoutNoCull` (alfa binario), salvo telas con transparencia a medias: `ClothingTextureCache.capaDeRender` → `getEntityTranslucent` (2026-10-01, "la transparencia no se ve una transparencia real"; textura sin `tramar` ni achique, anotada en `TRANSLUCIDAS`; piezas en segunda pasada `dibujarTranslucidas`, capa translúcida al final). Falta probar en el juego, sobre todo con Iris y varias capas translúcidas.
 - `client/PiezasDelMod` — piezas de cada prenda (parte, capa, textura, filas visibles).
 - `render/ClothingTextureCache` — composición de texturas (atlas de skin a 8x, 512x512), fundido de capas (`mezclar`, `tramar`), redes y arneses (`perforarRed`).
 - `render/PatronGenerador` — máscaras de patrones (rayas, motivos `Motivo`, `Repeticion`, `Variacion`); los canales RGBA de la máscara llevan cobertura/contorno/n° de repetición/altura. Pinta las 4 caras + las 2 tapas de cada pieza (`recorrer`).

@@ -433,6 +433,21 @@ public final class ClothingTextureCache {
          * {@link com.femclothes.render.Variacion}, leyendo el número de
          * repetición / valor al azar / altura que trae la máscara.
          */
+        /**
+         * ¿Pinta con transparencia a medias (canal T entre 1 y 254)? Una T
+         * llena es un recorte y no necesita alfa real.
+         */
+        public boolean translucida() {
+            if (parcial(color)) return true;
+            if (paleta != null) for (int c : paleta) if (parcial(c)) return true;
+            return false;
+        }
+
+        private static boolean parcial(int rgb) {
+            int t = (rgb >>> 24) & 0xFF;
+            return t > 0 && t < 255;
+        }
+
         public int colorEn(int x, int y) {
             if (paleta.length <= 1) return color;
             int px = mascara == null || x >= mascara.getWidth() || y >= mascara.getHeight() ? 0 : mascara.getColor(x, y);
@@ -522,6 +537,33 @@ public final class ClothingTextureCache {
         return a | (rb << 16) | (rg << 8) | rr;
     }
 
+    /**
+     * Transparencia real (2026-10-01, "porque la transparencia no se ve una
+     * transparencia real sino pixeles q van pasando de visible a
+     * invisible"): una prenda con alguna capa a medias transparente se
+     * compone con su alfa verdadero (sin {@link #tramar}, que mira esta
+     * bandera mientras se compone: también lo usan las estampas y la banda
+     * de cintura desde su {@link Encima}) y su textura queda anotada acá
+     * para que el render la dibuje en modo translúcido
+     * ({@link #capaDeRender}). Las demás siguen en recorte, como siempre.
+     */
+    private static boolean componiendoTranslucida = false;
+    private static final java.util.Set<Identifier> TRANSLUCIDAS = new java.util.HashSet<>();
+
+    public static boolean esTranslucida(Identifier textura) {
+        return TRANSLUCIDAS.contains(textura);
+    }
+
+    /**
+     * El RenderLayer de una tela: translúcido (alfa de verdad, ordenado) si
+     * su textura tiene transparencia a medias, si no el recorte de siempre.
+     */
+    public static net.minecraft.client.render.RenderLayer capaDeRender(Identifier textura) {
+        return esTranslucida(textura)
+                ? net.minecraft.client.render.RenderLayer.getEntityTranslucent(textura)
+                : net.minecraft.client.render.RenderLayer.getArmorCutoutNoCull(textura);
+    }
+
     /** Matriz de Bayer 4x4 (umbrales 0..255) para el tramado de {@link #tramar}. */
     private static final int[] BAYER = {
             8, 136, 40, 168,
@@ -539,7 +581,7 @@ public final class ClothingTextureCache {
      */
     public static int tramar(int abgr, int x, int y) {
         int alfa = (abgr >>> 24) & 0xFF;
-        if (alfa == 0 || alfa == 255) return abgr;
+        if (alfa == 0 || alfa == 255 || componiendoTranslucida) return abgr;
         return alfa > BAYER[(y & 3) * 4 + (x & 3)] ? abgr | 0xFF000000 : 0;
     }
 
@@ -658,8 +700,11 @@ public final class ClothingTextureCache {
         // Cualquier capa (con máscara o lisa recortada a una región) pide
         // la resolución completa — una región lisa también tiene bordes.
         boolean hayAlgunaMascara = !capas.isEmpty();
-
+        boolean translucida = false;
+        for (CapaMascara c : capas) translucida |= c.translucida();
         NativeImage composite = new NativeImage(base.getWidth(), base.getHeight(), true);
+        componiendoTranslucida = translucida;
+        try {
         for (int y = 0; y < base.getHeight(); y++) {
             for (int x = 0; x < base.getWidth(); x++) {
                 float f = faceFactor(x, y, shading);
@@ -699,14 +744,21 @@ public final class ClothingTextureCache {
             composite.close();
             return baseTexture;
         }
+        } finally {
+            componiendoTranslucida = false;
+        }
 
         if (DEBUG_DUMP) volcarADisco(key, composite);
 
-        composite = reducirSiHaceFalta(composite, encima != null, hayAlgunaMascara);
+        // Translúcida: sin achicar — el achique mezcla los bordes con el
+        // negro de los huecos y en modo translúcido se vería un halo oscuro.
+        if (!translucida) composite = reducirSiHaceFalta(composite, encima != null, hayAlgunaMascara);
 
         Identifier id = Identifier.of("femclothes", "dynamic/garment_" + Integer.toHexString(key.hashCode()));
         MinecraftClient.getInstance().getTextureManager()
                 .registerTexture(id, new NativeImageBackedTexture(composite));
+        if (translucida) TRANSLUCIDAS.add(id);
+        else TRANSLUCIDAS.remove(id);
         TINTED_CACHE.put(key, id);
         return id;
     }

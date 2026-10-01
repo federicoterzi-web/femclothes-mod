@@ -125,8 +125,11 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             }
         }
         // La capa no gobierna ninguna parte: se dibuja antes del corte de abajo.
-        dibujarCapa(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta);
-        if (conCuerpo.isEmpty() && porParte.isEmpty()) return;
+        dibujarCapa(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta, false);
+        if (conCuerpo.isEmpty() && porParte.isEmpty()) {
+            dibujarCapa(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta, true);
+            return;
+        }
 
         Identifier cuerpo = texturaDelCuerpo(entidad, slim);
 
@@ -175,7 +178,9 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         CuelloYCapucha.dibujar(prendas, biped, matrices, vertexConsumers, luz);
         // Apliques de la Mesa de estilado (2026-10-01).
         ApliqueRenderer.dibujar(prendas, biped, matrices, vertexConsumers, luz);
+        dibujarTranslucidas();
         dibujarPollera(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta);
+        dibujarCapa(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta, true);
     }
 
     private static final Identifier POLLERA_BASE = Identifier.of("femclothes",
@@ -219,7 +224,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         // ruedo se abra donde pasan (ver PolleraMalla#piernasAbiertas).
         matrices.push();
         delJugador.rotate(matrices);
-        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getArmorCutoutNoCull(textura));
+        VertexConsumer buffer = vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura));
         // Movimiento (2026-09-30, "habria que animarlas segun el movimiento"):
         // la misma inercia que usa la capa vanilla (ver CapaMalla#movimiento).
         CapaMalla.Movimiento mov = entidad instanceof AbstractClientPlayerEntity jugador && previewOverride == null
@@ -297,13 +302,18 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
      */
     private static void dibujarCapa(List<ItemStack> prendas, LivingEntity entidad, BipedEntityModel<?> biped,
                                     MatrixStack matrices,
-                                    VertexConsumerProvider vertexConsumers, int luz, float tickDelta) {
+                                    VertexConsumerProvider vertexConsumers, int luz, float tickDelta,
+                                    boolean translucidas) {
         if (!(entidad instanceof AbstractClientPlayerEntity jugador)) return;
         ItemStack stack = capaDe(prendas);
         if (stack == null || jugador.isInvisible()) return;
         if (jugador.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST).isOf(net.minecraft.item.Items.ELYTRA)) return;
 
-        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getArmorCutoutNoCull(texturaCapa(stack)));
+        Identifier textura = texturaCapa(stack);
+        // Translúcida (2026-10-01): va al final, después del cuerpo — si se
+        // dibuja antes, su profundidad tapa al cuerpo que queda detrás.
+        if (ClothingTextureCache.esTranslucida(textura) != translucidas) return;
+        VertexConsumer buffer = vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura));
         boolean agachado = jugador.isInSneakingPose();
         // Tela (2026-09-30, "es una placa tiesa"): sin giros de matriz; CapaMalla
         // dobla el paño tramo por tramo y lo hace chocar con las piernas.
@@ -459,12 +469,39 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     static void dibujarModelPart(ModelPart nuestra, CuerpoGeometria.Superficie superficie,
                                 Identifier textura, ModelPart delJugador, MatrixStack matrices,
                                 VertexConsumerProvider vertexConsumers, int luz) {
-        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getArmorCutoutNoCull(textura));
         nuestra.copyTransform(delJugador);
         // copyTransform tambien copia xScale/yScale/zScale, asi que la nuestra
         // va DESPUES o se pierde.
-        nuestra.xScale = nuestra.yScale = nuestra.zScale = superficie.escalaDeParte();
+        float escala = superficie.escalaDeParte();
+        nuestra.xScale = nuestra.yScale = nuestra.zScale = escala;
+        if (ClothingTextureCache.esTranslucida(textura)) {
+            // Transparencia real (2026-10-01): segunda pasada, después de todo
+            // lo opaco — si no, la tela translúcida del torso escribe su
+            // profundidad antes que el brazo de atrás y lo tapa. La ModelPart
+            // puede venir de un caché compartido: se guarda su pose acá.
+            net.minecraft.client.model.ModelTransform pose = nuestra.getTransform();
+            MatrixStack copia = new MatrixStack();
+            copia.peek().getPositionMatrix().set(matrices.peek().getPositionMatrix());
+            copia.peek().getNormalMatrix().set(matrices.peek().getNormalMatrix());
+            TRANSLUCIDAS_PENDIENTES.add(() -> {
+                nuestra.setTransform(pose);
+                nuestra.xScale = nuestra.yScale = nuestra.zScale = escala;
+                nuestra.render(copia, vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura)),
+                        luz, OverlayTexture.DEFAULT_UV);
+            });
+            return;
+        }
+        VertexConsumer buffer = vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura));
         nuestra.render(matrices, buffer, luz, OverlayTexture.DEFAULT_UV);
+    }
+
+    /** Telas translúcidas de este dibujo, para la segunda pasada ({@link #dibujarTranslucidas}). */
+    private static final List<Runnable> TRANSLUCIDAS_PENDIENTES = new ArrayList<>();
+
+    /** Dibuja (en el orden en que llegaron: de adentro hacia afuera) las telas translúcidas pendientes. */
+    private static void dibujarTranslucidas() {
+        for (Runnable r : TRANSLUCIDAS_PENDIENTES) r.run();
+        TRANSLUCIDAS_PENDIENTES.clear();
     }
 
     /**
@@ -703,6 +740,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         }
         CuelloYCapucha.dibujar(prendas, biped, matrices, vertexConsumers, luz);
         ApliqueRenderer.dibujar(prendas, biped, matrices, vertexConsumers, luz);
+        dibujarTranslucidas();
         // Sin entidad: la pollera queda quieta (sin inercia ni twirl).
         dibujarPollera(prendas, null, biped, matrices, vertexConsumers, luz, 0f);
     }
