@@ -172,7 +172,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             }
 
             if (llevaCuerpo && parte == Parte.TORSO) {
-                dibujarBusto(cuerpo, delJugador, infladoBustoCuerpo(piezas), 0f, 20f, matrices, vertexConsumers, luz);
+                dibujarBusto(cuerpo, delJugador, infladoBustoCuerpo(piezas), 0f, 20f, true, matrices, vertexConsumers, luz);
             }
             if (llevaCuerpo) {
                 com.femclothes.render.relieve.RelieveRender.actual =
@@ -646,13 +646,19 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     /** Con el inflado de la piel a mano (por dentro de la ropa que la tape). */
     public static void dibujarBustoDeSkin(Identifier skin, ModelPart torso, boolean chaqueta, float inflado,
                                           MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
-        dibujarBusto(skin, torso, inflado, 0f, 20f, matrices, vertexConsumers, luz);
+        dibujarBusto(skin, torso, inflado, 0f, 20f, true, matrices, vertexConsumers, luz);
         if (chaqueta) dibujarBusto(skin, torso, 0.5f, 0f, 36f, matrices, vertexConsumers, luz);
     }
 
-    /** Las dos cajas del busto con {@code textura}, en el marco del torso; las translúcidas, a la segunda pasada. */
+    /** Las dos cúpulas del busto de una tela con {@code textura}, en el marco del torso. */
     private static void dibujarBusto(Identifier textura, ModelPart torso, float inflado, float carpa, float filaSkin,
                                      MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
+        dibujarBusto(textura, torso, inflado, carpa, filaSkin, false, matrices, vertexConsumers, luz);
+    }
+
+    /** Las dos cúpulas del busto con {@code textura} (piel o tela); las translúcidas, a la segunda pasada. */
+    private static void dibujarBusto(Identifier textura, ModelPart torso, float inflado, float carpa, float filaSkin,
+                                     boolean piel, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
         com.femclothes.render.relieve.BustoRender.Busto busto = com.femclothes.render.relieve.BustoRender.actual;
         if (busto == null) return;
         matrices.push();
@@ -663,11 +669,11 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             copia.peek().getNormalMatrix().set(matrices.peek().getNormalMatrix());
             TRANSLUCIDAS_PENDIENTES.add(() -> com.femclothes.render.relieve.BustoRender.dibujar(busto, copia,
                     vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura)), luz,
-                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin));
+                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel));
         } else {
             com.femclothes.render.relieve.BustoRender.dibujar(busto, matrices,
                     vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura)), luz,
-                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin);
+                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel);
         }
         matrices.pop();
     }

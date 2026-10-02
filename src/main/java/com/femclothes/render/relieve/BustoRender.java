@@ -120,6 +120,21 @@ public final class BustoRender {
             return new Vector3f(x, y, plano - sale);
         }
 
+        /**
+         * Dónde se ve el punto de frente con la caída y la apertura pero sin el
+         * rebote: de ahí salen las UV (2026-10-02, "la ropa interior... deforma
+         * por ahi y el bretel del pecho no coincide con la tapa"): proyectadas
+         * de frente sobre la forma ya caída, un bretel sigue derecho y empalma
+         * con el del pecho plano; el rebote no hace correr la textura.
+         */
+        float[] vistoDeFrente(float r, double a) {
+            float c = (float) Math.cos(a), s = (float) Math.sin(a);
+            float sale = sale(r, a);
+            float x = cx + rx * r * c + lado * apertura * sale;
+            float y = cy + (s > 0 ? rAbajo : rArriba) * r * s + caida * sale;
+            return new float[]{x, y};
+        }
+
         /** Cuánto sobresale en el anillo {@code r} hacia el ángulo {@code a}: 0 en el borde. */
         float sale(float r, double a) {
             // Arriba (sen < 0, Y hacia abajo) en pendiente; abajo redondo.
@@ -155,8 +170,19 @@ public final class BustoRender {
         }
     }
 
-    /** Las dos cúpulas (derecha, izquierda) de este busto con este inflado. */
-    private static Forma[] formas(Busto b, float inflado, float carpa, boolean rigido) {
+    /**
+     * Las dos cúpulas (derecha, izquierda) de este busto con este inflado.
+     *
+     * <p>{@code piel}: la cúpula del cuerpo (o de la skin), que con un inflado
+     * negativo se achica por dentro de la tela más ajustada. Si no, es una
+     * TELA (2026-10-02, "con el hoodie se deberian tapar en vez de verse
+     * gigantes"): cubre la punta del busto apenas por fuera (más afuera
+     * cuanto más holgada, así las capas no se pisan) y se abre más ancha en la
+     * base; lo que sobresale de su plano es solo lo que el busto pasa de la
+     * holgura de la prenda. Antes la cúpula de la tela se inflaba entera y una
+     * prenda Oversize sumaba su holgura al busto.
+     */
+    private static Forma[] formas(Busto b, float inflado, float carpa, boolean rigido, boolean piel) {
         float t = b.talle() * b.sujecion();
         if (t <= 0.05f) return new Forma[0];
         float dy = 0f, dx = 0f;
@@ -164,10 +190,21 @@ public final class BustoRender {
             dy = b.rebote().dy() * 12f;
             dx = b.rebote().dx() * 8f;
         }
-        float hondo = (0.55f + 0.5f * t) + inflado;
-        float rx = Math.min(2.6f, 1.95f + 0.07f * t) + inflado;
-        float rArriba = 2.3f + 0.16f * t + inflado;
-        float rAbajo = 1.3f + 0.22f * t + inflado + carpa;
+        float cuerpo = 0.55f + 0.5f * t;                      // lo que sale el busto de la piel
+        float hondo;
+        float abrir = Math.max(0f, inflado);
+        if (piel) {
+            // La punta queda en su lugar aunque el plano salga (la piel por delante de la
+            // 2.ª capa plana); con inflado negativo se achica por dentro de la tela.
+            hondo = cuerpo - Math.max(0f, inflado);
+            abrir = 0f;
+        } else {
+            float punta = Math.max(cuerpo + 0.06f + 0.12f * abrir, inflado);
+            hondo = Math.max(0f, punta - inflado);             // por delante del plano de la tela
+        }
+        float rx = Math.min(2.6f, 1.95f + 0.07f * t) + 0.5f * abrir;
+        float rArriba = 2.3f + 0.16f * t + 0.5f * abrir;
+        float rAbajo = 1.3f + 0.22f * t + abrir + carpa;
         float caida = (0.06f + 0.025f * t) * (0.6f + 0.4f * b.sujecion());
         float apertura = 0.04f + 0.012f * t;
         if (rigido) {
@@ -193,16 +230,21 @@ public final class BustoRender {
      *                 piel y todas las telas) o 36 (la segunda capa de la skin)
      */
     public static void dibujar(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov,
-                               float inflado, float carpa, float filaSkin) {
-        dibujar(b, matrices, vc, luz, ov, 0xFFFFFFFF, Uv.skin(filaSkin), inflado, carpa, false);
+                               float inflado, float carpa, float filaSkin, boolean piel) {
+        dibujar(b, matrices, vc, luz, ov, 0xFFFFFFFF, Uv.skin(filaSkin), inflado, carpa, false, piel);
     }
 
-    /** Con cualquier mapeo de textura, color y rigidez (modelos de otros mods y armaduras). */
+    /** Con cualquier mapeo de textura, color y rigidez (modelos de otros mods y armaduras: tela, no piel). */
     public static void dibujar(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov, int color,
                                Uv uv, float inflado, float carpa, boolean rigido) {
+        dibujar(b, matrices, vc, luz, ov, color, uv, inflado, carpa, rigido, false);
+    }
+
+    private static void dibujar(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov, int color,
+                                Uv uv, float inflado, float carpa, boolean rigido, boolean piel) {
         Matrix4f m = matrices.peek().getPositionMatrix();
         Matrix3f n = matrices.peek().getNormalMatrix();
-        for (Forma f : formas(b, inflado, carpa, rigido)) cupula(f, m, n, vc, luz, ov, color, uv);
+        for (Forma f : formas(b, inflado, carpa, rigido, piel)) cupula(f, m, n, vc, luz, ov, color, uv);
     }
 
     private static void cupula(Forma f, Matrix4f m, Matrix3f n, VertexConsumer vc, int luz, int ov, int color, Uv uv) {
@@ -215,9 +257,9 @@ public final class BustoRender {
                 double a = Math.PI * 2 * j / GAJOS;
                 p[i][j] = f.punto(r, a);
                 nor[i][j] = f.normal(r, a);
-                // UV de la base (sin caída ni rebote): la piel no se corre al moverse.
-                uu[i][j] = uv.u(f.baseX(r, a));
-                vv[i][j] = uv.v(f.baseY(r, a));
+                float[] frente = f.vistoDeFrente(r, a);
+                uu[i][j] = uv.u(frente[0]);
+                vv[i][j] = uv.v(frente[1]);
             }
         }
         for (int i = 0; i < ANILLOS; i++) {
@@ -253,7 +295,7 @@ public final class BustoRender {
     public static Punto sobreBusto(Busto b, float x, float y, float inflado) {
         Punto mejor = null;
         float sale = -1f;
-        for (Forma f : formas(b, inflado, 0f, false)) {
+        for (Forma f : formas(b, inflado, 0f, false, false)) {
             float[] pol = f.polar(x, y);
             if (pol[0] > 1f) continue;
             float s = f.sale(pol[0], pol[1]);
@@ -275,7 +317,7 @@ public final class BustoRender {
     @Nullable
     public static float[] rayo(Busto b, Vector3f origen, Vector3f dir, float inflado) {
         float[] mejor = null;
-        for (Forma f : formas(b, inflado, 0f, false)) {
+        for (Forma f : formas(b, inflado, 0f, false, false)) {
             for (int i = 0; i < ANILLOS; i++) {
                 for (int j = 0; j < GAJOS; j++) {
                     float r0 = i / (float) ANILLOS, r1 = (i + 1) / (float) ANILLOS;
