@@ -8,6 +8,7 @@ import com.femclothes.render.Pieza;
 import com.femclothes.render.PiezasDePrenda;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.TexturedRenderLayers;
@@ -155,8 +156,8 @@ public class ManiquiRenderer extends GeoBlockRenderer<ManiquiBlockEntity> {
         com.femclothes.render.relieve.BustoEnModelos.enEntidad = busto;
         com.femclothes.render.relieve.BustoEnModelos.modeloPrincipal = cuerpo;
         try {
-            cuerpo.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura)),
-                    luz, OverlayTexture.DEFAULT_UV);
+            dibujarCuerpoConRelieve(be, cuerpo, slim, matrices,
+                    vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura)), luz);
             if (busto != null && cuerpo.body.visible) {
                 com.femclothes.render.relieve.BustoRender.actual = busto;
                 try {
@@ -180,6 +181,43 @@ public class ManiquiRenderer extends GeoBlockRenderer<ManiquiBlockEntity> {
             com.femclothes.render.relieve.BustoEnModelos.slotArmadura = null;
         }
         matrices.pop();
+    }
+
+    /**
+     * La figura con el relieve del mod (2026-10-02, "no muestra toda la skin con
+     * los relieves 3dsl" → "el relieve del mod"): músculos, curvas y nalgas como
+     * en el jugador. Con la skin del dueño, su perfil de cuerpo si está
+     * conectado; si no (o con la figura de maniquí), el de por defecto. El busto
+     * es el del maniquí. La cabeza y la segunda capa de la skin, como siempre.
+     */
+    private static void dibujarCuerpoConRelieve(ManiquiBlockEntity be, PlayerEntityModel<LivingEntity> cuerpo, boolean slim,
+                                                MatrixStack matrices, VertexConsumer vc, int luz) {
+        int ov = OverlayTexture.DEFAULT_UV;
+        com.femclothes.body.PerfilCuerpo perfil = com.femclothes.body.PerfilCuerpo.DEFECTO;
+        if (be.figuraSkin() && be.dueno() != null && be.dueno().id().isPresent()
+                && MinecraftClient.getInstance().world != null) {
+            var dueno = MinecraftClient.getInstance().world.getPlayerByUuid(be.dueno().id().get());
+            if (dueno != null) perfil = com.femclothes.body.PerfilesDeCuerpo.de(dueno);
+        }
+        perfil = perfil.conBusto(be.busto(), Long.MAX_VALUE);
+        com.femclothes.render.relieve.MapaRelieve mapa = com.femclothes.render.relieve.RelieveCuerpo.de(perfil, slim);
+        cuerpo.head.render(matrices, vc, luz, ov);
+        cuerpo.hat.render(matrices, vc, luz, ov);
+        for (Parte parte : new Parte[]{Parte.TORSO, Parte.BRAZO_DER, Parte.BRAZO_IZQ, Parte.PIERNA_DER, Parte.PIERNA_IZQ}) {
+            ModelPart p = com.femclothes.render.CuerpoGeometria.delJugador(cuerpo, parte);
+            if (!p.visible) continue;
+            com.femclothes.render.relieve.RelieveRender.Contexto ctx =
+                    new com.femclothes.render.relieve.RelieveRender.Contexto(parte, mapa, null);
+            if (com.femclothes.render.relieve.RelieveRender.aplica(ctx)) {
+                com.femclothes.render.relieve.RelieveRender.dibujar(p, ctx, 1f, matrices, vc, luz, ov);
+            } else {
+                p.render(matrices, vc, luz, ov);
+            }
+        }
+        for (ModelPart capa : new ModelPart[]{cuerpo.jacket, cuerpo.leftSleeve, cuerpo.rightSleeve,
+                cuerpo.leftPants, cuerpo.rightPants}) {
+            capa.render(matrices, vc, luz, ov);
+        }
     }
 
     // ── pose ───────────────────────────────────────────────────────────────

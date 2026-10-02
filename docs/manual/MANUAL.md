@@ -418,6 +418,7 @@ Exhibe un outfit completo. La figura es de **tamaño normal**, como un jugador: 
 - **Intercambiar conmigo:** la ropa y la armadura del maniquí pasan a vos y las tuyas al maniquí, lugar por lugar. No se pierde nada.
 - **Pose:** el botón pasa por Parado, En jarra, Saludo, Brazos abiertos, Pasarela y Sentado (sentado, la figura baja y se apoya en el plato). Los **sliders** de la derecha mueven cabeza, brazos y piernas por separado (adelante/atrás y abrir); al tocar uno la pose pasa a **Libre**.
 - **Figura:** *maniquí* (liso, color madera) o *tu skin* (la de quien aprieta el botón; al ponerlo se guarda la de quien lo colocó).
+- **Relieve:** la figura tiene el mismo relieve que un jugador (músculos, curvas, nalgas). Con tu skin usa tu perfil de cuerpo si estás conectado.
 - **Busto:** el botón pasa por los 7 talles (los mismos de los Estrógenos) y vuelve a "sin". La ropa y la pechera lo envuelven como en un jugador (la pechera, rígida); en la figura no rebota.
 - **Vista previa:** la pantalla muestra la figura del maniquí tal cual se ve en el bloque (pose, figura, busto, armadura y ropa), y el botón de vista la gira.
 - **Armadura:** se ve como en un jugador (teñido del cuero, trims y brillo de encantamiento). La calabaza, las cabezas y los bloques van en la cabeza. Los élitros todavía no se dibujan.
