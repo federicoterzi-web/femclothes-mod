@@ -66,6 +66,10 @@ Cada máquina **no consume la prenda ni los moldes**: la prenda sale modificada 
 
 **La remera** sale en los 16 colores de lana. Su nombre cambia según el corte (croptop, musculosa, polera, remerón, remera) y el resto del corte aparece en el tooltip. Con el cuello **polera** lleva un **cuellito** alto en 3D alrededor del cuello (acanalado, del color de la remera; tapa la barbilla, no la boca).
 
+**Hoodie con otras prendas.** Con **pollera**, el ruedo del hoodie se abre por fuera de la pollera (el elástico no la aprieta) y la pollera asoma por debajo. Con **capa**, la capa cuelga por fuera del hoodie y de su capucha caída; la capucha y el cuello alto de la capa no se dibujan (manda la del hoodie). La **capucha puesta** cierra abajo y alrededor de la cara (marco de forro también bajo la barbilla).
+
+**Mangas y ruedos.** En las prendas holgadas, los costados del torso y el lado de adentro de las mangas (donde se tocan) casi no se inflan, así manga y torso no se meten uno en el otro. La boca de las mangas, las botamangas y los ruedos cortados se cierran con un anillo de tela entre la prenda y el cuerpo (ya no se ve el hueco).
+
 **Chaquetas.** Categoría nueva que va **encima de la remera y de la pollera**, en su propio slot de Trinkets (**Chaqueta**, 4 lugares). La primera es el **Hoodie**: sale largo, con manga larga y calce **Oversize**, y tiene bolsillo canguro, puños y ruedo **elásticos** (la última fila aprieta y la tela hace globo arriba, sin colgar), **cordones** y **capucha**. **Capucha:** apretá **H** (Controles → FemClothes → "Subir/bajar capucha") para ponértela o bajarla; los demás lo ven. La misma tecla sube y baja la capucha de la **capa**. En las máquinas el hoodie se trata como una remera: la Modeladora le cambia largo, mangas, cuello, calce y trama con los mismos moldes, Tintes usa las zonas de la remera y la Sublimadora estampa frente y espalda (comparte los diseños guardados de la remera). La capucha y los cordones son lisos, del color base (no llevan patrones ni fotos todavía).
 
 **Prendas viejas (armadura).** Hay prendas de una versión anterior que se equipan en los slots de armadura: Medias 3/4, Medias de Red y Traje de Maid. No pasan por las máquinas. El Buzo Oversize viejo se reemplazó por el Hoodie: su receta ahora da el nuevo y ya no aparece en la pestaña.
@@ -423,7 +427,7 @@ Las medias se ven sin el volumen extra de pierna que tienen en el jugador. Con c
 
 ### Mesa de estilado
 
-Pone **apliques 3D** (moño, mariposa, flor) sobre cualquier prenda del mod. Click derecho abre la pantalla (herrajes lila):
+Pone **apliques 3D** (moño, mariposa, flor) sobre cualquier prenda del mod, **la pollera y la capa incluidas**, y sobre **cualquier cosa que se ponga**: armaduras vanilla y de otros mods (cascos, pecheras, pantalones, botas) y lo que va en Trinkets. Click derecho abre la pantalla (herrajes lila):
 
 - **Tres slots** arriba a la derecha: **Prenda**, **Molde** de aplique (la forma: moño, mariposa o flor; **no se gasta**) y **Retazo** de aplique (los **3 colores** del aplique; se gasta **uno por aplique**, hasta 64 en el slot).
 - **Vista 3D grande** a la izquierda con tu personaje vistiendo solo esa prenda. **Click izquierdo sobre la tela** = ahí queda el aplique, mirando hacia afuera de la cara tocada (con "arriba" hacia la cabeza). Una cruz marca dónde caería. **Click derecho y arrastrar** gira la vista (también los botones ⟲ ⟳).
@@ -432,7 +436,7 @@ Pone **apliques 3D** (moño, mariposa, flor) sobre cualquier prenda del mod. Cli
 
 **Textura de tela.** Con un **Molde de textura** (Fruncido o Acolchado) en el slot del molde, el botón **Textura** le pone esa textura en relieve a la prenda, o se la saca si ya la tiene (el molde no se gasta). Ver Relieve en la sección 4.
 
-Si tu personaje tiene busto, el click le pega a la cúpula y el aplique se guarda en el punto plano de debajo (sin busto la prenda sigue igual). Los apliques viajan en la prenda (componente `femclothes:apliques`) y se ven en el jugador, en el Maniquí y en el Guardarropas, siguiendo la pose de la parte donde están (brazo, pierna, cabeza o torso) y por fuera del calce de la prenda.
+Si tu personaje tiene busto, el click le pega a la cúpula y el aplique se guarda en el punto plano de debajo (sin busto la prenda sigue igual). En la **pollera y la capa** el aplique queda pegado a la tela (sigue el vuelo, el twirl y el balanceo). En una **armadura** la vista previa te la muestra puesta, el click cae en las partes que cubre su slot (casco: cabeza; pechera: torso y brazos; pantalón: cintura y piernas; botas: pantorrillas) y el aplique va por fuera de la armadura; los wearables de Trinkets aceptan todo el cuerpo. Los apliques viajan en la prenda (componente `femclothes:apliques`) y se ven en el jugador, en el Maniquí y en el Guardarropas, siguiendo la pose de la parte donde están (brazo, pierna, cabeza o torso) y por fuera del calce de la prenda.
 
 **Colores.** Cada modelo tiene 3 zonas: moño = alas / nudo / colas; mariposa = alas de arriba / alas de abajo y lunares / cuerpo y antenas; flor = pétalos / centro / hojas. Por ahora los colores salen del retazo (lisos); en creativo hay tres retazos de muestra. Más adelante la Estación de Tintes va a teñir retazos con patrones, y los apliques van a tener física (colas, alas, pétalos).
 

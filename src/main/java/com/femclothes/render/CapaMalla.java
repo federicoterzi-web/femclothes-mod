@@ -158,6 +158,13 @@ public final class CapaMalla {
     public static void dibujarPano(MatrixStack matrices, VertexConsumer vc, int luz, ItemStack stack,
                                    Movimiento mv, boolean agachado, float tiempo,
                                    @Nullable PolleraMalla.Piernas piernas) {
+        dibujarPano(matrices, vc, luz, stack, mv, agachado, tiempo, piernas, false);
+    }
+
+    /** @param sinCapucha con un hoodie puesto su capucha manda: la de la capa no se dibuja (2026-10-02) */
+    public static void dibujarPano(MatrixStack matrices, VertexConsumer vc, int luz, ItemStack stack,
+                                   Movimiento mv, boolean agachado, float tiempo,
+                                   @Nullable PolleraMalla.Piernas piernas, boolean sinCapucha) {
         MatrixStack.Entry e = matrices.peek();
         float largo = CapaItem.largo(stack).pixeles;
         doblar(largo, mv, agachado, tiempo, piernas);
@@ -202,7 +209,7 @@ public final class CapaMalla {
                     xb, l[c + 1], 0, ub, 1 / 64f, xa, l[c], 0, ua, 1 / 64f, 0, 1, 0);
         }
         // Con la capucha puesta (tecla, 2026-09-30) la dibuja CuelloYCapucha en la cabeza.
-        if (CapaItem.capucha(stack) && !com.femclothes.item.ChaquetaItem.capuchaArriba(stack)) dibujarCapucha(vc, e, luz);
+        if (CapaItem.capucha(stack) && !sinCapucha && !com.femclothes.item.ChaquetaItem.capuchaArriba(stack)) dibujarCapucha(vc, e, luz);
     }
 
     /**
@@ -298,6 +305,10 @@ public final class CapaMalla {
             nx = NORMAL[0];
             ny = NORMAL[1];
             nz = NORMAL[2];
+        }
+        if (MallaCapturada.grabando != null) {
+            MallaCapturada.grabando.agregar(e.getPositionMatrix(), e.getNormalMatrix(),
+                    x / 16f, y / 16f, z / 16f, u, vv, nx, ny, nz);
         }
         vc.vertex(e.getPositionMatrix(), x / 16f, y / 16f, z / 16f)
                 .color(0xFFFFFFFF)

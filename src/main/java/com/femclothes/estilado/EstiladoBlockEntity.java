@@ -101,17 +101,41 @@ public class EstiladoBlockEntity extends BlockEntity
      * acota a la caja de esa parte, por si llega cualquier cosa.
      */
     public boolean poner(Parte parte, float x, float y, float z, Direction cara) {
+        return poner(parte, x, y, z, cara, Aplique.Superficie.CAJA);
+    }
+
+    /**
+     * Con la superficie: en la pollera y la capa (2026-10-02) x, y son la u, v
+     * de su tela (px de 64) y la prenda tiene que ser de ese tipo.
+     */
+    public boolean poner(Parte parte, float x, float y, float z, Direction cara, Aplique.Superficie superficie) {
         ItemStack prenda = items.get(SLOT_PRENDA), molde = items.get(SLOT_MOLDE), retazo = items.get(SLOT_RETAZO);
         // Mesa creativa (2026-10-01): el retazo no hace falta ni se gasta (sin retazo, sale blanco).
         boolean gratis = com.femclothes.util.MaquinaCreativa.es(this);
         if (prenda.isEmpty() || !(molde.getItem() instanceof MoldeApliqueItem m) || (retazo.isEmpty() && !gratis)) return false;
-        if (!Garments.esPrenda(prenda) || !Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(z)) return false;
+        if (!admite(prenda) || !Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(z)) return false;
         List<Aplique> actuales = new ArrayList<>(apliques());
         if (actuales.size() >= Aplique.MAXIMO_POR_PRENDA) return false;
-        x = MathHelper.clamp(x, -8, 8);
-        y = MathHelper.clamp(y, -10, 14);
-        z = MathHelper.clamp(z, -6, 6);
-        actuales.add(new Aplique(m.modelo, parte, x, y, z, cara, 0f, 1f, RetazoApliqueItem.colores(retazo)));
+        switch (superficie) {
+            case POLLERA -> {
+                if (!(prenda.getItem() instanceof com.femclothes.item.PolleraItem)) return false;
+                x = MathHelper.clamp(x, 0, 64);
+                y = MathHelper.clamp(y, 0, 64);
+                z = 0;
+            }
+            case CAPA -> {
+                if (!(prenda.getItem() instanceof com.femclothes.item.CapaItem)) return false;
+                x = MathHelper.clamp(x, 0, 64);
+                y = MathHelper.clamp(y, 0, 64);
+                z = 0;
+            }
+            default -> {
+                x = MathHelper.clamp(x, -8, 8);
+                y = MathHelper.clamp(y, -10, 14);
+                z = MathHelper.clamp(z, -6, 6);
+            }
+        }
+        actuales.add(new Aplique(m.modelo, parte, x, y, z, cara, 0f, 1f, RetazoApliqueItem.colores(retazo), superficie));
         if (!gratis) retazo.decrement(1);
         seleccionado = actuales.size() - 1;
         guardarApliques(actuales);
@@ -237,10 +261,23 @@ public class EstiladoBlockEntity extends BlockEntity
         markDirty();
     }
 
+    /**
+     * Qué se puede estilar (2026-10-02, "extender apliques para toda armadura
+     * o wearable vanilla o de mods"): las prendas del mod y cualquier ítem que
+     * se pone — armaduras vanilla y de mods ({@code Equipment}: cascos,
+     * pecheras, pantalones, botas, cabezas, élitros) y los de Trinkets.
+     */
+    public static boolean admite(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        if (Garments.esPrenda(stack)) return true;
+        if (net.minecraft.item.Equipment.fromStack(stack) != null) return true;
+        return stack.getItem() instanceof dev.emi.trinkets.api.Trinket;
+    }
+
     @Override
     public boolean isValid(int slot, ItemStack stack) {
         return switch (slot) {
-            case SLOT_PRENDA -> Garments.esPrenda(stack);
+            case SLOT_PRENDA -> admite(stack);
             case SLOT_MOLDE -> stack.getItem() instanceof MoldeApliqueItem
                     || stack.getItem() instanceof com.femclothes.item.MoldeTexturaItem;
             case SLOT_RETAZO -> stack.getItem() instanceof RetazoApliqueItem;

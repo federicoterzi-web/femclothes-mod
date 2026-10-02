@@ -48,11 +48,14 @@ public final class EstiladoMod {
                 (payload, context) -> context.server().execute(() -> {
                     var partes = com.femclothes.garment.Parte.values();
                     var caras = net.minecraft.util.math.Direction.values();
+                    var superficies = com.femclothes.aplique.Aplique.Superficie.values();
                     if (payload.parte() < 0 || payload.parte() >= partes.length
-                            || payload.cara() < 0 || payload.cara() >= caras.length) return;
+                            || payload.cara() < 0 || payload.cara() >= caras.length
+                            || payload.superficie() < 0 || payload.superficie() >= superficies.length) return;
                     if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof EstiladoBlockEntity be
                             && be.canPlayerUse(context.player())) {
-                        be.poner(partes[payload.parte()], payload.x(), payload.y(), payload.z(), caras[payload.cara()]);
+                        be.poner(partes[payload.parte()], payload.x(), payload.y(), payload.z(), caras[payload.cara()],
+                                superficies[payload.superficie()]);
                     }
                 }));
     }

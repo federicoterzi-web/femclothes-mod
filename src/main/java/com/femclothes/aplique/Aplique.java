@@ -23,9 +23,32 @@ import java.util.List;
  * @param colores las 3 zonas (RGB), del retazo con que se puso
  */
 public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float z, Direction cara,
-                      float giro, float escala, List<Integer> colores) {
+                      float giro, float escala, List<Integer> colores, Superficie superficie) {
 
     public static final int MAXIMO_POR_PRENDA = 6;
+
+    /**
+     * Sobre qué está puesto (2026-10-02, "Pollera y Capa no registran click on
+     * garment"): en una caja de parte del cuerpo ({@code CAJA}: x, y, z en px
+     * de la parte, como siempre) o en la malla de la pollera o de la capa
+     * ({@code x}, {@code y} = u, v de la textura de la tela en px de 64; se
+     * ubica sobre la malla del cuadro con {@code render.MallaCapturada}).
+     * Va al final del enum si se agregan más.
+     */
+    public enum Superficie implements net.minecraft.util.StringIdentifiable {
+        CAJA, POLLERA, CAPA;
+
+        @Override
+        public String asString() {
+            return name().toLowerCase(java.util.Locale.ROOT);
+        }
+    }
+
+    /** En una caja de parte del cuerpo (lo de siempre). */
+    public Aplique(ModeloAplique modelo, Parte parte, float x, float y, float z, Direction cara,
+                   float giro, float escala, List<Integer> colores) {
+        this(modelo, parte, x, y, z, cara, giro, escala, colores, Superficie.CAJA);
+    }
 
     public static final Codec<Parte> CODEC_PARTE = Codec.STRING.xmap(Parte::valueOf, Parte::name);
 
@@ -38,7 +61,9 @@ public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float
             Direction.CODEC.fieldOf("cara").forGetter(Aplique::cara),
             Codec.FLOAT.optionalFieldOf("giro", 0f).forGetter(Aplique::giro),
             Codec.FLOAT.optionalFieldOf("escala", 1f).forGetter(Aplique::escala),
-            Codec.INT.listOf().optionalFieldOf("colores", List.of(0xFFFFFF, 0xFFFFFF, 0xFFFFFF)).forGetter(Aplique::colores)
+            Codec.INT.listOf().optionalFieldOf("colores", List.of(0xFFFFFF, 0xFFFFFF, 0xFFFFFF)).forGetter(Aplique::colores),
+            net.minecraft.util.StringIdentifiable.createCodec(Superficie::values)
+                    .optionalFieldOf("superficie", Superficie.CAJA).forGetter(Aplique::superficie)
     ).apply(i, Aplique::new));
 
     /** Color de la zona {@code zona} (0..2), blanco si falta. */
@@ -47,10 +72,10 @@ public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float
     }
 
     public Aplique conGiro(float g) {
-        return new Aplique(modelo, parte, x, y, z, cara, g, escala, colores);
+        return new Aplique(modelo, parte, x, y, z, cara, g, escala, colores, superficie);
     }
 
     public Aplique conEscala(float e) {
-        return new Aplique(modelo, parte, x, y, z, cara, giro, e, colores);
+        return new Aplique(modelo, parte, x, y, z, cara, giro, e, colores, superficie);
     }
 }

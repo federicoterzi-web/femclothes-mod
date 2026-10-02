@@ -516,8 +516,36 @@ public final class CuerpoGeometria {
      */
     public static ModelPart telaPorFilas(Parte parte, boolean slim, float[] dilFila, int hasta, int colgado,
                                          float dilColgado) {
+        return telaPorFilas(parte, slim, dilFila, hasta, colgado, dilColgado, -1F);
+    }
+
+    /**
+     * Cuánto se corre (px) cada costado en x de una tela con holgura {@code dil}
+     * cuando el lado que da al cuerpo va con {@code interno} (2026-10-02,
+     * "probar no ensanchar los lados internos que coexisten en torso y
+     * brazos"): {mínimo x, máximo x}. El torso tiene los dos costados contra
+     * los brazos; el brazo derecho (x local −3..1) da al torso por +x y el
+     * izquierdo (−1..3) por −x. Con {@code interno} negativo, los dos {@code dil}.
+     */
+    public static float[] costadosX(Parte parte, float dil, float interno) {
+        if (interno < 0F || interno >= dil) return new float[]{dil, dil};
+        return switch (parte) {
+            case TORSO -> new float[]{interno, interno};
+            case BRAZO_DER -> new float[]{dil, interno};
+            case BRAZO_IZQ -> new float[]{interno, dil};
+            default -> new float[]{dil, dil};
+        };
+    }
+
+    /**
+     * Con {@code interno} ≥ 0: los costados que dan al cuerpo (ver
+     * {@link #costadosX}) se inflan solo eso, así la manga y el torso de una
+     * prenda holgada no se meten uno adentro del otro.
+     */
+    public static ModelPart telaPorFilas(Parte parte, boolean slim, float[] dilFila, int hasta, int colgado,
+                                         float dilColgado, float interno) {
         String key = parte.clave() + "|" + slim + "|" + java.util.Arrays.toString(dilFila) + "|" + hasta
-                + "|" + colgado + "|" + dilColgado;
+                + "|" + colgado + "|" + dilColgado + "|" + interno;
         ModelPart cacheada = RAICES_TELA_POR_FILAS.get(key);
         if (cacheada != null) return cacheada;
         // Cada combinación de calces/largos/capas es una entrada: tope para
@@ -537,25 +565,30 @@ public final class CuerpoGeometria {
 
         for (int fila = 0; fila < 12; fila++) {
             float dil = dilFila[fila] * S;
+            // Costados en x: inflado y corrimiento para que el lado interno quede en "interno".
+            float[] cx = costadosX(parte, dilFila[fila], interno);
+            float ex = (cx[0] + cx[1]) / 2F * S, ox = (cx[1] - cx[0]) / 2F * S;
             cuboides.add(new ModelPart.Cuboid(
                     t.uvX(), t.uvY() + fila * S,
-                    t.originX(), t.originY() + fila * S, t.originZ(),
+                    t.originX() + ox, t.originY() + fila * S, t.originZ(),
                     t.sizeX(), S, t.sizeZ(),
-                    dil, 0F, dil,
+                    ex, 0F, dil,
                     false, texW, texW, costados));
         }
 
         // Tapa de arriba (Direction.DOWN = arriba, nombres invertidos) a -dil,
         // como la caja entera, más la tira que cierra el costado hasta la fila 0.
         float dilArriba = dilFila[0] * S;
+        float[] cxA = costadosX(parte, dilFila[0], interno);
+        float exA = (cxA[0] + cxA[1]) / 2F * S, oxA = (cxA[1] - cxA[0]) / 2F * S;
         cuboides.add(new ModelPart.Cuboid(
-                t.uvX(), t.uvY(), t.originX(), t.originY(), t.originZ(),
-                t.sizeX(), 12 * S, t.sizeZ(), dilArriba, dilArriba, dilArriba,
+                t.uvX(), t.uvY(), t.originX() + oxA, t.originY(), t.originZ(),
+                t.sizeX(), 12 * S, t.sizeZ(), exA, dilArriba, dilArriba,
                 false, texW, texW, java.util.EnumSet.of(net.minecraft.util.math.Direction.DOWN)));
         if (dilArriba > 0) {
             cuboides.add(new ModelPart.Cuboid(
-                    t.uvX(), t.uvY(), t.originX(), t.originY() - dilArriba / 2F, t.originZ(),
-                    t.sizeX(), 0F, t.sizeZ(), dilArriba, dilArriba / 2F, dilArriba,
+                    t.uvX(), t.uvY(), t.originX() + oxA, t.originY() - dilArriba / 2F, t.originZ(),
+                    t.sizeX(), 0F, t.sizeZ(), exA, dilArriba / 2F, dilArriba,
                     false, texW, texW, costados));
         }
 

@@ -82,6 +82,30 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     @Nullable
     public static Map<Parte, org.joml.Matrix4f> capturaPoses;
 
+    /**
+     * Para el click de la Mesa de estilado en la pollera y la capa (2026-10-02,
+     * "Pollera y Capa no registran click on garment"): si no es null, el
+     * próximo dibujo guarda acá sus mallas ({@link MallaCapturada}, claves
+     * {@code "pollera"} y {@code "capa"}) en coordenadas de pantalla.
+     */
+    @Nullable
+    public static Map<String, MallaCapturada> capturaMallas;
+
+    /** Graba la malla que dibuja {@code dibujo} si hace falta (apliques o el click de la Mesa) y devuelve la grabación. */
+    @Nullable
+    private static MallaCapturada grabar(String clave, boolean conApliques, Runnable dibujo) {
+        MallaCapturada malla = conApliques || capturaMallas != null ? new MallaCapturada() : null;
+        MallaCapturada anterior = MallaCapturada.grabando;
+        MallaCapturada.grabando = malla;
+        try {
+            dibujo.run();
+        } finally {
+            MallaCapturada.grabando = anterior;
+        }
+        if (malla != null && capturaMallas != null) capturaMallas.put(clave, malla);
+        return malla;
+    }
+
     public GarmentFeatureRenderer(FeatureRendererContext<T, M> contexto) {
         super(contexto);
     }
@@ -110,6 +134,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         boolean cuerpoEntero = perfilOverride != null || perfilDe(entidad).siempre();
         // Busto (2026-10-01, estilo Only Jugs): uno por dibujo, con su rebote.
         prepararBusto(entidad, tickDelta);
+        // Apliques de armaduras y wearables de cualquier mod (2026-10-02).
+        dibujarApliquesDeVestibles(entidad, biped, matrices, vertexConsumers, luz);
         if (prendas.isEmpty() && !cuerpoEntero) {
             dibujarBustoEnLaSkin(entidad, biped, matrices, vertexConsumers, luz);
             com.femclothes.render.relieve.BustoRender.actual = null;
@@ -117,6 +143,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         }
 
         boolean slim = esSlim(entidad);
+        anotarPollera(prendas);
 
         // Las partes que alguna prenda gobierna: ahi va el cuerpo base.
         List<Parte> conCuerpo = cuerpoEntero ? List.of(Parte.values()) : Garments.partesCubiertas(prendas);
@@ -265,16 +292,18 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         // la misma inercia que usa la capa vanilla (ver CapaMalla#movimiento).
         CapaMalla.Movimiento mov = entidad instanceof AbstractClientPlayerEntity jugador && previewOverride == null
                 ? CapaMalla.movimiento(jugador, tickDelta) : CapaMalla.Movimiento.QUIETO;
-        PolleraMalla.dibujar(matrices, buffer, luz,
+        float twirl = previewOverride == null && entidad != null
+                ? com.femclothes.client.TwirlCliente.progreso(entidad, tickDelta) : -1f;   // entidad null = Maniquí: sin twirl
+        float cola = com.femclothes.render.relieve.BustoRender.actual == null ? 0f
+                : com.femclothes.render.relieve.BustoRender.actual.cola();
+        // Apliques de la pollera (2026-10-02): anclados por UV a la malla de este cuadro.
+        List<com.femclothes.aplique.Aplique> apliques = ApliqueRenderer.apliquesEn(stack, com.femclothes.aplique.Aplique.Superficie.POLLERA);
+        MallaCapturada malla = grabar("pollera", !apliques.isEmpty(), () -> PolleraMalla.dibujar(matrices, buffer, luz,
                 com.femclothes.item.PolleraItem.forma(stack), com.femclothes.item.PolleraItem.largo(stack),
                 dilatacion, new PolleraMalla.Piernas(biped.body, biped.rightLeg, biped.leftLeg), mov,
-                // entidad null = Maniquí (dibujarTela): sin twirl.
-                previewOverride == null && entidad != null
-                        ? com.femclothes.client.TwirlCliente.progreso(entidad, tickDelta) : -1f,
-                com.femclothes.render.relieve.BustoRender.actual == null ? 0f
-                        : com.femclothes.render.relieve.BustoRender.actual.cola(),
-                delJugador.pitch);
+                twirl, cola, delJugador.pitch));
         matrices.pop();
+        if (malla != null) ApliqueRenderer.dibujarEnMalla(apliques, malla, vertexConsumers, luz);
     }
 
     /**
@@ -357,22 +386,82 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         // Tela (2026-09-30, "es una placa tiesa"): sin giros de matriz; CapaMalla
         // dobla el paño tramo por tramo y lo hace chocar con las piernas.
         float sy = agachado ? 1.85f : 0f, sz = 2f + (agachado ? 1.4f : 0f);
+        float alejar = separacionCapa(prendas);
         PolleraMalla.Piernas piernas = new PolleraMalla.Piernas(
-                new org.joml.Matrix4f().translation(0f, sy, sz), biped.rightLeg, biped.leftLeg);
-        matrices.push();
-        matrices.translate(0f, sy / 16f, sz / 16f);
-        CapaMalla.dibujarPano(matrices, buffer, luz, stack, CapaMalla.movimiento(jugador, tickDelta), agachado,
-                jugador.age + tickDelta, piernas);
-        matrices.pop();
-
-        if (com.femclothes.item.CapaItem.cuelloAlto(stack)) {
+                new org.joml.Matrix4f().translation(0f, sy, sz + alejar), biped.rightLeg, biped.leftLeg);
+        // Apliques de la capa (2026-10-02): anclados por UV a la malla de este cuadro.
+        List<com.femclothes.aplique.Aplique> apliques = ApliqueRenderer.apliquesEn(stack, com.femclothes.aplique.Aplique.Superficie.CAPA);
+        boolean hoodie = conHoodie(prendas);
+        MallaCapturada malla = grabar("capa", !apliques.isEmpty(), () -> {
             matrices.push();
-            matrices.translate(0f, 0f, 0.125f);
-            if (jugador.isInSneakingPose()) matrices.translate(0f, 1.85f / 16f, 1.4f / 16f);
-            matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(180f));
-            CapaMalla.dibujarCuello(matrices, buffer, luz);
+            matrices.translate(0f, sy / 16f, (sz + alejar) / 16f);
+            CapaMalla.dibujarPano(matrices, buffer, luz, stack, CapaMalla.movimiento(jugador, tickDelta), agachado,
+                    jugador.age + tickDelta, piernas, hoodie);
             matrices.pop();
+
+            // Con hoodie, la capucha del hoodie manda: la capa no lleva cuello alto (2026-10-02).
+            if (com.femclothes.item.CapaItem.cuelloAlto(stack) && !hoodie) {
+                matrices.push();
+                matrices.translate(0f, 0f, 0.125f);
+                if (jugador.isInSneakingPose()) matrices.translate(0f, 1.85f / 16f, 1.4f / 16f);
+                matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(180f));
+                CapaMalla.dibujarCuello(matrices, buffer, luz);
+                matrices.pop();
+            }
+        });
+        if (malla != null) ApliqueRenderer.dibujarEnMalla(apliques, malla, vertexConsumers, luz);
+    }
+
+    /**
+     * Los apliques de lo que {@code entidad} tiene puesto y no es ropa del mod
+     * (2026-10-02, "extender apliques para toda armadura o wearable vanilla o
+     * de mods"): los 4 slots de armadura y lo que lleve en Trinkets. Van sobre
+     * la parte del cuerpo donde se pusieron, por fuera lo que sale ese slot.
+     */
+    private static void dibujarApliquesDeVestibles(LivingEntity entidad, BipedEntityModel<?> biped, MatrixStack matrices,
+                                                   VertexConsumerProvider vertexConsumers, int luz) {
+        for (net.minecraft.entity.EquipmentSlot slot : net.minecraft.entity.EquipmentSlot.values()) {
+            if (slot.getType() != net.minecraft.entity.EquipmentSlot.Type.HUMANOID_ARMOR) continue;
+            ItemStack puesto = entidad.getEquippedStack(slot);
+            if (puesto.isEmpty() || Garments.esPrenda(puesto)) continue;
+            ApliqueRenderer.dibujar(puesto, ApliqueRenderer.dilatacionDeSlot(slot), biped, matrices, vertexConsumers, luz);
         }
+        TrinketsApi.getTrinketComponent(entidad).ifPresent(c -> {
+            for (var par : c.getAllEquipped()) {
+                ItemStack puesto = par.getRight();
+                if (puesto.isEmpty() || Garments.esPrenda(puesto)) continue;
+                ApliqueRenderer.dibujar(puesto, ApliqueRenderer.dilatacionDeSlot(null), biped, matrices, vertexConsumers, luz);
+            }
+        });
+    }
+
+    /** ¿Hay un hoodie (chaqueta con capucha) entre las prendas? */
+    private static boolean conHoodie(List<ItemStack> prendas) {
+        for (ItemStack s : prendas) if (s.getItem() instanceof com.femclothes.item.ChaquetaItem) return true;
+        return false;
+    }
+
+    /**
+     * Cuánto más atrás va la capa (px) para pasar por fuera de lo que hay en
+     * la espalda (2026-10-02, "capa se solapa", → "capa por fuera"): la tela
+     * más holgada del torso (con su caída hacia el ruedo) y, con un hoodie de
+     * capucha caída, la bolsa de la capucha.
+     */
+    private static float separacionCapa(List<ItemStack> prendas) {
+        float extra = 0f;
+        for (ItemStack s : prendas) {
+            for (Pieza p : PiezasDePrenda.de(s, null)) {
+                if (p.parte() != Parte.TORSO) continue;
+                com.femclothes.item.Calce calce = com.femclothes.item.Calce.de(p.dilatacion());
+                float caida = calce == null ? 0f : calce.caida;
+                extra = Math.max(extra, Math.max(0f, p.dilatacion()) + caida * 0.6f + 0.1f);
+            }
+            if (s.getItem() instanceof com.femclothes.item.ChaquetaItem && !com.femclothes.item.ChaquetaItem.capuchaArriba(s)) {
+                // La bolsa de la capucha caída (CuelloYCapucha.capuchaCaida): 2.4 de grosor desde 2 + d + 0.2.
+                extra = Math.max(extra, Math.max(0f, com.femclothes.item.Calce.dilatacionEfectiva(s)) + 2.7f);
+            }
+        }
+        return extra;
     }
 
     /** La tela de la capa ya teñida y estampada (también la usa el ícono). */
@@ -402,6 +491,78 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         };
         return ClothingTextureCache.composeGarmentCapas(CAPA_BASE, colorBase, mascaras,
                 ClothingTextureCache.Shading.NONE, encima);
+    }
+
+    /**
+     * Un anillo de tela en la boca de una pieza (2026-10-02, "manga inferior
+     * abierta sin planos"): en la fila {@code y} (px de la parte), entre el
+     * contorno de la tela (holgura {@code dil}, con el lado interno en
+     * {@code interno}) y el del cuerpo. Cada lado lleva el color de la última
+     * fila con tela ({@code filaTextura}) de su cara.
+     */
+    private static void dibujarBoca(Parte parte, boolean slim, Identifier textura, float dil, float interno,
+                                    int filaTextura, float y, ModelPart delModelo, MatrixStack matrices,
+                                    VertexConsumerProvider vertexConsumers, int luz) {
+        if (dil <= 0.02F) return;
+        float[] c = ApliqueRenderer.caja(parte, slim);
+        float x0 = c[0], y0 = c[1], z0 = c[2], w = c[3], d = c[5];
+        float[] cx = CuerpoGeometria.costadosX(parte, dil, interno);
+        float ox0 = x0 - cx[0], ox1 = x0 + w + cx[1], oz0 = z0 - dil, oz1 = z0 + d + dil;
+        float ix0 = x0, ix1 = x0 + w, iz0 = z0, iz1 = z0 + d;
+        float yy = (y0 + y) / 16F;
+        // Origen de la caja en la skin (64x64) y la v de la fila de la textura.
+        int[] uv = switch (parte) {
+            case TORSO -> new int[]{16, 16};
+            case BRAZO_DER -> new int[]{40, 16};
+            case BRAZO_IZQ -> new int[]{32, 48};
+            case PIERNA_DER -> new int[]{0, 16};
+            case PIERNA_IZQ -> new int[]{16, 48};
+            default -> new int[]{0, 0};
+        };
+        int ancho = Math.round(w), hondo = Math.round(d);
+        float v = (uv[1] + hondo + Math.max(0, Math.min(11, filaTextura)) + 0.5F) / 64F;
+        float uFrente = uv[0] + hondo, uDer = uv[0] + hondo + ancho, uAtras = uv[0] + 2 * hondo + ancho, uIzq = uv[0];
+        matrices.push();
+        delModelo.rotate(matrices);
+        MatrixStack.Entry e = matrices.peek();
+        VertexConsumer vc = vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura));
+        // Frente (z mínimo), espalda (z máximo) y los dos costados: trapecios entre los dos contornos.
+        bocaQuad(vc, e, luz, v, ox0, oz0, ox1, oz0, ix1, iz0, ix0, iz0, yy, uFrente, uFrente + ancho);
+        bocaQuad(vc, e, luz, v, ox1, oz1, ox0, oz1, ix0, iz1, ix1, iz1, yy, uAtras, uAtras + ancho);
+        bocaQuad(vc, e, luz, v, ox1, oz0, ox1, oz1, ix1, iz1, ix1, iz0, yy, uDer, uDer + hondo);
+        bocaQuad(vc, e, luz, v, ox0, oz1, ox0, oz0, ix0, iz0, ix0, iz1, yy, uIzq, uIzq + hondo);
+        matrices.pop();
+    }
+
+    private static void bocaQuad(VertexConsumer vc, MatrixStack.Entry e, int luz, float v,
+                                 float ax, float az, float bx, float bz, float cx, float cz, float dx, float dz,
+                                 float y, float u0, float u1) {
+        float[][] p = {{ax, az, u0}, {bx, bz, u1}, {cx, cz, u1}, {dx, dz, u0}};
+        for (float[] q : p) {
+            vc.vertex(e.getPositionMatrix(), q[0] / 16F, y, q[1] / 16F)
+                    .color(0xFFFFFFFF)
+                    .texture(q[2] / 64F, v)
+                    .overlay(OverlayTexture.DEFAULT_UV)
+                    .light(luz)
+                    .normal(e, 0F, 1F, 0F);
+        }
+    }
+
+    /** La pollera del dibujo en curso (la tela de encima pasa por fuera), o null. */
+    @Nullable
+    private static ItemStack polleraPuesta;
+
+    private static void anotarPollera(List<ItemStack> prendas) {
+        polleraPuesta = null;
+        for (ItemStack s : prendas) if (s.getItem() instanceof com.femclothes.item.PolleraItem) polleraPuesta = s;
+    }
+
+    /** Cuánto sale la pollera puesta del torso a la altura {@code y}, o −1 (ver {@link PolleraMalla#holguraEn}). */
+    private static float holguraPollera(float y) {
+        ItemStack s = polleraPuesta;
+        if (s == null) return -1F;
+        return PolleraMalla.holguraEn(com.femclothes.item.PolleraItem.forma(s), com.femclothes.item.PolleraItem.largo(s),
+                Math.max(0F, com.femclothes.item.Calce.dilatacionEfectiva(s)), y);
     }
 
     /** Cuánto queda cada capa por fuera de la de abajo, en las filas donde se superponen (px de skin). */
@@ -498,6 +659,13 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                     // dentro del cuerpo (0.05 de aire).
                     if (pieza.elastico() && f == hasta - 1) d = Math.max(0.05F, base * 0.4F);
                     if (exterior[f] != Float.NEGATIVE_INFINITY) d = Math.max(d, exterior[f] + SEPARACION_CAPAS);
+                    // Lo que va encima de la pollera (el hoodie) se abre por fuera de
+                    // ella (2026-10-02, "el hoodie se abre por fuera"): la cintura de
+                    // la pollera atravesaba el ruedo; el elástico tampoco la aprieta.
+                    if (parte == Parte.TORSO && pieza.capa() > Capa.POLLERA) {
+                        float h = holguraPollera(f + 1);
+                        if (h >= 0F) d = Math.max(d, h + 0.15F);
+                    }
                 }
                 fila[f] = d;
                 if (d != base) uniforme = false;
@@ -506,14 +674,35 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             for (int k = 0; k < colgado; k++) {
                 int f = hasta + k;
                 if (exterior[f] != Float.NEGATIVE_INFINITY) dilColgado = Math.max(dilColgado, exterior[f] + SEPARACION_CAPAS);
+                if (parte == Parte.TORSO && pieza.capa() > Capa.POLLERA) {
+                    float h = holguraPollera(f + 1);
+                    if (h >= 0F) dilColgado = Math.max(dilColgado, h + 0.15F);
+                }
             }
 
-            if ((uniforme && colgado == 0) || parte == Parte.CABEZA) {
+            // Los costados que dan al cuerpo (torso ↔ brazos) casi no se inflan
+            // (2026-10-02, "probar no ensanchar los lados internos que coexisten
+            // en torso y brazos"): una manga holgada y el torso holgado se metían
+            // uno adentro del otro. Cada capa apenas por fuera de la de abajo.
+            boolean conBrazo = parte == Parte.TORSO || parte == Parte.BRAZO_DER || parte == Parte.BRAZO_IZQ;
+            float interno = conBrazo ? 0.05F + 0.04F * indice : -1F;
+            boolean costadoInterno = interno >= 0F && base > interno;
+            if (((uniforme && colgado == 0) || parte == Parte.CABEZA) && !costadoInterno) {
                 dibujar(CuerpoGeometria.Superficie.TELA, parte, slim, pieza.textura(), base,
                         delModelo, matrices, vertexConsumers, luz);
             } else {
-                dibujarModelPart(CuerpoGeometria.telaPorFilas(parte, slim, fila, hasta, colgado, dilColgado),
+                dibujarModelPart(CuerpoGeometria.telaPorFilas(parte, slim, fila, hasta, colgado, dilColgado,
+                                costadoInterno ? interno : -1F),
                         CuerpoGeometria.Superficie.TELA, pieza.textura(), delModelo, matrices, vertexConsumers, luz);
+            }
+            // La boca de la manga (o de la botamanga, o el ruedo cortado) cerrada
+            // con un anillo de tela entre la prenda y el cuerpo (2026-10-02, "manga
+            // inferior abierta sin planos"): antes se veía el hueco de adentro.
+            boolean brazo = parte == Parte.BRAZO_DER || parte == Parte.BRAZO_IZQ;
+            if (parte != Parte.CABEZA && hasta > desde && (brazo || hasta < 12 || colgado > 0)) {
+                float dBoca = colgado > 0 ? dilColgado : fila[hasta - 1];
+                dibujarBoca(parte, slim, pieza.textura(), dBoca, costadoInterno ? interno : -1F, hasta - 1,
+                        hasta + colgado, delModelo, matrices, vertexConsumers, luz);
             }
 
             if (parte == Parte.TORSO && com.femclothes.render.relieve.BustoRender.actual != null
@@ -1069,6 +1258,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
 
     private static void dibujarTelaConBusto(BipedEntityModel<?> biped, boolean slim, List<ItemStack> prendas,
                                             MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
+        anotarPollera(prendas);
         Map<Parte, List<Pieza>> porParte = new EnumMap<>(Parte.class);
         Map<Pieza, ItemStack> origen = new java.util.IdentityHashMap<>();
         for (ItemStack stack : prendas) {

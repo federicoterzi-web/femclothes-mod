@@ -55,6 +55,8 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     private boolean arrastrando = false;
     /** Matrices de la última vista previa (por parte). */
     private final Map<Parte, Matrix4f> poses = new EnumMap<>(Parte.class);
+    /** Las mallas de la pollera y la capa del último dibujo de la vista, en pantalla (2026-10-02). */
+    private final Map<String, com.femclothes.render.MallaCapturada> mallas = new java.util.HashMap<>();
     @Nullable private Text aviso;
 
     private final ButtonWidget[] btnApliques = new ButtonWidget[Aplique.MAXIMO_POR_PRENDA];
@@ -124,21 +126,78 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         ItemStack prenda = handler.be.getStack(EstiladoBlockEntity.SLOT_PRENDA);
         int x1 = this.x + PX1 + 2, y1 = this.y + PY1 + 2, x2 = this.x + PX2 - 2, y2 = this.y + PY2 - 2;
         Map<Parte, Matrix4f> captura = new EnumMap<>(Parte.class);
-        GarmentFeatureRenderer.previewOverride = prenda.isEmpty() ? List.of() : List.of(prenda);
+        Map<String, com.femclothes.render.MallaCapturada> capturaMallas = new java.util.HashMap<>();
+        boolean delMod = com.femclothes.garment.Garments.esPrenda(prenda);
+        GarmentFeatureRenderer.previewOverride = delMod ? List.of(prenda) : List.of();
         GarmentFeatureRenderer.capturaPoses = captura;
+        GarmentFeatureRenderer.capturaMallas = capturaMallas;
+        // Una armadura (2026-10-02, "extender apliques para toda armadura o
+        // wearable"): puesta de mentira en el inventario del jugador SOLO del
+        // cliente durante este dibujo, como la vista previa del Guardarropas.
+        var armadura = jugador.getInventory().armor;
+        ItemStack[] antes = new ItemStack[armadura.size()];
+        for (int i = 0; i < antes.length; i++) antes[i] = armadura.get(i);
+        net.minecraft.entity.EquipmentSlot slot = delMod ? null : slotDe(prenda);
         try {
+            if (slot != null && slot.getType() == net.minecraft.entity.EquipmentSlot.Type.HUMANOID_ARMOR) {
+                armadura.set(slot.getEntitySlotId(), prenda);
+            }
             // mouseY en el centro: la vista no se inclina con el mouse (el click necesita una pose quieta).
             PreviewJugador.dibujar(context, jugador, x1, y1, x2, y2, 78, anguloVista, (y1 + y2) / 2f);
         } finally {
             GarmentFeatureRenderer.previewOverride = null;
             GarmentFeatureRenderer.capturaPoses = null;
+            GarmentFeatureRenderer.capturaMallas = null;
+            for (int i = 0; i < antes.length; i++) armadura.set(i, antes[i]);
         }
         poses.clear();
         poses.putAll(captura);
+        mallas.clear();
+        mallas.putAll(capturaMallas);
     }
 
     /** Resultado del click: parte, punto sobre la caja sin inflar (px) y cara. */
-    private record Toque(Parte parte, float x, float y, float z, Direction cara, float profundidad) {}
+    private record Toque(Parte parte, float x, float y, float z, Direction cara, float profundidad,
+                         Aplique.Superficie superficie) {
+        Toque(Parte parte, float x, float y, float z, Direction cara, float profundidad) {
+            this(parte, x, y, z, cara, profundidad, Aplique.Superficie.CAJA);
+        }
+    }
+
+    /** El slot de armadura (o de mano) de un ítem que se pone, o null. */
+    @Nullable
+    private static net.minecraft.entity.EquipmentSlot slotDe(ItemStack stack) {
+        net.minecraft.item.Equipment e = net.minecraft.item.Equipment.fromStack(stack);
+        return e == null ? null : e.getSlotType();
+    }
+
+    /**
+     * Las cajas donde se puede poner un aplique en una armadura o wearable
+     * que no es del mod (2026-10-02): las partes que cubre su slot, infladas
+     * lo que sale del cuerpo ({@link ApliqueRenderer#dilatacionDeSlot}). Sin
+     * slot de armadura (Trinkets, otros), todo el cuerpo.
+     */
+    private static List<Pieza> piezasDeVestible(ItemStack stack) {
+        net.minecraft.entity.EquipmentSlot slot = slotDe(stack);
+        float d = ApliqueRenderer.dilatacionDeSlot(slot);
+        Identifier nada = Identifier.of("femclothes", "vacio");
+        java.util.List<Pieza> out = new java.util.ArrayList<>();
+        if (slot == net.minecraft.entity.EquipmentSlot.HEAD) {
+            out.add(new Pieza(Parte.CABEZA, 0, nada, d));
+        } else if (slot == net.minecraft.entity.EquipmentSlot.CHEST) {
+            for (Parte p : new Parte[]{Parte.TORSO, Parte.BRAZO_DER, Parte.BRAZO_IZQ}) out.add(new Pieza(p, 0, nada, d));
+        } else if (slot == net.minecraft.entity.EquipmentSlot.LEGS) {
+            out.add(new Pieza(Parte.TORSO, 0, nada, d, 8, 12));
+            out.add(new Pieza(Parte.PIERNA_DER, 0, nada, d));
+            out.add(new Pieza(Parte.PIERNA_IZQ, 0, nada, d));
+        } else if (slot == net.minecraft.entity.EquipmentSlot.FEET) {
+            out.add(new Pieza(Parte.PIERNA_DER, 0, nada, d, 6, 12));
+            out.add(new Pieza(Parte.PIERNA_IZQ, 0, nada, d, 6, 12));
+        } else {
+            for (Parte p : Parte.values()) out.add(new Pieza(p, 0, nada, d));
+        }
+        return out;
+    }
 
     @Nullable
     private Toque tocar(double mx, double my) {
@@ -146,10 +205,21 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         PlayerEntity jugador = MinecraftClient.getInstance().player;
         if (prenda.isEmpty() || jugador == null || poses.isEmpty()) return null;
         boolean slim = MinecraftClient.getInstance().player.getSkinTextures().model() == SkinTextures.Model.SLIM;
+        // Pollera y capa (2026-10-02, "no registran click on garment"): contra su malla, por UV.
+        Aplique.Superficie malla = prenda.getItem() instanceof com.femclothes.item.PolleraItem ? Aplique.Superficie.POLLERA
+                : prenda.getItem() instanceof com.femclothes.item.CapaItem ? Aplique.Superficie.CAPA : null;
+        if (malla != null) {
+            com.femclothes.render.MallaCapturada m = mallas.get(malla == Aplique.Superficie.POLLERA ? "pollera" : "capa");
+            float[] h = m == null ? null : m.tocar((float) mx, (float) my);
+            if (h == null) return null;
+            return new Toque(Parte.TORSO, h[0] * 64f, h[1] * 64f, 0f, Direction.SOUTH, h[2], malla);
+        }
         Toque mejor = null;
         com.femclothes.render.relieve.BustoRender.Busto busto =
                 com.femclothes.render.GarmentFeatureRenderer.bustoDe(jugador, 0f, false);
-        for (Pieza pieza : PiezasDePrenda.de(prenda, jugador)) {
+        List<Pieza> piezas = com.femclothes.garment.Garments.esPrenda(prenda)
+                ? PiezasDePrenda.de(prenda, jugador) : piezasDeVestible(prenda);
+        for (Pieza pieza : piezas) {
             Matrix4f m = poses.get(pieza.parte());
             if (m == null) continue;
             Matrix4f inversa = new Matrix4f(m).invert();
@@ -268,7 +338,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 else {
                     aviso = null;
                     ClientPlayNetworking.send(new PonerApliquePayload(be.getPos(), t.parte().ordinal(),
-                            t.x(), t.y(), t.z(), t.cara().ordinal()));
+                            t.x(), t.y(), t.z(), t.cara().ordinal(), t.superficie().ordinal()));
                 }
                 return true;
             }

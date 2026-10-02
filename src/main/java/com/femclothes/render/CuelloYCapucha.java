@@ -124,18 +124,21 @@ public final class CuelloYCapucha {
 
     /**
      * Capucha puesta, en el marco de la cabeza (y -8..0): la caja de la
-     * cabeza inflada, sin la cara de adelante (la cara del jugador) ni la de
-     * abajo (el cuello), con un bulto atrás (la punta) y un borde de forro
-     * alrededor de la cara.
+     * cabeza inflada, sin la cara de adelante (la cara del jugador), con un
+     * bulto atrás (la punta) y un marco de forro alrededor de la cara.
      */
     private static ModelPart capuchaPuesta(float d) {
         String key = "puesta|" + d;
         ModelPart c = CACHE.get(key);
         if (c != null) return c;
         float dil = SOBRE_SOMBRERO + d * 0.25F;
-        Set<Direction> sinCaraNiCuello = EnumSet.complementOf(EnumSet.of(Direction.NORTH, Direction.UP));
+        // Cerrada abajo (2026-10-02, "Hoodie capucha no cierra"): antes no tenía
+        // tapa de abajo ni borde en la barbilla y se veía hueca desde abajo y de
+        // costado. La tapa de abajo queda escondida debajo de la cabeza y solo
+        // asoma el anillo alrededor del cuello, como una capucha cosida al hoodie.
+        Set<Direction> sinCara = EnumSet.complementOf(EnumSet.of(Direction.NORTH));
         List<ModelPart.Cuboid> cs = new ArrayList<>();
-        cs.add(caja(0, 0, -4, -8, -4, 8, 8, 8, dil, dil, dil, sinCaraNiCuello));
+        cs.add(caja(0, 0, -4, -8, -4, 8, 8, 8, dil, dil, dil, sinCara));
         // punta de atrás
         cs.add(caja(0, 0, -3, -6.5F, 4 + dil, 6, 5, 1.2F, 0, 0, 0, TODAS));
         // borde de forro alrededor de la cara (arriba y los dos costados)
@@ -143,6 +146,8 @@ public final class CuelloYCapucha {
         cs.add(caja(32, 0, -e, -8 - dil, -e, 2 * e, grosor, grosor, 0, 0, 0, TODAS));
         cs.add(caja(32, 0, -e, -8 - dil, -e, grosor, 8 + dil, grosor, 0, 0, 0, TODAS));
         cs.add(caja(32, 0, e - grosor, -8 - dil, -e, grosor, 8 + dil, grosor, 0, 0, 0, TODAS));
+        // y el de abajo: cierra el marco de la cara por debajo de la barbilla.
+        cs.add(caja(32, 0, -e, -0.6F, -e, 2 * e, 0.6F + dil, grosor, 0, 0, 0, TODAS));
         return parte(key, cs);
     }
 

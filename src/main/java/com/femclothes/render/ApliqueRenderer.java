@@ -52,14 +52,80 @@ public final class ApliqueRenderer {
     private static final Identifier ATLAS = Identifier.of(Femclothes.MOD_ID, "textures/entity/aplique_atlas.png");
     private static final int ANCHO_ZONA = 32;
 
-    /** Los apliques de todas las prendas de {@code prendas}. */
+    /** Los apliques de todas las prendas de {@code prendas} (los de caja; pollera y capa van en su malla). */
     public static void dibujar(List<ItemStack> prendas, BipedEntityModel<?> biped, MatrixStack matrices,
                                VertexConsumerProvider vertexConsumers, int luz) {
         for (ItemStack prenda : prendas) {
-            List<Aplique> apliques = prenda.get(FemclothesComponents.APLIQUES);
-            if (apliques == null || apliques.isEmpty()) continue;
-            float dil = Math.max(0f, Calce.dilatacionEfectiva(prenda));
-            for (Aplique a : apliques) dibujarUno(a, dil, biped, matrices, vertexConsumers, luz);
+            dibujar(prenda, Math.max(0f, Calce.dilatacionEfectiva(prenda)), biped, matrices, vertexConsumers, luz);
+        }
+    }
+
+    /**
+     * Los apliques de caja de un ítem con {@code dil} de inflado: las prendas
+     * del mod (su calce) y cualquier armadura o wearable (2026-10-02,
+     * "extender apliques para toda armadura o wearable vanilla o de mods": lo
+     * que sale del cuerpo según su slot, ver {@link #dilatacionDeSlot}).
+     */
+    public static void dibujar(ItemStack item, float dil, BipedEntityModel<?> biped, MatrixStack matrices,
+                               VertexConsumerProvider vertexConsumers, int luz) {
+        List<Aplique> apliques = item.get(FemclothesComponents.APLIQUES);
+        if (apliques == null || apliques.isEmpty()) return;
+        for (Aplique a : apliques) {
+            if (a.superficie() == Aplique.Superficie.CAJA) dibujarUno(a, dil, biped, matrices, vertexConsumers, luz);
+        }
+    }
+
+    /**
+     * Cuánto sale del cuerpo un ítem puesto en {@code slot} (px): lo de la
+     * armadura vanilla (1 px casco/pechera/botas, 0.5 las piernas); los de
+     * Trinkets y otros, medio px.
+     */
+    public static float dilatacionDeSlot(@org.jetbrains.annotations.Nullable net.minecraft.entity.EquipmentSlot slot) {
+        if (slot == null) return 0.5f;
+        return switch (slot) {
+            case HEAD, CHEST, FEET -> 1.0f;
+            case LEGS -> 0.5f;
+            default -> 0.5f;
+        };
+    }
+
+    /** Los apliques de {@code item} puestos sobre la malla {@code sup} (pollera o capa). */
+    public static List<Aplique> apliquesEn(ItemStack item, Aplique.Superficie sup) {
+        List<Aplique> apliques = item.get(FemclothesComponents.APLIQUES);
+        if (apliques == null || apliques.isEmpty()) return List.of();
+        return apliques.stream().filter(a -> a.superficie() == sup).toList();
+    }
+
+    /**
+     * Los apliques anclados por UV a una malla que se acaba de dibujar
+     * ({@link MallaCapturada}, 2026-10-02, "no se pueden generar apliques en
+     * pollera ni capa"): se ubican donde quedó ese punto de la tela este
+     * cuadro, con su normal y "arriba" hacia la cintura/los hombros, así
+     * siguen el movimiento de la tela.
+     */
+    public static void dibujarEnMalla(List<Aplique> apliques, MallaCapturada malla,
+                                      VertexConsumerProvider vertexConsumers, int luz) {
+        if (apliques.isEmpty() || malla.vacia()) return;
+        float s = malla.escala();
+        for (Aplique a : apliques) {
+            MallaCapturada.Ubicacion ub = malla.enUv(a.x() / 64f, a.y() / 64f);
+            if (ub == null) continue;
+            BakedGeoModel modelo = GeckoLibCache.getBakedModels().get(a.modelo().geo());
+            if (modelo == null) continue;
+            Vector3f atras = new Vector3f(ub.normal()).negate();          // +Z del modelo
+            Vector3f arriba = new Vector3f(ub.arriba());
+            Vector3f derecha = new Vector3f(arriba).cross(atras);
+            Matrix4f base = new Matrix4f(
+                    derecha.x, derecha.y, derecha.z, 0,
+                    arriba.x, arriba.y, arriba.z, 0,
+                    atras.x, atras.y, atras.z, 0,
+                    0, 0, 0, 1).rotateZ((float) Math.toRadians(a.giro()));
+            Vector3f pos = new Vector3f(ub.pos()).add(new Vector3f(ub.normal()).mul(0.03f * s / 16f));
+            MatrixStack ms = new MatrixStack();
+            ms.peek().getPositionMatrix().translation(pos).mul(base).scale(s * a.escala());
+            ms.peek().getNormalMatrix().set(base.get3x3(new Matrix3f()));
+            VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura(a)));
+            for (GeoBone hueso : modelo.topLevelBones()) dibujarHueso(hueso, ms, vc, luz);
         }
     }
 

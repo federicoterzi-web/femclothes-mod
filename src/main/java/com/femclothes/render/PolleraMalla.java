@@ -212,6 +212,26 @@ public final class PolleraMalla {
     }
 
     /**
+     * Cuánto sale la pollera quieta por fuera de la caja del torso a la altura
+     * {@code y} (px; −1 si ahí no hay pollera): lo más que sale de los costados
+     * o del frente/espalda. Lo usa la tela de encima (el hoodie, 2026-10-02,
+     * "el hoodie se abre por fuera") para pasar por fuera de la pollera.
+     */
+    public static float holguraEn(PolleraForma forma, PolleraLargo largo, float dil, float y) {
+        float l = largo.pixeles;
+        if (y <= Y_CINTURA || y > Y_CINTURA + l + 0.5f) return -1f;
+        float t = Math.min(1f, (y - Y_CINTURA) / l);
+        float holgura = Math.max(dil, 0.25f);
+        float a0 = 4f + holgura + 0.1f, b0 = 2f + holgura + 0.1f;
+        float vueloX = 0.8f + 0.18f * l, vueloZ = 1.2f + 0.26f * l;
+        float max = 0f;
+        for (float[] q : anillo(t, a0, b0, vueloX, vueloZ, l, 0f, forma == PolleraForma.TABLEADA)) {
+            max = Math.max(max, Math.max(Math.abs(q[0]) - 4f, Math.abs(q[1]) - 2f));
+        }
+        return max;
+    }
+
+    /**
      * La tela cuelga hacia abajo aunque el torso se incline (2026-10-02,
      * "cuando es larga y shifteas embolsa las piernas"): agachado, el torso
      * se va para adelante y las piernas quedan derechas, así que la pollera
@@ -493,6 +513,10 @@ public final class PolleraMalla {
         if (nx * v[0] + nz * v[2] < 0f) { nx = -nx; ny = -ny; nz = -nz; }
         float len = (float) Math.sqrt(nx * nx + ny * ny + nz * nz);
         if (len > 1e-5f) { nx /= len; ny /= len; nz /= len; } else { nx = 0; ny = 0; nz = -1; }
+        if (MallaCapturada.grabando != null) {
+            MallaCapturada.grabando.agregar(e.getPositionMatrix(), e.getNormalMatrix(),
+                    v[0] / 16f, v[1] / 16f, v[2] / 16f, v[3], v[4], nx, ny, nz);
+        }
         vc.vertex(e.getPositionMatrix(), v[0] / 16f, v[1] / 16f, v[2] / 16f)
                 .color(0xFFFFFFFF)
                 .texture(v[3], v[4])

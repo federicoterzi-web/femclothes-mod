@@ -256,6 +256,9 @@ public class ManiquiRenderer extends GeoBlockRenderer<ManiquiBlockEntity> {
                 EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET, EquipmentSlot.HEAD }) {
             ItemStack stack = be.armadura(slot);
             if (stack.isEmpty()) continue;
+            // Apliques de la Mesa de estilado en la armadura (2026-10-02, "extender apliques para toda armadura").
+            com.femclothes.render.ApliqueRenderer.dibujar(stack, com.femclothes.render.ApliqueRenderer.dilatacionDeSlot(slot),
+                    cuerpo, matrices, vertexConsumers, luz);
             if (!(stack.getItem() instanceof ArmorItem armadura) || armadura.getSlotType() != slot) {
                 if (slot == EquipmentSlot.HEAD) dibujarCabeza(stack, cuerpo, matrices, vertexConsumers, luz, be);
                 continue; // élitros: todavía no
