@@ -50,12 +50,20 @@ public final class BustoRender {
     @Nullable
     public static Busto actual;
 
-    /** Fila del torso donde arranca el busto (px desde los hombros). */
-    private static final float ARRIBA = 1.6f;
+    /**
+     * Fila del torso donde arranca el busto (px desde los hombros): bien
+     * arriba, para que baje en pendiente hasta la punta (2026-10-02, "integrar
+     * el inicio del pecho mas arriba para que caiga hasta la punta mejor").
+     */
+    private static final float ARRIBA = 0.8f;
     /** Anillos (del centro al borde) y gajos alrededor de cada cúpula. */
     private static final int ANILLOS = 7, GAJOS = 18;
-    /** Exponente del perfil: 2 = media elipse; un poco más, más lleno hasta el borde. */
-    private static final float PERFIL = 2.3f;
+    /**
+     * Exponente del perfil: 2 = media elipse; más, más lleno hasta el borde.
+     * Abajo es redondo ({@link #PERFIL_ABAJO}); hacia arriba baja a
+     * {@link #PERFIL_ARRIBA}, una pendiente suave que nace del pecho.
+     */
+    private static final float PERFIL_ABAJO = 2.4f, PERFIL_ARRIBA = 1.45f;
 
     /** ¿Una pieza que cubre las filas [desde, hasta) del torso tapa el busto? */
     public static boolean cubre(int desde, int hasta) {
@@ -104,7 +112,7 @@ public final class BustoRender {
             float c = (float) Math.cos(a), s = (float) Math.sin(a);
             float x = cx + rx * r * c;
             float y = cy + (s > 0 ? rAbajo : rArriba) * r * s;
-            float sale = sale(r);
+            float sale = sale(r, a);
             float k = hondo <= 1e-4f ? 0f : sale / hondo;          // 0 en el borde, 1 en la punta
             // Lo que sobresale cae, se abre hacia afuera y rebota; la base no se mueve.
             y += caida * sale + dy * k;
@@ -112,9 +120,12 @@ public final class BustoRender {
             return new Vector3f(x, y, plano - sale);
         }
 
-        /** Cuánto sobresale en el anillo {@code r}: perfil redondo, 0 en el borde. */
-        float sale(float r) {
-            return hondo * (float) Math.pow(Math.max(0.0, 1.0 - Math.pow(Math.min(1f, r), PERFIL)), 1.0 / PERFIL);
+        /** Cuánto sobresale en el anillo {@code r} hacia el ángulo {@code a}: 0 en el borde. */
+        float sale(float r, double a) {
+            // Arriba (sen < 0, Y hacia abajo) en pendiente; abajo redondo.
+            float arriba = (float) Math.max(0.0, -Math.sin(a));
+            float p = PERFIL_ABAJO + (PERFIL_ARRIBA - PERFIL_ABAJO) * arriba;
+            return hondo * (float) Math.pow(Math.max(0.0, 1.0 - Math.pow(Math.min(1f, r), p)), 1.0 / p);
         }
 
         /** El punto de la base (sin caída ni rebote) del anillo {@code r} y el ángulo {@code a}. */
@@ -155,7 +166,7 @@ public final class BustoRender {
         }
         float hondo = (0.55f + 0.5f * t) + inflado;
         float rx = Math.min(2.6f, 1.95f + 0.07f * t) + inflado;
-        float rArriba = 1.5f + 0.12f * t + inflado;
+        float rArriba = 2.3f + 0.16f * t + inflado;
         float rAbajo = 1.3f + 0.22f * t + inflado + carpa;
         float caida = (0.06f + 0.025f * t) * (0.6f + 0.4f * b.sujecion());
         float apertura = 0.04f + 0.012f * t;
@@ -167,7 +178,7 @@ public final class BustoRender {
         Forma[] f = new Forma[2];
         for (int i = 0; i < 2; i++) {
             int lado = i == 0 ? -1 : 1;
-            f[i] = new Forma(lado * 2f, ARRIBA + 1.5f + 0.12f * t, rx, rArriba, rAbajo, hondo,
+            f[i] = new Forma(lado * 2f, ARRIBA + 2.3f + 0.16f * t, rx, rArriba, rAbajo, hondo,
                     caida, apertura, dx, dy * 0.6f, -2f - inflado, lado);
         }
         return f;
@@ -245,7 +256,7 @@ public final class BustoRender {
         for (Forma f : formas(b, inflado, 0f, false)) {
             float[] pol = f.polar(x, y);
             if (pol[0] > 1f) continue;
-            float s = f.sale(pol[0]);
+            float s = f.sale(pol[0], pol[1]);
             if (s > sale) {
                 sale = s;
                 mejor = new Punto(f.punto(pol[0], pol[1]), f.normal(pol[0], pol[1]));

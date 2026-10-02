@@ -79,10 +79,16 @@ public final class RelieveCuerpo {
         return FORMAS.getOrDefault(cuerpo, FORMAS.get(CuerpoBase.ESTANDAR));
     }
 
-    /** El busto que se ve: el del cuerpo más el de las dosis de Estrógenos. */
+    /**
+     * El busto que se ve: con Estrógenos activos, SOLO el de las dosis — el
+     * del cuerpo se apaga (2026-10-02, "se veia muy grande porque se sumaba
+     * al busto de la skin base reconstruida que te dije que desactives
+     * cuando tenga busto por estrogenos"); sin Estrógenos, el del cuerpo.
+     */
     public static float bustoDe(PerfilCuerpo perfil) {
         int dosis = Math.max(0, Math.min(BUSTO_POR_DOSIS.length - 1, perfil.busto()));
-        return Math.min(BUSTO_MAXIMO, formaDe(perfil.cuerpo()).busto() + BUSTO_POR_DOSIS[dosis]);
+        if (dosis > 0) return BUSTO_POR_DOSIS[dosis];
+        return Math.min(BUSTO_MAXIMO, formaDe(perfil.cuerpo()).busto());
     }
 
     public static MapaRelieve de(PerfilCuerpo perfil, boolean slim) {
