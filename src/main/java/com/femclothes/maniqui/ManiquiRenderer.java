@@ -155,8 +155,9 @@ public class ManiquiRenderer extends GeoBlockRenderer<ManiquiBlockEntity> {
                     boolean chaqueta = cuerpo.jacket.visible;
                     float inflado = prendas.isEmpty() ? (chaqueta ? 0.27f : 0f)
                             : Math.min(chaqueta ? 0.27f : 0f, GarmentFeatureRenderer.infladoBustoDe(prendas));
+                    // Bajo una tela holgada el busto lo dibuja su manto (2026-10-02, "el hoodie es atravesado").
                     GarmentFeatureRenderer.dibujarBustoDeSkin(textura, cuerpo.body, chaqueta, inflado,
-                            matrices, vertexConsumers, luz);
+                            !GarmentFeatureRenderer.bustoTapadoPorManto(prendas), matrices, vertexConsumers, luz);
                 } finally {
                     com.femclothes.render.relieve.BustoRender.actual = null;
                 }

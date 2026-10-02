@@ -41,26 +41,34 @@ public final class BustoEnModelos {
     public static void alDibujar(Object modelo, MatrixStack matrices, VertexConsumer vc, int luz, int ov, int color) {
         BustoRender.Busto busto = enEntidad;
         if (busto == null || !(modelo instanceof BipedEntityModel<?> biped) || modelo == modeloPrincipal) return;
-        // Las piernas de la armadura también dibujan el torso (la cintura): solo la pechera.
-        if (slotArmadura != null && slotArmadura != EquipmentSlot.CHEST) return;
+        // Las piernas de la armadura también dibujan el torso (la cintura): el
+        // busto solo la pechera; la cola, la pechera y las piernas (2026-10-02).
+        boolean conBusto = slotArmadura == null || slotArmadura == EquipmentSlot.CHEST;
+        boolean conCola = conBusto || slotArmadura == EquipmentSlot.LEGS;
+        if (!conCola) return;
         ModelPart torso = biped.body;
         if (!torso.visible || torso.hidden || torso.cuboids.isEmpty()) return;
-        Frente f = frente(torso.cuboids.get(0));
-        if (f == null) return;
+        boolean rigido = slotArmadura != null;
         matrices.push();
         torso.rotate(matrices);
-        BustoRender.dibujar(busto, matrices, vc, luz, ov, color, f.uv(), f.inflado(), 0f,
-                slotArmadura == EquipmentSlot.CHEST);
+        Frente f = conBusto ? cara(torso.cuboids.get(0), true) : null;
+        if (f != null) BustoRender.dibujar(busto, matrices, vc, luz, ov, color, f.uv(), f.inflado(), 0f, rigido);
+        // La cola con las UV de la cara de atrás: lo transparente de la textura
+        // (unas piernas de armadura que solo pintan la cintura) no se ve.
+        Frente atras = cara(torso.cuboids.get(0), false);
+        if (atras != null) BustoRender.dibujarCola(busto, matrices, vc, luz, ov, color, atras.uv(), atras.inflado(), 0f,
+                rigido, false);
         matrices.pop();
     }
 
     /** La cara del frente del torso de un modelo: sus UV y cuánto sale del cuerpo. */
     private record Frente(BustoRender.Uv uv, float inflado) {}
 
+    /** La cara del frente ({@code frente}) o de atrás del torso de un modelo: sus UV y cuánto sale del cuerpo. */
     @Nullable
-    private static Frente frente(ModelPart.Cuboid cuboide) {
+    private static Frente cara(ModelPart.Cuboid cuboide, boolean frente) {
         for (ModelPart.Quad q : cuboide.sides) {
-            if (q.direction.z() > -0.5f) continue;
+            if (frente ? q.direction.z() > -0.5f : q.direction.z() < 0.5f) continue;
             float x0 = Float.MAX_VALUE, x1 = -Float.MAX_VALUE, y0 = Float.MAX_VALUE, y1 = -Float.MAX_VALUE, z = 0f;
             float uX0 = 0, uX1 = 0, vY0 = 0, vY1 = 0;
             for (ModelPart.Vertex v : q.vertices) {
@@ -70,6 +78,7 @@ public final class BustoEnModelos {
                 if (v.pos.y() > y1) { y1 = v.pos.y(); vY1 = v.v; }
                 z = v.pos.z();
             }
+            if (!frente) z = -z;
             // Solo torsos de humanoide (8 px de ancho, más lo que se infle).
             if (x1 - x0 < 7.5f || x1 - x0 > 12f || y1 - y0 < 10f) return null;
             float inflado = Math.max(0f, -z - 2f);

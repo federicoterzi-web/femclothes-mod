@@ -47,7 +47,13 @@ public final class BustoRender {
     private BustoRender() {}
 
     /** El busto del jugador que se está dibujando. */
-    public record Busto(float talle, float sujecion, @Nullable RelieveRender.Rebote rebote, boolean cuadrado) {
+    public record Busto(float talle, float sujecion, @Nullable RelieveRender.Rebote rebote, boolean cuadrado,
+                        float cola, @Nullable RelieveRender.Rebote reboteCola) {
+        /** Con la cola que corresponde a este talle (2026-10-02, "el trasero deberia crecer con el busto"). */
+        public Busto(float talle, float sujecion, @Nullable RelieveRender.Rebote rebote, boolean cuadrado) {
+            this(talle, sujecion, rebote, cuadrado, RelieveCuerpo.colaDeTalle(talle, 0.5f), null);
+        }
+
         public Busto(float talle, float sujecion, @Nullable RelieveRender.Rebote rebote) {
             this(talle, sujecion, rebote, false);
         }
@@ -87,6 +93,26 @@ public final class BustoRender {
             return new Uv() {
                 public float u(float x) { return Math.max(20f, Math.min(28f, 24f + x)) / 64f; }
                 public float v(float y) { return Math.max(fila, Math.min(fila + 12f, fila + y)) / 64f; }
+            };
+        }
+
+        /**
+         * La espalda del torso en el layout de la skin (u 32..40, v desde
+         * {@code fila}), en x del MUNDO: x = +4 es u 32 (la espalda se ve desde atrás).
+         */
+        static Uv skinEspalda(float fila) {
+            return new Uv() {
+                public float u(float x) { return Math.max(32f, Math.min(40f, 36f - x)) / 64f; }
+                public float v(float y) { return Math.max(fila, Math.min(fila + 12f, fila + y)) / 64f; }
+            };
+        }
+
+        /** Esta misma, con x espejada (el marco de la cola mira a +Z: x local = −x del mundo). */
+        default Uv espejada() {
+            Uv base = this;
+            return new Uv() {
+                public float u(float x) { return base.u(-x); }
+                public float v(float y) { return base.v(y); }
             };
         }
 
@@ -237,6 +263,11 @@ public final class BustoRender {
     /** Celdas por px de la grilla del manto. */
     private static final int PASO = 2;
 
+    /** ¿Una tela con esta carpa tapa el busto con un manto (Suelto, Oversize)? */
+    public static boolean esManto(float carpa) {
+        return carpa >= CARPA_MANTO;
+    }
+
     /** La carpa de la tela de cada calce: cuánto más abajo cae debajo del busto (px). */
     public static float carpaDe(@Nullable com.femclothes.item.Calce calce) {
         if (calce == null) return 0f;
@@ -286,14 +317,46 @@ public final class BustoRender {
      * </ul>
      */
     private static List<Vert[]> malla(Busto b, float inflado, float carpa, boolean rigido, boolean piel,
-                                      @Nullable Tela tela) {
-        if (b.cuadrado()) return cajas(b, inflado, carpa, rigido, piel);
+                                      @Nullable Tela tela, float fondo) {
+        if (b.cuadrado()) return comprimirAbajo(cajas(b, inflado, carpa, rigido, piel), fondo);
         Forma[] fs = formas(b, inflado, piel || carpa < CARPA_MANTO ? carpa : 0f, rigido, piel);
         if (fs.length == 0) return List.of();
         if (!piel && carpa >= CARPA_MANTO) return manto(fs, inflado, carpa, tela == null ? Tela.uniforme(inflado) : tela);
         List<Vert[]> q = new ArrayList<>();
         for (Forma f : fs) cupula(f, q);
-        return q;
+        return comprimirAbajo(q, fondo);
+    }
+
+    /**
+     * Si la textura de lo que cubre el busto termina antes que el busto
+     * ({@code fondo}: la última fila con tela — el corpiño de la ropa
+     * interior, un croptop), la mitad de abajo de la textura se aprieta hasta
+     * esa fila (2026-10-02, "la parte de abajo de los senos no esta cubierta
+     * por el corpiño"): el corpiño cubre el pecho entero y su borde queda en
+     * el pliegue de abajo, como uno de verdad. Sin eso, lo que el busto baja
+     * por debajo del corpiño plano mostraba la piel.
+     */
+    private static List<Vert[]> comprimirAbajo(List<Vert[]> quads, float fondo) {
+        if (quads.isEmpty() || fondo >= 12f) return quads;
+        float arriba = Float.MAX_VALUE, abajo = -Float.MAX_VALUE;
+        for (Vert[] q : quads) for (Vert v : q) { arriba = Math.min(arriba, v.uy()); abajo = Math.max(abajo, v.uy()); }
+        float fin = fondo - 0.05f;
+        if (abajo <= fin) return quads;
+        // Se aprieta la mitad de abajo (desde el medio del busto); si el corpiño
+        // termina más arriba del medio, desde un poco antes de su borde.
+        float desde = Math.min((arriba + abajo) * 0.5f, fin - 0.5f);
+        float k = (fin - desde) / (abajo - desde);
+        List<Vert[]> salida = new ArrayList<>(quads.size());
+        for (Vert[] q : quads) {
+            Vert[] n = new Vert[q.length];
+            for (int i = 0; i < q.length; i++) {
+                Vert v = q[i];
+                float uy = v.uy() <= desde ? v.uy() : desde + (v.uy() - desde) * k;
+                n[i] = new Vert(v.pos(), v.normal(), v.ux(), uy, v.bx(), v.by());
+            }
+            salida.add(n);
+        }
+        return salida;
     }
 
     /**
@@ -307,7 +370,14 @@ public final class BustoRender {
      */
     public static void dibujar(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov,
                                float inflado, float carpa, float filaSkin, boolean piel, @Nullable Tela tela) {
-        dibujar(b, matrices, vc, luz, ov, 0xFFFFFFFF, Uv.skin(filaSkin), inflado, carpa, false, piel, tela);
+        dibujar(b, matrices, vc, luz, ov, inflado, carpa, filaSkin, piel, tela, tela == null ? 12f : tela.hasta());
+    }
+
+    /** @param fondo última fila del torso con textura de lo que cubre el busto (ver {@link #comprimirAbajo}) */
+    public static void dibujar(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov,
+                               float inflado, float carpa, float filaSkin, boolean piel, @Nullable Tela tela,
+                               float fondo) {
+        dibujar(b, matrices, vc, luz, ov, 0xFFFFFFFF, Uv.skin(filaSkin), inflado, carpa, false, piel, tela, fondo);
     }
 
     public static void dibujar(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov,
@@ -318,14 +388,20 @@ public final class BustoRender {
     /** Con cualquier mapeo de textura, color y rigidez (modelos de otros mods y armaduras: tela, no piel). */
     public static void dibujar(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov, int color,
                                Uv uv, float inflado, float carpa, boolean rigido) {
-        dibujar(b, matrices, vc, luz, ov, color, uv, inflado, carpa, rigido, false, null);
+        dibujar(b, matrices, vc, luz, ov, color, uv, inflado, carpa, rigido, false, null, 12f);
     }
 
     private static void dibujar(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov, int color,
-                                Uv uv, float inflado, float carpa, boolean rigido, boolean piel, @Nullable Tela tela) {
+                                Uv uv, float inflado, float carpa, boolean rigido, boolean piel, @Nullable Tela tela,
+                                float fondo) {
+        emitir(malla(b, inflado, carpa, rigido, piel, tela, fondo), matrices, vc, luz, ov, color, uv);
+    }
+
+    private static void emitir(List<Vert[]> malla, MatrixStack matrices, VertexConsumer vc, int luz, int ov, int color,
+                               Uv uv) {
         Matrix4f m = matrices.peek().getPositionMatrix();
         Matrix3f n = matrices.peek().getNormalMatrix();
-        for (Vert[] q : malla(b, inflado, carpa, rigido, piel, tela)) {
+        for (Vert[] q : malla) {
             for (Vert v : q) vertice(m, n, vc, luz, ov, color, v.pos(), uv.u(v.ux()), uv.v(v.uy()), v.normal());
         }
     }
@@ -551,6 +627,131 @@ public final class BustoRender {
         vc.vertex(w.x, w.y, w.z, color, u, v, ov, luz, nn.x, nn.y, nn.z);
     }
 
+    // ── cola ─────────────────────────────────────────────────────────────
+
+    /**
+     * Las dos nalgas (2026-10-02, "el trasero deberia crecer con el busto y
+     * tener tambien fisica"): las mismas cúpulas que el busto, en la espalda
+     * del torso (filas ~8 a 12), con su propio resorte ({@link Busto#reboteCola}:
+     * rebotan alternadas con cada paso). Crecen con el talle del busto
+     * ({@code RelieveCuerpo.colaDe}). Reemplazan a las nalgas del relieve
+     * cuando hay busto.
+     *
+     * <p>Se arman en un marco espejado que mira a +Z (x y z dados vuelta, el
+     * giro de 180° alrededor de Y): así sirve toda la maquinaria del busto
+     * tal cual — piel/tela, carpa, cajas.
+     */
+    private static Forma[] formasCola(Busto b, float inflado, float carpa, boolean rigido, boolean piel) {
+        float cuerpo = b.cola();
+        if (cuerpo <= 0.05f) return new Forma[0];
+        float dy = 0f, alterno = 0f;
+        if (b.reboteCola() != null && !rigido) {
+            dy = b.reboteCola().dy() * 12f;
+            alterno = b.reboteCola().dx() * 8f;
+        }
+        float abrir = Math.max(0f, inflado);
+        float hondo;
+        if (piel) {
+            hondo = cuerpo - Math.max(0f, inflado);
+            abrir = 0f;
+        } else {
+            float punta = Math.max(cuerpo + 0.06f + 0.12f * abrir, inflado);
+            hondo = Math.max(0f, punta - inflado);
+        }
+        float rx = Math.min(2.4f, 1.9f + 0.12f * cuerpo) + 0.4f * abrir;
+        float rArriba = 1.9f + 0.25f * cuerpo + 0.3f * abrir;
+        float rAbajo = 1.5f + 0.1f * cuerpo + 0.4f * abrir + 0.5f * carpa;
+        float caida = (0.05f + 0.02f * cuerpo) * (rigido ? 0.25f : 1f);
+        float apertura = 0.03f * (rigido ? 0.5f : 1f);
+        float cy = 10.1f - 0.12f * cuerpo;
+        Forma[] f = new Forma[2];
+        for (int i = 0; i < 2; i++) {
+            int lado = i == 0 ? -1 : 1;
+            // Cada paso sube una y baja la otra.
+            f[i] = new Forma(lado * 2f, cy, rx, rArriba, rAbajo, hondo, caida, apertura, 0f,
+                    (dy + lado * alterno) * 0.6f, -2f - inflado, lado);
+        }
+        return f;
+    }
+
+    /** ¿Una pieza que cubre las filas [desde, hasta) del torso pasa por la cola? */
+    public static boolean cubreCola(int desde, int hasta) {
+        return hasta > 8 && desde < 12;
+    }
+
+    private static List<Vert[]> mallaCola(Busto b, float inflado, float carpa, boolean rigido, boolean piel) {
+        if (b.cuadrado()) return cajasCola(b, inflado, carpa, rigido, piel);
+        List<Vert[]> q = new ArrayList<>();
+        for (Forma f : formasCola(b, inflado, carpa, rigido, piel)) cupula(f, q);
+        return q;
+    }
+
+    /** La cola cuadrada: una caja por nalga, de la fila 8 hasta abajo del torso. */
+    private static List<Vert[]> cajasCola(Busto b, float inflado, float carpa, boolean rigido, boolean piel) {
+        float cuerpo = b.cola();
+        if (cuerpo <= 0.05f) return List.of();
+        float abrir = Math.max(0f, inflado);
+        float hondo = piel ? cuerpo - Math.max(0f, inflado)
+                : Math.max(0f, Math.max(cuerpo + 0.06f + 0.12f * abrir, inflado) - inflado);
+        if (hondo <= 0.01f) return List.of();
+        float dy = 0f, alterno = 0f;
+        if (b.reboteCola() != null && !rigido) {
+            dy = b.reboteCola().dy() * 12f * 0.6f;
+            alterno = b.reboteCola().dx() * 8f * 0.6f;
+        }
+        float plano = -2f - inflado;
+        float arriba = 8.2f - 0.2f * abrir, abajo = 12f + 0.2f * abrir;
+        float caida = hondo * 0.12f * (rigido ? 0.3f : 1f);
+        float colgar = piel ? 0f : carpa * 0.5f;
+        List<Vert[]> q = new ArrayList<>();
+        caja(q, -4f, 0f, arriba, abajo, plano, hondo, caida, 0f, dy - alterno, colgar);
+        caja(q, 0f, 4f, arriba, abajo, plano, hondo, caida, 0f, dy + alterno, colgar);
+        return q;
+    }
+
+    /**
+     * La cola con {@code uv} en x del MUNDO (como la da {@link Uv#skinEspalda}
+     * o la cara de atrás de otro modelo), en el marco del torso.
+     */
+    public static void dibujarCola(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov, int color,
+                                   Uv uv, float inflado, float carpa, boolean rigido, boolean piel) {
+        List<Vert[]> malla = mallaCola(b, inflado, carpa, rigido, piel);
+        if (malla.isEmpty()) return;
+        matrices.push();
+        // Marco espejado: el "frente" de la cola es la espalda del torso.
+        matrices.scale(-1f, 1f, -1f);
+        emitir(malla, matrices, vc, luz, ov, color, uv.espejada());
+        matrices.pop();
+    }
+
+    /** Con el layout de la skin (piel o telas del mod). */
+    public static void dibujarCola(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov,
+                                   float inflado, float carpa, float filaSkin, boolean piel) {
+        dibujarCola(b, matrices, vc, luz, ov, 0xFFFFFFFF, Uv.skinEspalda(filaSkin), inflado, carpa, false, piel);
+    }
+
+    /**
+     * Dónde queda, sobre la cola, el punto (x, y) de la espalda plana del
+     * torso (los apliques de la espalda): como {@link #sobreBusto}, en
+     * coordenadas del torso. Null si no cae sobre la cola.
+     */
+    @Nullable
+    public static Punto sobreCola(Busto b, float x, float y, float inflado, float carpa) {
+        Punto p = sobre(mallaCola(b, inflado, carpa, false, false), -x, y);
+        if (p == null) return null;
+        return new Punto(new Vector3f(-p.pos().x, p.pos().y, -p.pos().z),
+                new Vector3f(-p.normal().x, p.normal().y, -p.normal().z));
+    }
+
+    /** {@link #rayo} contra la cola: {t, x, y} con (x, y) el punto de la espalda plana de debajo. */
+    @Nullable
+    public static float[] rayoCola(Busto b, Vector3f origen, Vector3f dir, float inflado, float carpa) {
+        float[] h = rayo(mallaCola(b, inflado, carpa, false, false),
+                new Vector3f(-origen.x, origen.y, -origen.z), new Vector3f(-dir.x, dir.y, -dir.z));
+        if (h != null) h[1] = -h[1];
+        return h;
+    }
+
     // ── apliques ─────────────────────────────────────────────────────────
 
     /** Un punto de la superficie del busto y su normal (px, coordenadas del torso). */
@@ -571,8 +772,14 @@ public final class BustoRender {
     /** Con la carpa de la tela (las holgadas son un manto, ver {@link #carpaDe}). */
     @Nullable
     public static Punto sobreBusto(Busto b, float x, float y, float inflado, float carpa) {
+        return sobre(malla(b, inflado, carpa, false, false, null, 12f), x, y);
+    }
+
+    /** El punto de la malla que tiene debajo el punto (x, y) del frente plano (el de más adelante), o null. */
+    @Nullable
+    private static Punto sobre(List<Vert[]> malla, float x, float y) {
         Punto mejor = null;
-        for (Vert[] q : malla(b, inflado, carpa, false, false, null)) {
+        for (Vert[] q : malla) {
             for (int[] tri : TRIANGULOS) {
                 Vert a = q[tri[0]], c = q[tri[1]], d = q[tri[2]];
                 // Baricéntricas del punto en el triángulo del frente plano (las caras de costado se aplastan: se saltean).
@@ -611,8 +818,13 @@ public final class BustoRender {
     /** Con la carpa de la tela (las holgadas son un manto, ver {@link #carpaDe}). */
     @Nullable
     public static float[] rayo(Busto b, Vector3f origen, Vector3f dir, float inflado, float carpa) {
+        return rayo(malla(b, inflado, carpa, false, false, null, 12f), origen, dir);
+    }
+
+    @Nullable
+    private static float[] rayo(List<Vert[]> malla, Vector3f origen, Vector3f dir) {
         float[] mejor = null;
-        for (Vert[] q : malla(b, inflado, carpa, false, false, null)) {
+        for (Vert[] q : malla) {
             for (int[] tri : TRIANGULOS) {
                 Vert a = q[tri[0]], c = q[tri[1]], d = q[tri[2]];
                 float[] k = triangulo(origen, dir, a.pos(), c.pos(), d.pos());

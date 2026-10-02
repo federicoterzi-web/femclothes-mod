@@ -112,6 +112,13 @@ public final class PolleraMalla {
     public static void dibujar(MatrixStack matrices, VertexConsumer vc, int luz, PolleraForma forma,
                                PolleraLargo largo, float dil, @Nullable Piernas piernas,
                                CapaMalla.Movimiento mov, float twirl) {
+        dibujar(matrices, vc, luz, forma, largo, dil, piernas, mov, twirl, 0f);
+    }
+
+    /** @param cola cuánto sale la cola por detrás (px, ver {@code BustoRender.formasCola}); la tela pasa por fuera */
+    public static void dibujar(MatrixStack matrices, VertexConsumer vc, int luz, PolleraForma forma,
+                               PolleraLargo largo, float dil, @Nullable Piernas piernas,
+                               CapaMalla.Movimiento mov, float twirl, float cola) {
         float[][][] p = new float[FILAS + 1][COLUMNAS + 1][];
         float l = largo.pixeles;
         // Nunca más pegada que Normal: la cintura (sección casi recta) tiene
@@ -168,6 +175,7 @@ public final class PolleraMalla {
             }
         }
 
+        if (cola > 0.05f) pasarPorFueraDeLaCola(p, cola);
         if (piernas != null) chocarConPiernas(p, piernas);
 
         MatrixStack.Entry e = matrices.peek();
@@ -178,6 +186,32 @@ public final class PolleraMalla {
                 emitir(vc, e, p, f, c + 1, luz, ov);
                 emitir(vc, e, p, f + 1, c + 1, luz, ov);
                 emitir(vc, e, p, f + 1, c, luz, ov);
+            }
+        }
+    }
+
+    /**
+     * La tela de atrás pasa por fuera de la cola (2026-10-02, "el trasero
+     * deberia crecer con el busto"): cada punto de la espalda se aleja hasta
+     * la superficie de las nalgas (las mismas cúpulas que dibuja
+     * {@code BustoRender}, aproximadas) más un margen; debajo de la parte más
+     * saliente la tela cae derecho, como de un estante.
+     */
+    private static void pasarPorFueraDeLaCola(float[][][] p, float cola) {
+        float cy = 10.1f - 0.12f * cola, rArriba = 1.9f + 0.25f * cola;
+        float rx = Math.min(2.4f, 1.9f + 0.12f * cola);
+        float arriba = cy - rArriba;
+        for (float[][] fila : p) {
+            for (float[] q : fila) {
+                if (q[2] < 0.5f || q[1] < arriba) continue;        // solo la espalda (+Z), desde donde empieza la cola
+                float x = q[0], y = Math.min(cy, q[1]);             // debajo de lo más saliente, cae derecho
+                float g = 0f;
+                for (int lado = -1; lado <= 1; lado += 2) {
+                    float du = (x - lado * 2f) / rx, dv = (y - cy) / rArriba;
+                    float d2 = du * du + dv * dv;
+                    if (d2 < 1f) g = Math.max(g, (float) Math.sqrt(1f - d2));
+                }
+                q[2] = Math.max(q[2], 2.2f + cola * g);
             }
         }
     }

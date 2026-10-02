@@ -30,10 +30,13 @@ public final class FisicaBusto {
     /** Paso fijo de la integración (s). */
     private static final float PASO = 1f / 240f;
     /** Tope del corrimiento (px). */
-    private static final float TOPE_Y = 0.9f, TOPE_X = 0.6f;
+    private static final float TOPE_Y = 0.9f, TOPE_X = 0.6f, TOPE_COLA = 0.6f;
 
     private static final class Estado {
         float y, vy, x, vx;
+        /** La cola (2026-10-02, "el trasero... tener tambien fisica"): vertical común y alternado por paso. */
+        float cy, vcy, ca, vca;
+        float cola;
         double yMundo = Double.NaN, vyMundo;
         float yaw = Float.NaN, vYaw;
         long nanos;
@@ -81,8 +84,22 @@ public final class FisicaBusto {
         float empujeY = (ay * 16f * 0.12f - caminar * 30f * (float) Math.sin(fase)) * masa;
         float empujeX = -aYaw * 0.004f * masa;
 
+        // La cola: más pesada y un poco más blanda; cada paso empuja una nalga
+        // para arriba y la otra para abajo (sen de medio ciclo de piernas).
+        float masaC = 0.7f + 0.15f * e.cola;
+        float kc = Math.max(55f, 130f - 12f * e.cola);
+        float cc = 2f * 0.15f * (float) Math.sqrt(kc);
+        float empujeCY = (ay * 16f * 0.1f - caminar * 18f * (float) Math.sin(fase + 0.6f)) * masaC;
+        float empujeCA = caminar * 26f * (float) Math.sin(fase * 0.5f) * masaC;
+
         e.resto += dt;
         while (e.resto >= PASO) {
+            e.vcy += (-kc * e.cy - cc * e.vcy + empujeCY) * PASO;
+            e.cy += e.vcy * PASO;
+            e.vca += (-kc * e.ca - cc * e.vca + empujeCA) * PASO;
+            e.ca += e.vca * PASO;
+            if (Math.abs(e.cy) > TOPE_COLA) { e.cy = Math.signum(e.cy) * TOPE_COLA; e.vcy *= -0.3f; }
+            if (Math.abs(e.ca) > TOPE_COLA) { e.ca = Math.signum(e.ca) * TOPE_COLA; e.vca *= -0.3f; }
             e.resto -= PASO;
             e.vy += (-k * e.y - c * e.vy + empujeY) * PASO;
             e.y += e.vy * PASO;
@@ -92,6 +109,18 @@ public final class FisicaBusto {
             if (Math.abs(e.x) > TOPE_X) { e.x = Math.signum(e.x) * TOPE_X; e.vx *= -0.3f; }
         }
         return rebote(e, busto);
+    }
+
+    /**
+     * El rebote de la cola de este cuadro (lo calcula {@link #de}, que se llama
+     * antes): dy = la vertical común, dx = lo alternado entre las dos nalgas.
+     * {@code cola} = cuánto sale (px): más cola, más lenta y amplia.
+     */
+    public static RelieveRender.Rebote cola(LivingEntity entidad, float cola) {
+        Estado e = ESTADOS.get(entidad);
+        if (e == null) return null;
+        e.cola = cola;
+        return new RelieveRender.Rebote(cola, e.ca / 8f, e.cy / 12f);
     }
 
     private static RelieveRender.Rebote rebote(Estado e, float busto) {

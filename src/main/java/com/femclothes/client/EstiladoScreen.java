@@ -163,8 +163,29 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 Toque tb = cortarBusto(busto, pieza, inversa, (float) mx, (float) my);
                 if (tb != null && (mejor == null || tb.profundidad() > mejor.profundidad())) mejor = tb;
             }
+            // La cola (2026-10-02): igual, en la espalda.
+            if (busto != null && pieza.parte() == Parte.TORSO
+                    && com.femclothes.render.relieve.BustoRender.cubreCola(pieza.filaDesde(), pieza.filaHasta())) {
+                Toque tc = cortarCola(busto, pieza, inversa, (float) mx, (float) my);
+                if (tc != null && (mejor == null || tc.profundidad() > mejor.profundidad())) mejor = tc;
+            }
         }
         return mejor;
+    }
+
+    /** El rayo del mouse contra la cola de esta pieza: guarda el punto de la espalda plana de debajo. */
+    @Nullable
+    private static Toque cortarCola(com.femclothes.render.relieve.BustoRender.Busto busto, Pieza pieza,
+                                    Matrix4f inversa, float mx, float my) {
+        final float Z = 10000f;
+        Vector3f lejos = inversa.transformPosition(new Vector3f(mx, my, -Z)).mul(16f);
+        Vector3f cerca = inversa.transformPosition(new Vector3f(mx, my, Z)).mul(16f);
+        Vector3f dir = new Vector3f(lejos).sub(cerca);
+        float[] h = com.femclothes.render.relieve.BustoRender.rayoCola(busto, cerca, dir,
+                Math.max(0f, pieza.dilatacion()) + 0.02f,
+                com.femclothes.render.relieve.BustoRender.carpaDe(com.femclothes.item.Calce.de(pieza.dilatacion())));
+        if (h == null) return null;
+        return new Toque(Parte.TORSO, h[1], h[2], 2f, Direction.SOUTH, 1f - h[0]);
     }
 
     /** El rayo del mouse contra las cúpulas del busto de esta pieza (desde el lado del que mira). */

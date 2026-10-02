@@ -86,6 +86,13 @@ public final class ApliqueRenderer {
                                 com.femclothes.render.relieve.BustoRender.actual, a.x(), a.y(), afuera,
                                 com.femclothes.render.relieve.BustoRender.carpaDe(com.femclothes.item.Calce.de(dil)))
                         : null;
+        // Sobre la cola (2026-10-02): los de la espalda del torso, igual.
+        if (enBusto == null && a.parte() == Parte.TORSO && a.cara() == net.minecraft.util.math.Direction.SOUTH
+                && com.femclothes.render.relieve.BustoRender.actual != null) {
+            enBusto = com.femclothes.render.relieve.BustoRender.sobreCola(
+                    com.femclothes.render.relieve.BustoRender.actual, a.x(), a.y(), afuera,
+                    com.femclothes.render.relieve.BustoRender.carpaDe(com.femclothes.item.Calce.de(dil)));
+        }
         if (enBusto != null) {
             matrices.translate(enBusto.pos().x / 16f, enBusto.pos().y / 16f, enBusto.pos().z / 16f);
             n = enBusto.normal();

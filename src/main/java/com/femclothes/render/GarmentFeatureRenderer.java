@@ -172,7 +172,15 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             }
 
             if (llevaCuerpo && parte == Parte.TORSO) {
-                dibujarBusto(cuerpo, delJugador, infladoBustoCuerpo(piezas), 0f, 20f, true, matrices, vertexConsumers, luz);
+                // Debajo de una tela holgada el busto lo dibuja la tela (su manto):
+                // el del cuerpo atravesaba el hoodie (2026-10-02, "el hoodie es
+                // atravesado por los pechos, deberia apagarlos y reemplazarlos por
+                // su propia geometria").
+                if (indiceManto(piezas) < 0) {
+                    dibujarBusto(cuerpo, delJugador, infladoBustoCuerpo(piezas), 0f, 20f, true, null,
+                            fondoSosten(perfilDe(entidad)), matrices, vertexConsumers, luz);
+                }
+                dibujarCola(cuerpo, delJugador, infladoColaCuerpo(piezas), 0f, 20f, true, matrices, vertexConsumers, luz);
             }
             if (llevaCuerpo) {
                 com.femclothes.render.relieve.RelieveRender.actual =
@@ -204,8 +212,9 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         // Apliques de la Mesa de estilado (2026-10-01).
         ApliqueRenderer.dibujar(prendas, biped, matrices, vertexConsumers, luz);
         dibujarTranslucidas();
-        com.femclothes.render.relieve.BustoRender.actual = null;
+        // La pollera pasa por fuera de la cola: el busto se apaga después.
         dibujarPollera(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta);
+        com.femclothes.render.relieve.BustoRender.actual = null;
         dibujarCapa(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta, true);
     }
 
@@ -260,7 +269,9 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 dilatacion, new PolleraMalla.Piernas(biped.body, biped.rightLeg, biped.leftLeg), mov,
                 // entidad null = Maniquí (dibujarTela): sin twirl.
                 previewOverride == null && entidad != null
-                        ? com.femclothes.client.TwirlCliente.progreso(entidad, tickDelta) : -1f);
+                        ? com.femclothes.client.TwirlCliente.progreso(entidad, tickDelta) : -1f,
+                com.femclothes.render.relieve.BustoRender.actual == null ? 0f
+                        : com.femclothes.render.relieve.BustoRender.actual.cola());
         matrices.pop();
     }
 
@@ -421,6 +432,10 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         com.femclothes.render.relieve.MapaRelieve previo = debajo;
         // Busto (2026-10-01): cada tela que tapa el pecho lo envuelve, por fuera de la de abajo.
         float infladoBusto = parte == Parte.TORSO ? infladoBustoCuerpo(piezas) : 0f;
+        float infladoCola = parte == Parte.TORSO ? infladoColaCuerpo(piezas) : 0f;
+        // Las telas por dentro de la última holgada no dibujan su busto: lo tapa su manto.
+        int manto = parte == Parte.TORSO ? indiceManto(piezas) : -1;
+        int indice = -1;
         boolean conRelieve = com.femclothes.render.relieve.RelieveRender.estilo
                 != com.femclothes.render.relieve.RelieveRender.Estilo.APAGADO;
         try {
@@ -430,6 +445,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         java.util.Arrays.fill(exterior, Float.NEGATIVE_INFINITY);
 
         for (Pieza pieza : piezas) {
+            indice++;
             int desde = Math.max(0, Math.min(12, pieza.filaDesde()));
             int hasta = Math.max(desde, Math.min(12, pieza.filaHasta()));
             float base = pieza.dilatacion();
@@ -499,14 +515,23 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             }
 
             if (parte == Parte.TORSO && com.femclothes.render.relieve.BustoRender.actual != null
-                    && com.femclothes.render.relieve.BustoRender.cubre(desde, hasta)) {
+                    && com.femclothes.render.relieve.BustoRender.cubreCola(desde, hasta)) {
+                // La cola: cada tela que pasa por ahí la envuelve; lo que la pieza no
+                // cubre es transparente en su textura y deja ver lo de abajo.
+                infladoCola = Math.max(fila[Math.max(desde, Math.min(hasta - 1, 10))], infladoCola + SEPARACION_CAPAS);
+                dibujarCola(pieza.textura(), delModelo, infladoCola,
+                        com.femclothes.render.relieve.BustoRender.carpaDe(calce), 20f, false,
+                        matrices, vertexConsumers, luz);
+            }
+            if (parte == Parte.TORSO && com.femclothes.render.relieve.BustoRender.actual != null
+                    && com.femclothes.render.relieve.BustoRender.cubre(desde, hasta) && indice >= manto) {
                 infladoBusto = Math.max(fila[3], infladoBusto + SEPARACION_CAPAS);
                 float carpa = com.femclothes.render.relieve.BustoRender.carpaDe(calce);
                 // Suelto y Oversize: un manto apoyado en la tela de cada fila (2026-10-02,
                 // "se marca demasiado en el hoodie no se deberian ver asi como dos tetas").
                 com.femclothes.render.relieve.BustoRender.Tela tela =
                         new com.femclothes.render.relieve.BustoRender.Tela(fila.clone(), desde, hasta);
-                dibujarBusto(pieza.textura(), delModelo, infladoBusto, carpa, 20f, false, tela,
+                dibujarBusto(pieza.textura(), delModelo, infladoBusto, carpa, 20f, false, tela, hasta,
                         matrices, vertexConsumers, luz);
             }
 
@@ -592,9 +617,13 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         com.femclothes.body.InteriorArriba arriba = perfil.interior().arriba();
         float sujecion = arriba == com.femclothes.body.InteriorArriba.BINDER ? 0.3f
                 : arriba == com.femclothes.body.InteriorArriba.DEPORTIVO ? 0.75f : 1f;
-        return new com.femclothes.render.relieve.BustoRender.Busto(talle, sujecion,
-                fisica ? com.femclothes.render.relieve.FisicaBusto.de(entidad, tickDelta, talle) : null,
-                perfil.bustoCuadrado());
+        com.femclothes.render.relieve.RelieveRender.Rebote rebote =
+                fisica ? com.femclothes.render.relieve.FisicaBusto.de(entidad, tickDelta, talle) : null;
+        // La cola crece con el busto y tiene su propio resorte (2026-10-02,
+        // "el trasero deberia crecer con el busto y tener tambien fisica").
+        float cola = com.femclothes.render.relieve.RelieveCuerpo.colaDe(perfil);
+        return new com.femclothes.render.relieve.BustoRender.Busto(talle, sujecion, rebote, perfil.bustoCuadrado(),
+                cola, fisica ? com.femclothes.render.relieve.FisicaBusto.cola(entidad, cola) : null);
     }
 
     /** {@link #infladoBustoCuerpo} para un conjunto de prendas (las piezas de su torso). */
@@ -622,6 +651,83 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         return minimo;
     }
 
+    /** Como {@link #infladoBustoCuerpo}, para la cola: por dentro de la tela más pegada que pase por ahí. */
+    private static float infladoColaCuerpo(@Nullable List<Pieza> piezas) {
+        float minimo = 0f;
+        if (piezas != null) {
+            for (Pieza p : piezas) {
+                if (com.femclothes.render.relieve.BustoRender.cubreCola(p.filaDesde(), p.filaHasta())) {
+                    minimo = Math.min(minimo, p.dilatacion() - 0.06f);
+                }
+            }
+        }
+        return minimo;
+    }
+
+    /**
+     * La última pieza (la de más afuera) que tapa el busto con una tela
+     * holgada (Suelto/Oversize: un manto), o −1. Las de adentro y el cuerpo
+     * no dibujan su busto: lo reemplaza el manto.
+     */
+    private static int indiceManto(@Nullable List<Pieza> piezas) {
+        int ultimo = -1;
+        if (piezas == null) return ultimo;
+        for (int i = 0; i < piezas.size(); i++) {
+            Pieza p = piezas.get(i);
+            if (p.parte() == Parte.TORSO && com.femclothes.render.relieve.BustoRender.cubre(p.filaDesde(), p.filaHasta())
+                    && com.femclothes.render.relieve.BustoRender.esManto(
+                            com.femclothes.render.relieve.BustoRender.carpaDe(com.femclothes.item.Calce.de(p.dilatacion())))) {
+                ultimo = i;
+            }
+        }
+        return ultimo;
+    }
+
+    /** ¿Alguna prenda tapa el busto con un manto? (el Maniquí no dibuja entonces el busto de la figura). */
+    public static boolean bustoTapadoPorManto(List<ItemStack> prendas) {
+        List<Pieza> torso = new ArrayList<>();
+        for (ItemStack s : prendas) {
+            for (Pieza p : PiezasDePrenda.de(s, null)) if (p.parte() == Parte.TORSO) torso.add(p);
+        }
+        return indiceManto(torso) >= 0;
+    }
+
+    /**
+     * Hasta qué fila del torso llega el corpiño de la ropa interior (12 sin
+     * corpiño): la textura del busto se aprieta para que lo cubra entero
+     * (2026-10-02, "la parte de abajo de los senos no esta cubierta por el corpiño").
+     * Sale de las texturas de {@code tools/generar_ropa_interior.py}.
+     */
+    private static float fondoSosten(PerfilCuerpo perfil) {
+        return switch (perfil.interior().arriba()) {
+            case BRALETTE, DEPORTIVO -> 5f;
+            case BINDER -> 8f;
+            default -> 12f;
+        };
+    }
+
+    /** La cola con {@code textura} (piel o tela) en el marco del torso; las translúcidas, a la segunda pasada. */
+    private static void dibujarCola(Identifier textura, ModelPart torso, float inflado, float carpa, float filaSkin,
+                                    boolean piel, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
+        com.femclothes.render.relieve.BustoRender.Busto busto = com.femclothes.render.relieve.BustoRender.actual;
+        if (busto == null || busto.cola() <= 0f) return;
+        matrices.push();
+        torso.rotate(matrices);
+        if (ClothingTextureCache.esTranslucida(textura)) {
+            MatrixStack copia = new MatrixStack();
+            copia.peek().getPositionMatrix().set(matrices.peek().getPositionMatrix());
+            copia.peek().getNormalMatrix().set(matrices.peek().getNormalMatrix());
+            TRANSLUCIDAS_PENDIENTES.add(() -> com.femclothes.render.relieve.BustoRender.dibujarCola(busto, copia,
+                    vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura)), luz,
+                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel));
+        } else {
+            com.femclothes.render.relieve.BustoRender.dibujarCola(busto, matrices,
+                    vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura)), luz,
+                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel);
+        }
+        matrices.pop();
+    }
+
     /** El busto con la textura de la skin (y su segunda capa), cuando el torso lo dibuja vanilla. */
     private static void dibujarBustoEnLaSkin(LivingEntity entidad, BipedEntityModel<?> biped, MatrixStack matrices,
                                              VertexConsumerProvider vertexConsumers, int luz) {
@@ -647,8 +753,19 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     /** Con el inflado de la piel a mano (por dentro de la ropa que la tape). */
     public static void dibujarBustoDeSkin(Identifier skin, ModelPart torso, boolean chaqueta, float inflado,
                                           MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
-        dibujarBusto(skin, torso, inflado, 0f, 20f, true, matrices, vertexConsumers, luz);
-        if (chaqueta) dibujarBusto(skin, torso, 0.5f, 0f, 36f, matrices, vertexConsumers, luz);
+        dibujarBustoDeSkin(skin, torso, chaqueta, inflado, true, matrices, vertexConsumers, luz);
+    }
+
+    /** {@code conBusto} false: solo la cola (el busto lo tapa el manto de una tela holgada). */
+    public static void dibujarBustoDeSkin(Identifier skin, ModelPart torso, boolean chaqueta, float inflado,
+                                          boolean conBusto, MatrixStack matrices,
+                                          VertexConsumerProvider vertexConsumers, int luz) {
+        if (conBusto) {
+            dibujarBusto(skin, torso, inflado, 0f, 20f, true, matrices, vertexConsumers, luz);
+            if (chaqueta) dibujarBusto(skin, torso, 0.5f, 0f, 36f, matrices, vertexConsumers, luz);
+        }
+        dibujarCola(skin, torso, inflado, 0f, 20f, true, matrices, vertexConsumers, luz);
+        if (chaqueta) dibujarCola(skin, torso, 0.5f, 0f, 36f, false, matrices, vertexConsumers, luz);
     }
 
     /** Las dos cúpulas del busto de una tela con {@code textura}, en el marco del torso. */
@@ -660,13 +777,13 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     /** Las dos cúpulas del busto con {@code textura} (piel o tela); las translúcidas, a la segunda pasada. */
     private static void dibujarBusto(Identifier textura, ModelPart torso, float inflado, float carpa, float filaSkin,
                                      boolean piel, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
-        dibujarBusto(textura, torso, inflado, carpa, filaSkin, piel, null, matrices, vertexConsumers, luz);
+        dibujarBusto(textura, torso, inflado, carpa, filaSkin, piel, null, 12f, matrices, vertexConsumers, luz);
     }
 
     /** Con la dilatación de la pieza por fila ({@code tela}: el manto de las telas holgadas se apoya en ella). */
     private static void dibujarBusto(Identifier textura, ModelPart torso, float inflado, float carpa, float filaSkin,
                                      boolean piel, @Nullable com.femclothes.render.relieve.BustoRender.Tela tela,
-                                     MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
+                                     float fondo, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
         com.femclothes.render.relieve.BustoRender.Busto busto = com.femclothes.render.relieve.BustoRender.actual;
         if (busto == null) return;
         matrices.push();
@@ -677,11 +794,11 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             copia.peek().getNormalMatrix().set(matrices.peek().getNormalMatrix());
             TRANSLUCIDAS_PENDIENTES.add(() -> com.femclothes.render.relieve.BustoRender.dibujar(busto, copia,
                     vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura)), luz,
-                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel, tela));
+                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel, tela, fondo));
         } else {
             com.femclothes.render.relieve.BustoRender.dibujar(busto, matrices,
                     vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura)), luz,
-                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel, tela);
+                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel, tela, fondo);
         }
         matrices.pop();
     }

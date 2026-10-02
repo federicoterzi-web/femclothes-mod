@@ -91,6 +91,20 @@ public final class RelieveCuerpo {
         return Math.min(BUSTO_MAXIMO, formaDe(perfil.cuerpo()).busto());
     }
 
+    /**
+     * Cuánto sale la cola (px) con este busto (2026-10-02, "el trasero deberia
+     * crecer con el busto"): la del cuerpo ({@code colaCuerpo} 0..1) más lo que
+     * suma el talle del busto.
+     */
+    public static float colaDeTalle(float busto, float colaCuerpo) {
+        return busto <= 0f ? 0f : 0.35f + 0.45f * colaCuerpo + 0.17f * busto;
+    }
+
+    /** La cola de un perfil (0 sin busto: ahí la dan las nalgas del relieve). */
+    public static float colaDe(PerfilCuerpo perfil) {
+        return colaDeTalle(bustoDe(perfil), formaDe(perfil.cuerpo()).cola());
+    }
+
     public static MapaRelieve de(PerfilCuerpo perfil, boolean slim) {
         Forma f = formaDe(perfil.cuerpo());
         float busto = bustoDe(perfil);
@@ -139,7 +153,8 @@ public final class RelieveCuerpo {
                             + bulto(fu, fv, 0.7f, 0.22f, 0.2f, 0.14f, 1.5f));
                     // Nalgas (2026-10-01, "estan apareciendo en las piernas en lugar
                     // del torso"): abajo de la espalda del torso, redondas.
-                    h += 0.8f * f.cola() * (domo(fu, fv, 0.29f, 0.86f, 0.27f, 0.17f)
+                    // Con busto, la cola es geometría propia (BustoRender.formasCola, 2026-10-02).
+                    if (busto <= 0f) h += 0.8f * f.cola() * (domo(fu, fv, 0.29f, 0.86f, 0.27f, 0.17f)
                             + domo(fu, fv, 0.71f, 0.86f, 0.27f, 0.17f));
                     h += 0.25f * f.panza() * domo(fu, fv, 0.5f, 0.75f, 0.5f, 0.3f);
                 } else {
