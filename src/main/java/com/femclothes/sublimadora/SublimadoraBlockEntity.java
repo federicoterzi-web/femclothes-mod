@@ -541,6 +541,25 @@ public class SublimadoraBlockEntity extends BlockEntity
         return papelCargado;
     }
 
+    /** Gasta papel del tanque (la estampa escaneada, {@link EscanearEstampa}). */
+    public void gastarPapel(int cantidad) {
+        papelCargado = Math.max(0, papelCargado - cantidad);
+        sincronizarVistaTanques();
+        sincronizar();
+    }
+
+    /** Guarda una foto en el primer lugar libre del almacén; devuelve lo que no entró. */
+    public ItemStack guardarEnAlmacen(ItemStack foto) {
+        for (int i = 0; i < almacen.size(); i++) {
+            if (almacen.get(i).isEmpty()) {
+                almacen.set(i, foto);
+                markDirty();
+                return ItemStack.EMPTY;
+            }
+        }
+        return foto;
+    }
+
     /** La prenda a estampar: la remera de cualquier corte, o las medias. */
     public boolean ponerRemera(ItemStack stack) {
         if (!remera.isEmpty() || estado != Estado.REPOSO) return false;

@@ -591,5 +591,15 @@
   "femclothes.elegir_cuerpo.boton.busto": "Bust: %s",
   "femclothes.elegir_cuerpo.busto.redondo": "Round",
   "femclothes.elegir_cuerpo.busto.cuadrado": "Square",
-  "femclothes.elegir_cuerpo.tooltip.busto": "Bust shape (from the body or from Estrogen): rounded domes or cubic boxes, Minecraft style."
+  "femclothes.elegir_cuerpo.tooltip.busto": "Bust shape (from the body or from Estrogen): rounded domes or cubic boxes, Minecraft style.",
+  "femclothes.sublimadora.boton.escanear": "Scan print",
+  "femclothes.sublimadora.tooltip.escanear": "Pick an image from your computer: it becomes a Camerapture picture (uses 1 paper from the tank) and goes to Front; if Front already has a picture, to Back.",
+  "femclothes.sublimadora.escanear.titulo": "Scan print",
+  "femclothes.sublimadora.escanear.imagenes": "Images",
+  "femclothes.sublimadora.escanear.enviando": "Scanning the print...",
+  "femclothes.sublimadora.escanear.listo": "Print scanned.",
+  "femclothes.sublimadora.escanear.sin_papel": "The Sublimator needs paper to scan.",
+  "femclothes.sublimadora.escanear.grande": "The image is too large.",
+  "femclothes.sublimadora.escanear.no_imagen": "That file is not a readable image.",
+  "femclothes.sublimadora.escanear.fallo": "Could not scan the print."
 }

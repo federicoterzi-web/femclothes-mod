@@ -113,6 +113,15 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
         btnGuardarDiseno.setTooltip(Tooltip.of(Text.translatable("femclothes.sublimadora.tooltip.guardar_diseno")));
         this.addDrawableChild(btnGuardarDiseno);
 
+        // Escanear estampa (2026-10-02, "agregar un boton de escanear estampa... abre
+        // explorador para seleccionar imagen y produce una imagen de camerapture"):
+        // la foto queda en Frente si está vacío, si no en Espalda.
+        ButtonWidget btnEscanear = new EstiloPergamino.BotonPergamino(this.x + 8, this.y + 276, 86, 16,
+                Text.translatable("femclothes.sublimadora.boton.escanear"),
+                b -> EscanerEstampaCliente.escanear(this.handler.be.getPos()));
+        btnEscanear.setTooltip(Tooltip.of(Text.translatable("femclothes.sublimadora.tooltip.escanear")));
+        this.addDrawableChild(btnEscanear);
+
         // Prensar, ENCIMA de la flecha Entrada -> Salida — como Teñir en Tintes.
         btnPrensar = boton(M_MEDIO + 96, 184, 48, Text.translatable("femclothes.sublimadora.boton.prensar"),
                 "femclothes.sublimadora.tooltip.prensar", SublimadoraBlockEntity.BTN_PRENSAR);

@@ -591,5 +591,15 @@
   "femclothes.elegir_cuerpo.boton.busto": "Busto: %s",
   "femclothes.elegir_cuerpo.busto.redondo": "Redondo",
   "femclothes.elegir_cuerpo.busto.cuadrado": "Cuadrado",
-  "femclothes.elegir_cuerpo.tooltip.busto": "Forma del busto (del cuerpo o de los Estrógenos): cúpulas redondeadas o cajas cúbicas, al estilo Minecraft."
+  "femclothes.elegir_cuerpo.tooltip.busto": "Forma del busto (del cuerpo o de los Estrógenos): cúpulas redondeadas o cajas cúbicas, al estilo Minecraft.",
+  "femclothes.sublimadora.boton.escanear": "Escanear estampa",
+  "femclothes.sublimadora.tooltip.escanear": "Elegí una imagen de tu compu: se convierte en una foto de Camerapture (gasta 1 papel del tanque) y queda en Frente; si Frente ya tiene foto, en Espalda.",
+  "femclothes.sublimadora.escanear.titulo": "Escanear estampa",
+  "femclothes.sublimadora.escanear.imagenes": "Imágenes",
+  "femclothes.sublimadora.escanear.enviando": "Escaneando la estampa...",
+  "femclothes.sublimadora.escanear.listo": "Estampa escaneada.",
+  "femclothes.sublimadora.escanear.sin_papel": "Falta papel en la Sublimadora para escanear.",
+  "femclothes.sublimadora.escanear.grande": "La imagen es demasiado pesada.",
+  "femclothes.sublimadora.escanear.no_imagen": "Ese archivo no es una imagen que se pueda leer.",
+  "femclothes.sublimadora.escanear.fallo": "No se pudo escanear la estampa."
 }

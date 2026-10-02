@@ -371,9 +371,11 @@ La Sublimadora **imprime fotos** del mod Camerapture sobre remeras, pantalones, 
 
 | Zona | Qué hay |
 |---|---|
-| **Izquierda** | Vista previa 3D, botón Vista, nombre y **Guardar diseño**. |
+| **Izquierda** | Vista previa 3D, botón Vista, nombre, **Guardar diseño** y **Escanear estampa**. |
 | **Centro** | **Categoría**; el dibujo de la prenda dos veces, **Frente** y **Espalda**, cada una con su slot de foto y su chincheta; el cinturón **Entrada → Salida** con **Prensar** sobre la flecha; los 8 casilleros de diseño; y los controles de la cara elegida: **Escala**, **Posición X**, **Posición Y**, **Ángulo** y **Cara**, más **Simetría** en medias y calientabrazos. |
 | **Derecha** | Los tanques de tinta **C, M, Y, K** y el de **papel** con su nivel (n/64), la guía de pasos y el **almacén** de 27 fotos (3 filas). Al romper la máquina, todo queda guardado adentro del ítem. |
+
+**Escanear estampa** (botón de la izquierda): abre el explorador de archivos de tu compu para elegir una imagen (PNG, JPG, WebP, BMP o GIF), igual que "Cargar imagen" de la cámara de Camerapture, pero sin necesitar la cámara. La imagen se achica y se comprime con los mismos límites que la cámara, se convierte en una **foto de Camerapture** firmada por vos y gasta **1 papel del tanque** de la Sublimadora (nada en creativo ni en la Sublimadora creativa). La foto queda en **Frente** si está vacío; si Frente ya tiene foto, en **Espalda**; si las dos están ocupadas, en el almacén (o en tu inventario si está lleno).
 
 El dibujo muestra la prenda que está en la Entrada, con su color. Si no hay ninguna, muestra la prenda terminada de la Salida, y si tampoco, una de la categoría elegida.
 

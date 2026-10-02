@@ -52,6 +52,8 @@ public final class ModBlocks {
         Registry.register(Registries.BLOCK, creativaId, SUBLIMADORA_CREATIVA);
         Registry.register(Registries.ITEM, creativaId, SUBLIMADORA_CREATIVA_ITEM);
 
+        // Escanear estampa (2026-10-02): una imagen del disco como foto de Camerapture.
+        EscanearEstampa.init();
         // "Guardar diseño" con nombre (2026-09-28), mismo mecanismo que Tintes.
         net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S()
                 .register(GuardarDisenoSublimadoraPayload.ID, GuardarDisenoSublimadoraPayload.CODEC);
