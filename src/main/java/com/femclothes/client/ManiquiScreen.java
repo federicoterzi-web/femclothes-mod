@@ -60,6 +60,9 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
         this.addDrawableChild(btnPose);
         btnFigura = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO + 82, this.y + 124, 80, 16, Text.literal(""), b -> clickBoton(ManiquiBlockEntity.BTN_FIGURA));
         this.addDrawableChild(btnFigura);
+        // Busto de la figura (2026-10-02, "agregale la opcion de ponerle tetas").
+        btnBusto = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 144, 162, 16, Text.literal(""), b -> clickBoton(ManiquiBlockEntity.BTN_BUSTO));
+        this.addDrawableChild(btnBusto);
 
         // A la derecha de los botones (M_MEDIO + 162) y de la columna de armadura.
         int sx = this.x + M_MEDIO + 170;
@@ -71,6 +74,7 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
     }
 
     private ButtonWidget btnPose;
+    private ButtonWidget btnBusto;
     private ButtonWidget btnFigura;
     private final SliderPose[] sliders = new SliderPose[com.femclothes.maniqui.PoseManiqui.ANGULOS];
     /** Mientras se arrastra un slider no se pisa con lo que llega del servidor. */
@@ -165,19 +169,46 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
                 Text.translatable(handler.be.pose().traduccion())));
         btnFigura.setMessage(Text.translatable(handler.be.figuraSkin()
                 ? "femclothes.maniqui.figura.skin" : "femclothes.maniqui.figura.maniqui"));
+        btnBusto.setMessage(handler.be.busto() == 0 ? Text.translatable("femclothes.maniqui.busto.sin")
+                : Text.translatable("femclothes.maniqui.busto", handler.be.busto(), com.femclothes.body.PerfilCuerpo.BUSTO_MAXIMO));
         if (!arrastrando) for (SliderPose s : sliders) s.refrescar();
         super.render(context, mouseX, mouseY, delta);
         dibujarPreview(context, mouseY);
         drawMouseoverTooltip(context, mouseX, mouseY);
     }
 
+    /**
+     * La vista previa es la figura del maniquí (2026-10-02, "la vista previa
+     * q tiene q generar es la gui es del maniquí no del player"): la misma
+     * que en el bloque — pose, figura (maniquí o skin), busto, armadura y
+     * ropa — dibujada por {@code ManiquiRenderer#dibujarFigura}.
+     */
     private void dibujarPreview(DrawContext context, int mouseY) {
-        PlayerEntity jugador = MinecraftClient.getInstance().player;
-        if (jugador == null) return;
-        GuardarropasScreen.dibujarConOutfit(context, jugador, handler.be, handler.be.prendasPuestas(),
-                this.x + PREVIEW_X1_LOCAL, this.y + PREVIEW_Y1_LOCAL,
-                this.x + PREVIEW_X2_LOCAL, this.y + PREVIEW_Y2_LOCAL, anguloVista, mouseY);
+        var dispatcher = MinecraftClient.getInstance().getBlockEntityRenderDispatcher();
+        if (!(dispatcher.get(handler.be) instanceof com.femclothes.maniqui.ManiquiRenderer renderer)) return;
+        int x1 = this.x + PREVIEW_X1_LOCAL, y1 = this.y + PREVIEW_Y1_LOCAL;
+        int x2 = this.x + PREVIEW_X2_LOCAL, y2 = this.y + PREVIEW_Y2_LOCAL;
+        context.enableScissor(x1, y1, x2, y2);
+        // La figura mide ~2 bloques: que entre con un poco de aire.
+        float escala = (y2 - y1) * 0.86f / 2.05f;
+        var matrices = context.getMatrices();
+        matrices.push();
+        matrices.translate((x1 + x2) / 2f, y2 - (y2 - y1) * 0.06f, 150f);
+        matrices.scale(escala, -escala, escala);
+        // Inclinación leve con el mouse, como la vista del jugador.
+        float h = (y1 + y2) / 2f;
+        float inclina = (float) Math.atan((h - mouseY) / 40f) * 10f;
+        matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_X.rotationDegrees(-inclina));
+        matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(180f + anguloVista));
+        net.minecraft.client.render.DiffuseLighting.method_34742();
+        renderer.dibujarFigura(handler.be, matrices, context.getVertexConsumers(),
+                net.minecraft.client.render.LightmapTextureManager.MAX_LIGHT_COORDINATE);
+        context.draw();
+        net.minecraft.client.render.DiffuseLighting.enableGuiDepthLighting();
+        matrices.pop();
+        context.disableScissor();
     }
+
 
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {

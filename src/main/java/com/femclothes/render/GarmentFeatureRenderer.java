@@ -596,6 +596,15 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 fisica ? com.femclothes.render.relieve.FisicaBusto.de(entidad, tickDelta, talle) : null);
     }
 
+    /** {@link #infladoBustoCuerpo} para un conjunto de prendas (las piezas de su torso). */
+    public static float infladoBustoDe(List<ItemStack> prendas) {
+        List<Pieza> torso = new ArrayList<>();
+        for (ItemStack s : prendas) {
+            for (Pieza p : PiezasDePrenda.de(s, null)) if (p.parte() == Parte.TORSO) torso.add(p);
+        }
+        return infladoBustoCuerpo(torso);
+    }
+
     /**
      * Cuánto se infla el busto de la piel: un poco por dentro de la tela más
      * pegada que lo tape (Ajustado aprieta por dentro del cuerpo).
@@ -618,10 +627,27 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         if (com.femclothes.render.relieve.BustoRender.actual == null
                 || !(entidad instanceof AbstractClientPlayerEntity jugador) || !biped.body.visible) return;
         Identifier skin = jugador.getSkinTextures().texture();
-        dibujarBusto(skin, biped.body, 0f, 0f, 20f, matrices, vertexConsumers, luz);
-        if (jugador.isPartVisible(net.minecraft.entity.player.PlayerModelPart.JACKET)) {
-            dibujarBusto(skin, biped.body, 0.25f, 0f, 36f, matrices, vertexConsumers, luz);
-        }
+        boolean chaqueta = jugador.isPartVisible(net.minecraft.entity.player.PlayerModelPart.JACKET);
+        dibujarBustoDeSkin(skin, biped.body, chaqueta, matrices, vertexConsumers, luz);
+    }
+
+    /**
+     * El busto con una skin (la del jugador o la de la figura del maniquí).
+     * La piel sale apenas por delante de la segunda capa plana (2026-10-02,
+     * "la skin del pecho donde surgen las tetas muestra la remera en plano":
+     * la chaqueta plana de la skin asomaba en la base) y la segunda capa va
+     * en su propia cúpula, por fuera.
+     */
+    public static void dibujarBustoDeSkin(Identifier skin, ModelPart torso, boolean chaqueta, MatrixStack matrices,
+                                          VertexConsumerProvider vertexConsumers, int luz) {
+        dibujarBustoDeSkin(skin, torso, chaqueta, chaqueta ? 0.27f : 0f, matrices, vertexConsumers, luz);
+    }
+
+    /** Con el inflado de la piel a mano (por dentro de la ropa que la tape). */
+    public static void dibujarBustoDeSkin(Identifier skin, ModelPart torso, boolean chaqueta, float inflado,
+                                          MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
+        dibujarBusto(skin, torso, inflado, 0f, 20f, matrices, vertexConsumers, luz);
+        if (chaqueta) dibujarBusto(skin, torso, 0.5f, 0f, 36f, matrices, vertexConsumers, luz);
     }
 
     /** Las dos cajas del busto con {@code textura}, en el marco del torso; las translúcidas, a la segunda pasada. */
@@ -874,8 +900,23 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
      */
     public static void dibujarTela(BipedEntityModel<?> biped, boolean slim, List<ItemStack> prendas,
                                    MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
-        // La figura del maniquí no tiene busto.
-        com.femclothes.render.relieve.BustoRender.actual = null;
+        dibujarTela(biped, slim, prendas, matrices, vertexConsumers, luz, null);
+    }
+
+    /** Con el busto de la figura (2026-10-02, maniquí "agregale la opcion de ponerle tetas"), o null. */
+    public static void dibujarTela(BipedEntityModel<?> biped, boolean slim, List<ItemStack> prendas,
+                                   MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz,
+                                   @Nullable com.femclothes.render.relieve.BustoRender.Busto busto) {
+        com.femclothes.render.relieve.BustoRender.actual = busto;
+        try {
+            dibujarTelaConBusto(biped, slim, prendas, matrices, vertexConsumers, luz);
+        } finally {
+            com.femclothes.render.relieve.BustoRender.actual = null;
+        }
+    }
+
+    private static void dibujarTelaConBusto(BipedEntityModel<?> biped, boolean slim, List<ItemStack> prendas,
+                                            MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
         Map<Parte, List<Pieza>> porParte = new EnumMap<>(Parte.class);
         Map<Pieza, ItemStack> origen = new java.util.IdentityHashMap<>();
         for (ItemStack stack : prendas) {

@@ -58,6 +58,8 @@ public class ManiquiBlockEntity extends BlockEntity
     public static final int BTN_POSE = 2;
     /** Alterna figura de maniquí / skin de quien aprieta (2026-09-30, "dame las dos opciones"). */
     public static final int BTN_FIGURA = 3;
+    /** Pasa al siguiente talle de busto de la figura (2026-10-02, "agregale la opcion de ponerle tetas"). */
+    public static final int BTN_BUSTO = 4;
 
     /** Una vuelta entera cada 14 s — lo mismo que {@code animation.mannequin.girar} del zip. */
     public static final float TICKS_POR_VUELTA = 14 * 20;
@@ -70,6 +72,8 @@ public class ManiquiBlockEntity extends BlockEntity
     private float[] angulos = PoseManiqui.PARADO.angulos();
     /** true = la figura usa la skin de {@link #dueno}; false = textura de maniquí. */
     private boolean figuraSkin = false;
+    /** Talle de busto de la figura: 0 = sin, 1..{@code PerfilCuerpo.BUSTO_MAXIMO} como los de los Estrógenos. */
+    private int busto = 0;
     @Nullable
     private net.minecraft.component.type.ProfileComponent dueno;
 
@@ -91,6 +95,8 @@ public class ManiquiBlockEntity extends BlockEntity
     public float angulo(int i) { return angulos[i]; }
 
     public boolean figuraSkin() { return figuraSkin; }
+
+    public int busto() { return busto; }
 
     @Nullable
     public net.minecraft.component.type.ProfileComponent dueno() { return dueno; }
@@ -225,6 +231,11 @@ public class ManiquiBlockEntity extends BlockEntity
             aplicarPose(pose.siguiente());
             return true;
         }
+        if (id == BTN_BUSTO) {
+            busto = (busto + 1) % (com.femclothes.body.PerfilCuerpo.BUSTO_MAXIMO + 1);
+            markDirty();
+            return true;
+        }
         if (id == BTN_FIGURA) {
             figuraSkin = !figuraSkin;
             // "Tu skin" = la de quien aprieta (así sirve también en maniquíes
@@ -342,6 +353,7 @@ public class ManiquiBlockEntity extends BlockEntity
         for (float a : angulos) lista.add(net.minecraft.nbt.NbtFloat.of(a));
         nbt.put("Angulos", lista);
         nbt.putBoolean("FiguraSkin", figuraSkin);
+        nbt.putInt("Busto", busto);
         if (dueno != null) {
             net.minecraft.component.type.ProfileComponent.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, dueno)
                     .result().ifPresent(e -> nbt.put("Dueno", e));
@@ -360,6 +372,7 @@ public class ManiquiBlockEntity extends BlockEntity
         for (int i = 0; i < base.length && i < lista.size(); i++) base[i] = lista.getFloat(i);
         angulos = base;
         figuraSkin = nbt.getBoolean("FiguraSkin");
+        busto = nbt.getInt("Busto");
         dueno = nbt.contains("Dueno")
                 ? net.minecraft.component.type.ProfileComponent.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, nbt.get("Dueno"))
                         .result().orElse(null)

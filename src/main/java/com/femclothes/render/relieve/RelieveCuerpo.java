@@ -63,9 +63,15 @@ public final class RelieveCuerpo {
      * Cuánto busto suma cada dosis acumulada de Estrógenos (2026-10-01, "3
      * tamaños de mamas... a traves de la acumulacion de tres ingestas" → "le
      * demos 5 tamaños a los pechos llegando a uno bastante mas grande"): el
-     * último salta bastante más que los otros.
+     * último salta bastante más que los otros. Más dos chicos al principio
+     * (2026-10-02, "hace dos tamaños mas chicos de busto").
      */
-    private static final float[] BUSTO_POR_DOSIS = {0f, 1.3f, 2.6f, 3.9f, 5.4f, 8f};
+    private static final float[] BUSTO_POR_DOSIS = {0f, 0.5f, 0.9f, 1.3f, 2.6f, 3.9f, 5.4f, 8f};
+
+    /** Busto (unidades de {@link Forma#busto}) de un talle 0..{@link PerfilCuerpo#BUSTO_MAXIMO} — el maniquí lo usa directo. */
+    public static float bustoDeTalle(int talle) {
+        return BUSTO_POR_DOSIS[Math.max(0, Math.min(BUSTO_POR_DOSIS.length - 1, talle))];
+    }
 
     private static final Map<String, MapaRelieve> CACHE = new HashMap<>();
 

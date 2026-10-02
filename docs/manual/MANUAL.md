@@ -100,7 +100,7 @@ Los cuerpos dibujados están en alta resolución (6 veces la de una skin común)
 El cuerpo y la ropa ya no son cajas planas: **los costados de torso, brazos y piernas tienen relieve** (la cabeza y las tapas, no).
 
 - **Forma del cuerpo:** cada cuerpo trae la suya: pectorales, abdominales y brazos marcados en Atlético y Musculoso; panza redonda en Gordito, Osito y Panda; nalgas (abajo de la espalda) y cintura en los femeninos (Fem con curvas, la más marcada); muslos con cuádriceps, isquios y rodilla marcados; pecho de pelaje en Lobo y Zorro; felinos atléticos. **Definición** (0 a 200 %, de fábrica 100 %) marca más o menos los músculos: `/femclothes definicion <n>`.
-- **Busto** (como Only Jugs y el Female Gender Mod): dos cúpulas redondeadas en el pecho, una por lado, más llenas abajo, que caen un poco según el talle y se abren hacia los costados sin despegarse del pecho, con la textura de esa zona (la piel, o la prenda de encima con su patrón y sus fotos). Los cuerpos femeninos traen uno de fábrica y los **Estrógenos** suman: se toman como una poción y se **acumulan en 5 tomas**, cada una un talle más (el quinto bastante más grande). El efecto dura **24 horas reales desde la última toma**, aunque el mundo esté cerrado; tomar con el talle máximo solo renueva el plazo. Al vencer, el busto vuelve al del cuerpo. `/femclothes busto <0..5>` lo fija a mano (también por 24 h). El **binder** lo aplana y el top **deportivo** lo sujeta un poco. Cada tela que tapa el pecho lo envuelve (por capas, como el resto de la ropa) y las holgadas caen más abajo, como una carpa. Sin ropa del mod en el torso, va con la piel y la segunda capa de tu skin.
+- **Busto** (como Only Jugs y el Female Gender Mod): dos cúpulas redondeadas en el pecho, una por lado, más llenas abajo, que caen un poco según el talle y se abren hacia los costados sin despegarse del pecho, con la textura de esa zona (la piel, o la prenda de encima con su patrón y sus fotos). Los cuerpos femeninos traen uno de fábrica y los **Estrógenos** suman: se toman como una poción y se **acumulan en 7 tomas**, cada una un talle más (los dos primeros chiquitos, el último bastante más grande). El efecto dura **24 horas reales desde la última toma**, aunque el mundo esté cerrado; tomar con el talle máximo solo renueva el plazo. Al vencer, el busto vuelve al del cuerpo. `/femclothes busto <0..7>` lo fija a mano (también por 24 h). El **binder** lo aplana y el top **deportivo** lo sujeta un poco. Cada tela que tapa el pecho lo envuelve (por capas, como el resto de la ropa) y las holgadas caen más abajo, como una carpa. Sin ropa del mod en el torso, va con la piel y la segunda capa de tu skin (la segunda capa, en su propia cúpula por fuera: la remera pintada de la skin ya no queda plana en la base).
 - **Armaduras y ropa de otros mods:** cualquier pechera o prenda que se dibuje con un modelo humanoide (vanilla, armaduras de otros mods, Cosmetic Armor, cosméticos) también lleva el busto, con su propia textura, tinte, ajustes y brillo. Las **armaduras quedan rígidas** (sin rebote, casi sin caída, como un peto moldeado); la ropa de otros mods rebota como la del mod. Las armaduras con modelo 3D propio (GeckoLib) no se adaptan.
 - **Apliques sobre el busto:** un aplique puesto en el frente del torso se apoya en la cúpula y rebota con ella. En la Mesa de estilado el click le pega al busto, pero el aplique se guarda en el frente plano: la prenda sigue sirviendo sin busto o con otro talle.
 - **Física de resorte:** el busto rebota al saltar, caer y aterrizar, con cada paso al caminar o correr, y se balancea de costado al girar (y en el twirl). Cuanto más grande, más lento y más amplio. La ropa de encima rebota con él. Cada cliente lo simula para los jugadores que ve.
@@ -125,7 +125,7 @@ Sin permisos especiales, cada quien cambia el propio:
 | `/femclothes interior color <rgb>` | Color de la ropa interior, como número (ej. `16777215` = blanco). |
 | `/femclothes tono skin` | Tono de piel tomado de tu propia skin (el valor por defecto). |
 | `/femclothes tono <número>` | Tono de piel a mano, como color RGB en decimal (ej. 14329120). |
-| `/femclothes busto <0..5>` | Dosis de Estrógenos (talle de busto), por 24 horas reales. |
+| `/femclothes busto <0..7>` | Dosis de Estrógenos (talle de busto), por 24 horas reales. |
 | `/femclothes definicion <0..200>` | Cuánto se marcan los músculos del relieve, en %. |
 | `/femclothes ver` | Muestra tu configuración actual. |
 | `/femclothes reset` | Vuelve todo al valor por defecto. |
@@ -402,7 +402,7 @@ Es un mueble con puerta: se pone de frente a quien lo coloca y la puerta se abre
 
 ### Maniquí
 
-Exhibe un outfit completo. Mide casi dos bloques (necesita lugar libre arriba para ponerlo). Tiene los mismos lugares que el Guardarropas (4 por categoría de prenda + la columna de armadura) y **todo se ve puesto en la figura**, en el mundo.
+Exhibe un outfit completo. La figura es de **tamaño normal**, como un jugador: con el plato mide casi dos bloques y medio (necesita lugar libre arriba). Tiene los mismos lugares que el Guardarropas (4 por categoría de prenda + la columna de armadura) y **todo se ve puesto en la figura**, en el mundo.
 
 - **Click derecho con una prenda o una pieza de armadura:** se la pone (la prenda en el primer lugar libre de su categoría; la armadura en su lugar, si está libre).
 - **Click derecho con la mano vacía:** abre la pantalla.
@@ -410,6 +410,8 @@ Exhibe un outfit completo. Mide casi dos bloques (necesita lugar libre arriba pa
 - **Intercambiar conmigo:** la ropa y la armadura del maniquí pasan a vos y las tuyas al maniquí, lugar por lugar. No se pierde nada.
 - **Pose:** el botón pasa por Parado, En jarra, Saludo, Brazos abiertos, Pasarela y Sentado (sentado, la figura baja y se apoya en el plato). Los **sliders** de la derecha mueven cabeza, brazos y piernas por separado (adelante/atrás y abrir); al tocar uno la pose pasa a **Libre**.
 - **Figura:** *maniquí* (liso, color madera) o *tu skin* (la de quien aprieta el botón; al ponerlo se guarda la de quien lo colocó).
+- **Busto:** el botón pasa por los 7 talles (los mismos de los Estrógenos) y vuelve a "sin". La ropa y la pechera lo envuelven como en un jugador (la pechera, rígida); en la figura no rebota.
+- **Vista previa:** la pantalla muestra la figura del maniquí tal cual se ve en el bloque (pose, figura, busto, armadura y ropa), y el botón de vista la gira.
 - **Armadura:** se ve como en un jugador (teñido del cuero, trims y brillo de encantamiento). La calabaza, las cabezas y los bloques van en la cabeza. Los élitros todavía no se dibujan.
 - Al romperlo, todo cae al piso.
 

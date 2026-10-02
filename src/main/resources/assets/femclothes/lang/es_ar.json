@@ -562,7 +562,7 @@
   "item.femclothes.estrogenos": "Estrógenos",
   "item.femclothes.molde_textura_fruncido": "Molde de textura: fruncido",
   "item.femclothes.molde_textura_acolchado": "Molde de textura: acolchado",
-  "femclothes.estrogenos.tooltip": "Cada dosis suma un talle de busto (5 como máximo). Dura 24 horas reales desde la última toma",
+  "femclothes.estrogenos.tooltip": "Cada dosis suma un talle de busto (7 como máximo). Dura 24 horas reales desde la última toma",
   "femclothes.estrogenos.dosis": "Estrógenos: talle %s de %s, por 24 h",
   "femclothes.textura_tela.lisa": "Lisa",
   "femclothes.textura_tela.fruncido": "Fruncido",
@@ -585,5 +585,7 @@
   "femclothes.kit.insumos": "Kit: insumos (tintes, papel y frascos)",
   "femclothes.kit.parte": "%s (%s/%s)",
   "femclothes.estilado.siguiente_molde": "Molde ▸",
-  "femclothes.estilado.tooltip.siguiente_molde": "Mesa creativa: pasa al siguiente molde de aplique o de textura"
+  "femclothes.estilado.tooltip.siguiente_molde": "Mesa creativa: pasa al siguiente molde de aplique o de textura",
+  "femclothes.maniqui.busto.sin": "Busto: sin",
+  "femclothes.maniqui.busto": "Busto: talle %s de %s"
 }

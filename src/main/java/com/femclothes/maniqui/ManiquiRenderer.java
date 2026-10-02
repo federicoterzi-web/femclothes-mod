@@ -61,8 +61,12 @@ import java.util.List;
  */
 public class ManiquiRenderer extends GeoBlockRenderer<ManiquiBlockEntity> {
 
-    /** Escala de la figura respecto de un jugador. */
-    private static final float ESCALA = 0.6f;
+    /**
+     * Escala de la figura respecto de un jugador: tamaño normal (2026-10-02,
+     * "el maniquí ahora se dibuja chiquito, y la ropa sigue del mismo tamaño,
+     * volvelo al tamaño normal"; antes 0.6, el tamaño de la figura del zip).
+     */
+    private static final float ESCALA = 1.0f;
     /** Altura de los pies de la figura (arriba del escalón del plato), en píxeles de bloque. */
     private static final float ALTURA_PIES = 7.6f;
 
@@ -94,6 +98,25 @@ public class ManiquiRenderer extends GeoBlockRenderer<ManiquiBlockEntity> {
         super.render(be, tickDelta, matrices, vertexConsumers, luz, overlay);
 
         // ── figura ─────────────────────────────────────────────────────────
+        matrices.push();
+        // Misma transformación que GeoBlockRenderer le aplica al modelo
+        // (centro del bloque + giro por FACING) y después el giro del plato.
+        matrices.translate(0.5, 0, 0.5);
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(giroPorFacing(be)));
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotation(angulo));
+        matrices.translate(0, (ALTURA_PIES - bajada(be) * ESCALA / 0.6f) / 16f, 0);
+        matrices.scale(ESCALA, ESCALA, ESCALA);
+        dibujarFigura(be, matrices, vertexConsumers, luz);
+        matrices.pop();
+    }
+
+    /**
+     * La figura vestida (cuerpo, busto, armadura y ropa) con los pies en el
+     * origen y Y hacia arriba — el bloque la pone sobre el plato y la GUI del
+     * maniquí la usa de vista previa (2026-10-02, "la vista previa que tiene
+     * que generar la gui es del maniquí no del player").
+     */
+    public void dibujarFigura(ManiquiBlockEntity be, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
         Identifier textura;
         boolean slim;
         if (be.figuraSkin() && be.dueno() != null) {
@@ -109,25 +132,43 @@ public class ManiquiRenderer extends GeoBlockRenderer<ManiquiBlockEntity> {
         posar(cuerpo, be);
         ajustarAlCalce(cuerpo, prendas, slim);
         capasDeSkin(cuerpo, be.figuraSkin(), prendas);
+        // Busto de la figura (2026-10-02, "agregale la opcion de ponerle tetas"): quieto, sin rebote.
+        com.femclothes.render.relieve.BustoRender.Busto busto = be.busto() > 0
+                ? new com.femclothes.render.relieve.BustoRender.Busto(
+                        com.femclothes.render.relieve.RelieveCuerpo.bustoDeTalle(be.busto()), 1f, null)
+                : null;
 
         matrices.push();
-        // Misma transformación que GeoBlockRenderer le aplica al modelo
-        // (centro del bloque + giro por FACING) y después el giro del plato.
-        matrices.translate(0.5, 0, 0.5);
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(giroPorFacing(be)));
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotation(angulo));
-        matrices.translate(0, (ALTURA_PIES - bajada(be)) / 16f, 0);
-        matrices.scale(ESCALA, ESCALA, ESCALA);
         // Lo mismo que hace LivingEntityRenderer antes de dibujar un modelo
         // de entidad: invertir X/Y y bajar 1.501 para que los pies queden en 0.
         matrices.scale(-1f, -1f, 1f);
         matrices.translate(0, -1.501f, 0);
-
-        cuerpo.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura)),
-                luz, OverlayTexture.DEFAULT_UV);
-        dibujarArmadura(be, cuerpo, matrices, vertexConsumers, luz);
-        if (!prendas.isEmpty()) {
-            GarmentFeatureRenderer.dibujarTela(cuerpo, slim, prendas, matrices, vertexConsumers, luz);
+        // La armadura de la figura recibe el busto como la de un jugador (BustoEnModelos).
+        com.femclothes.render.relieve.BustoEnModelos.enEntidad = busto;
+        com.femclothes.render.relieve.BustoEnModelos.modeloPrincipal = cuerpo;
+        try {
+            cuerpo.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura)),
+                    luz, OverlayTexture.DEFAULT_UV);
+            if (busto != null && cuerpo.body.visible) {
+                com.femclothes.render.relieve.BustoRender.actual = busto;
+                try {
+                    boolean chaqueta = cuerpo.jacket.visible;
+                    float inflado = prendas.isEmpty() ? (chaqueta ? 0.27f : 0f)
+                            : Math.min(chaqueta ? 0.27f : 0f, GarmentFeatureRenderer.infladoBustoDe(prendas));
+                    GarmentFeatureRenderer.dibujarBustoDeSkin(textura, cuerpo.body, chaqueta, inflado,
+                            matrices, vertexConsumers, luz);
+                } finally {
+                    com.femclothes.render.relieve.BustoRender.actual = null;
+                }
+            }
+            dibujarArmadura(be, cuerpo, matrices, vertexConsumers, luz);
+            if (!prendas.isEmpty()) {
+                GarmentFeatureRenderer.dibujarTela(cuerpo, slim, prendas, matrices, vertexConsumers, luz, busto);
+            }
+        } finally {
+            com.femclothes.render.relieve.BustoEnModelos.enEntidad = null;
+            com.femclothes.render.relieve.BustoEnModelos.modeloPrincipal = null;
+            com.femclothes.render.relieve.BustoEnModelos.slotArmadura = null;
         }
         matrices.pop();
     }
@@ -227,6 +268,8 @@ public class ManiquiRenderer extends GeoBlockRenderer<ManiquiBlockEntity> {
                 p.xScale = p.yScale = p.zScale = 1f;
             }
             visibles(modelo, slot);
+            // La pechera lleva el busto rígido; las otras piezas no (BustoEnModelos).
+            com.femclothes.render.relieve.BustoEnModelos.slotArmadura = slot;
 
             RegistryEntry<ArmorMaterial> material = armadura.getMaterial();
             int color = stack.isIn(ItemTags.DYEABLE)

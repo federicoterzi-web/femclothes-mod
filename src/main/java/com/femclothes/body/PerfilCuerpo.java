@@ -33,7 +33,7 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
      * cada una un talle de busto sobre el del cuerpo. Vencen en
      * {@code estrogenosHasta} (hora real, en milisegundos desde 1970).
      */
-    public static final int BUSTO_MAXIMO = 5;
+    public static final int BUSTO_MAXIMO = 7;
     /** "la duracion es 24 horas reloj": 24 horas reales, corren aunque el mundo esté cerrado. */
     public static final long DURACION_ESTROGENOS = 24L * 60 * 60 * 1000;
     /** Cuánto se marcan los músculos del relieve, en % (2026-10-01). */
