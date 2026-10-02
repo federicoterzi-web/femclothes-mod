@@ -418,7 +418,7 @@
   "femclothes.pollera.forma.tableada": "Pleated",
   "item.femclothes.molde_pollera_campana": "Skirt Pattern: A-line",
   "item.femclothes.molde_pollera_tableada": "Skirt Pattern: Pleated",
-  "femclothes.elegir_cuerpo.boton.siempre": "Always use as my skin: %s",
+  "femclothes.elegir_cuerpo.boton.siempre": "Always skin: %s",
   "femclothes.elegir_cuerpo.tooltip.siempre": "Yes: the chosen body, with its underwear, always shows, even without mod clothes. No: it only shows under mod clothes.",
   "item.femclothes.capa": "Cape",
   "trinkets.slot.espalda.capa": "Cape",
@@ -587,5 +587,9 @@
   "femclothes.estilado.siguiente_molde": "Mould ▸",
   "femclothes.estilado.tooltip.siguiente_molde": "Creative table: switch to the next appliqué or texture mould",
   "femclothes.maniqui.busto.sin": "Bust: none",
-  "femclothes.maniqui.busto": "Bust: size %s of %s"
+  "femclothes.maniqui.busto": "Bust: size %s of %s",
+  "femclothes.elegir_cuerpo.boton.busto": "Bust: %s",
+  "femclothes.elegir_cuerpo.busto.redondo": "Round",
+  "femclothes.elegir_cuerpo.busto.cuadrado": "Square",
+  "femclothes.elegir_cuerpo.tooltip.busto": "Bust shape (from the body or from Estrogen): rounded domes or cubic boxes, Minecraft style."
 }

@@ -3,6 +3,9 @@ package com.femclothes.render.relieve;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -44,7 +47,11 @@ public final class BustoRender {
     private BustoRender() {}
 
     /** El busto del jugador que se está dibujando. */
-    public record Busto(float talle, float sujecion, @Nullable RelieveRender.Rebote rebote) {}
+    public record Busto(float talle, float sujecion, @Nullable RelieveRender.Rebote rebote, boolean cuadrado) {
+        public Busto(float talle, float sujecion, @Nullable RelieveRender.Rebote rebote) {
+            this(talle, sujecion, rebote, false);
+        }
+    }
 
     /** El de la ropa del mod (lo pone {@code GarmentFeatureRenderer} mientras dibuja). */
     @Nullable
@@ -222,54 +229,319 @@ public final class BustoRender {
     }
 
     /**
+     * Desde qué carpa la tela holgada ya no marca dos cúpulas sino un solo
+     * manto (2026-10-02, "se marca demasiado en el hoodie no se deberian ver
+     * asi como dos tetas"): Suelto y Oversize. Normal sigue marcando las dos.
+     */
+    private static final float CARPA_MANTO = 1f;
+    /** Celdas por px de la grilla del manto. */
+    private static final int PASO = 2;
+
+    /** La carpa de la tela de cada calce: cuánto más abajo cae debajo del busto (px). */
+    public static float carpaDe(@Nullable com.femclothes.item.Calce calce) {
+        if (calce == null) return 0f;
+        return switch (calce) {
+            case NORMAL -> 0.4f;
+            case SUELTO -> 1.5f;
+            case OVERSIZE -> 2.5f;
+            default -> 0f;
+        };
+    }
+
+    /**
+     * Cuánto sale la tela por fuera del cuerpo en cada fila del torso (la
+     * dilatación de la pieza, con su caída hacia el ruedo): el manto se apoya
+     * en esa superficie y termina en el ruedo de la pieza.
+     */
+    public record Tela(float[] fila, int desde, int hasta) {
+        float en(float y) {
+            if (hasta - desde <= 1) return fila[Math.max(0, desde)];
+            float yy = Math.max(desde + 0.5f, Math.min(hasta - 0.5f, y)) - 0.5f;
+            int f0 = (int) Math.floor(yy), f1 = Math.min(f0 + 1, hasta - 1);
+            float k = yy - f0;
+            return fila[f0] + (fila[f1] - fila[f0]) * k;
+        }
+
+        static Tela uniforme(float inflado) {
+            float[] f = new float[12];
+            java.util.Arrays.fill(f, inflado);
+            return new Tela(f, 0, 12);
+        }
+    }
+
+    /**
+     * Un vértice de la malla: posición, normal, de qué punto del frente sale
+     * la textura ({@code ux, uy}) y qué punto del frente PLANO tiene debajo
+     * ({@code bx, by}: con eso se apoyan y se apuntan los apliques).
+     */
+    private record Vert(Vector3f pos, Vector3f normal, float ux, float uy, float bx, float by) {}
+
+    /**
+     * La malla del busto (cuadriláteros), según el estilo y la tela:
+     * <ul>
+     *   <li>cajas, si el busto es cuadrado (2026-10-02, "agreguemos un
+     *       selector de tetas cuadradas en el selector de skin");</li>
+     *   <li>un manto, si es una tela holgada (carpa ≥ {@link #CARPA_MANTO});</li>
+     *   <li>si no, las dos cúpulas.</li>
+     * </ul>
+     */
+    private static List<Vert[]> malla(Busto b, float inflado, float carpa, boolean rigido, boolean piel,
+                                      @Nullable Tela tela) {
+        if (b.cuadrado()) return cajas(b, inflado, carpa, rigido, piel);
+        Forma[] fs = formas(b, inflado, piel || carpa < CARPA_MANTO ? carpa : 0f, rigido, piel);
+        if (fs.length == 0) return List.of();
+        if (!piel && carpa >= CARPA_MANTO) return manto(fs, inflado, carpa, tela == null ? Tela.uniforme(inflado) : tela);
+        List<Vert[]> q = new ArrayList<>();
+        for (Forma f : fs) cupula(f, q);
+        return q;
+    }
+
+    /**
      * La piel y la ropa del mod (layout de la skin).
      *
      * @param inflado  cuánto sale la tela por fuera del cuerpo en el pecho (px; 0 = la piel)
      * @param carpa    cuánto más abajo cae la tela holgada debajo del busto (px)
      * @param filaSkin fila de la skin donde empieza el frente del torso: 20 (la
      *                 piel y todas las telas) o 36 (la segunda capa de la skin)
+     * @param tela     la dilatación de la pieza por fila (para el manto); null = uniforme
      */
     public static void dibujar(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov,
+                               float inflado, float carpa, float filaSkin, boolean piel, @Nullable Tela tela) {
+        dibujar(b, matrices, vc, luz, ov, 0xFFFFFFFF, Uv.skin(filaSkin), inflado, carpa, false, piel, tela);
+    }
+
+    public static void dibujar(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov,
                                float inflado, float carpa, float filaSkin, boolean piel) {
-        dibujar(b, matrices, vc, luz, ov, 0xFFFFFFFF, Uv.skin(filaSkin), inflado, carpa, false, piel);
+        dibujar(b, matrices, vc, luz, ov, inflado, carpa, filaSkin, piel, null);
     }
 
     /** Con cualquier mapeo de textura, color y rigidez (modelos de otros mods y armaduras: tela, no piel). */
     public static void dibujar(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov, int color,
                                Uv uv, float inflado, float carpa, boolean rigido) {
-        dibujar(b, matrices, vc, luz, ov, color, uv, inflado, carpa, rigido, false);
+        dibujar(b, matrices, vc, luz, ov, color, uv, inflado, carpa, rigido, false, null);
     }
 
     private static void dibujar(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov, int color,
-                                Uv uv, float inflado, float carpa, boolean rigido, boolean piel) {
+                                Uv uv, float inflado, float carpa, boolean rigido, boolean piel, @Nullable Tela tela) {
         Matrix4f m = matrices.peek().getPositionMatrix();
         Matrix3f n = matrices.peek().getNormalMatrix();
-        for (Forma f : formas(b, inflado, carpa, rigido, piel)) cupula(f, m, n, vc, luz, ov, color, uv);
+        for (Vert[] q : malla(b, inflado, carpa, rigido, piel, tela)) {
+            for (Vert v : q) vertice(m, n, vc, luz, ov, color, v.pos(), uv.u(v.ux()), uv.v(v.uy()), v.normal());
+        }
     }
 
-    private static void cupula(Forma f, Matrix4f m, Matrix3f n, VertexConsumer vc, int luz, int ov, int color, Uv uv) {
-        Vector3f[][] p = new Vector3f[ANILLOS + 1][GAJOS + 1];
-        Vector3f[][] nor = new Vector3f[ANILLOS + 1][GAJOS + 1];
-        float[][] uu = new float[ANILLOS + 1][GAJOS + 1], vv = new float[ANILLOS + 1][GAJOS + 1];
+    // ── cúpulas ──────────────────────────────────────────────────────────
+
+    private static void cupula(Forma f, List<Vert[]> salida) {
+        Vert[][] g = new Vert[ANILLOS + 1][GAJOS + 1];
         for (int i = 0; i <= ANILLOS; i++) {
             float r = i / (float) ANILLOS;
             for (int j = 0; j <= GAJOS; j++) {
                 double a = Math.PI * 2 * j / GAJOS;
-                p[i][j] = f.punto(r, a);
-                nor[i][j] = f.normal(r, a);
                 float[] frente = f.vistoDeFrente(r, a);
-                uu[i][j] = uv.u(frente[0]);
-                vv[i][j] = uv.v(frente[1]);
+                g[i][j] = new Vert(f.punto(r, a), f.normal(r, a), frente[0], frente[1], f.baseX(r, a), f.baseY(r, a));
             }
         }
         for (int i = 0; i < ANILLOS; i++) {
             for (int j = 0; j < GAJOS; j++) {
-                vertice(m, n, vc, luz, ov, color, p[i][j], uu[i][j], vv[i][j], nor[i][j]);
-                vertice(m, n, vc, luz, ov, color, p[i + 1][j], uu[i + 1][j], vv[i + 1][j], nor[i + 1][j]);
-                vertice(m, n, vc, luz, ov, color, p[i + 1][j + 1], uu[i + 1][j + 1], vv[i + 1][j + 1], nor[i + 1][j + 1]);
-                vertice(m, n, vc, luz, ov, color, p[i][j + 1], uu[i][j + 1], vv[i][j + 1], nor[i][j + 1]);
+                salida.add(new Vert[]{g[i][j], g[i + 1][j], g[i + 1][j + 1], g[i][j + 1]});
             }
         }
+    }
+
+    // ── manto ────────────────────────────────────────────────────────────
+
+    /**
+     * Una tela holgada sobre el busto (2026-10-02, "se marca demasiado en el
+     * hoodie no se deberian ver asi como dos tetas"): la tela no entra entre
+     * los pechos ni los envuelve uno por uno; queda tirante de una punta a la
+     * otra y cae derecho desde las puntas hasta el ruedo, como un estante.
+     *
+     * <p>Un campo de alturas sobre el frente del torso: se calcan las dos
+     * cúpulas (con su caída y su rebote) y se tensa la tela por filas y por
+     * columnas (envolvente cóncava, {@link #tensar}), con los bordes pegados a
+     * la superficie de la pieza ({@link Tela}). La textura va proyectada de
+     * frente: el estampado de la prenda no se corre.
+     */
+    private static List<Vert[]> manto(Forma[] fs, float inflado, float carpa, Tela tela) {
+        float y0 = tela.desde(), y1 = tela.hasta();
+        int nx = 8 * PASO, ny = Math.round((y1 - y0) * PASO);
+        if (ny < 2) return List.of();
+        float[][] h = new float[nx + 1][ny + 1];
+        int anillos = ANILLOS * 4, gajos = GAJOS * 3;
+        for (Forma f : fs) {
+            for (int i = 0; i <= anillos; i++) {
+                float r = i / (float) anillos;
+                for (int j = 0; j < gajos; j++) {
+                    Vector3f p = f.punto(r, Math.PI * 2 * j / gajos);
+                    int ix = Math.round((p.x + 4f) * PASO), iy = Math.round((p.y - y0) * PASO);
+                    if (ix < 0 || ix > nx || iy < 0 || iy > ny) continue;
+                    // Lo que sale por delante de la superficie de la pieza en esa fila.
+                    float sale = (f.plano() - p.z) - (tela.en(p.y) - inflado);
+                    if (sale > h[ix][iy]) h[ix][iy] = sale;
+                }
+            }
+        }
+        // Bordes pegados a la pieza: así no quedan rendijas con los costados ni con el ruedo.
+        for (int ix = 0; ix <= nx; ix++) { h[ix][0] = 0f; h[ix][ny] = 0f; }
+        for (int iy = 0; iy <= ny; iy++) { h[0][iy] = 0f; h[nx][iy] = 0f; }
+        float[] fila = new float[nx + 1];
+        for (int iy = 0; iy <= ny; iy++) {
+            for (int ix = 0; ix <= nx; ix++) fila[ix] = h[ix][iy];
+            tensar(fila);
+            for (int ix = 0; ix <= nx; ix++) h[ix][iy] = fila[ix];
+        }
+        for (int ix = 0; ix <= nx; ix++) tensar(h[ix]);
+        // Cuanto más holgada, más chato: la tela sobrante se lo come (Suelto ~0.88, Oversize ~0.65).
+        float chato = 1f - 0.35f * Math.max(0f, Math.min(1f, (carpa - CARPA_MANTO) / 1.5f));
+
+        Vert[][] g = new Vert[nx + 1][ny + 1];
+        float[][] z = new float[nx + 1][ny + 1];
+        for (int ix = 0; ix <= nx; ix++) {
+            for (int iy = 0; iy <= ny; iy++) {
+                h[ix][iy] *= chato;
+                z[ix][iy] = -2f - tela.en(y0 + iy / (float) PASO) - h[ix][iy];
+            }
+        }
+        for (int ix = 0; ix <= nx; ix++) {
+            for (int iy = 0; iy <= ny; iy++) {
+                float x = -4f + ix / (float) PASO, y = y0 + iy / (float) PASO;
+                int a = Math.max(0, ix - 1), c = Math.min(nx, ix + 1);
+                int d = Math.max(0, iy - 1), e = Math.min(ny, iy + 1);
+                float fx = (z[c][iy] - z[a][iy]) / ((c - a) / (float) PASO);
+                float fy = (z[ix][e] - z[ix][d]) / ((e - d) / (float) PASO);
+                Vector3f nor = new Vector3f(fx, fy, -1f).normalize();
+                g[ix][iy] = new Vert(new Vector3f(x, y, z[ix][iy]), nor, x, y, x, y);
+            }
+        }
+        List<Vert[]> q = new ArrayList<>();
+        for (int ix = 0; ix < nx; ix++) {
+            for (int iy = 0; iy < ny; iy++) {
+                // Lo que queda pegado a la pieza ya lo dibuja la pieza (y así no pelean en Z).
+                if (h[ix][iy] <= 1e-4f && h[ix + 1][iy] <= 1e-4f && h[ix + 1][iy + 1] <= 1e-4f && h[ix][iy + 1] <= 1e-4f) continue;
+                q.add(new Vert[]{g[ix][iy], g[ix + 1][iy], g[ix + 1][iy + 1], g[ix][iy + 1]});
+            }
+        }
+        return q;
+    }
+
+    /** La envolvente cóncava de arriba de {@code h} (puntos equiespaciados): la tela tirante. */
+    private static void tensar(float[] h) {
+        int n = h.length;
+        int[] pila = new int[n];
+        int k = 0;
+        for (int i = 0; i < n; i++) {
+            while (k >= 2) {
+                int a = pila[k - 2], b = pila[k - 1];
+                // b queda por debajo (o sobre) la recta a→i: sobra.
+                if ((h[b] - h[a]) * (i - a) <= (h[i] - h[a]) * (b - a)) k--;
+                else break;
+            }
+            pila[k++] = i;
+        }
+        for (int s = 0; s + 1 < k; s++) {
+            int a = pila[s], b = pila[s + 1];
+            for (int i = a + 1; i < b; i++) h[i] = h[a] + (h[b] - h[a]) * (i - a) / (float) (b - a);
+        }
+    }
+
+    // ── cajas ────────────────────────────────────────────────────────────
+
+    /**
+     * El busto cuadrado (2026-10-02, "agreguemos un selector de tetas
+     * cuadradas en el selector de skin"): una caja por pecho, de 4 px de ancho
+     * (la mitad del torso), que sale del pecho y se inclina hacia abajo con la
+     * caída, al estilo cúbico de Minecraft. Mismo talle, sujeción y rebote que
+     * las cúpulas. Las telas la envuelven apenas por fuera; las holgadas
+     * (carpa ≥ {@link #CARPA_MANTO}) en una sola caja que cae en carpa hasta
+     * el pecho. La textura va proyectada de frente: el frente lleva el pecho,
+     * la tapa y los costados estiran la fila o la columna del borde.
+     */
+    private static List<Vert[]> cajas(Busto b, float inflado, float carpa, boolean rigido, boolean piel) {
+        float t = b.talle() * b.sujecion();
+        if (t <= 0.05f) return List.of();
+        float cuerpo = 0.55f + 0.5f * t;
+        float abrir = Math.max(0f, inflado);
+        float hondo;
+        if (piel) {
+            hondo = cuerpo - Math.max(0f, inflado);
+            abrir = 0f;
+        } else {
+            hondo = Math.max(0f, Math.max(cuerpo + 0.06f + 0.12f * abrir, inflado) - inflado);
+        }
+        if (hondo <= 0.01f) return List.of();
+        float dy = 0f, dx = 0f;
+        if (b.rebote() != null && !rigido) {
+            dy = b.rebote().dy() * 12f * 0.6f;
+            dx = b.rebote().dx() * 8f;
+        }
+        float plano = -2f - inflado;
+        float arriba = ARRIBA + 1.2f - 0.25f * abrir;
+        float abajo = ARRIBA + 1.2f + 2.6f + 0.3f * t + 0.3f * abrir;
+        // Inclinación: el frente baja lo que sale × la caída (más firme en armaduras).
+        float caida = hondo * (0.18f + 0.03f * t) * (0.6f + 0.4f * b.sujecion()) * (rigido ? 0.3f : 1f);
+        List<Vert[]> q = new ArrayList<>();
+        if (!piel && carpa >= CARPA_MANTO) {
+            float chato = 1f - 0.35f * Math.max(0f, Math.min(1f, (carpa - CARPA_MANTO) / 1.5f));
+            caja(q, -4f, 4f, arriba, abajo, plano, hondo * chato, caida * chato, 0f, dy, carpa * 1.5f);
+        } else {
+            float colgar = piel ? 0f : carpa;
+            caja(q, -4f, 0f, arriba, abajo, plano, hondo, caida, dx, dy, colgar);
+            caja(q, 0f, 4f, arriba, abajo, plano, hondo, caida, dx, dy, colgar);
+        }
+        return q;
+    }
+
+    /**
+     * Una caja de x0..x1, y0..y1 sobre el pecho: la cara de atrás en el plano
+     * (no se dibuja), el frente {@code hondo} por delante, corrido hacia
+     * abajo {@code caida} y el rebote; {@code colgar} baja la arista de atrás
+     * de abajo (la tela cae en carpa hasta el pecho).
+     */
+    private static void caja(List<Vert[]> q, float x0, float x1, float y0, float y1, float plano, float hondo,
+                             float caida, float dx, float dy, float colgar) {
+        float zf = plano - hondo;
+        // Atrás: arriba-izq, arriba-der, abajo-der, abajo-izq. Frente: lo mismo, corrido.
+        Vector3f a0 = new Vector3f(x0, y0, plano), a1 = new Vector3f(x1, y0, plano);
+        Vector3f a2 = new Vector3f(x1, y1 + colgar, plano), a3 = new Vector3f(x0, y1 + colgar, plano);
+        Vector3f f0 = new Vector3f(x0 + dx, y0 + caida + dy, zf), f1 = new Vector3f(x1 + dx, y0 + caida + dy, zf);
+        Vector3f f2 = new Vector3f(x1 + dx, y1 + caida + dy, zf), f3 = new Vector3f(x0 + dx, y1 + caida + dy, zf);
+        // Textura de frente sin el rebote; debajo, el rectángulo plano.
+        float[][] uvA = {{x0, y0}, {x1, y0}, {x1, y1 + colgar}, {x0, y1 + colgar}};
+        float[][] uvF = {{x0, y0 + caida}, {x1, y0 + caida}, {x1, y1 + caida}, {x0, y1 + caida}};
+        float[][] base = {{x0, y0}, {x1, y0}, {x1, y1}, {x0, y1}};
+        Vector3f[] at = {a0, a1, a2, a3}, fr = {f0, f1, f2, f3};
+        // Frente.
+        cara(q, new Vector3f(0, 0, -1), new int[][]{{1, 0}, {1, 1}, {1, 2}, {1, 3}}, at, fr, uvA, uvF, base);
+        // Tapa de arriba, de abajo y los dos costados.
+        cara(q, new Vector3f(0, -1, 0), new int[][]{{0, 0}, {0, 1}, {1, 1}, {1, 0}}, at, fr, uvA, uvF, base);
+        cara(q, new Vector3f(0, 1, 0), new int[][]{{0, 3}, {0, 2}, {1, 2}, {1, 3}}, at, fr, uvA, uvF, base);
+        cara(q, new Vector3f(-1, 0, 0), new int[][]{{0, 0}, {0, 3}, {1, 3}, {1, 0}}, at, fr, uvA, uvF, base);
+        cara(q, new Vector3f(1, 0, 0), new int[][]{{0, 1}, {0, 2}, {1, 2}, {1, 1}}, at, fr, uvA, uvF, base);
+    }
+
+    /**
+     * Una cara de la caja: {@code idx} = {0 atrás | 1 frente, esquina}. La
+     * normal sale de los vértices (orientada hacia {@code afuera}), y el orden
+     * se da vuelta si hace falta para que gire igual que las cúpulas.
+     */
+    private static void cara(List<Vert[]> q, Vector3f afuera, int[][] idx, Vector3f[] at, Vector3f[] fr,
+                             float[][] uvA, float[][] uvF, float[][] base) {
+        Vert[] v = new Vert[4];
+        Vector3f[] p = new Vector3f[4];
+        for (int i = 0; i < 4; i++) p[i] = idx[i][0] == 0 ? at[idx[i][1]] : fr[idx[i][1]];
+        Vector3f nor = new Vector3f(p[2]).sub(p[0]).cross(new Vector3f(p[3]).sub(p[1]));
+        if (nor.lengthSquared() < 1e-10f) return;                   // cara aplastada (sin hondo)
+        boolean alReves = nor.dot(afuera) > 0;
+        if (nor.dot(afuera) < 0) nor.negate();
+        nor.normalize();
+        for (int i = 0; i < 4; i++) {
+            float[] uv = idx[i][0] == 0 ? uvA[idx[i][1]] : uvF[idx[i][1]];
+            float[] b = base[idx[i][1]];
+            v[i] = new Vert(p[i], nor, uv[0], uv[1], b[0], b[1]);
+        }
+        // Las cúpulas giran con cruz(lado1, lado2) hacia ADENTRO.
+        q.add(alReves ? new Vert[]{v[3], v[2], v[1], v[0]} : v);
     }
 
     private static void vertice(Matrix4f m, Matrix3f n, VertexConsumer vc, int luz, int ov, int color,
@@ -287,28 +559,45 @@ public final class BustoRender {
     /**
      * Dónde queda, sobre el busto, el punto (x, y) del frente plano del torso
      * (2026-10-02, "hay que contemplar los pechos para los apliques"): el
-     * aplique se guarda en el frente plano y acá se apoya en la cúpula (y
-     * rebota con ella). Null si el punto no cae en ninguna cúpula — o si no
-     * hay busto: la prenda sigue sirviendo igual sin él.
+     * aplique se guarda en el frente plano y acá se apoya en el busto (y
+     * rebota con él). Null si el punto no cae sobre el busto — o si no hay
+     * busto: la prenda sigue sirviendo igual sin él.
      */
     @Nullable
     public static Punto sobreBusto(Busto b, float x, float y, float inflado) {
+        return sobreBusto(b, x, y, inflado, 0f);
+    }
+
+    /** Con la carpa de la tela (las holgadas son un manto, ver {@link #carpaDe}). */
+    @Nullable
+    public static Punto sobreBusto(Busto b, float x, float y, float inflado, float carpa) {
         Punto mejor = null;
-        float sale = -1f;
-        for (Forma f : formas(b, inflado, 0f, false, false)) {
-            float[] pol = f.polar(x, y);
-            if (pol[0] > 1f) continue;
-            float s = f.sale(pol[0], pol[1]);
-            if (s > sale) {
-                sale = s;
-                mejor = new Punto(f.punto(pol[0], pol[1]), f.normal(pol[0], pol[1]));
+        for (Vert[] q : malla(b, inflado, carpa, false, false, null)) {
+            for (int[] tri : TRIANGULOS) {
+                Vert a = q[tri[0]], c = q[tri[1]], d = q[tri[2]];
+                // Baricéntricas del punto en el triángulo del frente plano (las caras de costado se aplastan: se saltean).
+                float e1x = c.bx() - a.bx(), e1y = c.by() - a.by(), e2x = d.bx() - a.bx(), e2y = d.by() - a.by();
+                float det = e1x * e2y - e2x * e1y;
+                if (Math.abs(det) < 1e-6f) continue;
+                float px = x - a.bx(), py = y - a.by();
+                float w1 = (px * e2y - e2x * py) / det, w2 = (e1x * py - px * e1y) / det;
+                if (w1 < -1e-4f || w2 < -1e-4f || w1 + w2 > 1f + 1e-4f) continue;
+                float w0 = 1f - w1 - w2;
+                Vector3f pos = new Vector3f(a.pos()).mul(w0).add(new Vector3f(c.pos()).mul(w1)).add(new Vector3f(d.pos()).mul(w2));
+                if (mejor != null && pos.z >= mejor.pos().z) continue;     // el más de adelante
+                Vector3f nor = new Vector3f(a.normal()).mul(w0).add(new Vector3f(c.normal()).mul(w1))
+                        .add(new Vector3f(d.normal()).mul(w2));
+                if (nor.lengthSquared() < 1e-10f) nor.set(0, 0, -1);
+                mejor = new Punto(pos, nor.normalize());
             }
         }
         return mejor;
     }
 
+    private static final int[][] TRIANGULOS = {{0, 1, 2}, {0, 2, 3}};
+
     /**
-     * Un rayo contra las cúpulas, en px del torso (2026-10-02, "se puede las
+     * Un rayo contra el busto, en px del torso (2026-10-02, "se puede las
      * dos? cosa que si armo la prenda sin pechos despues siga sirviendo?"):
      * devuelve {t, x, y} del choque más cercano al origen (t en el largo de
      * {@code dir}), con (x, y) el punto del frente PLANO que está debajo — eso
@@ -316,28 +605,20 @@ public final class BustoRender {
      */
     @Nullable
     public static float[] rayo(Busto b, Vector3f origen, Vector3f dir, float inflado) {
+        return rayo(b, origen, dir, inflado, 0f);
+    }
+
+    /** Con la carpa de la tela (las holgadas son un manto, ver {@link #carpaDe}). */
+    @Nullable
+    public static float[] rayo(Busto b, Vector3f origen, Vector3f dir, float inflado, float carpa) {
         float[] mejor = null;
-        for (Forma f : formas(b, inflado, 0f, false, false)) {
-            for (int i = 0; i < ANILLOS; i++) {
-                for (int j = 0; j < GAJOS; j++) {
-                    float r0 = i / (float) ANILLOS, r1 = (i + 1) / (float) ANILLOS;
-                    double a0 = Math.PI * 2 * j / GAJOS, a1 = Math.PI * 2 * (j + 1) / GAJOS;
-                    Vector3f p00 = f.punto(r0, a0), p10 = f.punto(r1, a0), p11 = f.punto(r1, a1), p01 = f.punto(r0, a1);
-                    float[] h = triangulo(origen, dir, p00, p10, p11);
-                    float[] k = h;
-                    float ra = r0, rb = r1, rc = r1;
-                    double aa = a0, ab = a0, ac = a1;
-                    if (h == null) {
-                        k = triangulo(origen, dir, p00, p11, p01);
-                        rb = r1; rc = r0; ab = a1; ac = a1;
-                    }
-                    if (k == null || (mejor != null && k[0] >= mejor[0])) continue;
-                    // Baricéntricas → punto de la base debajo del choque.
-                    float w1 = k[1], w2 = k[2], w0 = 1f - w1 - w2;
-                    float bx = w0 * f.baseX(ra, aa) + w1 * f.baseX(rb, ab) + w2 * f.baseX(rc, ac);
-                    float by = w0 * f.baseY(ra, aa) + w1 * f.baseY(rb, ab) + w2 * f.baseY(rc, ac);
-                    mejor = new float[]{k[0], bx, by};
-                }
+        for (Vert[] q : malla(b, inflado, carpa, false, false, null)) {
+            for (int[] tri : TRIANGULOS) {
+                Vert a = q[tri[0]], c = q[tri[1]], d = q[tri[2]];
+                float[] k = triangulo(origen, dir, a.pos(), c.pos(), d.pos());
+                if (k == null || (mejor != null && k[0] >= mejor[0])) continue;
+                float w1 = k[1], w2 = k[2], w0 = 1f - w1 - w2;
+                mejor = new float[]{k[0], w0 * a.bx() + w1 * c.bx() + w2 * d.bx(), w0 * a.by() + w1 * c.by() + w2 * d.by()};
             }
         }
         return mejor;

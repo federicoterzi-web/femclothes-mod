@@ -24,7 +24,8 @@ import net.minecraft.util.StringIdentifiable;
  */
 public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, boolean elegido,
                            int tonoClaro, int tonoOscuro, int tonoRubor, int fuerzaRubor,
-                           boolean siempre, int busto, int definicion, long estrogenosHasta) {
+                           boolean siempre, int busto, int definicion, long estrogenosHasta,
+                           boolean bustoCuadrado) {
 
     /**
      * Dosis de Estrógenos acumuladas (2026-10-01, "3 tamaños de mamas... a
@@ -38,6 +39,18 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
     public static final long DURACION_ESTROGENOS = 24L * 60 * 60 * 1000;
     /** Cuánto se marcan los músculos del relieve, en % (2026-10-01). */
     public static final int DEFINICION_DEFECTO = 100, DEFINICION_MAXIMA = 200;
+
+    /**
+     * {@code bustoCuadrado} (2026-10-02, "agreguemos un selector de tetas
+     * cuadradas en el selector de skin"): el busto como cajas, al estilo
+     * cubico de Minecraft, en vez de las cupulas redondeadas.
+     */
+    public PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, boolean elegido,
+                        int tonoClaro, int tonoOscuro, int tonoRubor, int fuerzaRubor,
+                        boolean siempre, int busto, int definicion, long estrogenosHasta) {
+        this(cuerpo, tono, interior, elegido, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre, busto, definicion,
+                estrogenosHasta, false);
+    }
 
     /** Sin busto ni definición (lo de antes del relieve). */
     public PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, boolean elegido,
@@ -97,13 +110,14 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
             // Relieve (2026-10-01): busto de los Estrógenos y definición de los músculos.
             Codec.INT.optionalFieldOf("busto", 0).forGetter(PerfilCuerpo::busto),
             Codec.INT.optionalFieldOf("definicion", DEFINICION_DEFECTO).forGetter(PerfilCuerpo::definicion),
-            Codec.LONG.optionalFieldOf("estrogenos_hasta", 0L).forGetter(PerfilCuerpo::estrogenosHasta)
-    ).apply(i, (cuerpo, tono, viejo, arriba, abajo, color, elegido, claro, oscuro, rubor, fuerza, siempre, busto, definicion, hasta) -> {
+            Codec.LONG.optionalFieldOf("estrogenos_hasta", 0L).forGetter(PerfilCuerpo::estrogenosHasta),
+            Codec.BOOL.optionalFieldOf("busto_cuadrado", false).forGetter(PerfilCuerpo::bustoCuadrado)
+    ).apply(i, (cuerpo, tono, viejo, arriba, abajo, color, elegido, claro, oscuro, rubor, fuerza, siempre, busto, definicion, hasta, cuadrado) -> {
         RopaInterior base = viejo.map(RopaInterior::deClaveVieja).orElse(RopaInterior.DEFECTO);
         RopaInterior interior = new RopaInterior(arriba.orElse(base.arriba()), abajo.orElse(base.abajo()),
                 color.orElse(base.color()));
         return new PerfilCuerpo(cuerpo, tono, interior, elegido, claro, oscuro, rubor, fuerza, siempre,
-                Math.min(BUSTO_MAXIMO, busto), definicion, hasta);
+                Math.min(BUSTO_MAXIMO, busto), definicion, hasta, cuadrado);
     }));
 
     /** A mano: {@code PacketCodec.tuple} llega hasta 6 campos y son 12. */
@@ -123,12 +137,13 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
                 buf.writeVarInt(p.busto());
                 buf.writeVarInt(p.definicion());
                 buf.writeLong(p.estrogenosHasta());
+                buf.writeBoolean(p.bustoCuadrado());
             },
             buf -> new PerfilCuerpo(CuerpoBase.values()[buf.readVarInt()], buf.readInt(),
                     new RopaInterior(InteriorArriba.values()[buf.readVarInt()], InteriorAbajo.values()[buf.readVarInt()],
                             buf.readInt()), buf.readBoolean(),
                     buf.readInt(), buf.readInt(), buf.readInt(), buf.readVarInt(), buf.readBoolean(),
-                    buf.readVarInt(), buf.readVarInt(), buf.readLong()));
+                    buf.readVarInt(), buf.readVarInt(), buf.readLong(), buf.readBoolean()));
 
     /** True si el tono todavia hay que sacarlo de la skin del jugador. */
     public boolean tonoDerivado() {
@@ -136,36 +151,40 @@ public record PerfilCuerpo(CuerpoBase cuerpo, int tono, RopaInterior interior, b
     }
 
     public PerfilCuerpo conCuerpo(CuerpoBase c) {
-        return new PerfilCuerpo(c, tono, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre, busto, definicion, estrogenosHasta);
+        return new PerfilCuerpo(c, tono, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre, busto, definicion, estrogenosHasta, bustoCuadrado);
     }
 
     public PerfilCuerpo conTono(int rgb) {
-        return new PerfilCuerpo(cuerpo, rgb, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre, busto, definicion, estrogenosHasta);
+        return new PerfilCuerpo(cuerpo, rgb, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre, busto, definicion, estrogenosHasta, bustoCuadrado);
     }
 
     /** Los tres colores de una vez (la GUI de elegir cuerpo). */
     public PerfilCuerpo conTonos(int base, int claro, int oscuro, int rubor, int fuerza) {
-        return new PerfilCuerpo(cuerpo, base, interior, true, claro, oscuro, rubor, fuerza, siempre, busto, definicion, estrogenosHasta);
+        return new PerfilCuerpo(cuerpo, base, interior, true, claro, oscuro, rubor, fuerza, siempre, busto, definicion, estrogenosHasta, bustoCuadrado);
     }
 
     public PerfilCuerpo conSiempre(boolean valor) {
-        return new PerfilCuerpo(cuerpo, tono, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, valor, busto, definicion, estrogenosHasta);
+        return new PerfilCuerpo(cuerpo, tono, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, valor, busto, definicion, estrogenosHasta, bustoCuadrado);
     }
 
     /** Dosis de Estrógenos {@code b} que vencen en {@code hasta} (milisegundos reales; 0 dosis = sin efecto). */
     public PerfilCuerpo conBusto(int b, long hasta) {
         int dosis = Math.max(0, Math.min(BUSTO_MAXIMO, b));
         return new PerfilCuerpo(cuerpo, tono, interior, elegido, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre,
-                dosis, definicion, dosis == 0 ? 0L : hasta);
+                dosis, definicion, dosis == 0 ? 0L : hasta, bustoCuadrado);
     }
 
     public PerfilCuerpo conDefinicion(int d) {
         return new PerfilCuerpo(cuerpo, tono, interior, elegido, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre,
-                busto, Math.max(0, Math.min(DEFINICION_MAXIMA, d)), estrogenosHasta);
+                busto, Math.max(0, Math.min(DEFINICION_MAXIMA, d)), estrogenosHasta, bustoCuadrado);
+    }
+
+    public PerfilCuerpo conBustoCuadrado(boolean valor) {
+        return new PerfilCuerpo(cuerpo, tono, interior, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre, busto, definicion, estrogenosHasta, valor);
     }
 
     public PerfilCuerpo conInterior(RopaInterior r) {
-        return new PerfilCuerpo(cuerpo, tono, r, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre, busto, definicion, estrogenosHasta);
+        return new PerfilCuerpo(cuerpo, tono, r, true, tonoClaro, tonoOscuro, tonoRubor, fuerzaRubor, siempre, busto, definicion, estrogenosHasta, bustoCuadrado);
     }
 
     /**

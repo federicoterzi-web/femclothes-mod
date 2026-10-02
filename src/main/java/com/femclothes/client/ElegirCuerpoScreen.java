@@ -79,7 +79,9 @@ public class ElegirCuerpoScreen extends Screen {
     private com.femclothes.body.InteriorArriba interiorArriba = com.femclothes.body.RopaInterior.DEFECTO.arriba();
     private com.femclothes.body.InteriorAbajo interiorAbajo = com.femclothes.body.RopaInterior.DEFECTO.abajo();
     private boolean siempre = false;
-    private ButtonWidget btnArriba, btnAbajo, btnSiempre;
+    /** Busto en cajas (2026-10-02, "agreguemos un selector de tetas cuadradas en el selector de skin"). */
+    private boolean bustoCuadrado = false;
+    private ButtonWidget btnArriba, btnAbajo, btnSiempre, btnBusto;
     private final SliderCanal[] sliders = new SliderCanal[3];
     private final BotonZona[] botonesZona = new BotonZona[ZONAS];
     private ButtonWidget btnAutomatico;
@@ -100,6 +102,7 @@ public class ElegirCuerpoScreen extends Screen {
         tonos[ZONA_INTERIOR] = perfil.interior().color() == com.femclothes.body.RopaInterior.COLOR_DEFECTO
                 ? null : perfil.interior().color();
         siempre = perfil.siempre();
+        bustoCuadrado = perfil.bustoCuadrado();
         fuerzaRubor = perfil.fuerzaRubor();
     }
 
@@ -184,10 +187,16 @@ public class ElegirCuerpoScreen extends Screen {
                 Text.empty(), b -> interiorAbajo = interiorAbajo.siguiente());
         btnAbajo.setTooltip(Tooltip.of(Text.translatable("femclothes.elegir_cuerpo.tooltip.interior_abajo")));
         addDrawableChild(btnAbajo);
-        btnSiempre = new EstiloPergamino.BotonPergamino(x0 + GRILLA_X, y0 + 224, COLUMNAS * CELDA_W - 4, 16,
+        // Usar siempre y la forma del busto comparten la fila (mitad y mitad).
+        int mitad = (COLUMNAS * CELDA_W - 4 - 4) / 2;
+        btnSiempre = new EstiloPergamino.BotonPergamino(x0 + GRILLA_X, y0 + 224, mitad, 16,
                 Text.empty(), b -> siempre = !siempre);
         btnSiempre.setTooltip(Tooltip.of(Text.translatable("femclothes.elegir_cuerpo.tooltip.siempre")));
         addDrawableChild(btnSiempre);
+        btnBusto = new EstiloPergamino.BotonPergamino(x0 + GRILLA_X + mitad + 4, y0 + 224, mitad, 16,
+                Text.empty(), b -> bustoCuadrado = !bustoCuadrado);
+        btnBusto.setTooltip(Tooltip.of(Text.translatable("femclothes.elegir_cuerpo.tooltip.busto")));
+        addDrawableChild(btnBusto);
 
         addDrawableChild(new EstiloPergamino.BotonPergamino(x0 + DERECHA_X, y0 + 200, DERECHA_ANCHO, 18,
                 Text.translatable("femclothes.elegir_cuerpo.boton.confirmar"), b -> confirmar()));
@@ -206,6 +215,9 @@ public class ElegirCuerpoScreen extends Screen {
         btnAbajo.setMessage(Text.literal("\u2193 ").append(Text.translatable(interiorAbajo.traduccion())));
         btnSiempre.setMessage(Text.translatable("femclothes.elegir_cuerpo.boton.siempre",
                 Text.translatable(siempre ? "femclothes.si" : "femclothes.no")));
+        btnBusto.setMessage(Text.translatable("femclothes.elegir_cuerpo.boton.busto",
+                Text.translatable(bustoCuadrado ? "femclothes.elegir_cuerpo.busto.cuadrado"
+                        : "femclothes.elegir_cuerpo.busto.redondo")));
         sliderFuerza.visible = zona == CuerpoBaseTextures.ZONA_RUBOR;
         boolean base = zona == CuerpoBaseTextures.ZONA_BASE;
         btnAutomatico.setMessage(Text.translatable(base
@@ -225,7 +237,7 @@ public class ElegirCuerpoScreen extends Screen {
                 tonos[1] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[1],
                 tonos[2] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[2],
                 tonos[3] == null ? PerfilCuerpo.TONO_AUTOMATICO : tonos[3], fuerzaRubor,
-                interiorArriba.clave, interiorAbajo.clave, colorDeZona(ZONA_INTERIOR), siempre));
+                interiorArriba.clave, interiorAbajo.clave, colorDeZona(ZONA_INTERIOR), siempre, bustoCuadrado));
         close();
     }
 
@@ -287,7 +299,7 @@ public class ElegirCuerpoScreen extends Screen {
                 // El relieve que ya tiene (busto de los Estrógenos, definición).
                 com.femclothes.body.PerfilesDeCuerpo.de(jugador).busto(),
                 com.femclothes.body.PerfilesDeCuerpo.de(jugador).definicion(),
-                com.femclothes.body.PerfilesDeCuerpo.de(jugador).estrogenosHasta());
+                com.femclothes.body.PerfilesDeCuerpo.de(jugador).estrogenosHasta(), bustoCuadrado);
         // Sin ropa: solo el cuerpo que se está eligiendo.
         GarmentFeatureRenderer.previewOverride = List.of();
         try {

@@ -29,9 +29,10 @@ public final class RedCuerpo {
      * Oscura ({@link PerfilCuerpo#TONO_AUTOMATICO} = salen del Base).
      */
     public record Elegir(String cuerpo, int tono, int claro, int oscuro, int rubor, int fuerza,
-                         String arriba, String abajo, int colorInterior, boolean siempre) implements CustomPayload {
+                         String arriba, String abajo, int colorInterior, boolean siempre,
+                         boolean bustoCuadrado) implements CustomPayload {
         public static final Id<Elegir> ID = new Id<>(Identifier.of(Femclothes.MOD_ID, "elegir_cuerpo"));
-        /** A mano: son 10 campos y {@code PacketCodec.tuple} llega hasta 6. */
+        /** A mano: son 11 campos y {@code PacketCodec.tuple} llega hasta 6. */
         public static final PacketCodec<RegistryByteBuf, Elegir> CODEC = PacketCodec.of(
                 (e, buf) -> {
                     buf.writeString(e.cuerpo(), 32);
@@ -44,9 +45,10 @@ public final class RedCuerpo {
                     buf.writeString(e.abajo(), 32);
                     buf.writeInt(e.colorInterior());
                     buf.writeBoolean(e.siempre());
+                    buf.writeBoolean(e.bustoCuadrado());
                 },
                 buf -> new Elegir(buf.readString(32), buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt(),
-                        buf.readVarInt(), buf.readString(32), buf.readString(32), buf.readInt(), buf.readBoolean()));
+                        buf.readVarInt(), buf.readString(32), buf.readString(32), buf.readInt(), buf.readBoolean(), buf.readBoolean()));
 
         @Override
         public Id<? extends CustomPayload> getId() { return ID; }
@@ -83,7 +85,8 @@ public final class RedCuerpo {
                             .conTonos(payload.tono() & 0xFFFFFF, payload.claro() & 0xFFFFFF, payload.oscuro() & 0xFFFFFF, payload.rubor() & 0xFFFFFF,
                                     net.minecraft.util.math.MathHelper.clamp(payload.fuerza(), 0, 100))
                             .conInterior(interiorDe(payload))
-                            .conSiempre(payload.siempre()));
+                            .conSiempre(payload.siempre())
+                            .conBustoCuadrado(payload.bustoCuadrado()));
                 }));
     }
 

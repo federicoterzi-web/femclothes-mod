@@ -176,7 +176,8 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         Vector3f cerca = inversa.transformPosition(new Vector3f(mx, my, Z)).mul(16f);
         Vector3f dir = new Vector3f(lejos).sub(cerca);
         float[] h = com.femclothes.render.relieve.BustoRender.rayo(busto, cerca, dir,
-                Math.max(0f, pieza.dilatacion()) + 0.02f);
+                Math.max(0f, pieza.dilatacion()) + 0.02f,
+                com.femclothes.render.relieve.BustoRender.carpaDe(com.femclothes.item.Calce.de(pieza.dilatacion())));
         if (h == null) return null;
         // Profundidad en la misma escala que cortar(): 1 = del lado del que mira.
         return new Toque(Parte.TORSO, h[1], h[2], -2f, Direction.NORTH, 1f - h[0]);

@@ -83,7 +83,8 @@ public final class ApliqueRenderer {
                 a.parte() == Parte.TORSO && a.cara() == net.minecraft.util.math.Direction.NORTH
                         && com.femclothes.render.relieve.BustoRender.actual != null
                         ? com.femclothes.render.relieve.BustoRender.sobreBusto(
-                                com.femclothes.render.relieve.BustoRender.actual, a.x(), a.y(), afuera)
+                                com.femclothes.render.relieve.BustoRender.actual, a.x(), a.y(), afuera,
+                                com.femclothes.render.relieve.BustoRender.carpaDe(com.femclothes.item.Calce.de(dil)))
                         : null;
         if (enBusto != null) {
             matrices.translate(enBusto.pos().x / 16f, enBusto.pos().y / 16f, enBusto.pos().z / 16f);

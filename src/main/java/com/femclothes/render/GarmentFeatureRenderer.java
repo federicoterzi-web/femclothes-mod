@@ -501,13 +501,13 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             if (parte == Parte.TORSO && com.femclothes.render.relieve.BustoRender.actual != null
                     && com.femclothes.render.relieve.BustoRender.cubre(desde, hasta)) {
                 infladoBusto = Math.max(fila[3], infladoBusto + SEPARACION_CAPAS);
-                float carpa = calce == null ? 0f : switch (calce) {
-                    case NORMAL -> 0.4f;
-                    case SUELTO -> 1.5f;
-                    case OVERSIZE -> 2.5f;
-                    default -> 0f;
-                };
-                dibujarBusto(pieza.textura(), delModelo, infladoBusto, carpa, 20f, matrices, vertexConsumers, luz);
+                float carpa = com.femclothes.render.relieve.BustoRender.carpaDe(calce);
+                // Suelto y Oversize: un manto apoyado en la tela de cada fila (2026-10-02,
+                // "se marca demasiado en el hoodie no se deberian ver asi como dos tetas").
+                com.femclothes.render.relieve.BustoRender.Tela tela =
+                        new com.femclothes.render.relieve.BustoRender.Tela(fila.clone(), desde, hasta);
+                dibujarBusto(pieza.textura(), delModelo, infladoBusto, carpa, 20f, false, tela,
+                        matrices, vertexConsumers, luz);
             }
 
             for (int f = desde; f < hasta; f++) exterior[f] = Math.max(exterior[f], fila[f]);
@@ -593,7 +593,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         float sujecion = arriba == com.femclothes.body.InteriorArriba.BINDER ? 0.3f
                 : arriba == com.femclothes.body.InteriorArriba.DEPORTIVO ? 0.75f : 1f;
         return new com.femclothes.render.relieve.BustoRender.Busto(talle, sujecion,
-                fisica ? com.femclothes.render.relieve.FisicaBusto.de(entidad, tickDelta, talle) : null);
+                fisica ? com.femclothes.render.relieve.FisicaBusto.de(entidad, tickDelta, talle) : null,
+                perfil.bustoCuadrado());
     }
 
     /** {@link #infladoBustoCuerpo} para un conjunto de prendas (las piezas de su torso). */
@@ -659,6 +660,13 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     /** Las dos cúpulas del busto con {@code textura} (piel o tela); las translúcidas, a la segunda pasada. */
     private static void dibujarBusto(Identifier textura, ModelPart torso, float inflado, float carpa, float filaSkin,
                                      boolean piel, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
+        dibujarBusto(textura, torso, inflado, carpa, filaSkin, piel, null, matrices, vertexConsumers, luz);
+    }
+
+    /** Con la dilatación de la pieza por fila ({@code tela}: el manto de las telas holgadas se apoya en ella). */
+    private static void dibujarBusto(Identifier textura, ModelPart torso, float inflado, float carpa, float filaSkin,
+                                     boolean piel, @Nullable com.femclothes.render.relieve.BustoRender.Tela tela,
+                                     MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
         com.femclothes.render.relieve.BustoRender.Busto busto = com.femclothes.render.relieve.BustoRender.actual;
         if (busto == null) return;
         matrices.push();
@@ -669,11 +677,11 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             copia.peek().getNormalMatrix().set(matrices.peek().getNormalMatrix());
             TRANSLUCIDAS_PENDIENTES.add(() -> com.femclothes.render.relieve.BustoRender.dibujar(busto, copia,
                     vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura)), luz,
-                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel));
+                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel, tela));
         } else {
             com.femclothes.render.relieve.BustoRender.dibujar(busto, matrices,
                     vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura)), luz,
-                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel);
+                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel, tela);
         }
         matrices.pop();
     }
