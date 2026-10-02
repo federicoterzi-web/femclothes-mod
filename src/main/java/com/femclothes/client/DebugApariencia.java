@@ -81,27 +81,7 @@ public final class DebugApariencia {
                     feedback(ctx.getSource());
                     return 1;
                 }))
-                .then(pollera())
                 .then(relieve());
-    }
-
-    /**
-     * Cómo se comporta la pollera con las piernas (2026-09-29, "probaria las
-     * dos"): {@code abierta} = el ruedo se corre donde pasa cada pierna,
-     * {@code rigida} = quieta pero más ancha. Solo cambia lo que VE quien lo
-     * usa, sin persistencia — es para comparar en el juego.
-     */
-    private static LiteralArgumentBuilder<FabricClientCommandSource> pollera() {
-        LiteralArgumentBuilder<FabricClientCommandSource> raiz = ClientCommandManager.literal("pollera");
-        for (String modo : new String[]{"abierta", "rigida"}) {
-            raiz.then(ClientCommandManager.literal(modo).executes(ctx -> {
-                com.femclothes.render.PolleraMalla.piernasAbiertas = modo.equals("abierta");
-                ctx.getSource().sendFeedback(Text.literal("[femclothes debug] pollera " + modo
-                        + (modo.equals("abierta") ? ": sigue las piernas y se mueve" : ": quieta, sin piernas ni movimiento")));
-                return 1;
-            }));
-        }
-        return raiz;
     }
 
     /**

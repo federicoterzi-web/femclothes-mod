@@ -35,11 +35,10 @@ import org.joml.Vector3f;
  * perforan las mismas rutinas que al resto de las prendas.
  *
  * <h2>Piernas y movimiento</h2>
- * {@link #piernasAbiertas} (2026-09-29, "probaria las dos"; se cambia con
- * {@code /femclothesdebug pollera abierta|rigida}): abierta = la tela choca
- * con las piernas ({@link #chocarConPiernas}, contra su caja real) y se
- * mueve con el cuerpo; rígida = quieta, sin piernas ni movimiento, más ancha
- * adelante y atrás. El movimiento (2026-09-30, "habria que animarlas segun
+ * La tela choca con las piernas ({@link #chocarConPiernas}, contra su caja
+ * real) y se mueve con el cuerpo (el modo rígido de prueba se sacó el
+ * 2026-10-02, "sacar la pollera rigida"). Cuelga hacia abajo aunque el
+ * torso se incline ({@link #colgar}). El movimiento (2026-09-30, "habria que animarlas segun
  * el movimiento") usa la inercia de la capa vanilla ({@link CapaMalla#movimiento}):
  * el ruedo queda atrás al caminar/correr, se abre al caer, se achica al
  * saltar, se balancea de costado y se retuerce un poco con cada paso. Todo
@@ -51,9 +50,6 @@ import org.joml.Vector3f;
 public final class PolleraMalla {
 
     private PolleraMalla() {}
-
-    /** Modo de prueba de las piernas — ver el javadoc de la clase. */
-    public static boolean piernasAbiertas = true;
 
     private static final float Y_CINTURA = 9f;
     private static final int COLUMNAS = 48;
@@ -112,13 +108,16 @@ public final class PolleraMalla {
     public static void dibujar(MatrixStack matrices, VertexConsumer vc, int luz, PolleraForma forma,
                                PolleraLargo largo, float dil, @Nullable Piernas piernas,
                                CapaMalla.Movimiento mov, float twirl) {
-        dibujar(matrices, vc, luz, forma, largo, dil, piernas, mov, twirl, 0f);
+        dibujar(matrices, vc, luz, forma, largo, dil, piernas, mov, twirl, 0f, 0f);
     }
 
-    /** @param cola cuánto sale la cola por detrás (px, ver {@code BustoRender.formasCola}); la tela pasa por fuera */
+    /**
+     * @param cola        cuánto sale la cola por detrás (px, ver {@code BustoRender.formasCola}); la tela pasa por fuera
+     * @param inclinacion el {@code pitch} del torso (agachado ~0.5): la tela cuelga igual hacia abajo
+     */
     public static void dibujar(MatrixStack matrices, VertexConsumer vc, int luz, PolleraForma forma,
                                PolleraLargo largo, float dil, @Nullable Piernas piernas,
-                               CapaMalla.Movimiento mov, float twirl, float cola) {
+                               CapaMalla.Movimiento mov, float twirl, float cola, float inclinacion) {
         float[][][] p = new float[FILAS + 1][COLUMNAS + 1][];
         float l = largo.pixeles;
         // Nunca más pegada que Normal: la cintura (sección casi recta) tiene
@@ -126,11 +125,6 @@ public final class PolleraMalla {
         float holgura = Math.max(dil, 0.25f);
         float a0 = 4f + holgura + 0.1f, b0 = 2f + holgura + 0.1f;
         float vueloX = 0.8f + 0.18f * l, vueloZ = 1.2f + 0.26f * l;
-        if (!piernasAbiertas) {
-            vueloZ *= 1.5f;
-            mov = CapaMalla.Movimiento.QUIETO;
-            piernas = null;
-        }
         boolean tableada = forma == PolleraForma.TABLEADA;
         // Cuánto se mueve el ruedo (en px, a t = 1): hacia atrás con la
         // velocidad, de costado con el giro, y cuánto se abre al caer.
@@ -176,6 +170,7 @@ public final class PolleraMalla {
         }
 
         if (cola > 0.05f) pasarPorFueraDeLaCola(p, cola);
+        if (Math.abs(inclinacion) > 1e-3f) colgar(p, inclinacion);
         if (piernas != null) chocarConPiernas(p, piernas);
 
         MatrixStack.Entry e = matrices.peek();
@@ -204,14 +199,38 @@ public final class PolleraMalla {
         for (float[][] fila : p) {
             for (float[] q : fila) {
                 if (q[2] < 0.5f || q[1] < arriba) continue;        // solo la espalda (+Z), desde donde empieza la cola
-                float x = q[0], y = Math.min(cy, q[1]);             // debajo de lo más saliente, cae derecho
-                float g = 0f;
-                for (int lado = -1; lado <= 1; lado += 2) {
-                    float du = (x - lado * 2f) / rx, dv = (y - cy) / rArriba;
-                    float d2 = du * du + dv * dv;
-                    if (d2 < 1f) g = Math.max(g, (float) Math.sqrt(1f - d2));
-                }
+                float y = Math.min(cy, q[1]);                       // debajo de lo más saliente, cae derecho
+                // Entre las dos nalgas la tela va tirante (2026-10-02, "la pollera ahora tiene
+                // un tajo"): sin esto el centro de la espalda quedaba adentro, como un tajo.
+                float x = Math.max(2f, Math.abs(q[0]));
+                float du = (x - 2f) / rx, dv = (y - cy) / rArriba;
+                float d2 = du * du + dv * dv;
+                float g = d2 < 1f ? (float) Math.sqrt(1f - d2) : 0f;
                 q[2] = Math.max(q[2], 2.2f + cola * g);
+            }
+        }
+    }
+
+    /**
+     * La tela cuelga hacia abajo aunque el torso se incline (2026-10-02,
+     * "cuando es larga y shifteas embolsa las piernas"): agachado, el torso
+     * se va para adelante y las piernas quedan derechas, así que la pollera
+     * (que vive en el marco del torso) se iba para atrás y las piernas la
+     * atravesaban; el choque la estiraba alrededor de cada pierna como una
+     * bolsa. Ahora cada fila gira alrededor de la cintura lo contrario del
+     * torso, de a poco desde la cintura (que sigue pegada) hasta el ruedo.
+     */
+    private static void colgar(float[][][] p, float inclinacion) {
+        for (int f = 1; f <= FILAS; f++) {
+            float t = f / (float) FILAS;
+            float peso = Math.min(1f, t * 2.5f);
+            float a = -inclinacion * peso;
+            float co = (float) Math.cos(a), si = (float) Math.sin(a);
+            for (float[] q : p[f]) {
+                // Como ModelPart.rotate (rotateX): y' = y·cos − z·sen, z' = y·sen + z·cos.
+                float y = q[1] - Y_CINTURA, z = q[2];
+                q[1] = Y_CINTURA + y * co - z * si;
+                q[2] = y * si + z * co;
             }
         }
     }

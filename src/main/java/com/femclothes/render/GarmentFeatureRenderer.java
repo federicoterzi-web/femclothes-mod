@@ -257,7 +257,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         // Malla propia (2026-09-29, "resolveme la pollera que se ve horrible a
         // veces"): reemplaza a los gajos de PolleraGeometria. Se dibuja en el
         // marco del torso; las piernas van relativas al torso para que el
-        // ruedo se abra donde pasan (ver PolleraMalla#piernasAbiertas).
+        // ruedo se abra donde pasan (ver PolleraMalla#chocarConPiernas).
         matrices.push();
         delJugador.rotate(matrices);
         VertexConsumer buffer = vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura));
@@ -272,7 +272,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 previewOverride == null && entidad != null
                         ? com.femclothes.client.TwirlCliente.progreso(entidad, tickDelta) : -1f,
                 com.femclothes.render.relieve.BustoRender.actual == null ? 0f
-                        : com.femclothes.render.relieve.BustoRender.actual.cola());
+                        : com.femclothes.render.relieve.BustoRender.actual.cola(),
+                delJugador.pitch);
         matrices.pop();
     }
 
