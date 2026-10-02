@@ -680,10 +680,43 @@ public final class BustoRender {
     }
 
     private static List<Vert[]> mallaCola(Busto b, float inflado, float carpa, boolean rigido, boolean piel) {
-        if (b.cuadrado()) return cajasCola(b, inflado, carpa, rigido, piel);
+        return mallaCola(b, inflado, carpa, rigido, piel, 0f);
+    }
+
+    /** @param techo primera fila de la ropa interior de abajo en la espalda (0 = sin ver, ver {@link #comprimirArriba}) */
+    private static List<Vert[]> mallaCola(Busto b, float inflado, float carpa, boolean rigido, boolean piel, float techo) {
+        if (b.cuadrado()) return comprimirArriba(cajasCola(b, inflado, carpa, rigido, piel), techo);
         List<Vert[]> q = new ArrayList<>();
         for (Forma f : formasCola(b, inflado, carpa, rigido, piel)) cupula(f, q);
-        return q;
+        return comprimirArriba(q, techo);
+    }
+
+    /**
+     * Como {@link #comprimirAbajo}, para arriba (2026-10-02, "acomoda la ropa
+     * interior a las nalgas"): la bombacha plana empieza en la fila 9 de la
+     * espalda (el boxer en la 8) y la cola arranca más arriba, así que la
+     * mitad de arriba de la textura se aprieta desde {@code techo}: la ropa
+     * interior cubre la cola entera y su elástico queda donde la cola nace.
+     */
+    private static List<Vert[]> comprimirArriba(List<Vert[]> quads, float techo) {
+        if (quads.isEmpty() || techo <= 0f) return quads;
+        float arriba = Float.MAX_VALUE, abajo = -Float.MAX_VALUE;
+        for (Vert[] q : quads) for (Vert v : q) { arriba = Math.min(arriba, v.uy()); abajo = Math.max(abajo, v.uy()); }
+        float inicio = techo + 0.05f;
+        if (arriba >= inicio) return quads;
+        float hasta = Math.max((arriba + abajo) * 0.5f, inicio + 0.5f);
+        float k = (hasta - inicio) / (hasta - arriba);
+        List<Vert[]> salida = new ArrayList<>(quads.size());
+        for (Vert[] q : quads) {
+            Vert[] n = new Vert[q.length];
+            for (int i = 0; i < q.length; i++) {
+                Vert v = q[i];
+                float uy = v.uy() >= hasta ? v.uy() : hasta - (hasta - v.uy()) * k;
+                n[i] = new Vert(v.pos(), v.normal(), v.ux(), uy, v.bx(), v.by());
+            }
+            salida.add(n);
+        }
+        return salida;
     }
 
     /** La cola cuadrada: una caja por nalga, de la fila 8 hasta abajo del torso. */
@@ -715,7 +748,12 @@ public final class BustoRender {
      */
     public static void dibujarCola(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov, int color,
                                    Uv uv, float inflado, float carpa, boolean rigido, boolean piel) {
-        List<Vert[]> malla = mallaCola(b, inflado, carpa, rigido, piel);
+        dibujarCola(b, matrices, vc, luz, ov, color, uv, inflado, carpa, rigido, piel, 0f);
+    }
+
+    private static void dibujarCola(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov, int color,
+                                    Uv uv, float inflado, float carpa, boolean rigido, boolean piel, float techo) {
+        List<Vert[]> malla = mallaCola(b, inflado, carpa, rigido, piel, techo);
         if (malla.isEmpty()) return;
         matrices.push();
         // Marco espejado: el "frente" de la cola es la espalda del torso.
@@ -727,7 +765,13 @@ public final class BustoRender {
     /** Con el layout de la skin (piel o telas del mod). */
     public static void dibujarCola(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov,
                                    float inflado, float carpa, float filaSkin, boolean piel) {
-        dibujarCola(b, matrices, vc, luz, ov, 0xFFFFFFFF, Uv.skinEspalda(filaSkin), inflado, carpa, false, piel);
+        dibujarCola(b, matrices, vc, luz, ov, inflado, carpa, filaSkin, piel, 0f);
+    }
+
+    /** @param techo primera fila de la ropa interior de abajo en la espalda (0 = no la hay) */
+    public static void dibujarCola(Busto b, MatrixStack matrices, VertexConsumer vc, int luz, int ov,
+                                   float inflado, float carpa, float filaSkin, boolean piel, float techo) {
+        dibujarCola(b, matrices, vc, luz, ov, 0xFFFFFFFF, Uv.skinEspalda(filaSkin), inflado, carpa, false, piel, techo);
     }
 
     /**

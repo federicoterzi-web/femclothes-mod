@@ -180,7 +180,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                     dibujarBusto(cuerpo, delJugador, infladoBustoCuerpo(piezas), 0f, 20f, true, null,
                             fondoSosten(perfilDe(entidad)), matrices, vertexConsumers, luz);
                 }
-                dibujarCola(cuerpo, delJugador, infladoColaCuerpo(piezas), 0f, 20f, true, matrices, vertexConsumers, luz);
+                dibujarCola(cuerpo, delJugador, infladoColaCuerpo(piezas), 0f, 20f, true,
+                        techoBombacha(perfilDe(entidad)), matrices, vertexConsumers, luz);
             }
             if (llevaCuerpo) {
                 com.femclothes.render.relieve.RelieveRender.actual =
@@ -706,9 +707,28 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         };
     }
 
-    /** La cola con {@code textura} (piel o tela) en el marco del torso; las translúcidas, a la segunda pasada. */
+    /**
+     * Primera fila de la ropa interior de abajo en la espalda (2026-10-02,
+     * "acomoda la ropa interior a las nalgas"): sale de las texturas de
+     * {@code tools/generar_ropa_interior.py} (slip y culotte desde la 9, boxer
+     * desde la 8). La cola aprieta su textura desde ahí para quedar cubierta.
+     */
+    private static float techoBombacha(PerfilCuerpo perfil) {
+        return switch (perfil.interior().abajo()) {
+            case BOXER -> 8f;
+            default -> 9f;
+        };
+    }
+
     private static void dibujarCola(Identifier textura, ModelPart torso, float inflado, float carpa, float filaSkin,
                                     boolean piel, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
+        dibujarCola(textura, torso, inflado, carpa, filaSkin, piel, 0f, matrices, vertexConsumers, luz);
+    }
+
+    /** La cola con {@code textura} (piel o tela) en el marco del torso; las translúcidas, a la segunda pasada. */
+    private static void dibujarCola(Identifier textura, ModelPart torso, float inflado, float carpa, float filaSkin,
+                                    boolean piel, float techo, MatrixStack matrices,
+                                    VertexConsumerProvider vertexConsumers, int luz) {
         com.femclothes.render.relieve.BustoRender.Busto busto = com.femclothes.render.relieve.BustoRender.actual;
         if (busto == null || busto.cola() <= 0f) return;
         matrices.push();
@@ -719,11 +739,11 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             copia.peek().getNormalMatrix().set(matrices.peek().getNormalMatrix());
             TRANSLUCIDAS_PENDIENTES.add(() -> com.femclothes.render.relieve.BustoRender.dibujarCola(busto, copia,
                     vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura)), luz,
-                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel));
+                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel, techo));
         } else {
             com.femclothes.render.relieve.BustoRender.dibujarCola(busto, matrices,
                     vertexConsumers.getBuffer(ClothingTextureCache.capaDeRender(textura)), luz,
-                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel);
+                    OverlayTexture.DEFAULT_UV, inflado, carpa, filaSkin, piel, techo);
         }
         matrices.pop();
     }
