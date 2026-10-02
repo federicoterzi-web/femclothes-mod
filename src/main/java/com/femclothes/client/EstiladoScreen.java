@@ -147,13 +147,39 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         if (prenda.isEmpty() || jugador == null || poses.isEmpty()) return null;
         boolean slim = MinecraftClient.getInstance().player.getSkinTextures().model() == SkinTextures.Model.SLIM;
         Toque mejor = null;
+        com.femclothes.render.relieve.BustoRender.Busto busto =
+                com.femclothes.render.GarmentFeatureRenderer.bustoDe(jugador, 0f, false);
         for (Pieza pieza : PiezasDePrenda.de(prenda, jugador)) {
             Matrix4f m = poses.get(pieza.parte());
             if (m == null) continue;
-            Toque t = cortar(pieza, new Matrix4f(m).invert(), slim, (float) mx, (float) my);
+            Matrix4f inversa = new Matrix4f(m).invert();
+            Toque t = cortar(pieza, inversa, slim, (float) mx, (float) my);
             if (t != null && (mejor == null || t.profundidad() > mejor.profundidad())) mejor = t;
+            // El busto (2026-10-02, "se puede las dos? cosa que si armo la prenda sin
+            // pechos despues siga sirviendo?"): el click le pega a la cúpula, pero se
+            // guarda el punto del frente plano que tiene debajo.
+            if (busto != null && pieza.parte() == Parte.TORSO
+                    && com.femclothes.render.relieve.BustoRender.cubre(pieza.filaDesde(), pieza.filaHasta())) {
+                Toque tb = cortarBusto(busto, pieza, inversa, (float) mx, (float) my);
+                if (tb != null && (mejor == null || tb.profundidad() > mejor.profundidad())) mejor = tb;
+            }
         }
         return mejor;
+    }
+
+    /** El rayo del mouse contra las cúpulas del busto de esta pieza (desde el lado del que mira). */
+    @Nullable
+    private static Toque cortarBusto(com.femclothes.render.relieve.BustoRender.Busto busto, Pieza pieza,
+                                     Matrix4f inversa, float mx, float my) {
+        final float Z = 10000f;
+        Vector3f lejos = inversa.transformPosition(new Vector3f(mx, my, -Z)).mul(16f);
+        Vector3f cerca = inversa.transformPosition(new Vector3f(mx, my, Z)).mul(16f);
+        Vector3f dir = new Vector3f(lejos).sub(cerca);
+        float[] h = com.femclothes.render.relieve.BustoRender.rayo(busto, cerca, dir,
+                Math.max(0f, pieza.dilatacion()) + 0.02f);
+        if (h == null) return null;
+        // Profundidad en la misma escala que cortar(): 1 = del lado del que mira.
+        return new Toque(Parte.TORSO, h[1], h[2], -2f, Direction.NORTH, 1f - h[0]);
     }
 
     @Nullable

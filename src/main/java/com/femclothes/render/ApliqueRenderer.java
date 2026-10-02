@@ -76,7 +76,21 @@ public final class ApliqueRenderer {
         // Sobre la superficie de la tela: el punto del click (en la caja sin
         // inflar) corrido hacia afuera lo que infla el calce, + un pelito.
         float afuera = dil + 0.02f;
-        matrices.translate((a.x() + n.x * afuera) / 16f, (a.y() + n.y * afuera) / 16f, (a.z() + n.z * afuera) / 16f);
+        // Sobre el busto (2026-10-02, "hay que contemplar los pechos para los
+        // apliques"): el punto se guarda en el frente plano del torso y, si hay
+        // busto, se apoya en la cúpula y rebota con ella. Sin busto, plano.
+        com.femclothes.render.relieve.BustoRender.Punto enBusto =
+                a.parte() == Parte.TORSO && a.cara() == net.minecraft.util.math.Direction.NORTH
+                        && com.femclothes.render.relieve.BustoRender.actual != null
+                        ? com.femclothes.render.relieve.BustoRender.sobreBusto(
+                                com.femclothes.render.relieve.BustoRender.actual, a.x(), a.y(), afuera)
+                        : null;
+        if (enBusto != null) {
+            matrices.translate(enBusto.pos().x / 16f, enBusto.pos().y / 16f, enBusto.pos().z / 16f);
+            n = enBusto.normal();
+        } else {
+            matrices.translate((a.x() + n.x * afuera) / 16f, (a.y() + n.y * afuera) / 16f, (a.z() + n.z * afuera) / 16f);
+        }
         matrices.multiplyPositionMatrix(orientacion(n, a.giro()));
         matrices.scale(a.escala(), a.escala(), a.escala());
 

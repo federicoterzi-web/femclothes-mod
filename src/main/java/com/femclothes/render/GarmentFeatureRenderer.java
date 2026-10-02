@@ -575,16 +575,25 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
      * interior (binder aplana, deportivo sujeta) y el rebote de resorte.
      */
     private static void prepararBusto(LivingEntity entidad, float tickDelta) {
-        com.femclothes.render.relieve.BustoRender.actual = null;
-        if (entidad == null) return;
+        com.femclothes.render.relieve.BustoRender.actual = bustoDe(entidad, tickDelta, true);
+    }
+
+    /**
+     * El busto de {@code entidad} (null si no tiene): talle, sujeción de la
+     * ropa interior y, con {@code fisica}, el rebote de este cuadro.
+     */
+    @Nullable
+    public static com.femclothes.render.relieve.BustoRender.Busto bustoDe(@Nullable LivingEntity entidad,
+                                                                          float tickDelta, boolean fisica) {
+        if (entidad == null) return null;
         PerfilCuerpo perfil = perfilDe(entidad);
         float talle = com.femclothes.render.relieve.RelieveCuerpo.bustoDe(perfil);
-        if (talle <= 0f) return;
+        if (talle <= 0f) return null;
         com.femclothes.body.InteriorArriba arriba = perfil.interior().arriba();
         float sujecion = arriba == com.femclothes.body.InteriorArriba.BINDER ? 0.3f
                 : arriba == com.femclothes.body.InteriorArriba.DEPORTIVO ? 0.75f : 1f;
-        com.femclothes.render.relieve.BustoRender.actual = new com.femclothes.render.relieve.BustoRender.Busto(
-                talle, sujecion, com.femclothes.render.relieve.FisicaBusto.de(entidad, tickDelta, talle));
+        return new com.femclothes.render.relieve.BustoRender.Busto(talle, sujecion,
+                fisica ? com.femclothes.render.relieve.FisicaBusto.de(entidad, tickDelta, talle) : null);
     }
 
     /**

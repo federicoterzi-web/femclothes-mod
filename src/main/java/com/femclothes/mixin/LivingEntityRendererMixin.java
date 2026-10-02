@@ -58,6 +58,28 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, M extend
     @Shadow
     protected M model;
 
+    /**
+     * El busto del jugador que se dibuja, para los modelos de otros mods
+     * (2026-10-02, "que adapte las prendas y armaduras de cualquier mod") —
+     * ver {@code render.relieve.BustoEnModelos}.
+     */
+    @Inject(method = "render(Lnet/minecraft/entity/LivingEntity;FFLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V",
+            at = @At("HEAD"))
+    private void femclothes$bustoEmpieza(T entidad, float f, float g, MatrixStack matrices,
+                                          VertexConsumerProvider vertexConsumers, int luz, CallbackInfo ci) {
+        com.femclothes.render.relieve.BustoEnModelos.enEntidad = entidad instanceof AbstractClientPlayerEntity
+                ? GarmentFeatureRenderer.bustoDe(entidad, g, true) : null;
+        com.femclothes.render.relieve.BustoEnModelos.modeloPrincipal = this.model;
+    }
+
+    @Inject(method = "render(Lnet/minecraft/entity/LivingEntity;FFLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V",
+            at = @At("RETURN"))
+    private void femclothes$bustoTermina(T entidad, float f, float g, MatrixStack matrices,
+                                          VertexConsumerProvider vertexConsumers, int luz, CallbackInfo ci) {
+        com.femclothes.render.relieve.BustoEnModelos.enEntidad = null;
+        com.femclothes.render.relieve.BustoEnModelos.modeloPrincipal = null;
+    }
+
     @Inject(method = "render", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/render/entity/model/EntityModel;render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;III)V",
             shift = At.Shift.BEFORE))

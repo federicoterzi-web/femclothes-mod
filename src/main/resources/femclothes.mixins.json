@@ -10,7 +10,9 @@
     "LivingEntityRendererMixin",
     "PlayerEntityCapasSkinMixin",
     "PlayerEntityRendererFirstPersonArmMixin",
-    "HandledScreenSlotInfoMixin"
+    "HandledScreenSlotInfoMixin",
+    "BustoEnModelosMixin",
+    "ArmaduraBustoMixin"
   ],
   "injectors": {
     "defaultRequire": 1
