@@ -128,6 +128,14 @@ public class ManiquiRenderer extends GeoBlockRenderer<ManiquiBlockEntity> {
             slim = true;
         }
         PlayerEntityModel<LivingEntity> cuerpo = slim ? cuerpoFino : cuerpoAncho;
+        // Los modelos nacen como bebé (Model.child = true) y LivingEntityRenderer lo
+        // corrige en cada cuadro; acá no hay entidad, así que la figura se dibujaba
+        // a escala de bebé (cuerpo a la mitad) y la ropa, que no mira ese flag, a
+        // tamaño normal (2026-10-02, "igual la tela esta saliendo normal, lo
+        // chiquito es el maniqui").
+        cuerpo.child = false;
+        armaduraInterior.child = false;
+        armaduraExterior.child = false;
         List<ItemStack> prendas = be.prendasPuestas();
         posar(cuerpo, be);
         ajustarAlCalce(cuerpo, prendas, slim);
