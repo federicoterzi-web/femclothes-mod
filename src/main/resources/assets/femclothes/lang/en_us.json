@@ -690,5 +690,9 @@
   "femclothes.aplique.molde_personalizado.ayuda": "Goes in the mould slot of the Styling Table: nothing is used up. It can be renamed at an anvil.",
   "femclothes.estilado.panel.blandura": "Softness %s%%",
   "femclothes.estilado.panel.crear_molde": "Make mould",
-  "femclothes.estilado.tooltip.crear_molde": "Makes an appliqué mould from the selected appliqué (object or model, placement and motion) for use in the normal Styling Table"
+  "femclothes.estilado.tooltip.crear_molde": "Makes an appliqué mould from the selected appliqué (object or model, placement and motion) for use in the normal Styling Table",
+  "item.femclothes.molde_cuello_cuadrado": "Neckline Mould: Square",
+  "item.femclothes.molde_cuello_corazon": "Neckline Mould: Sweetheart",
+  "femclothes.sublimadora.cuello.cuadrado": "square",
+  "femclothes.sublimadora.cuello.corazon": "sweetheart"
 }

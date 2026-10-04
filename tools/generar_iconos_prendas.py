@@ -133,6 +133,19 @@ MANGA_DER = [(63 - x, y) for x, y in MANGA_IZQ]
 HOMBRO_Y, RUEDO_Y = 5, 62
 
 
+def borde_corazon():
+    """Borde de abajo del escote en corazón (2026-10-04): dos lóbulos que siguen la parte de arriba de cada
+    pecho y se juntan en una punta al centro. Va de izquierda a derecha, en px del dibujo."""
+    pts = []
+    for cx, x0, x1 in ((27.25, 23.0, 31.5), (35.75, 31.5, 40.0)):
+        n = 12
+        for i in range(n + 1):
+            x = x0 + (x1 - x0) * i / n
+            d = min(abs(x - cx), 4.25)
+            pts.append((x, 14.0 - (4.25 ** 2 - d ** 2) ** 0.5))
+    return pts
+
+
 def remera(cuello):
     rects = [(23, 0, 40, 10)] if cuello == "polera" else []
     m = mascara([CUERPO_REMERA, MANGA_IZQ, MANGA_DER], rects)
@@ -166,6 +179,10 @@ def remera(cuello):
         di = ImageDraw.Draw(interior)
         if cuello == "v":
             di.polygon([(24, 5), (39, 5), (31.5, 22)], fill=255)
+        elif cuello == "cuadrado":
+            di.rectangle((22, 5, 41, 13), fill=255)
+        elif cuello == "corazon":
+            di.polygon([(23, 5)] + borde_corazon() + [(40, 5)], fill=255)
         else:
             di.ellipse((24, 1, 39, 12), fill=255)
         ai = (np.asarray(interior) > 127) & a
@@ -174,6 +191,10 @@ def remera(cuello):
             mapa.poner(x, y, TORSO_ATRAS, (x - 13) / 38, 0.02)
         if cuello == "v":
             v = linea(v, [(23, 5), (31.5, 24), (40, 5)], 0.8, ancho=2)
+        elif cuello == "cuadrado":
+            v = linea(v, [(22, 5), (22, 14), (41, 14), (41, 5)], 0.8, ancho=2)
+        elif cuello == "corazon":
+            v = linea(v, borde_corazon(), 0.8, ancho=2)
         else:
             v = linea(v, [(22, 6), (26, 11), (31, 13), (36, 11), (41, 6)], 0.8, ancho=2)
     # Costuras de hombro y un pliegue suave.
@@ -328,7 +349,7 @@ def calientabrazos():
 
 
 if __name__ == "__main__":
-    for cuello in ("redondo", "v", "polera"):
+    for cuello in ("redondo", "v", "polera", "cuadrado", "corazon"):
         guardar("remera_" + cuello, *remera(cuello))
     guardar("pantalon", *pantalon())
     guardar("pollera", *pollera())

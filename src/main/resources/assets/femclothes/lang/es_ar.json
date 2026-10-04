@@ -690,5 +690,9 @@
   "femclothes.aplique.molde_personalizado.ayuda": "Va en el slot del molde de la Mesa de estilado: no se gasta ni gasta el objeto. Se le puede cambiar el nombre en el yunque.",
   "femclothes.estilado.panel.blandura": "Blandura %s%%",
   "femclothes.estilado.panel.crear_molde": "Crear molde",
-  "femclothes.estilado.tooltip.crear_molde": "Fabrica un molde de aplique con el aplique elegido (objeto o modelo, colocación y movimiento) para usarlo en la Mesa de estilado normal"
+  "femclothes.estilado.tooltip.crear_molde": "Fabrica un molde de aplique con el aplique elegido (objeto o modelo, colocación y movimiento) para usarlo en la Mesa de estilado normal",
+  "item.femclothes.molde_cuello_cuadrado": "Molde de Cuello: Cuadrado",
+  "item.femclothes.molde_cuello_corazon": "Molde de Cuello: Corazón",
+  "femclothes.sublimadora.cuello.cuadrado": "cuadrado",
+  "femclothes.sublimadora.cuello.corazon": "corazón"
 }

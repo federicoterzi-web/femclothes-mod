@@ -169,6 +169,11 @@ public final class ModItems {
     public static final MoldeCuelloItem MOLDE_CUELLO_POLERA =
             moldeCuello("molde_cuello_polera", Variante.Cuello.POLERA);
 
+    public static final MoldeCuelloItem MOLDE_CUELLO_CUADRADO =
+            moldeCuello("molde_cuello_cuadrado", Variante.Cuello.CUADRADO);
+    public static final MoldeCuelloItem MOLDE_CUELLO_CORAZON =
+            moldeCuello("molde_cuello_corazon", Variante.Cuello.CORAZON);
+
     private static MoldeItem molde(String nombre, MoldeItem.Eje eje) {
         return Registry.register(Registries.ITEM,
                 Identifier.of(Femclothes.MOD_ID, "molde_" + nombre),

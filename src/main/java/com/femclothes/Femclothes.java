@@ -124,6 +124,8 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_V);
             for (var m : com.femclothes.sublimadora.ModItems.MOLDES_MASCARA) entries.add(m);
             entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_POLERA);
+            entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_CUADRADO);
+            entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_CORAZON);
             // Los 8 presets de combo directo (cobertura de torso/extremidad)
             // se sacaron de la pestaña — traen los anclajes horneados de
             // fábrica e ignoran Anclaje/Lado por completo, lo que generaba

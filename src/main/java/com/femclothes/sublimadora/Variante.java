@@ -82,7 +82,10 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
     public enum Cuello implements StringIdentifiable {
         REDONDO("redondo"),
         V("v"),
-        POLERA("polera");
+        POLERA("polera"),
+        /** Cuadrado y corazón (2026-10-04): al FINAL, el cuello viaja por red y se guarda por ordinal. */
+        CUADRADO("cuadrado"),
+        CORAZON("corazon");
 
         public final String clave;
 
