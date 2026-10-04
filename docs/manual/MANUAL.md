@@ -503,6 +503,7 @@ Para probar sin esperas ni insumos ya no hay comandos: están las **máquinas cr
 | `/femclothesdebug slim` / `ancho` / `automodelo` | Fuerza brazos finos, anchos, o los de la skin. |
 | `/femclothesdebug reset` | Vuelve a tu skin. |
 | `/femclothesdebug relieve suave` / `escalonado` / `apagado` | Estilo del relieve del cuerpo y la ropa: continuo, en bloquecitos tipo 3D Skin Layers, o las cajas planas de antes. Solo para vos, para comparar. |
+| `/femclothesdebug cuello` (`torso` / `cabeza` / `partido`) | Cómo se ata el cuellito de la polera: al torso (quieto, como antes), a la cabeza (gira con ella) o partido (un aro bajo en el torso y el resto en la cabeza, el de fábrica). Sin argumento pasa al siguiente. Solo para vos, para comparar. |
 
 ## 11. Recetas
 

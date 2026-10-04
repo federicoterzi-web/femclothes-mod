@@ -81,7 +81,33 @@ public final class DebugApariencia {
                     feedback(ctx.getSource());
                     return 1;
                 }))
-                .then(relieve());
+                .then(relieve())
+                .then(cuello());
+    }
+
+    /**
+     * Cómo se ata el cuellito de la polera (2026-10-04): {@code torso}, {@code cabeza} o {@code partido}; sin argumento
+     * pasa al siguiente. Solo para quien lo usa, sin persistencia.
+     */
+    private static LiteralArgumentBuilder<FabricClientCommandSource> cuello() {
+        LiteralArgumentBuilder<FabricClientCommandSource> raiz = ClientCommandManager.literal("cuello")
+                .executes(ctx -> {
+                    var modos = com.femclothes.render.CuelloYCapucha.ModoCuello.values();
+                    com.femclothes.render.CuelloYCapucha.modoCuello =
+                            modos[(com.femclothes.render.CuelloYCapucha.modoCuello.ordinal() + 1) % modos.length];
+                    ctx.getSource().sendFeedback(Text.literal("[femclothes debug] cuello de polera: "
+                            + com.femclothes.render.CuelloYCapucha.modoCuello.name().toLowerCase(java.util.Locale.ROOT)));
+                    return 1;
+                });
+        for (com.femclothes.render.CuelloYCapucha.ModoCuello m : com.femclothes.render.CuelloYCapucha.ModoCuello.values()) {
+            String nombre = m.name().toLowerCase(java.util.Locale.ROOT);
+            raiz.then(ClientCommandManager.literal(nombre).executes(ctx -> {
+                com.femclothes.render.CuelloYCapucha.modoCuello = m;
+                ctx.getSource().sendFeedback(Text.literal("[femclothes debug] cuello de polera: " + nombre));
+                return 1;
+            }));
+        }
+        return raiz;
     }
 
     /**

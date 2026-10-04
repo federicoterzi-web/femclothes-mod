@@ -43,6 +43,17 @@ public final class CuelloYCapucha {
 
     private CuelloYCapucha() {}
 
+    /**
+     * Cómo se ata el cuellito de la polera (2026-10-04, "el cuello de polera se atraviesa mucho... lo fijemos a la
+     * cabeza en lugar del torso" + "dame un comando pa alternar entre los dos cuellitos"): {@code TORSO} como era
+     * (quieto, la cabeza lo atraviesa al girar), {@code CABEZA} (gira con ella; al mirar abajo se hunde un poco en el
+     * pecho) y {@code PARTIDO} (un aro bajo en el torso y el resto en la cabeza). Se cambia con
+     * {@code /femclothesdebug cuello [torso|cabeza|partido]}; solo para quien lo usa.
+     */
+    public enum ModoCuello { TORSO, CABEZA, PARTIDO }
+
+    public static ModoCuello modoCuello = ModoCuello.PARTIDO;
+
     private static final int TEX = 64;
     /** Por fuera de la segunda capa de la skin (sombrero), que infla 0.5. */
     private static final float SOBRE_SOMBRERO = 0.75F;
@@ -59,8 +70,21 @@ public final class CuelloYCapucha {
         }
         if (polera != null && biped.body.visible) {
             float d = Math.max(0F, Calce.dilatacionEfectiva(polera));
-            GarmentFeatureRenderer.dibujarModelPart(cuello(d), CuerpoGeometria.Superficie.CUERPO,
-                    texturaLisa(RemeraItem.color(polera), true), biped.body, matrices, vertexConsumers, luz);
+            Identifier tela = texturaLisa(RemeraItem.color(polera), true);
+            switch (modoCuello) {
+                case TORSO -> GarmentFeatureRenderer.dibujarModelPart(cuello(d), CuerpoGeometria.Superficie.CUERPO,
+                        tela, biped.body, matrices, vertexConsumers, luz);
+                case CABEZA -> {
+                    if (biped.head.visible) GarmentFeatureRenderer.dibujarModelPart(cuello(d), CuerpoGeometria.Superficie.CUERPO,
+                            tela, biped.head, matrices, vertexConsumers, luz);
+                }
+                case PARTIDO -> {
+                    GarmentFeatureRenderer.dibujarModelPart(cuelloAro(d), CuerpoGeometria.Superficie.CUERPO,
+                            tela, biped.body, matrices, vertexConsumers, luz);
+                    if (biped.head.visible) GarmentFeatureRenderer.dibujarModelPart(cuelloArriba(d), CuerpoGeometria.Superficie.CUERPO,
+                            tela, biped.head, matrices, vertexConsumers, luz);
+                }
+            }
         }
         // La capucha de la capa, puesta con la misma tecla (2026-09-30, "lo mismo
         // con la capucha de la capa activada por tecla"); caída la dibuja CapaMalla.
@@ -120,6 +144,24 @@ public final class CuelloYCapucha {
         if (c != null) return c;
         float alto = 1.6F + d * 0.5F, dil = SOBRE_SOMBRERO + d * 0.5F;
         return parte(key, List.of(caja(0, 0, -4, -alto, -4, 8, alto, 8, dil, 0, dil, TODAS)));
+    }
+
+    /** El aro bajo del cuello partido: 0,8 px sobre el torso, un poco más fino que la parte de la cabeza. */
+    private static ModelPart cuelloAro(float d) {
+        String key = "cuelloAro|" + d;
+        ModelPart c = CACHE.get(key);
+        if (c != null) return c;
+        float dil = SOBRE_SOMBRERO - 0.2F + d * 0.5F;
+        return parte(key, List.of(caja(0, 0, -4, -0.8F, -4, 8, 0.8F, 8, dil, 0, dil, TODAS)));
+    }
+
+    /** La parte del cuello partido que gira con la cabeza: de 0,8 px arriba del cuello hasta el alto del cuellito. */
+    private static ModelPart cuelloArriba(float d) {
+        String key = "cuelloArriba|" + d;
+        ModelPart c = CACHE.get(key);
+        if (c != null) return c;
+        float alto = 1.6F + d * 0.5F, dil = SOBRE_SOMBRERO + d * 0.5F;
+        return parte(key, List.of(caja(0, 0, -4, -alto, -4, 8, alto - 0.8F, 8, dil, 0, dil, TODAS)));
     }
 
     /**
