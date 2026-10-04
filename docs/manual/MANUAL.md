@@ -74,6 +74,8 @@ Cada máquina **no consume la prenda ni los moldes**: la prenda sale modificada 
 
 **Chaquetas.** Categoría nueva que va **encima de la remera y de la pollera**, en su propio slot de Trinkets (**Chaqueta**, 4 lugares). La primera es el **Hoodie**: sale largo, con manga larga y calce **Oversize**, y tiene bolsillo canguro, puños y ruedo **elásticos** (la última fila aprieta y la tela hace globo arriba, sin colgar), **cordones** y **capucha**. **Capucha:** apretá **H** (Controles → FemClothes → "Subir/bajar capucha") para ponértela o bajarla; los demás lo ven. La misma tecla sube y baja la capucha de la **capa**. En las máquinas el hoodie se trata como una remera: la Modeladora le cambia largo, mangas, cuello, calce y trama con los mismos moldes, Tintes usa las zonas de la remera y la Sublimadora estampa frente y espalda (comparte los diseños guardados de la remera). La capucha y los cordones son lisos, del color base (no llevan patrones ni fotos todavía).
 
+**Sombrero de bruja** (2026-10-04, "modelemos y agreguemos un sombrero de bruja"). Va en su **propio slot de Trinkets** (**Sombrero**, en el grupo de la cabeza, aparte del casco: se puede llevar con casco, con la capucha del hoodie y con apliques). Está hecho de cajas que se afinan hacia arriba: un **ala** plana (ancha o corta), un **cono** de cuatro tramos y una **cinta** alrededor de la base, más una **punta** de dos tramos, **recta o doblada** hacia atrás, que se **mece con el movimiento** (la misma tela blanda de los apliques: al correr o saltar se inclina). Tiene **3 zonas teñibles** (ala, cono y cinta) en la Estación de Tintes: categoría **Sombrero de bruja**, igual que el retazo de aplique (3 cuadraditos con color liso; los patrones vienen después). Sale de fábrica violeta oscuro con la cinta violeta; en la pestaña creativa hay cuatro versiones (ala ancha o corta, punta recta o doblada). Como cualquier ítem puesto, **admite apliques** de la Mesa de estilado, que por ahora se apoyan en la caja de la cabeza (no en el cono). Todavía no se dibuja en el Maniquí ni se guarda en el Guardarropas, y los moldes de la Modeladora para elegir ala y punta llegan en la segunda tanda.
+
 **Prendas viejas (armadura).** Hay prendas de una versión anterior que se equipan en los slots de armadura: Medias 3/4, Medias de Red y Traje de Maid. No pasan por las máquinas. El Buzo Oversize viejo se reemplazó por el Hoodie: su receta ahora da el nuevo y ya no aparece en la pestaña.
 
 ## 4. Cuerpo base y ropa interior
@@ -546,6 +548,7 @@ Funciones planeadas que todavía no están:
 - Volumen 3D real en la ropa (integración con 3D Skin Layers).
 - Cadena de máquinas por tolvas, probada de punta a punta.
 - Guardarropas: sistema de estilos guardados.
+- Sombrero de bruja: moldes de ala y punta en la Modeladora, apliques apoyados en el cono, Maniquí/Guardarropas y patrones por zona. Cintos, collares y correas (sistema de armado en la Mesa de estilado, a pensar).
 - Mesa de estilado: retazos teñidos con patrones en Tintes, física de los apliques, más modelos (bijouterie, chokers) y recetas.
 - La ropa en el brazo en primera persona.
 - Piernas redondeadas opcionales (versión 2).

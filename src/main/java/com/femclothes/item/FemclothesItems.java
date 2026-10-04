@@ -69,6 +69,10 @@ public final class FemclothesItems {
     /** Capa personalizable (2026-09-29, "seria una nueva categoria de ropa"). */
     public static final CapaItem CAPA = register("capa", new CapaItem(new Item.Settings().maxCount(16)));
 
+    /** Sombrero de bruja (2026-10-04), slot {@code head/sombrero}. */
+    public static final SombreroBrujaItem SOMBRERO_BRUJA = register("sombrero_bruja",
+            new SombreroBrujaItem(new Item.Settings().maxCount(1)));
+
     // Apliques (2026-10-01, Mesa de estilado): moldes que no se gastan y el retazo con los colores.
     public static final com.femclothes.aplique.MoldeApliqueItem MOLDE_APLIQUE_MONO = register("molde_aplique_mono",
             new com.femclothes.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.femclothes.aplique.ModeloAplique.MONO));

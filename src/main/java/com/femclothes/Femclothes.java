@@ -109,6 +109,17 @@ public class Femclothes implements ModInitializer {
             // reemplazado por el molde de TORSO unificado de abajo.
             entries.add(FemclothesItems.CALIENTABRAZOS);
             entries.add(FemclothesItems.CAPA);
+            entries.add(FemclothesItems.SOMBRERO_BRUJA);
+            // Variantes de fábrica hasta que lleguen los moldes de la Modeladora (tanda 2).
+            for (var par : new Object[][] {
+                    {com.femclothes.item.SombreroAla.CORTA, com.femclothes.item.SombreroPunta.RECTA},
+                    {com.femclothes.item.SombreroAla.ANCHA, com.femclothes.item.SombreroPunta.DOBLADA},
+                    {com.femclothes.item.SombreroAla.CORTA, com.femclothes.item.SombreroPunta.DOBLADA}}) {
+                net.minecraft.item.ItemStack variante = new net.minecraft.item.ItemStack(FemclothesItems.SOMBRERO_BRUJA);
+                com.femclothes.item.SombreroBrujaItem.setAla(variante, (com.femclothes.item.SombreroAla) par[0]);
+                com.femclothes.item.SombreroBrujaItem.setPunta(variante, (com.femclothes.item.SombreroPunta) par[1]);
+                entries.add(variante);
+            }
             entries.add(FemclothesItems.MAID_OUTFIT);
             // El Buzo Oversize viejo (armadura) se reemplazó por el hoodie
             // (2026-09-30): sigue registrado para no romper mundos, fuera de la pestaña.

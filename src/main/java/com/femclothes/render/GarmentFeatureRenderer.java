@@ -143,6 +143,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         prepararBusto(entidad, tickDelta);
         // Apliques de armaduras y wearables de cualquier mod (2026-10-02).
         dibujarApliquesDeVestibles(entidad, biped, matrices, vertexConsumers, luz);
+        // Sombrero de bruja (2026-10-04): no es una prenda de cuerpo, se dibuja siempre que esté puesto.
+        dibujarSombrero(entidad, biped, matrices, vertexConsumers, luz);
         if (prendas.isEmpty() && !cuerpoEntero) {
             dibujarBustoEnLaSkin(entidad, biped, matrices, vertexConsumers, luz);
             com.femclothes.render.relieve.BustoRender.actual = null;
@@ -442,6 +444,19 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 ItemStack puesto = par.getRight();
                 if (puesto.isEmpty() || Garments.esPrenda(puesto)) continue;
                 ApliqueRenderer.dibujar(puesto, ApliqueRenderer.dilatacionDeSlot(null), biped, matrices, vertexConsumers, luz);
+            }
+        });
+    }
+
+    /** El sombrero de bruja puesto en su slot de Trinkets, si hay (2026-10-04). */
+    private static void dibujarSombrero(LivingEntity entidad, BipedEntityModel<?> biped, MatrixStack matrices,
+                                        VertexConsumerProvider vertexConsumers, int luz) {
+        TrinketsApi.getTrinketComponent(entidad).ifPresent(c -> {
+            for (var par : c.getAllEquipped()) {
+                ItemStack puesto = par.getRight();
+                if (puesto.getItem() instanceof com.femclothes.item.SombreroBrujaItem) {
+                    SombreroRenderer.dibujar(puesto, biped, matrices, vertexConsumers, luz);
+                }
             }
         });
     }

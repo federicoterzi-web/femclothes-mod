@@ -752,5 +752,16 @@
   "femclothes.maniqui.skin.zuri": "Zuri",
   "femclothes.maniqui.emote": "Emote: %s",
   "femclothes.maniqui.emote.ninguno": "Emote: none",
-  "femclothes.modelado.categoria.aplique": "Applique scrap"
+  "femclothes.modelado.categoria.aplique": "Applique scrap",
+  "item.femclothes.sombrero_bruja": "Witch Hat",
+  "femclothes.modelado.categoria.sombrero": "Witch hat",
+  "femclothes.sombrero.tooltip": "%s brim, %s tip",
+  "femclothes.sombrero.zona.1": "Brim",
+  "femclothes.sombrero.zona.2": "Cone",
+  "femclothes.sombrero.zona.3": "Band",
+  "femclothes.sombrero.ala.ancha": "wide",
+  "femclothes.sombrero.ala.corta": "short",
+  "femclothes.sombrero.punta.recta": "straight",
+  "femclothes.sombrero.punta.doblada": "bent",
+  "trinkets.slot.head.sombrero": "Hat"
 }

@@ -533,6 +533,26 @@ public final class FemclothesComponents {
                     .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
                     .build());
 
+    // ── sombrero de bruja (2026-10-04) — ausentes = ala ancha / punta recta / colores de fábrica ──
+    public static final ComponentType<SombreroAla> SOMBRERO_ALA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "sombrero_ala"),
+            ComponentType.<SombreroAla>builder()
+                    .codec(StringIdentifiable.createCodec(SombreroAla::values))
+                    .packetCodec(PacketCodecs.indexed(i -> SombreroAla.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<SombreroPunta> SOMBRERO_PUNTA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "sombrero_punta"),
+            ComponentType.<SombreroPunta>builder()
+                    .codec(StringIdentifiable.createCodec(SombreroPunta::values))
+                    .packetCodec(PacketCodecs.indexed(i -> SombreroPunta.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<java.util.List<Integer>> COLORES_SOMBRERO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "colores_sombrero"),
+            ComponentType.<java.util.List<Integer>>builder()
+                    .codec(com.mojang.serialization.Codec.INT.listOf())
+                    .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
+                    .build());
+
     /** La mezcla C/M/Y/K/T de una muestra de color (2026-09-30), 5 niveles de 0..20. */
     public static final ComponentType<java.util.List<Integer>> MEZCLA_COLOR = Registry.register(
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "mezcla_color"),

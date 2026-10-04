@@ -1,0 +1,5 @@
+{
+  "_comment": "Ícono plano del sombrero de bruja (2026-10-04), dibujado por tools/generar_icono_sombrero.py.",
+  "parent": "minecraft:item/generated",
+  "textures": { "layer0": "femclothes:item/sombrero_bruja" }
+}
