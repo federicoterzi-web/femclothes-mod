@@ -57,15 +57,6 @@ public final class ModeladoMod {
     public static final MoldeRangoItem MOLDE_RANGO_LARGO = new MoldeRangoItem(new Item.Settings().maxCount(1), MoldeRangoItem.Rango.LARGO);
     public static final MoldeRangoItem MOLDE_RANGO_MAXIMO = new MoldeRangoItem(new Item.Settings().maxCount(1), MoldeRangoItem.Rango.MAXIMO);
 
-    // ── molde de torso unificado (a pedido) ─────────────────────────────
-    // Un solo set de 3, para largo de remera y tiro de pantalón — mismo
-    // espíritu que MOLDE_RANGO_* pero para los dos ejes de TORSO (un solo
-    // valor, sin anclaje ni lado). Ver MoldeTorsoItem.
-
-    public static final MoldeTorsoItem MOLDE_TORSO_CORTO = new MoldeTorsoItem(new Item.Settings().maxCount(1), MoldeTorsoItem.Rango.CORTO);
-    public static final MoldeTorsoItem MOLDE_TORSO_MEDIO = new MoldeTorsoItem(new Item.Settings().maxCount(1), MoldeTorsoItem.Rango.MEDIO);
-    public static final MoldeTorsoItem MOLDE_TORSO_LARGO = new MoldeTorsoItem(new Item.Settings().maxCount(1), MoldeTorsoItem.Rango.LARGO);
-
     // ── molde de calce (a pedido 2026-09-15) ────────────────────────────
     // Transversal a las 4 categorías (remera/pantalón/medias/
     // calientabrazos) — no recorta filas, cambia la dilatación de la
@@ -145,9 +136,6 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_rango_largo"), MOLDE_RANGO_LARGO);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_rango_maximo"), MOLDE_RANGO_MAXIMO);
 
-        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_torso_corto"), MOLDE_TORSO_CORTO);
-        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_torso_medio"), MOLDE_TORSO_MEDIO);
-        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_torso_largo"), MOLDE_TORSO_LARGO);
 
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_calce_pegado"), MOLDE_CALCE_PEGADO);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_calce_ajustado"), MOLDE_CALCE_AJUSTADO);

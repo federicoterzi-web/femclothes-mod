@@ -334,9 +334,6 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
         // Molde de rango unificado (a pedido): sirve para las 4 categorías
         // de extremidad, cada una lo traduce a su propia escala (ver fijar()).
         if (item instanceof MoldeRangoItem) return true;
-        // Molde de torso unificado (a pedido): sirve para remera (largo) y
-        // pantalón (tiro), mismo criterio.
-        if (item instanceof MoldeTorsoItem) return cat == Categoria.REMERA || cat == Categoria.PANTALON;
         // Molde de calce (a pedido): transversal a las 4, sin anclaje ni lado.
         if (item instanceof MoldeCalceItem) return true;
         // Molde de red (a pedido): mismo criterio que calce.
@@ -449,14 +446,6 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
         return mangaDeFilas(2 * r.nivel());
     }
 
-    private static Variante.Largo largoDeRango(MoldeTorsoItem.Rango r) {
-        return switch (r) {
-            case CORTO -> Variante.Largo.CROP;
-            case MEDIO -> Variante.Largo.NORMAL;
-            case LARGO -> Variante.Largo.LARGO;
-        };
-    }
-
     /** Largo de remera por nivel: 3, 5, 7, 9, 10, 11 y 12 filas desde el hombro (2026-10-04). */
     private static Variante.Largo largoDeNivel(MoldeRangoItem.Rango r) {
         return switch (r.nivel()) {
@@ -467,14 +456,6 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
             case 4 -> Variante.Largo.CADERA_ALTA;
             case 5 -> Variante.Largo.CADERA;
             default -> Variante.Largo.LARGO;
-        };
-    }
-
-    private static PantalonTiro tiroDeRango(MoldeTorsoItem.Rango r) {
-        return switch (r) {
-            case CORTO -> PantalonTiro.CORTO;
-            case MEDIO -> PantalonTiro.MEDIO;
-            case LARGO -> PantalonTiro.LARGO;
         };
     }
 
@@ -699,7 +680,6 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
                 // parchea solo su eje sobre el Variante actual, no pisa a
                 // las demás.
                 if (activo.getItem() instanceof MoldeRangoItem m) yield ComboCorte.remeraManga(mangaRemeraDeRango(m.rango));
-                if (activo.getItem() instanceof MoldeTorsoItem m) yield ComboCorte.remeraLargo(largoDeRango(m.rango));
                 if (activo.getItem() instanceof MoldeCuelloItem m) yield ComboCorte.remeraCuello(m.valor);
                 yield ComboCorte.VACIO;
             }
@@ -709,7 +689,6 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
                 // Superior, ya no mira "anclaje" para decidir a cuál de
                 // los dos escribir.
                 if (activo.getItem() instanceof MoldeRangoItem m) yield ComboCorte.pantalonSuperior(pantalonDeRango(m.rango), ladoBorrador);
-                if (activo.getItem() instanceof MoldeTorsoItem m) yield ComboCorte.tiro(tiroDeRango(m.rango));
                 yield ComboCorte.VACIO;
             }
             case MEDIAS -> {
@@ -726,7 +705,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
                         : ComboCorte.calientabrazosInferior(inicio, ladoBorrador);
             }
             case POLLERA -> {
-                if (activo.getItem() instanceof MoldeRangoItem m && m.rango.esDeSeis())
+                if (activo.getItem() instanceof MoldeRangoItem m)
                     yield ComboCorte.polleraLargo(com.femclothes.item.PolleraLargo.valueOf(m.rango.name()));
                 if (activo.getItem() instanceof MoldePolleraItem m) yield ComboCorte.polleraForma(m.valor);
                 yield ComboCorte.VACIO;
@@ -797,23 +776,21 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
                 if (item instanceof MoldeCalceItem m) c = ComboCorte.calce(m.valor);
             }
             case TORSO -> {
-                if (item instanceof MoldeTorsoItem m) c = ComboCorte.remeraLargo(largoDeRango(m.rango));
-                else if (item instanceof MoldeRangoItem m) c = ComboCorte.remeraLargo(largoDeNivel(m.rango));
+                if (item instanceof MoldeRangoItem m) c = ComboCorte.remeraLargo(largoDeNivel(m.rango));
             }
             case TIRO -> {
-                if (item instanceof MoldeTorsoItem m) c = ComboCorte.tiro(tiroDeRango(m.rango));
-                else if (item instanceof MoldeRangoItem m) c = ComboCorte.tiro(tiroDeNivel(m.rango));
+                if (item instanceof MoldeRangoItem m) c = ComboCorte.tiro(tiroDeNivel(m.rango));
             }
             case FORMA_POLLERA -> {
                 if (item instanceof MoldePolleraItem m) c = ComboCorte.polleraForma(m.valor);
             }
             case LARGO_POLLERA -> {
                 // Los 6 rangos del pantalón, 1 a 1 (2026-09-29, "Los 6 rangos del pantalón").
-                if (item instanceof MoldeRangoItem m && m.rango.esDeSeis()) c = ComboCorte.polleraLargo(com.femclothes.item.PolleraLargo.valueOf(m.rango.name()));
+                if (item instanceof MoldeRangoItem m) c = ComboCorte.polleraLargo(com.femclothes.item.PolleraLargo.valueOf(m.rango.name()));
             }
             case LARGO_CAPA -> {
                 // Los 6 rangos, 1 a 1 (2026-09-29, "Los 6 rangos").
-                if (item instanceof MoldeRangoItem m && m.rango.esDeSeis()) c = ComboCorte.capaLargo(com.femclothes.item.CapaLargo.valueOf(m.rango.name()));
+                if (item instanceof MoldeRangoItem m) c = ComboCorte.capaLargo(com.femclothes.item.CapaLargo.valueOf(m.rango.name()));
             }
             case RUEDO_CAPA -> {
                 if (item instanceof MoldeCapaItem m && m.tipo.esRuedo()) c = comboDeMoldeCapa(item);
@@ -852,7 +829,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
     @Nullable
     private static ComboCorte comboDeMoldeCapa(Item item) {
         if (item instanceof MoldeRangoItem m) {
-            return m.rango.esDeSeis() ? ComboCorte.capaLargo(com.femclothes.item.CapaLargo.valueOf(m.rango.name())) : null;
+            return ComboCorte.capaLargo(com.femclothes.item.CapaLargo.valueOf(m.rango.name()));
         }
         if (!(item instanceof MoldeCapaItem m)) return null;
         return switch (m.tipo) {
@@ -1486,7 +1463,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
     public static boolean esMolde(ItemStack stack) {
         Item item = stack.getItem();
         return item instanceof MoldeItem || item instanceof MoldeDeCorteItem
-                || item instanceof MoldeRangoItem || item instanceof MoldeTorsoItem
+                || item instanceof MoldeRangoItem
                 || item instanceof MoldeCalceItem || item instanceof MoldeRedItem
                 || item instanceof MoldeCuelloItem || item instanceof ClothingPatternItem
                 || item instanceof MoldePolleraItem || item instanceof MoldeCapaItem;

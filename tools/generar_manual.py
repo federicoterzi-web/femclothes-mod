@@ -73,7 +73,7 @@ def iconos():
     """Grilla con los íconos de los ítems principales, ampliados sin suavizar."""
     nombres = [
         'corte_normal_corta_redondo', 'socks_solid', 'pantalon', 'calientabrazos', 'pollera',
-        'molde_rango_medio', 'molde_torso_medio', 'molde_cuello_redondo', 'molde_calce_normal', 'molde_de_corte',
+        'molde_rango_medio', 'molde_rango_cero', 'molde_cuello_redondo', 'molde_calce_normal', 'molde_de_corte',
         'molde_red_fina', 'molde_red_hexagonal', 'molde_red_encaje', 'molde_red_arnes_x', 'molde_red_lisa',
         'pattern_stripe_alt', 'pattern_corazones', 'pattern_estrellas', 'pattern_lunares', 'pattern_vichy',
     ]

@@ -141,11 +141,6 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RANGO_MEDIOLARGO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RANGO_LARGO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RANGO_MAXIMO);
-            // Molde de torso unificado (a pedido): mismos 3, sirven para
-            // largo de remera y tiro de pantalón.
-            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_TORSO_CORTO);
-            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_TORSO_MEDIO);
-            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_TORSO_LARGO);
             // Molde de calce (a pedido): transversal a las 4 categorías,
             // controla la dilatación de la geometría 3D, no recorta tela.
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CALCE_PEGADO);

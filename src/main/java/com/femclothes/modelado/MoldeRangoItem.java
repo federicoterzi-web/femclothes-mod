@@ -45,11 +45,6 @@ public class MoldeRangoItem extends Item {
         public int nivel() {
             return this == CERO ? 0 : ordinal() + 1;
         }
-
-        /** Los 6 niveles de pollera y capa (no tienen el 0). */
-        public boolean esDeSeis() {
-            return this != CERO;
-        }
     }
 
     public final Rango rango;

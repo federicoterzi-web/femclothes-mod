@@ -13,7 +13,9 @@ public enum CapaLargo implements StringIdentifiable {
     MEDIO("medio", 16),
     MEDIOLARGO("mediolargo", 18),
     LARGO("largo", 21),
-    MAXIMO("maximo", 24);
+    MAXIMO("maximo", 24),
+    // El 7.º nivel del molde de rango (2026-10-04, "apliquemos todos los cambios tambien a capa y pollera"); al FINAL.
+    CERO("cero", 6);
 
     public final String clave;
     public final int pixeles;

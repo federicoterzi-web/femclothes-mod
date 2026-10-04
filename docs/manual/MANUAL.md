@@ -214,8 +214,7 @@ La Modeladora cambia el **corte** de la prenda. En el centro está el **dibujo d
 
 | Molde | Dónde va | Qué hace |
 |---|---|---|
-| **Molde de rango** (Cero, Mínimo, Corto, Medio, Medio largo, Largo, Máximo) | Mangas, piernas, cortes sup./inf., largo y tiro de torso; los 6 últimos también el largo de pollera y de capa | Son **7 niveles de una línea medida desde arriba**: el nivel *k* está a *2k* filas desde el hombro o la cintura (0, 2, 4, 6, 8, 10, 12). Sirve para todas las prendas: cada una lo traduce a su propia medida (nivel 3 = una manga media o una pantorrilla). El Cero (línea más alta) no sirve para pollera ni capa, que siguen con 6 niveles. |
-| **Molde de torso** (Corto, Medio, Largo) | Corte inferior de remera, Tiro de pantalón | Los moldes de siempre: crop/normal/largo de remera y tiro corto/medio/alto. Siguen valiendo; el molde de rango hace lo mismo con 7 puntos (ver abajo). |
+| **Molde de rango** (Cero, Mínimo, Corto, Medio, Medio largo, Largo, Máximo) | Mangas, piernas, cortes sup./inf., largo de remera, tiro de pantalón, largo de pollera y de capa | Son **7 niveles de una línea medida desde arriba**: el nivel *k* está a *2k* filas desde el hombro o la cintura (0, 2, 4, 6, 8, 10, 12). Sirve para todas las prendas: cada una lo traduce a su propia medida (nivel 3 = una manga media, una pantorrilla, una pollera a la rodilla). El Cero es la línea más alta: manga sin nada, pierna de 0, top, tiro hasta los hombros, pollera ultramicro (3 px) y capelet (6 px). |
 | **Molde de cuello** (Redondo, V, Polera) | Cuello de remera | Forma del cuello. |
 | **Molde de manga** | Activo (remera, calientabrazos) | Molde viejo de manga: cada uso pasa al largo siguiente. |
 | **Molde de calce** (Pegado, Ajustado, Normal, Suelto, Oversize) | Calce | Qué tan despegada del cuerpo va la prenda. |
@@ -238,7 +237,7 @@ Las capas se respetan siempre: una prenda de arriba nunca queda por dentro de un
 
 **Cómo funcionan los cortes de extremidades.** Los 7 niveles del molde de rango son siempre **la altura de una línea medida de arriba hacia abajo** (nivel 0 = la línea más alta, nivel 6 = la más baja). En medias y calientabrazos hay dos cortes: el pin de **arriba** del esquema dice **dónde empieza** la tela y el de **abajo dónde termina** (sin pin, la tela empieza arriba del todo y llega hasta el final). En el **pantalón** y en la **manga de remera** hay un solo corte por lado, que dice dónde termina, medido desde la cintura o el hombro. Así se arman desde zoquetes hasta medias hasta el muslo, o calientabrazos que solo cubren el antebrazo. Los pines de izquierda y derecha del esquema se leen de frente, así que el de la izquierda del dibujo es el lado derecho del jugador, en todas las categorías (2026-10-04: antes estaba al revés en remera y pantalón).
 
-**Torso y tiro con el molde de rango.** Los pines de **largo de remera** y de **tiro** también aceptan el molde de rango, con estos 7 puntos:
+**Torso, tiro, pollera y capa con el molde de rango.** Los pines de **largo de remera** y de **tiro** usan el molde de rango (el **Molde de torso** corto/medio/largo se sacó el 2026-10-04), con estos 7 puntos:
 
 | Nivel | Largo de remera (filas desde el hombro) | Tiro (la cintura sube) |
 |---|---|---|
@@ -249,6 +248,8 @@ Las capas se respetan siempre: una prenda de arriba nunca queda por dentro de un
 | 4 | 10 (cadera alta) | 4, alto |
 | 5 | 11 (cadera) | 2, medio |
 | 6 | 12 (largo) | 0, a la cadera (sin banda) |
+
+**Pollera** (px desde la cintura): ultramicro 3, micro 5, mini 7, a la rodilla 9, midi 11, larga 13 y hasta el tobillo 15. **Capa** (px desde los hombros): capelet 6, a la cintura 9, a la cadera 12, clásica 16, a la rodilla 18, larga 21 y hasta el tobillo 24.
 
 El top, el corto, la cadera alta y la cadera comparten la textura del crop, el normal y el largo que los contienen: la tela se recorta a las filas elegidas. Un tiro hasta los hombros hoy es solo una banda que cubre todo el torso; el peto con tirantes (overall, jardinera) queda para más adelante.
 

@@ -16,7 +16,9 @@ public enum PolleraLargo implements StringIdentifiable {
     MEDIO("medio", 9),
     MEDIOLARGO("mediolargo", 11),
     LARGO("largo", 13),
-    MAXIMO("maximo", 15);
+    MAXIMO("maximo", 15),
+    // El 7.º nivel del molde de rango (2026-10-04, "apliquemos todos los cambios tambien a capa y pollera"); al FINAL.
+    CERO("cero", 3);
 
     public final String clave;
     public final int pixeles;
