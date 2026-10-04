@@ -8,6 +8,7 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 
 - Hablar en **español rioplatense** (vos). El código, los comentarios y los nombres también van en español.
 - **Preguntar antes de compilar** (`gradlew build`) y antes de lanzar el cliente. Nunca commitear ni pushear sin que lo pida.
+- **Hablar siempre antes de implementar** (2026-10-04, "de ahora en mas cuando te pida algo antes de mandarte a hacer algo hablalo bien conmigo"): ante cualquier pedido, primero proponer/preguntar y esperar el OK; recién después implementar. Excepción: cuando el usuario ya cerró el plan ("ok me cierra vamos con eso").
 - Antes de reworks grandes, **hacer preguntas** (el usuario lo prefiere) y proponer un plan.
 - **No dibujar assets** (texturas, íconos, esquemas de GUI, moldes): escribirle al usuario el prompt para que los genere él (tamaño, paleta, estilo, qué tiene que mostrar, nombre de archivo y ruta) y dejar el código apuntando a ese archivo (2026-09-30, "No gastes tokens en dibujar assets, la proxima haceme el prompt").
 - Los comentarios del código citan el pedido original entre comillas con fecha ("a pedido (2026-09-18, ...)"). Mantener ese estilo.
