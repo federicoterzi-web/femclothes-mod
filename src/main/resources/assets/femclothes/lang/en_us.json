@@ -459,6 +459,7 @@
   "femclothes.interior.abajo.slip": "Briefs",
   "femclothes.interior.abajo.culotte": "Hipsters",
   "femclothes.interior.abajo.boxer": "Boxers",
+  "femclothes.interior.abajo.ninguna": "Nothing below",
   "femclothes.elegir_cuerpo.tooltip.interior_arriba": "Top underwear (click: next)",
   "femclothes.elegir_cuerpo.tooltip.interior_abajo": "Bottom underwear (click: next)",
   "femclothes.elegir_cuerpo.zona.interior": "Underwear",

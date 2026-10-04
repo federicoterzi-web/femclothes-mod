@@ -554,39 +554,57 @@ public final class BustoRender {
         float plano = -2f - inflado;
         float arriba = ARRIBA + 1.2f - 0.25f * abrir;
         float abajo = ARRIBA + 1.2f + 2.6f + 0.3f * t + 0.3f * abrir;
-        // Inclinación: el frente baja lo que sale × la caída (más firme en armaduras).
-        float caida = hondo * (0.18f + 0.03f * t) * (0.6f + 0.4f * b.sujecion()) * (rigido ? 0.3f : 1f);
+        // Cubos girados (2026-10-04, "dos cubos inclinados... bajan suave por el pecho hasta la punta y de ahí
+        // se inserta en el pecho"): más inclinados cuanto más talle, más firmes en armaduras.
+        float giro = (float) Math.toRadians(10f + 25f * Math.min(1f, t / 6f)) * (rigido ? 0.4f : 1f)
+                + dy * 0.04f;
         List<Vert[]> q = new ArrayList<>();
         if (!piel && carpa >= CARPA_MANTO) {
             float chato = 1f - 0.35f * Math.max(0f, Math.min(1f, (carpa - CARPA_MANTO) / 1.5f));
-            caja(q, -4f, 4f, arriba, abajo, plano, hondo * chato, caida * chato, 0f, dy, carpa * 1.5f);
+            caja(q, -4f, 4f, arriba, abajo, plano, hondo * chato, giro * 0.5f, 0f, dy, carpa * 1.5f);
         } else {
             float colgar = piel ? 0f : carpa;
-            caja(q, -4f, 0f, arriba, abajo, plano, hondo, caida, dx, dy, colgar);
-            caja(q, 0f, 4f, arriba, abajo, plano, hondo, caida, dx, dy, colgar);
+            // Una rendija entre los dos (2026-10-04, "q se note la division de los pechos").
+            caja(q, -4f, -SEPARACION, arriba, abajo, plano, hondo, giro, dx, dy, colgar);
+            caja(q, SEPARACION, 4f, arriba, abajo, plano, hondo, giro, dx, dy, colgar);
         }
         return q;
     }
 
+    /** Mitad de la rendija entre los dos pechos cuadrados (px). */
+    private static final float SEPARACION = 0.5f;
+
     /**
-     * Una caja de x0..x1, y0..y1 sobre el pecho: la cara de atrás en el plano
-     * (no se dibuja), el frente {@code hondo} por delante, corrido hacia
-     * abajo {@code caida} y el rebote; {@code colgar} baja la arista de atrás
-     * de abajo (la tela cae en carpa hasta el pecho).
+     * Un cubo de x0..x1 sobre el pecho, girado {@code giro} radianes alrededor de su eje horizontal (2026-10-04,
+     * "dos cubos inclinados en que lados a bajan suave por el pecho hasta la punta y de ahí lado b se inserta en
+     * el pecho"): la tapa de arriba baja en pendiente desde el pecho hasta la punta, la cara de abajo vuelve al
+     * pecho y se entierra, y la de atrás queda adentro (no se dibuja). Sale {@code hondo} px por delante del plano.
+     * Ocupa de {@code arriba} a {@code abajo}; {@code dx}/{@code dy} es el rebote; {@code colgar} baja la arista de
+     * atrás de abajo (la tela cae en carpa hasta el pecho). La textura va proyectada de frente.
      */
-    private static void caja(List<Vert[]> q, float x0, float x1, float y0, float y1, float plano, float hondo,
-                             float caida, float dx, float dy, float colgar) {
-        float zf = plano - hondo;
-        // Atrás: arriba-izq, arriba-der, abajo-der, abajo-izq. Frente: lo mismo, corrido.
-        Vector3f a0 = new Vector3f(x0, y0, plano), a1 = new Vector3f(x1, y0, plano);
-        Vector3f a2 = new Vector3f(x1, y1 + colgar, plano), a3 = new Vector3f(x0, y1 + colgar, plano);
-        Vector3f f0 = new Vector3f(x0 + dx, y0 + caida + dy, zf), f1 = new Vector3f(x1 + dx, y0 + caida + dy, zf);
-        Vector3f f2 = new Vector3f(x1 + dx, y1 + caida + dy, zf), f3 = new Vector3f(x0 + dx, y1 + caida + dy, zf);
-        // Textura de frente sin el rebote; debajo, el rectángulo plano.
-        float[][] uvA = {{x0, y0}, {x1, y0}, {x1, y1 + colgar}, {x0, y1 + colgar}};
-        float[][] uvF = {{x0, y0 + caida}, {x1, y0 + caida}, {x1, y1 + caida}, {x0, y1 + caida}};
-        float[][] base = {{x0, y0}, {x1, y0}, {x1, y1}, {x0, y1}};
-        Vector3f[] at = {a0, a1, a2, a3}, fr = {f0, f1, f2, f3};
+    private static void caja(List<Vert[]> q, float x0, float x1, float arriba, float abajo, float plano, float hondo,
+                             float giro, float dx, float dy, float colgar) {
+        if (x1 - x0 < 0.05f) return;
+        float co = (float) Math.cos(giro), si = (float) Math.sin(giro);
+        float alto = abajo - arriba, yc = arriba + alto * 0.5f;
+        float prof = hondo / co;                                  // la punta sale `hondo`
+        float[] xs = {x0, x1, x1, x0};
+        float[] lado = {-1f, -1f, 1f, 1f};                        // -1 = tapa de arriba, +1 = base: esquinas 0..3
+        Vector3f[] at = new Vector3f[4], fr = new Vector3f[4];
+        float[][] uvA = new float[4][], uvF = new float[4][], base = new float[4][];
+        for (int k = 0; k < 4; k++) {
+            float d = lado[k] * alto * 0.5f;
+            for (int cara = 0; cara < 2; cara++) {
+                float dz = cara == 0 ? 0f : -prof;
+                float y = yc + d * co - dz * si;
+                float z = plano + dz * co - d * si + alto * 0.5f * si;   // la arista de atrás de abajo, en el plano
+                if (cara == 0 && lado[k] > 0) y += colgar;
+                float[] uv = {xs[k], y};
+                Vector3f v = new Vector3f(xs[k] + dx, y + dy, z);
+                if (cara == 0) { at[k] = v; uvA[k] = uv; } else { fr[k] = v; uvF[k] = uv; }
+                base[k] = uv;
+            }
+        }
         // Frente.
         cara(q, new Vector3f(0, 0, -1), new int[][]{{1, 0}, {1, 1}, {1, 2}, {1, 3}}, at, fr, uvA, uvF, base);
         // Tapa de arriba, de abajo y los dos costados.
@@ -734,11 +752,12 @@ public final class BustoRender {
         }
         float plano = -2f - inflado;
         float arriba = 8.2f - 0.2f * abrir, abajo = 12f + 0.2f * abrir;
-        float caida = hondo * 0.12f * (rigido ? 0.3f : 1f);
+        // Mismos cubos girados que el busto, menos inclinados (2026-10-04, "quizas aplicable a las nalgas").
+        float giro = (float) Math.toRadians(6f + 12f * Math.min(1f, cuerpo / 2.5f)) * (rigido ? 0.4f : 1f);
         float colgar = piel ? 0f : carpa * 0.5f;
         List<Vert[]> q = new ArrayList<>();
-        caja(q, -4f, 0f, arriba, abajo, plano, hondo, caida, 0f, dy - alterno, colgar);
-        caja(q, 0f, 4f, arriba, abajo, plano, hondo, caida, 0f, dy + alterno, colgar);
+        caja(q, -4f, -SEPARACION * 0.6f, arriba, abajo, plano, hondo, giro, 0f, dy - alterno, colgar);
+        caja(q, SEPARACION * 0.6f, 4f, arriba, abajo, plano, hondo, giro, 0f, dy + alterno, colgar);
         return q;
     }
 

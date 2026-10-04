@@ -5,14 +5,15 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.StringIdentifiable;
 
 /**
- * La parte de abajo de la ropa interior del cuerpo (2026-09-30). No tiene
- * "ninguna": es el mínimo que siempre está. Viaja por ordinal: valores
- * nuevos, al final.
+ * La parte de abajo de la ropa interior del cuerpo (2026-09-30). "Ninguna" se
+ * agregó el 2026-10-04 ("alguna forma de optar sin ropa interior de los pantalones asi pueda hacer la mia
+ * propia"). Viaja por ordinal: valores nuevos, al final.
  */
 public enum InteriorAbajo implements StringIdentifiable {
     SLIP("slip"),
     CULOTTE("culotte"),
-    BOXER("boxer");
+    BOXER("boxer"),
+    NINGUNA("ninguna");
 
     public final String clave;
 
@@ -25,9 +26,10 @@ public enum InteriorAbajo implements StringIdentifiable {
         return clave;
     }
 
-    /** Textura en gris con el layout de la skin (se tiñe con el color elegido). */
+    /** Textura en gris con el layout de la skin (se tiñe con el color elegido), o null si no hay nada que dibujar. */
+    @org.jetbrains.annotations.Nullable
     public Identifier textura() {
-        return Identifier.of(Femclothes.MOD_ID, "textures/entity/cuerpo/interior_abajo_" + clave + ".png");
+        return this == NINGUNA ? null : Identifier.of(Femclothes.MOD_ID, "textures/entity/cuerpo/interior_abajo_" + clave + ".png");
     }
 
     public String traduccion() {

@@ -916,6 +916,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     private static float techoBombacha(PerfilCuerpo perfil) {
         return switch (perfil.interior().abajo()) {
             case BOXER -> 8f;
+            case NINGUNA -> 0f;          // sin bombacha no hay nada que cubrir: la cola no aprieta su textura
             default -> 9f;
         };
     }

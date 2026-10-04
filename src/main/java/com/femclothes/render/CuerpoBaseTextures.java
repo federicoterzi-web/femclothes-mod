@@ -223,7 +223,7 @@ public final class CuerpoBaseTextures {
         // Ropa interior en dos partes, teñida (2026-09-30): primero abajo, después arriba.
         com.femclothes.body.RopaInterior interior = perfil.interior();
         NativeImage sombra = mascara != null && !perfil.cuerpo().animal ? mascara : null;
-        superponer(img, interior.abajo().textura(), interior.color(), sombra);
+        if (interior.abajo().textura() != null) superponer(img, interior.abajo().textura(), interior.color(), sombra);
         if (interior.arriba().textura() != null) superponer(img, interior.arriba().textura(), interior.color(), sombra);
         return img;
     }
