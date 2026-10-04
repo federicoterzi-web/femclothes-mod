@@ -425,11 +425,16 @@ public final class ApliqueRenderer {
         final float blandura;
         /** Desplazamientos en el espacio del modelo del aplique (x, y, z). */
         final Vector3f blando, firme;
+        /** Las mariposas aletean solas (2026-10-04, "las mariposas no se iban a mover?"); fase propia de cada aplique. */
+        final boolean mariposa;
+        final float fase;
 
-        Blando(float blandura, Vector3f blando, Vector3f firme) {
+        Blando(float blandura, Vector3f blando, Vector3f firme, boolean mariposa, float fase) {
             this.blandura = blandura;
             this.blando = blando;
             this.firme = firme;
+            this.mariposa = mariposa;
+            this.fase = fase;
         }
 
         /**
@@ -440,9 +445,12 @@ public final class ApliqueRenderer {
         @org.jetbrains.annotations.Nullable
         static Blando de(Aplique a, Matrix3f local, Matrix3f marco) {
             FisicaApliques.Desplazamiento d = FisicaApliques.actual;
-            if (d == null || a.blandura() <= 0f) return null;
+            if (a.blandura() <= 0f) return null;
             Matrix3f aLocal = new Matrix3f(local).transpose().mul(marco);
-            return new Blando(a.blandura(), aLocal.transform(new Vector3f(d.blando())), aLocal.transform(new Vector3f(d.firme())));
+            Vector3f suave = d == null ? new Vector3f() : aLocal.transform(new Vector3f(d.blando()));
+            Vector3f firme = d == null ? new Vector3f() : aLocal.transform(new Vector3f(d.firme()));
+            float fase = (float) (a.x() * 7.3 + a.y() * 13.1 + a.z() * 3.7);
+            return new Blando(a.blandura(), suave, firme, a.modelo() == com.femclothes.aplique.ModeloAplique.MARIPOSA, fase);
         }
 
         void mover(GeoBone hueso, MatrixStack matrices) {
@@ -456,7 +464,13 @@ public final class ApliqueRenderer {
                 rx = -blando.z * 0.2f;
             } else if (n.startsWith("ala")) {
                 // En el espacio horneado el ala "izq" se abre hacia +x: gira para un lado y la "der" para el otro.
-                float aleteo = (firme.y * 0.55f + firme.z * 0.3f) * (n.endsWith("izq") ? 1f : -1f);
+                // Las mariposas además baten las alas solas, a unos 1,8 Hz (con la intensidad: 0 = quietas).
+                float propio = 0f;
+                if (mariposa) {
+                    double t = (System.nanoTime() % 1_000_000_000_000L) / 1e9;
+                    propio = 0.55f * (float) Math.sin(2 * Math.PI * 1.8 * t + fase);
+                }
+                float aleteo = (firme.y * 0.55f + firme.z * 0.3f + propio) * (n.endsWith("izq") ? 1f : -1f);
                 ry = aleteo;
                 rz = firme.x * 0.1f;
             } else if (n.startsWith("petalo")) {
