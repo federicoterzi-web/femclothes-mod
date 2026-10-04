@@ -54,12 +54,16 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
     /** Color del líquido de cada tanque C/M/Y/K — los mismos que la Sublimadora. */
     private static final int[] COLOR_TANQUE = { 0xFF1FB3D6, 0xFFD6287F, 0xFFE8C21E, 0xFF2A2A2A };
 
-    /** Mismos esquemas que la Modeladora (reusados tal cual) — Pollera no tiene. */
+    /** Mismos esquemas que la Modeladora para las 4 primeras; Pollera y Capa con esquema propio de Tintes. */
     private static final Identifier[] TEXTURE_ESQUEMA = {
             Identifier.of("femclothes", "textures/gui/container/esquema_remera.png"),
             Identifier.of("femclothes", "textures/gui/container/esquema_pantalon.png"),
             Identifier.of("femclothes", "textures/gui/container/esquema_medias.png"),
             Identifier.of("femclothes", "textures/gui/container/esquema_calientabrazos.png"),
+            // Pollera y capa tienen esquema propio de Tintes (2026-10-04, "capa y pollera no tienen asset"):
+            // posiciones en TinturasScreenHandler#posCasilla.
+            Identifier.of("femclothes", "textures/gui/container/esquema_tintes_pollera.png"),
+            Identifier.of("femclothes", "textures/gui/container/esquema_tintes_capa.png"),
     };
     private static final int ESQUEMA_Y = TinturasScreenHandler.ESQUEMA_Y;
     private static final int ESQUEMA_ANCHO = 240, ESQUEMA_ALTO = 136;
@@ -712,7 +716,7 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
         dibujarEsquema(context);
     }
 
-    /** Esquema de la prenda actual — mismos PNG y coordenadas que {@code ModeladoScreen#dibujarEsquema}. Pollera no tiene. */
+    /** Esquema de la prenda actual — mismos PNG y coordenadas que {@code ModeladoScreen#dibujarEsquema}; Pollera y Capa tienen los suyos. */
     private void dibujarEsquema(DrawContext context) {
         int cat = this.handler.be.categoria().ordinal();
         if (cat >= TEXTURE_ESQUEMA.length) return;

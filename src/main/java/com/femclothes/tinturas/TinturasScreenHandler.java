@@ -155,9 +155,16 @@ public class TinturasScreenHandler extends ScreenHandler {
      * otra vez y todo quedaba 36px más abajo que el dibujo. Pollera no tiene
      * esquema: sus 3 van en una fila fija dentro del hueco del dibujo.
      */
+    private static final int[][] POS_POLLERA = {{53, 19}, {181, 55}, {39, 98}};
+    private static final int[][] POS_CAPA = {{48, 53}, {189, 96}, {175, 18}};
+
     public static int[] posCasilla(TinturasBlockEntity.Categoria cat, int i) {
         if (cat == TinturasBlockEntity.Categoria.POLLERA || cat == TinturasBlockEntity.Categoria.CAPA) {
-            return new int[]{M_MEDIO + 84 + i * 28, 94};
+            // Sobre el dibujo de esquema_tintes_<prenda>.png (2026-10-04, "adaptalos"): origen del ítem de 16x16
+            // en px de GUI dentro del esquema de 240x136 (arranca en ESQUEMA_Y). Pollera: cintura, falda, ruedo.
+            // Capa: exterior (izq.), forro (abajo der.), detalles (capucha, arriba der.).
+            int[][] p = cat == TinturasBlockEntity.Categoria.POLLERA ? POS_POLLERA : POS_CAPA;
+            return new int[]{M_MEDIO + p[i][0], ESQUEMA_Y + p[i][1]};
         }
         int[] p = ModeladoScreenHandler.PIN_POS[cat.ordinal()][i];
         return new int[]{M_MEDIO + p[0], p[1]};
