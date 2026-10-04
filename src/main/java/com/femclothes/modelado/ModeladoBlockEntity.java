@@ -991,18 +991,33 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
      */
     @Override
     public void cargarCreativa() {
+        List<Text> sinLugar = new java.util.ArrayList<>();
         for (Item item : net.minecraft.registry.Registries.ITEM) {
             ItemStack molde = new ItemStack(item);
             if (esMoldeCompartido(molde)) {
-                guardarMolde(Categoria.REMERA, molde);
+                if (!guardarMolde(Categoria.REMERA, molde)) sinLugar.add(item.getName());
             } else {
                 for (Categoria c : Categoria.values()) {
-                    if (esMoldeExclusivoDe(molde, c)) guardarMolde(c, molde.copy());
+                    if (esMoldeExclusivoDe(molde, c) && !guardarMolde(c, molde.copy())) sinLugar.add(item.getName());
                 }
             }
         }
         markDirty();
         sincronizar();
+        if (!sinLugar.isEmpty()) {
+            // Antes los moldes que no entraban se perdían sin avisar (2026-10-04, "no entran todos los moldes").
+            LOG.warn("Modeladora creativa: {} moldes no entraron en los almacenes", sinLugar.size());
+            if (world != null && !world.isClient) {
+                net.minecraft.text.MutableText nombres = Text.empty();
+                for (int i = 0; i < sinLugar.size(); i++) nombres.append(i == 0 ? Text.empty() : Text.literal(", ")).append(sinLugar.get(i));
+                for (PlayerEntity p : world.getPlayers()) {
+                    if (p.getBlockPos().isWithinDistance(pos, 12)) {
+                        p.sendMessage(Text.translatable("femclothes.modelado.creativa.sin_lugar", sinLugar.size(), nombres)
+                                .formatted(net.minecraft.util.Formatting.GOLD), false);
+                    }
+                }
+            }
+        }
     }
 
     /** Devuelve un molde al storage que le corresponde (mismas reglas que isValid: compartido -> almacén general, exclusivo de remera -> su banco). */

@@ -730,5 +730,6 @@
   "femclothes.sublimadora.cuello.cuadrado": "cuadrado",
   "femclothes.sublimadora.cuello.corazon": "corazón",
   "femclothes.estilado.panel.nombre": "Nombre del molde",
-  "block.femclothes.cinta": "Cinta transportadora"
+  "block.femclothes.cinta": "Cinta transportadora",
+  "femclothes.modelado.creativa.sin_lugar": "La Modeladora creativa no tuvo lugar para %s molde(s): %s. Hay que agrandar el almacén."
 }
