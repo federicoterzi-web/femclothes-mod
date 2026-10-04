@@ -33,6 +33,7 @@ public final class EstiladoMod {
             BlockEntityType.Builder.create(EstiladoBlockEntity::new, ESTILADO_BLOCK, ESTILADO_CREATIVA).build();
 
     public static void register() {
+        ComandoMoldes.init();
         Identifier id = Identifier.of(Femclothes.MOD_ID, "mesa_estilado");
         Registry.register(Registries.BLOCK, id, ESTILADO_BLOCK);
         Registry.register(Registries.ITEM, id, ESTILADO_BLOCK_ITEM);

@@ -56,7 +56,15 @@ public class EstiladoBlockEntity extends BlockEntity
         com.femclothes.util.MaquinaCreativa.Cargable {
 
     /** SLOT_OBJETO (2026-10-04, apliques de objeto): cualquier ítem; si hay uno, el aplique que se pone es ese objeto. */
-    public static final int SLOT_PRENDA = 0, SLOT_MOLDE = 1, SLOT_RETAZO = 2, SLOT_OBJETO = 3, TAMANO = 4;
+    public static final int SLOT_PRENDA = 0, SLOT_MOLDE = 1, SLOT_RETAZO = 2, SLOT_OBJETO = 3;
+    /**
+     * La biblioteca de moldes de la Mesa creativa (2026-10-04, "si perdi un molde de aplique que cree con la mesa
+     * de estilado donde lo encuentro" → "vamos con las dos"): una copia de cada molde que fabrica, en slots
+     * escondidos al FINAL del inventario (así el handler los sincroniza solo y el NBT guardado no se corre).
+     */
+    public static final int SLOT_BIBLIOTECA = 4, BIBLIOTECA = 24, TAMANO = SLOT_BIBLIOTECA + BIBLIOTECA;
+    /** Botones de la lista de la biblioteca: dar una copia y borrar, uno por fila. */
+    public static final int BTN_BIBLIO_DAR_BASE = 200, BTN_BIBLIO_BORRAR_BASE = 240;
 
     public static final int BTN_SELECCIONAR_BASE = 100;        // + 0..11 (antes 0..5: chocaba con el resto al subir a 12 apliques)
     public static final int BTN_GIRO = 10, BTN_GIRO_ATRAS = 11;
@@ -277,7 +285,42 @@ public class EstiladoBlockEntity extends BlockEntity
         String limpio = nombre == null ? "" : nombre.strip();
         if (limpio.length() > 40) limpio = limpio.substring(0, 40);
         if (!limpio.isEmpty()) molde.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal(limpio));
+        guardarEnBiblioteca(molde.copy());
+        // El historial del jugador en el mundo (comando /femclothes moldes): sobrevive aunque se pierda la Mesa.
+        if (jugador instanceof ServerPlayerEntity sp && sp.getServer() != null) {
+            MoldesGuardados.registrar(sp.getServer(), sp, molde.copy());
+        }
         jugador.getInventory().offerOrDrop(molde);
+    }
+
+    /** Guarda una copia en el primer lugar libre de la biblioteca; si está llena, se va el más viejo. */
+    private void guardarEnBiblioteca(ItemStack molde) {
+        for (int i = SLOT_BIBLIOTECA; i < TAMANO; i++) {
+            if (items.get(i).isEmpty()) {
+                items.set(i, molde);
+                markDirty();
+                return;
+            }
+        }
+        for (int i = SLOT_BIBLIOTECA; i < TAMANO - 1; i++) items.set(i, items.get(i + 1));
+        items.set(TAMANO - 1, molde);
+        markDirty();
+    }
+
+    /** Una copia del molde {@code i} de la biblioteca (solo la Mesa creativa), o vacío. */
+    public ItemStack copiaDeBiblioteca(int i) {
+        if (!com.femclothes.util.MaquinaCreativa.es(this) || i < 0 || i >= BIBLIOTECA) return ItemStack.EMPTY;
+        return items.get(SLOT_BIBLIOTECA + i).copy();
+    }
+
+    public boolean borrarDeBiblioteca(int i) {
+        if (!com.femclothes.util.MaquinaCreativa.es(this) || i < 0 || i >= BIBLIOTECA) return false;
+        if (items.get(SLOT_BIBLIOTECA + i).isEmpty()) return false;
+        // Se corre la lista para que no queden huecos en el medio.
+        for (int k = SLOT_BIBLIOTECA + i; k < TAMANO - 1; k++) items.set(k, items.get(k + 1));
+        items.set(TAMANO - 1, ItemStack.EMPTY);
+        markDirty();
+        return true;
     }
 
     public boolean onButtonClick(int id) {

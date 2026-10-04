@@ -33,7 +33,7 @@ public class EstiladoScreenHandler extends ScreenHandler {
         super(FemclothesScreenHandlers.ESTILADO, syncId);
         this.be = be;
         // Slot anónimo con canInsert → isValid (trampa conocida, CLAUDE.md).
-        for (int i = 0; i < EstiladoBlockEntity.TAMANO; i++) {
+        for (int i = 0; i < EstiladoBlockEntity.SLOT_BIBLIOTECA; i++) {
             int indice = i;
             addSlot(new Slot(be, i, X_DERECHA + i * 26, Y_SLOTS) {
                 @Override
@@ -44,6 +44,15 @@ public class EstiladoScreenHandler extends ScreenHandler {
                 public boolean isEnabled() {
                     return indice != EstiladoBlockEntity.SLOT_OBJETO || com.femclothes.util.MaquinaCreativa.es(be);
                 }
+            });
+        }
+        // La biblioteca de moldes: slots escondidos, solo para que el handler los sincronice al cliente (se leen para
+        // mostrar la lista; nadie los toca ni les mete nada).
+        for (int i = 0; i < EstiladoBlockEntity.BIBLIOTECA; i++) {
+            addSlot(new Slot(be, EstiladoBlockEntity.SLOT_BIBLIOTECA + i, -10000, -10000) {
+                @Override public boolean canInsert(ItemStack stack) { return false; }
+                @Override public boolean canTakeItems(PlayerEntity player) { return false; }
+                @Override public boolean isEnabled() { return false; }
             });
         }
         for (int i = 0; i < 3; i++) {
@@ -60,6 +69,16 @@ public class EstiladoScreenHandler extends ScreenHandler {
             be.quitar(player);
             return true;
         }
+        // La biblioteca de moldes de la Mesa creativa: dar una copia o borrar (necesitan al jugador).
+        if (id >= EstiladoBlockEntity.BTN_BIBLIO_DAR_BASE && id < EstiladoBlockEntity.BTN_BIBLIO_DAR_BASE + EstiladoBlockEntity.BIBLIOTECA) {
+            ItemStack copia = be.copiaDeBiblioteca(id - EstiladoBlockEntity.BTN_BIBLIO_DAR_BASE);
+            if (copia.isEmpty()) return false;
+            player.getInventory().offerOrDrop(copia);
+            return true;
+        }
+        if (id >= EstiladoBlockEntity.BTN_BIBLIO_BORRAR_BASE && id < EstiladoBlockEntity.BTN_BIBLIO_BORRAR_BASE + EstiladoBlockEntity.BIBLIOTECA) {
+            return be.borrarDeBiblioteca(id - EstiladoBlockEntity.BTN_BIBLIO_BORRAR_BASE);
+        }
         return be.onButtonClick(id);
     }
 
@@ -71,7 +90,7 @@ public class EstiladoScreenHandler extends ScreenHandler {
     @Override
     public ItemStack quickMove(PlayerEntity player, int slot) {
         Slot clicked = this.slots.get(slot);
-        if (clicked == null || !clicked.hasStack()) return ItemStack.EMPTY;
+        if (clicked == null || !clicked.hasStack() || !clicked.canTakeItems(player)) return ItemStack.EMPTY;
         ItemStack stack = clicked.getStack();
         ItemStack result = stack.copy();
         if (slot < INV_START) {

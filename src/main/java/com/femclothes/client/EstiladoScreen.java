@@ -139,8 +139,13 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
 
     // ── panel lateral (2026-10-04, "posición, rotación, escala, cara de contacto, profundidad, pivote, oscilación") ──
     private static final int PW = 160;
-    /** Una página del panel: 0 = Colocación, 1 = Movimiento. */
+    /** Una página del panel: 0 = Colocación, 1 = Movimiento, 2 = Moldes (la biblioteca de la Mesa creativa). */
     private int paginaPanel = 0;
+    /** La biblioteca de moldes: 12 filas por vez (2026-10-04). */
+    private static final int FILAS_BIBLIO = 12;
+    private int paginaBiblio = 0;
+    private final ButtonWidget[] btnBiblioDar = new ButtonWidget[FILAS_BIBLIO], btnBiblioBorrar = new ButtonWidget[FILAS_BIBLIO];
+    private ButtonWidget btnPaginaMoldes, btnBiblioAnt, btnBiblioSig;
     private int panelX;
     private ButtonWidget btnPaginaColocacion, btnPaginaMovimiento, btnRestablecer, btnPivote, btnEje, btnCrearMolde;
     /** El slider de blandura de la Mesa normal (2026-10-04): como estaba antes del panel lateral. */
@@ -292,10 +297,24 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         if (panelX + PW > this.width && this.x - PW - 4 >= 0) panelX = this.x - PW - 4;
         slidersColocacion.clear();
         slidersMovimiento.clear();
-        btnPaginaColocacion = botonPanel(6, 6, 72, Text.translatable("femclothes.estilado.panel.pagina.colocacion"),
+        btnPaginaColocacion = botonPanel(6, 6, 48, Text.translatable("femclothes.estilado.panel.pagina.colocacion"),
                 null, () -> paginaPanel = 0);
-        btnPaginaMovimiento = botonPanel(82, 6, 72, Text.translatable("femclothes.estilado.panel.pagina.movimiento"),
+        btnPaginaMovimiento = botonPanel(56, 6, 48, Text.translatable("femclothes.estilado.panel.pagina.movimiento"),
                 null, () -> paginaPanel = 1);
+        btnPaginaMoldes = botonPanel(106, 6, 48, Text.translatable("femclothes.estilado.panel.pagina.moldes"),
+                "femclothes.estilado.tooltip.biblioteca", () -> paginaPanel = 2);
+        // Página Moldes: la biblioteca de lo que fabricó esta Mesa (click = una copia; la X lo borra de la lista).
+        for (int i = 0; i < FILAS_BIBLIO; i++) {
+            int fila = i;
+            btnBiblioDar[i] = botonPanel(6, 28 + i * 15, 126, Text.empty(), "femclothes.estilado.tooltip.biblioteca_dar",
+                    () -> this.client.interactionManager.clickButton(this.handler.syncId,
+                            EstiladoBlockEntity.BTN_BIBLIO_DAR_BASE + paginaBiblio * FILAS_BIBLIO + fila));
+            btnBiblioBorrar[i] = botonPanel(134, 28 + i * 15, 20, Text.literal("x"), "femclothes.estilado.tooltip.biblioteca_borrar",
+                    () -> this.client.interactionManager.clickButton(this.handler.syncId,
+                            EstiladoBlockEntity.BTN_BIBLIO_BORRAR_BASE + paginaBiblio * FILAS_BIBLIO + fila));
+        }
+        btnBiblioAnt = botonPanel(6, 232, 34, Text.literal("<"), null, () -> paginaBiblio = 0);
+        btnBiblioSig = botonPanel(44, 232, 34, Text.literal(">"), null, () -> paginaBiblio = 1);
 
         // Página Colocación: cara de contacto (solo objetos), profundidad, desplazamiento, rotación, escala.
         for (int i = 0; i < 6; i++) {
@@ -366,7 +385,9 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         sliderNormal.refrescar(a);
         if (!cre) {
             // La Mesa normal no tiene panel lateral.
-            for (var w : new ButtonWidget[] { btnPaginaColocacion, btnPaginaMovimiento, btnRestablecer, btnPivote, btnEje, btnCrearMolde }) w.visible = false;
+            for (var w : new ButtonWidget[] { btnPaginaColocacion, btnPaginaMovimiento, btnPaginaMoldes, btnRestablecer, btnPivote, btnEje,
+                    btnCrearMolde, btnBiblioAnt, btnBiblioSig }) w.visible = false;
+            for (int i = 0; i < FILAS_BIBLIO; i++) btnBiblioDar[i].visible = btnBiblioBorrar[i].visible = false;
             txtNombreMolde.visible = false;
             for (SliderAjuste sl : slidersColocacion) sl.visible = false;
             for (SliderAjuste sl : slidersMovimiento) sl.visible = false;
@@ -379,6 +400,19 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         txtNombreMolde.setEditable(hay);
         btnPaginaColocacion.active = paginaPanel != 0;
         btnPaginaMovimiento.active = paginaPanel != 1;
+        btnPaginaMoldes.visible = true;
+        btnPaginaMoldes.active = paginaPanel != 2;
+        // La biblioteca (página 2): una fila por molde guardado en esta Mesa.
+        boolean biblio = paginaPanel == 2;
+        btnBiblioAnt.visible = btnBiblioSig.visible = biblio;
+        btnBiblioAnt.active = paginaBiblio != 0;
+        btnBiblioSig.active = paginaBiblio != 1;
+        for (int i = 0; i < FILAS_BIBLIO; i++) {
+            ItemStack molde = handler.be.getStack(EstiladoBlockEntity.SLOT_BIBLIOTECA + paginaBiblio * FILAS_BIBLIO + i);
+            boolean hayMolde = biblio && !molde.isEmpty();
+            btnBiblioDar[i].visible = btnBiblioBorrar[i].visible = hayMolde;
+            if (hayMolde) btnBiblioDar[i].setMessage(molde.getName());
+        }
         for (SliderAjuste s : slidersColocacion) {
             s.visible = paginaPanel == 0;
             s.refrescar(a);
@@ -392,7 +426,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
             btnCaras[i].active = objeto && a.colocacion().caraBase() != CARAS[i];
         }
         btnPivote.visible = btnEje.visible = paginaPanel == 1;
-        btnRestablecer.visible = true;
+        btnRestablecer.visible = paginaPanel != 2;
         btnRestablecer.active = hay;
         if (hay) {
             btnPivote.setMessage(Text.translatable("femclothes.estilado.panel.pivote",
@@ -409,6 +443,13 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         c.fill(x0, y0, x0 + PW, y0 + ALTO, 0xFF4B3F5A);
         c.fill(x0 + 2, y0 + 2, x0 + PW - 2, y0 + ALTO - 2, 0xFF5C4F6E);
         var fuente = MinecraftClient.getInstance().textRenderer;
+        if (paginaPanel == 2) {
+            if (handler.be.getStack(EstiladoBlockEntity.SLOT_BIBLIOTECA).isEmpty()) {
+                c.drawTextWrapped(fuente, Text.translatable("femclothes.estilado.panel.biblioteca_vacia"), x0 + 8, y0 + 32,
+                        PW - 16, EstiloPergamino.TEXTO_CLARO);
+            }
+            return;
+        }
         Aplique a = elegido();
         if (a == null) {
             c.drawTextWrapped(fuente, Text.translatable("femclothes.estilado.panel.ninguno"), x0 + 8, y0 + 40, PW - 16,
