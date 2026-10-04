@@ -169,6 +169,9 @@ public class TinturasScreenHandler extends ScreenHandler {
             // en px de GUI dentro del esquema de 240x136 (arranca en ESQUEMA_Y). Pollera: cintura, falda, ruedo.
             // Capa: exterior (izq.), forro (abajo der.), detalles (capucha, arriba der.).
             int[][] p = cat == TinturasBlockEntity.Categoria.POLLERA ? POS_POLLERA : POS_CAPA;   // el retazo usa el esquema de la capa (provisorio)
+            // Los cuadraditos que no existen (i >= 3) quedan fuera de pantalla: el handler crea los 12 por
+            // categoría y p[i] reventaba al abrir la GUI (2026-10-04, "no abre gui ni ingresa prendas").
+            if (i >= p.length) return new int[]{-2000, -2000};
             return new int[]{M_MEDIO + p[i][0], ESQUEMA_Y + p[i][1]};
         }
         int[] p = ModeladoScreenHandler.PIN_POS[cat.ordinal()][i];
