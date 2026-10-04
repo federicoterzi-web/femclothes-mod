@@ -55,6 +55,10 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
     private net.minecraft.client.gui.widget.TextFieldWidget txtNombreDiseno;
     private final BotonDiseno[] btnDisenos = new BotonDiseno[SublimadoraBlockEntity.DISENOS_MAXIMO];
     private final TinturasScreen.BotonChincheta[] btnChinchetas = new TinturasScreen.BotonChincheta[2];
+    /** Máscaras (2026-10-02): lista de capas, subir/bajar/borrar y qué mueven los controles. */
+    private final ButtonWidget[] btnCapas = new ButtonWidget[com.femclothes.sublimadora.CapaEstampa.MAXIMO];
+    private ButtonWidget btnCapaSubir, btnCapaBajar, btnCapaBorrar, btnEditar;
+    private static final int CAPAS_Y = 274;
 
     public SublimadoraScreen(SublimadoraScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -150,6 +154,23 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
         // cubrebrazos"): solo se ve en las prendas de a pares.
         btnSimetria = boton(M_MEDIO + 124, 272, 116, Text.empty(), "femclothes.sublimadora.tooltip.simetria",
                 SublimadoraBlockEntity.BTN_SIMETRIA);
+
+        // Capas con máscara (2026-10-02, "que se pueda guardar varias layers 12
+        // quizas entre frente y atras"): columna derecha, debajo del almacén.
+        for (int i = 0; i < btnCapas.length; i++) {
+            int idx = i;
+            btnCapas[i] = new EstiloPergamino.BotonPergamino(this.x + M_DERECHA + (i % 6) * 27, this.y + CAPAS_Y + (i / 6) * 16,
+                    26, 14, Text.empty(), b -> clickBoton(SublimadoraBlockEntity.BTN_CAPA_BASE + idx));
+            this.addDrawableChild(btnCapas[i]);
+        }
+        btnCapaSubir = boton(M_DERECHA, CAPAS_Y + 34, 24, Text.literal("▲"), "femclothes.sublimadora.tooltip.capa_subir",
+                SublimadoraBlockEntity.BTN_CAPA_SUBIR);
+        btnCapaBajar = boton(M_DERECHA + 26, CAPAS_Y + 34, 24, Text.literal("▼"), "femclothes.sublimadora.tooltip.capa_bajar",
+                SublimadoraBlockEntity.BTN_CAPA_BAJAR);
+        btnCapaBorrar = boton(M_DERECHA + 52, CAPAS_Y + 34, 24, Text.literal("✕"), "femclothes.sublimadora.tooltip.capa_borrar",
+                SublimadoraBlockEntity.BTN_CAPA_BORRAR);
+        btnEditar = boton(M_DERECHA + 80, CAPAS_Y + 34, 82, Text.empty(), "femclothes.sublimadora.tooltip.editar",
+                SublimadoraBlockEntity.BTN_EDITAR);
 
         // Una chincheta por cara, arriba a la derecha de su slot — se
         // dibujan a mano en render(), encima de todo (mismo criterio que Tintes).
@@ -269,6 +290,10 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
         context.drawTexture(TEXTURE, this.x, this.y, 0, 0,
                 this.backgroundWidth, this.backgroundHeight, this.backgroundWidth, this.backgroundHeight);
         dibujarPrendas(context);
+        // Marco del slot de máscara, dibujado por código (el fondo no lo trae).
+        int mx = this.x + SublimadoraScreenHandler.MASCARA_X, my = this.y + SublimadoraScreenHandler.MASCARA_Y;
+        context.fill(mx - 1, my - 1, mx + 17, my + 17, 0xFF6B4E2A);
+        context.fill(mx, my, mx + 16, my + 16, 0xFF8A7556);
     }
 
     /**
@@ -321,7 +346,26 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
                 M_MEDIO, 296, EstiloPergamino.TEXTO, false);
 
         dibujarTanques(context);
+        dibujarCapas(context);
         context.drawTextWrapped(this.textRenderer, hint(), M_DERECHA + 6, 150, 162, EstiloPergamino.TEXTO);
+    }
+
+    /** Título de la lista de capas, la elegida resaltada y el rótulo del slot de máscara. */
+    private void dibujarCapas(DrawContext c) {
+        SublimadoraBlockEntity be = handler.be;
+        c.drawText(this.textRenderer, Text.translatable("femclothes.sublimadora.capas", be.capas().size()),
+                M_DERECHA + 2, CAPAS_Y - 11, EstiloPergamino.TEXTO, false);
+        int elegida = be.capaElegida();
+        if (elegida >= 0 && elegida < btnCapas.length) {
+            int bx = M_DERECHA + (elegida % 6) * 27, by = CAPAS_Y + (elegida / 6) * 16;
+            c.drawBorder(bx - 1, by - 1, 28, 16, 0xFFFFD24C);
+        }
+        com.femclothes.sublimadora.FormaMascara forma = be.formaMascara();
+        Text rotulo = forma == null ? Text.translatable("femclothes.sublimadora.mascara")
+                : Text.translatable("femclothes.sublimadora.mascara").append(": ")
+                        .append(Text.translatable("femclothes.sublimadora.forma." + forma.asString()));
+        c.drawText(this.textRenderer, rotulo, SublimadoraScreenHandler.MASCARA_X + 22,
+                SublimadoraScreenHandler.MASCARA_Y + 4, EstiloPergamino.TEXTO, false);
     }
 
     /** Colores de las barras: C, M, Y, K y el papel. */
@@ -356,10 +400,14 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
         if (!be.getSalida().isEmpty()) {
             return Text.translatable("femclothes.sublimadora.hint.listo");
         }
-        if (be.getFotoCargada(Estampa.Cara.FRENTE) == null && be.getFotoCargada(Estampa.Cara.ESPALDA) == null) {
+        if (be.hayMascara() && be.getFotoCargada(be.getSeleccion()) != null) {
+            return Text.translatable("femclothes.sublimadora.hint.mascara");
+        }
+        if (be.getFotoCargada(Estampa.Cara.FRENTE) == null && be.getFotoCargada(Estampa.Cara.ESPALDA) == null
+                && be.capas().isEmpty()) {
             return Text.translatable("femclothes.sublimadora.hint.sin_foto");
         }
-        if (!be.hayFijadas()) {
+        if (!be.hayFijadas() && be.capas().isEmpty()) {
             return Text.translatable("femclothes.sublimadora.hint.ajustar");
         }
         if (be.getRemera().isEmpty()) {
@@ -394,10 +442,38 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
             b.setPosition(this.x + FOTO_POS[cara][0] + 17 - 8, this.y + FOTO_POS[cara][1] - 1 - 8);
             Estampa.Cara c = Estampa.Cara.values()[cara];
             b.actualizar(be.caraFijada(c));
-            b.setTooltip(Tooltip.of(Text.translatable(be.caraFijada(c)
+            boolean comoCapa = be.hayMascara() && be.getFotoCargada(c) != null;
+            b.setTooltip(Tooltip.of(Text.translatable(comoCapa ? "femclothes.sublimadora.tooltip.chincheta_capa"
+                    : be.caraFijada(c)
                     ? "femclothes.sublimadora.tooltip.chincheta_quitar" : "femclothes.sublimadora.tooltip.chincheta_fijar",
                     Text.translatable("femclothes.sublimadora.rotulo." + c.clave))));
         }
+
+        // Capas con máscara (2026-10-02).
+        java.util.List<com.femclothes.sublimadora.CapaEstampa> capas = be.capas();
+        for (int i = 0; i < btnCapas.length; i++) {
+            ButtonWidget b = btnCapas[i];
+            if (i >= capas.size()) {
+                b.active = false;
+                b.setMessage(Text.literal("·"));
+                b.setTooltip(null);
+                continue;
+            }
+            com.femclothes.sublimadora.CapaEstampa capa = capas.get(i);
+            b.active = enReposo;
+            b.setMessage(Text.literal((i + 1) + (capa.cara() == Estampa.Cara.FRENTE ? "F" : "E")));
+            b.setTooltip(Tooltip.of(Text.translatable("femclothes.sublimadora.tooltip.capa", i + 1,
+                    Text.translatable("femclothes.sublimadora.forma." + capa.mascara().forma().asString()),
+                    Text.translatable("femclothes.sublimadora.rotulo." + capa.cara().clave))));
+        }
+        int elegida = be.capaElegida();
+        boolean hayElegida = enReposo && elegida >= 0 && elegida < capas.size();
+        btnCapaSubir.active = hayElegida && elegida < capas.size() - 1;
+        btnCapaBajar.active = hayElegida && elegida > 0;
+        btnCapaBorrar.active = hayElegida;
+        btnEditar.active = enReposo && be.hayMascara();
+        btnEditar.setMessage(Text.translatable(be.editarMascaraElegido()
+                ? "femclothes.sublimadora.boton.editar_mascara" : "femclothes.sublimadora.boton.editar_imagen"));
 
         int guardados = be.disenos().size();
         btnGuardarDiseno.active = be.hayFijadas() && guardados < SublimadoraBlockEntity.DISENOS_MAXIMO;

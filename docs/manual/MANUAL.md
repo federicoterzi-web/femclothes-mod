@@ -400,6 +400,18 @@ El dibujo muestra la prenda que está en la Entrada, con su color. Si no hay nin
 - Frente y espalda se pueden estampar en una sola pasada. No pisa una cara ya estampada: una prenda con el frente hecho puede volver a entrar para imprimirle la espalda.
 - Las fotos con transparencia (PNG) funcionan.
 
+### Máscaras y capas
+
+Con un **molde de máscara** en su slot (columna derecha, abajo) la foto se estampa **solo adentro de una forma**: **Cuadrado, Franja, Círculo, Estrella o Triángulo** (un molde por forma, no se gasta; por ahora solo en la pestaña creativa).
+
+1. Poné el molde en el slot **Máscara** y una foto en Frente o Espalda. La vista previa ya muestra la foto recortada con la forma.
+2. El botón **Editar: imagen / Editar: máscara** decide qué mueven los controles **Escala, X, Y y Ángulo**: la **imagen adentro de la máscara** (escala 100 % = la foto cubre la máscara; el ángulo de la foto se suma al de la máscara) o la **máscara sobre la prenda** (escala = alto de la máscara respecto del cuerpo, de 10 % a 150 %). Cada cara tiene su propio ajuste de máscara.
+3. Con máscara, la **chincheta** de una cara ya no fija la cara entera: **agrega una capa** con esa foto, esa forma y esos ajustes. La foto queda en su slot, así podés moverla y fijar otra capa con la misma foto, o cambiar de foto o de molde.
+4. Hasta **12 capas** entre frente y espalda. La lista **Capas (n/12)** las muestra en orden ("3F" = capa 3, frente; "5E" = capa 5, espalda); la de más arriba en la lista (número más alto) se pinta encima. Click elige una capa; **▲ ▼** la suben o la bajan y **✕** la borra.
+5. **Prensar** pone la lista de capas en la prenda, además de las caras fijadas sin máscara. Las capas cuentan como **una pasada** de tinta, sin importar cuántas sean. Si la prenda ya traía capas, la lista arranca desde ellas al fijar la primera capa nueva, así no se pierden.
+
+Con máscara, una prenda que ya tiene las dos caras estampadas puede volver a entrar para sumarle capas.
+
 ## 9. Guardarropas
 
 El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría (remera, pantalón/pollera, medias, calientabrazos, chaqueta) y una columna de **armadura** (casco, pechera, pantalones, botas), así se pueden probar juntas varias prendas del mismo tipo (un croptop sobre un remerón, un pantalón con una pollera y una calza), con vista previa. **Guardar outfit** y **Equipar** guardan y se ponen la combinación, armadura incluida (lo que tenías puesto en ese lugar vuelve a tu inventario; un lugar vacío no te saca nada). La vista previa muestra también la armadura.
@@ -504,7 +516,7 @@ Esta parte es para quien quiera entender o extender el mod.
 | `item` | Prendas, moldes de patrón, componentes de datos (`FemclothesComponents`), redes (`PatronRed`). |
 | `modelado` | Mesa de Modelado: bloque, block entity, pantalla, moldes de corte, `ComboCorte`, `PrendaModelado` (aplica un corte a una prenda). |
 | `tinturas` | Estación de Tintes: cuadraditos (`Casilla`), capas, diseños, teñido. |
-| `sublimadora` | Sublimadora, remera y su `Variante` (largo/manga/cuello), estampas (`EstampaTextures`). |
+| `sublimadora` | Sublimadora, remera y su `Variante` (largo/manga/cuello), estampas (`EstampaTextures`). Máscaras: `FormaMascara`, `Mascara`, `CapaEstampa` (componente `femclothes:estampas_capas`, máx. 12), `MoldeMascaraItem`; `EstampaTextures.pintarConMascara` las pinta después de las caras. |
 | `guardarropas` | Guardarropas (modelo GeckoLib `wardrobe`, puerta por `OPEN`); `categoriaDe` reparte prendas en las 4 categorías y lo comparte el Maniquí. |
 | `maniqui` | Maniquí: 16 slots sincronizados al cliente, giro del plato calculado en el cliente (`ManiquiRenderer` gira el hueso `turntable` y la ropa con el mismo ángulo) y ropa dibujada con `GarmentFeatureRenderer.dibujarTela` sobre un modelo de jugador slim a escala 0.6. |
 | `estilado` | Mesa de estilado: block entity con prenda/molde/retazo, pantalla y `PonerApliquePayload`. |

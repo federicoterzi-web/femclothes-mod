@@ -485,12 +485,23 @@ public final class EstampaTextures {
                                       @Nullable Estampa espalda, int color,
                                       java.util.List<com.femclothes.region.RegionResolver.CapaPatron> capas,
                                       @Nullable PatronRed red) {
+        return cuerpoEstampado(variante, frente, espalda, color, capas, red, java.util.List.of());
+    }
+
+    /** Con las capas con máscara de la Sublimadora (2026-10-02). */
+    @Nullable
+    public static Identifier cuerpoEstampado(Variante variante, @Nullable Estampa frente,
+                                      @Nullable Estampa espalda, int color,
+                                      java.util.List<com.femclothes.region.RegionResolver.CapaPatron> capas,
+                                      @Nullable PatronRed red, java.util.List<CapaEstampa> mascaras) {
         // Sin estampas, sin patron, sin red y sin tenir no hay nada que
         // componer: se usa la textura del pack tal cual.
-        if (frente == null && espalda == null && capas.isEmpty() && red == null && color == RemeraItem.BLANCO) {
+        if (frente == null && espalda == null && capas.isEmpty() && red == null && color == RemeraItem.BLANCO
+                && mascaras.isEmpty()) {
             return null;
         }
-        String clave = variante.clave() + "|" + frente + "|" + espalda + "|" + color + "|" + capas + "|" + red;
+        String clave = variante.clave() + "|" + frente + "|" + espalda + "|" + color + "|" + capas + "|" + red
+                + "|" + mascaras;
         Identifier hecha = CACHE_CUERPO.get(clave);
         if (hecha != null) return hecha;
         if (FALLADAS.containsKey(clave)) return null;
@@ -506,7 +517,7 @@ public final class EstampaTextures {
         if (color != RemeraItem.BLANCO) tenir(salida, color);
         if (!capas.isEmpty()) aplicarPatron(salida, base, capas);
 
-        if (!estampar(salida, deLaRemera(variante), null, frente, espalda)) {
+        if (!estampar(salida, deLaRemera(variante), null, frente, espalda, mascaras)) {
             salida.close();
             return null;
         }
@@ -555,7 +566,7 @@ public final class EstampaTextures {
         if (prenda == null) return true;
         return estampar(destino, prenda, espejadaDe(stack),
                 RemeraItem.estampaDe(stack, Estampa.Cara.FRENTE),
-                RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA));
+                RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA), RemeraItem.capasDe(stack));
     }
 
     /** Si el stack tiene alguna cara impresa. */
@@ -566,7 +577,7 @@ public final class EstampaTextures {
     /** Con que identificar las estampas de un stack en una clave de cache. */
     public static String claveEstampas(ItemStack stack) {
         return RemeraItem.estampaDe(stack, Estampa.Cara.FRENTE)
-                + "|" + RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA);
+                + "|" + RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA) + "|" + RemeraItem.capasDe(stack);
     }
 
     /**
@@ -582,6 +593,28 @@ public final class EstampaTextures {
      */
     private static boolean estampar(NativeImage salida, Prenda prenda, @Nullable Prenda espejada,
                                     @Nullable Estampa frente, @Nullable Estampa espalda) {
+        return estampar(salida, prenda, espejada, frente, espalda, java.util.List.of());
+    }
+
+    /** Con las capas con máscara, que van después (encima) de las estampas de frente y espalda. */
+    private static boolean estampar(NativeImage salida, Prenda prenda, @Nullable Prenda espejada,
+                                    @Nullable Estampa frente, @Nullable Estampa espalda,
+                                    java.util.List<CapaEstampa> capas) {
+        boolean listo = estamparCaras(salida, prenda, espejada, frente, espalda);
+        for (CapaEstampa capa : capas) {
+            for (int k = 0; k < prenda.caras().length; k++) {
+                Cara cara = prenda.caras()[k];
+                // Una máscara es de un solo lado: no pinta el ruedo/la planta compartidos.
+                if (cara.compartida() || cara.atras() != (capa.cara() == Estampa.Cara.ESPALDA)) continue;
+                if (capa.estampa().espejo() && espejada != null) cara = espejada.caras()[k];
+                listo &= pintarConMascara(salida, capa, cara, prenda);
+            }
+        }
+        return listo;
+    }
+
+    private static boolean estamparCaras(NativeImage salida, Prenda prenda, @Nullable Prenda espejada,
+                                         @Nullable Estampa frente, @Nullable Estampa espalda) {
         // El ruedo/la planta (caras sin lado propio) los pinta el que
         // tenga la escala MAS GRANDE de los dos lados — el chico no llega
         // ahí de todos modos, así que en la práctica se resuelve solo por
@@ -815,8 +848,67 @@ public final class EstampaTextures {
      * buscar su color en la foto — el resultado es el mismo (la foto se ve
      * rotada) sin tener que generar una copia rotada de la imagen fuente.
      */
+    /**
+     * Dónde deja pasar la foto una máscara, en coordenadas de lienzo: su
+     * forma, el centro, el tamaño de su caja y el ángulo (grados).
+     */
+    private record Recorte(FormaMascara forma, float cx, float cy, float ancho, float alto, float angulo) {
+        boolean deja(float lx, float ly) {
+            double rad = Math.toRadians(-angulo);
+            float c = (float) Math.cos(rad), s = (float) Math.sin(rad);
+            float dx = lx - cx, dy = ly - cy;
+            float u = (dx * c - dy * s) / ancho, v = (dx * s + dy * c) / alto;
+            return forma.contiene(u, v);
+        }
+    }
+
+    /**
+     * Una capa con máscara (2026-10-02, "mascaras de sublimacion... controles de
+     * posicion angulo tamaño tanto para la imagen dentro de la mascara como para
+     * la mascara dentro de la prenda"): la máscara se ubica sobre el lienzo como
+     * una estampa (centro por x/y, alto = cuerpo × escala, girada); la foto se
+     * ubica RELATIVA a la máscara — a escala 1 la cubre, x/y la corren dentro de
+     * la máscara (girados con ella) y su ángulo se suma — y solo se pinta lo que
+     * cae adentro de la forma.
+     */
+    private static boolean pintarConMascara(NativeImage salida, CapaEstampa capa, Cara cara, Prenda prenda) {
+        Estampa estampa = capa.estampa();
+        Mascara m = capa.mascara();
+        CameraptureClientCompat.Foto info = fotoDe(estampa.foto());
+        if (info == null) return false;
+        NativeImage foto = leerDeLaGpu(info.textura(), info.ancho(), info.alto());
+        if (foto == null) return false;
+        try {
+            float mAlto = prenda.cuerpoAlto() * m.escala() / m.forma().proporcion() * (m.forma() == FormaMascara.FRANJA ? 1.6f : 1f);
+            float mAncho = mAlto * m.forma().proporcion();
+            float mcx = prenda.lienzoAncho() / 2f + m.x() * prenda.lienzoAncho();
+            float mcy = prenda.cuerpoY() + prenda.cuerpoAlto() / 2f - m.y() * prenda.cuerpoAlto();
+            Recorte recorte = new Recorte(m.forma(), mcx, mcy, mAncho, mAlto, m.angulo());
+
+            float relFoto = (float) foto.getWidth() / foto.getHeight();
+            // Escala 1 = la foto cubre la caja de la máscara (recortando lo que sobra).
+            float alto = Math.max(mAlto, mAncho / relFoto) * estampa.escala();
+            float ancho = alto * relFoto;
+            double rad = Math.toRadians(m.angulo());
+            float c = (float) Math.cos(rad), s = (float) Math.sin(rad);
+            float ox = estampa.x() * mAncho, oy = -estampa.y() * mAlto;
+            float fcx = mcx + ox * c - oy * s, fcy = mcy + ox * s + oy * c;
+            volcar(salida, foto, prenda.escalar(cara.rect()), cara, fcx - ancho / 2f, fcy - alto / 2f, ancho, alto,
+                    m.angulo() + estampa.angulo(), recorte);
+            return true;
+        } finally {
+            foto.close();
+        }
+    }
+
     private static void volcar(NativeImage salida, NativeImage foto, int[] r, Cara cara,
                                float fx0, float fy0, float fAncho, float fAlto, float anguloGrados) {
+        volcar(salida, foto, r, cara, fx0, fy0, fAncho, fAlto, anguloGrados, null);
+    }
+
+    private static void volcar(NativeImage salida, NativeImage foto, int[] r, Cara cara,
+                               float fx0, float fy0, float fAncho, float fAlto, float anguloGrados,
+                               @Nullable Recorte recorte) {
         int rx = r[0], ry = r[1], rw = r[2], rh = r[3];
         int[] l = cara.lienzo();
         float fcx = fx0 + fAncho / 2f, fcy = fy0 + fAlto / 2f;
@@ -837,6 +929,7 @@ public final class EstampaTextures {
                 // Donde cae este pixel en el lienzo...
                 float lx = l[0] + l[2] * px;
                 float ly = l[1] + l[3] * py;
+                if (recorte != null && !recorte.deja(lx, ly)) continue;
                 // ...rotado alrededor del centro de la caja, en sentido
                 // inverso al ángulo pedido, y de ahi a la foto.
                 float dx = lx - fcx, dy = ly - fcy;

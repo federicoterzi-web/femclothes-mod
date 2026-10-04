@@ -202,7 +202,8 @@ public final class PiezasDelMod {
                 RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA),
                 RemeraItem.color(stack),
                 RegionResolver.capasTinte(stack, Lado.AMBAS),
-                com.femclothes.item.PatronRed.leer(stack));
+                com.femclothes.item.PatronRed.leer(stack),
+                RemeraItem.capasDe(stack));
         // Si todavia no se pudo componer -la foto no bajo- se usa la lisa,
         // que es lo correcto mientras tanto.
         if (textura == null) textura = varianteBase.texturaCuerpo();

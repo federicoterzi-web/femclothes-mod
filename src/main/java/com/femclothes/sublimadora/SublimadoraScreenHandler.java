@@ -67,6 +67,11 @@ public class SublimadoraScreenHandler extends ScreenHandler {
     // GUI propio).
     private static final int SLOT_ALMACEN_INICIO_UI = 4;
     private static final int INV_START = SLOT_ALMACEN_INICIO_UI + SublimadoraBlockEntity.ALMACEN_TAMANO;
+    private static final int INV_END = INV_START + 36;
+    /** Slot del molde de máscara (2026-10-02): después del inventario, para no correr los índices. */
+    private static final int SLOT_MASCARA_UI = INV_END;
+    /** Dónde va el slot de máscara (relativo al panel), columna derecha debajo de las capas. */
+    public static final int MASCARA_X = M_DERECHA + 2, MASCARA_Y = 334;
 
     public final SublimadoraBlockEntity be;
 
@@ -121,6 +126,14 @@ public class SublimadoraScreenHandler extends ScreenHandler {
         for (int i = 0; i < 9; i++) {
             addSlot(new Slot(playerInventory, i, M_MEDIO + i * 18, 382));
         }
+
+        addSlot(new Slot(be, SublimadoraBlockEntity.SLOT_MASCARA, MASCARA_X, MASCARA_Y) {
+            @Override
+            public boolean canInsert(ItemStack stack) { return be.isValid(SublimadoraBlockEntity.SLOT_MASCARA, stack); }
+
+            @Override
+            public int getMaxItemCount() { return 1; }
+        });
     }
 
     @Override
@@ -147,8 +160,10 @@ public class SublimadoraScreenHandler extends ScreenHandler {
         if (clickedSlot == null || !clickedSlot.hasStack()) return ItemStack.EMPTY;
         ItemStack stack = clickedSlot.getStack();
         ItemStack result = stack.copy();
-        if (slot < INV_START) {
-            if (!this.insertItem(stack, INV_START, this.slots.size(), true)) return ItemStack.EMPTY;
+        if (slot < INV_START || slot >= INV_END) {
+            if (!this.insertItem(stack, INV_START, INV_END, true)) return ItemStack.EMPTY;
+        } else if (stack.getItem() instanceof MoldeMascaraItem) {
+            if (!this.insertItem(stack, SLOT_MASCARA_UI, SLOT_MASCARA_UI + 1, false)) return ItemStack.EMPTY;
         } else if (SublimadoraBlock.esFoto(stack)) {
             // Frente/Espalda primero, el resto al almacén — sin pasar por
             // remera/salida en el medio (esos dos NO tienen restricción de
@@ -158,7 +173,7 @@ public class SublimadoraScreenHandler extends ScreenHandler {
             if (!movido) return ItemStack.EMPTY;
         } else if (ModItems.esEstampable(stack)) {
             if (!this.insertItem(stack, SLOT_ENTRADA, SLOT_ENTRADA + 1, false)) return ItemStack.EMPTY;
-        } else if (!this.insertItem(stack, INV_START, this.slots.size(), false)) {
+        } else if (!this.insertItem(stack, INV_START, INV_END, false)) {
             return ItemStack.EMPTY;
         }
         if (stack.isEmpty()) clickedSlot.setStack(ItemStack.EMPTY);

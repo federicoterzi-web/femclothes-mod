@@ -108,7 +108,22 @@ public class RemeraItem extends Item {
 
     public static boolean estaEstampada(ItemStack stack) {
         return estampaDe(stack, Estampa.Cara.FRENTE) != null
-                || estampaDe(stack, Estampa.Cara.ESPALDA) != null;
+                || estampaDe(stack, Estampa.Cara.ESPALDA) != null
+                || !capasDe(stack).isEmpty();
+    }
+
+    /** Las capas con máscara de la prenda (2026-10-02), en orden; vacía si no tiene. */
+    public static List<CapaEstampa> capasDe(ItemStack stack) {
+        List<CapaEstampa> capas = stack.get(ModItems.ESTAMPAS_CAPAS);
+        return capas == null ? List.of() : capas;
+    }
+
+    /** Copia la prenda con estas capas con máscara (hasta {@link CapaEstampa#MAXIMO}); vacía las saca. */
+    public static ItemStack conCapas(ItemStack base, List<CapaEstampa> capas) {
+        ItemStack out = base.copyWithCount(1);
+        if (capas.isEmpty()) out.remove(ModItems.ESTAMPAS_CAPAS);
+        else out.set(ModItems.ESTAMPAS_CAPAS, List.copyOf(capas.subList(0, Math.min(CapaEstampa.MAXIMO, capas.size()))));
+        return out;
     }
 
     /** Copia la remera con la estampa aplicada en esa cara. */

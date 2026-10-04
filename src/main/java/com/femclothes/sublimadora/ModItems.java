@@ -29,6 +29,33 @@ public final class ModItems {
     public static final ComponentType<Estampa> ESTAMPA_ESPALDA = registrarEstampa("estampa_espalda");
 
     /**
+     * Las capas de estampa con máscara (2026-10-02, "mascaras de sublimacion...
+     * varias layers 12 quizas entre frente y atras"): en orden, cada una pinta
+     * encima de la anterior, después de las estampas de frente y espalda.
+     */
+    public static final ComponentType<java.util.List<CapaEstampa>> ESTAMPAS_CAPAS = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of(Femclothes.MOD_ID, "estampas_capas"),
+            ComponentType.<java.util.List<CapaEstampa>>builder()
+                    .codec(CapaEstampa.CODEC.listOf())
+                    .packetCodec(net.minecraft.network.codec.PacketCodecs.codec(CapaEstampa.CODEC.listOf()))
+                    .build());
+
+    /** Los moldes de máscara, uno por forma (en el orden de {@link FormaMascara}). */
+    public static final MoldeMascaraItem[] MOLDES_MASCARA = registrarMoldesMascara();
+
+    private static MoldeMascaraItem[] registrarMoldesMascara() {
+        FormaMascara[] formas = FormaMascara.values();
+        MoldeMascaraItem[] out = new MoldeMascaraItem[formas.length];
+        for (int i = 0; i < formas.length; i++) {
+            out[i] = Registry.register(Registries.ITEM,
+                    Identifier.of(Femclothes.MOD_ID, "molde_mascara_" + formas[i].clave),
+                    new MoldeMascaraItem(new Item.Settings().maxCount(1), formas[i]));
+        }
+        return out;
+    }
+
+    /**
      * El componente viejo, de cuando la estampa era un UUID pelado y siempre
      * iba centrada en el frente. Sigue registrado para poder leer las remeras
      * que ya existen en mundos guardados; nada lo escribe.
