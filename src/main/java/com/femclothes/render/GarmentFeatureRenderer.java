@@ -514,12 +514,26 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     private static void dibujarBoca(Parte parte, boolean slim, Identifier textura, float dil, float interno,
                                     int filaTextura, float y, ModelPart delModelo, MatrixStack matrices,
                                     VertexConsumerProvider vertexConsumers, int luz) {
-        if (dil <= 0.02F) return;
+        dibujarBoca(parte, slim, textura, dil, 0F, interno, filaTextura, y, delModelo, matrices, vertexConsumers, luz);
+    }
+
+    /** Con el contorno de adentro en {@code dilInterior} (un escalón entre dos filas) y no pegado al cuerpo. */
+    private static void dibujarBoca(Parte parte, boolean slim, Identifier textura, float dil, float dilInterior, float interno,
+                                    int filaTextura, float y, ModelPart delModelo, MatrixStack matrices,
+                                    VertexConsumerProvider vertexConsumers, int luz) {
+        if (dil <= 0.02F || dil - dilInterior <= 0.02F) return;
         float[] c = ApliqueRenderer.caja(parte, slim);
         float x0 = c[0], y0 = c[1], z0 = c[2], w = c[3], d = c[5];
         float[] cx = CuerpoGeometria.costadosX(parte, dil, interno);
         float ox0 = x0 - cx[0], ox1 = x0 + w + cx[1], oz0 = z0 - dil, oz1 = z0 + d + dil;
         float ix0 = x0, ix1 = x0 + w, iz0 = z0, iz1 = z0 + d;
+        if (dilInterior > 0F) {
+            float[] ci = CuerpoGeometria.costadosX(parte, dilInterior, interno);
+            ix0 = x0 - ci[0];
+            ix1 = x0 + w + ci[1];
+            iz0 = z0 - dilInterior;
+            iz1 = z0 + d + dilInterior;
+        }
         float yy = (y0 + y) / 16F;
         // Origen de la caja en la skin (64x64) y la v de la fila de la textura.
         int[] uv = switch (parte) {
@@ -662,6 +676,12 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             for (int f = 0; f < 12; f++) {
                 float d = base;
                 if (f >= desde && f < hasta) {
+                    // Silueta en A del hoodie (2026-10-04, "que arriba sea mas pegado al cuerpo y se ensanche hacia
+                    // abajo"): el torso arranca al 35 % de la holgura en la primera fila y llega al 100 % en la última.
+                    if (pieza.elastico() && parte == Parte.TORSO && hasta - desde > 1) {
+                        float tt = (f - desde + 1) / (float) (hasta - desde);
+                        d = base * (0.35F + 0.65F * tt);
+                    }
                     if (caida > 0F) {
                         float t = (f - desde + 1) / (float) (hasta - desde);
                         d += caida * t * (float) Math.sqrt(t);
@@ -705,6 +725,17 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 dibujarModelPart(CuerpoGeometria.telaPorFilas(parte, slim, fila, hasta, colgado, dilColgado,
                                 costadoInterno ? interno : -1F),
                         CuerpoGeometria.Superficie.TELA, pieza.textura(), delModelo, matrices, vertexConsumers, luz);
+            }
+            // Los escalones hacia adentro (el puño o el ruedo elástico aprietan de golpe): el borde de la fila de arriba
+            // queda con la cara de abajo abierta y se ve el interior (2026-10-04, "la parte de abajo no tiene tapas, la
+            // manga queda abierta"). Un anillo entre los dos contornos lo cierra.
+            if (parte != Parte.CABEZA) {
+                for (int f = desde; f < hasta - 1; f++) {
+                    if (fila[f] - fila[f + 1] > 0.08F) {
+                        dibujarBoca(parte, slim, pieza.textura(), fila[f], fila[f + 1], costadoInterno ? interno : -1F, f,
+                                f + 1, delModelo, matrices, vertexConsumers, luz);
+                    }
+                }
             }
             // La boca de la manga (o de la botamanga, o el ruedo cortado) cerrada
             // con un anillo de tela entre la prenda y el cuerpo (2026-10-02, "manga
