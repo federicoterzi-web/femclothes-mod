@@ -81,11 +81,16 @@ public class CintaBlock extends BlockWithEntity {
             Block.createCuboidShape(0, 0, 12, 16, 6, 16), Block.createCuboidShape(0, 0, 8, 16, 10, 12),
             Block.createCuboidShape(0, 0, 4, 16, 14, 8), Block.createCuboidShape(0, 0, 0, 16, 16, 4));
 
+    /** Bajada: los mismos escalones pero altos atrás (+Z) y bajos adelante. */
+    private static final VoxelShape FORMA_BAJA = net.minecraft.util.shape.VoxelShapes.union(
+            Block.createCuboidShape(0, 0, 0, 16, 6, 4), Block.createCuboidShape(0, 0, 4, 16, 10, 8),
+            Block.createCuboidShape(0, 0, 8, 16, 14, 12), Block.createCuboidShape(0, 0, 12, 16, 16, 16));
+
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        if (state.get(FORMA) != Forma.RAMPA_SUBE) return FORMA_CAJA;
+        if (!state.get(FORMA).esRampa()) return FORMA_CAJA;
         // La forma está dibujada mirando al norte: se gira como el modelo.
-        VoxelShape base = FORMA_SUBE;
+        VoxelShape base = state.get(FORMA) == Forma.RAMPA_SUBE ? FORMA_SUBE : FORMA_BAJA;
         return switch (state.get(FACING)) {
             case EAST -> girar(base, 1);
             case SOUTH -> girar(base, 2);
@@ -128,14 +133,20 @@ public class CintaBlock extends BlockWithEntity {
     }
 
     /**
-     * Rampa si adelante, a la misma altura, no hay nada que reciba pero sí un nivel arriba (sube) o abajo (baja);
-     * si no, recta, salvo que no llegue nada por atrás y sí algo por un costado (curva).
+     * Rampa de subida si adelante, a la misma altura, no hay nada que reciba pero sí un nivel arriba. Rampa de bajada
+     * (2026-10-04, "se superpone la rampa sobre el bloque de abajo": ahora vive en el nivel de ABAJO, como espejo de
+     * la de subida) si no llega nada por atrás a su altura pero sí una cinta que apunta hacia acá desde un nivel más
+     * arriba. Si no, recta, salvo que no llegue nada por atrás y sí algo por un costado (curva).
      */
     private static Forma calcularForma(BlockView mundo, BlockPos pos, Direction frente) {
         BlockPos delante = pos.offset(frente);
-        if (!recibe(mundo, delante)) {
-            if (recibe(mundo, delante.up())) return Forma.RAMPA_SUBE;
-            if (recibe(mundo, delante.down())) return Forma.RAMPA_BAJA;
+        if (!recibe(mundo, delante) && recibe(mundo, delante.up())) return Forma.RAMPA_SUBE;
+        if (!alimentaDesde(mundo, pos, frente.getOpposite(), frente) && !recibe(mundo, pos.up())) {
+            BlockPos origen = pos.offset(frente.getOpposite()).up();
+            BlockState arriba = mundo.getBlockState(origen);
+            if (arriba.getBlock() instanceof CintaBlock && arriba.get(FACING) == frente && arriba.get(FORMA) != Forma.RAMPA_SUBE) {
+                return Forma.RAMPA_BAJA;
+            }
         }
         if (alimentaDesde(mundo, pos, frente.getOpposite(), frente)) return Forma.RECTA;
         if (alimentaDesde(mundo, pos, frente.rotateYCounterclockwise(), frente.rotateYClockwise())) return Forma.CURVA_IZQ;
@@ -148,14 +159,13 @@ public class CintaBlock extends BlockWithEntity {
         BlockPos vecino = pos.offset(lado);
         BlockState estado = mundo.getBlockState(vecino);
         if (estado.getBlock() instanceof CintaBlock) {
-            // Una rampa a mi altura entrega un nivel más arriba o abajo, no a mí.
-            if (estado.get(FACING) == haciaMi && !estado.get(FORMA).esRampa()) return true;
+            // Una rampa de subida a mi altura entrega un nivel más arriba, no a mí (la de bajada sí: su punta baja queda a mi altura).
+            if (estado.get(FACING) == haciaMi && estado.get(FORMA) != Forma.RAMPA_SUBE) return true;
         } else if (mundo.getBlockEntity(vecino) instanceof ConSalida maquina && maquina.ladoSalida() == haciaMi) {
             return true;
         }
-        // Las rampas que sí entregan a este nivel: una de subida un nivel más abajo, una de bajada un nivel más arriba.
-        return rampaEntrega(mundo, vecino.down(), haciaMi, Forma.RAMPA_SUBE)
-                || rampaEntrega(mundo, vecino.up(), haciaMi, Forma.RAMPA_BAJA);
+        // La rampa de subida que está un nivel más abajo sí entrega a este nivel.
+        return rampaEntrega(mundo, vecino.down(), haciaMi, Forma.RAMPA_SUBE);
     }
 
     private static boolean rampaEntrega(BlockView mundo, BlockPos pos, Direction haciaMi, Forma forma) {

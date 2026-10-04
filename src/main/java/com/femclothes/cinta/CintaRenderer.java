@@ -46,9 +46,10 @@ public class CintaRenderer implements BlockEntityRenderer<CintaBlockEntity> {
         float px, pz, tx, tz;
         float py = 0f, ty = 0f;
         if (forma.esRampa()) {
-            float signo = forma == CintaBlock.Forma.RAMPA_SUBE ? 1f : -1f;
+            // Sube: de 0 a +1 bloque. Baja: arranca un bloque arriba (a la altura de la cinta que le entrega) y baja a 0.
+            boolean sube = forma == CintaBlock.Forma.RAMPA_SUBE;
             px = 0f; pz = 0.5f - t; tx = 0f; tz = -1f;
-            py = signo * t; ty = signo;
+            py = sube ? t : 1f - t; ty = sube ? 1f : -1f;
         } else if (forma == CintaBlock.Forma.RECTA) {
             px = 0f; pz = 0.5f - t; tx = 0f; tz = -1f;
         } else {

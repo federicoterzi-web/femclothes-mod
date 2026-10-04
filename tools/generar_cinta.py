@@ -156,25 +156,26 @@ def plano_rampa(textura, y_centro, angulo):
 
 
 def modelo_rampa(sube):
-    """Rampa de un bloque. Mira al norte: entra por el sur a 4,05 px y sale por el norte 16 px más arriba
-    (sube) o 16 px más abajo (baja), al nivel de la banda del bloque siguiente."""
+    """Rampa de un bloque. Mira al norte: entra por el sur y sale por el norte, al nivel de la banda del bloque
+    siguiente. Sube: de 4,05 px a 20,05 px. Baja (2026-10-04, "se superpone la rampa sobre el bloque de abajo"): va
+    en el nivel de abajo, de 20,05 px (atrás, a la altura de la cinta que le entrega) a 4,05 px: nunca se mete
+    en el bloque de abajo."""
     elementos = []
     signo = 1 if sube else -1
-    y_atras = 4.05
-    y_centro = y_atras + signo * 8
+
+    def y_en(z):
+        # z=16 (atrás) .. z=0 (adelante)
+        return 4.05 + (16 - z) if sube else 4.05 + z
+
     for z0 in range(16):
-        # Altura de la banda en la franja [z0, z0+1]: z=16 (atrás) = 4,05, z=0 (adelante) = 4,05 + signo*16.
-        y_en = lambda z: y_atras + signo * (16 - z)
         y_min = min(y_en(z0), y_en(z0 + 1))
         y_max = max(y_en(z0), y_en(z0 + 1))
         techo = round(y_min - 0.02, 2)
-        piso = 0 if sube else max(-16, round(techo - 3, 2))
-        elementos.append(caja([0, piso, z0], [16, techo, z0 + 1]))
-        # Paredes laterales: 2 px sobre la banda.
+        elementos.append(caja([0, 0, z0], [16, techo, z0 + 1]))
         alto = round(y_max + 2, 2)
         for x0, x1 in ((0, 2), (14, 16)):
             elementos.append(caja([x0, techo, z0], [x1, alto, z0 + 1]))
-    elementos.append(plano_rampa("#banda", round(y_centro, 3), 45 * signo))
+    elementos.append(plano_rampa("#banda", 12.05, 45 * signo))
     return {
         "textures": {"marco": "femclothes:block/cinta_marco", "banda": "femclothes:block/cinta_banda",
                      "particle": "femclothes:block/cinta_marco"},

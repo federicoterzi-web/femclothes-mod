@@ -48,8 +48,16 @@ public class CintaBlockEntity extends BlockEntity implements SidedInventory {
         Direction frente = state.get(CintaBlock.FACING);
         BlockPos destino = pos.offset(frente);
         CintaBlock.Forma forma = state.get(CintaBlock.FORMA);
-        if (forma == CintaBlock.Forma.RAMPA_SUBE) destino = destino.up();
-        else if (forma == CintaBlock.Forma.RAMPA_BAJA) destino = destino.down();
+        if (forma == CintaBlock.Forma.RAMPA_SUBE) {
+            destino = destino.up();
+        } else if (!(world.getBlockEntity(destino) instanceof net.minecraft.inventory.Inventory)) {
+            // Adelante no hay nada: si abajo hay una rampa de bajada que mira igual, se la entrega a ella.
+            BlockState abajo = world.getBlockState(destino.down());
+            if (abajo.getBlock() instanceof CintaBlock && abajo.get(CintaBlock.FORMA) == CintaBlock.Forma.RAMPA_BAJA
+                    && abajo.get(CintaBlock.FACING) == frente) {
+                destino = destino.down();
+            }
+        }
         ItemStack resto = InventarioUtil.empujarA(world, destino, frente.getOpposite(), be.carga);
         if (resto.getCount() != be.carga.getCount()) {
             be.carga = resto;
