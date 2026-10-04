@@ -47,6 +47,13 @@ public final class FisicaApliques {
 
     /** Lo que se simula en la vista previa de la Mesa de estilado (lo fija su pantalla mientras dibuja). */
     public static Modo modoVistaPrevia = Modo.QUIETO;
+    /**
+     * Cuánto se exagera lo que se ve en este cuadro (2026-10-04, "el sacudir tiene que tener un overhaul porque se
+     * mueve muy sutil como para ver cómo pendulea"): 1 normal, más en {@link Modo#SACUDIDA}. Lo leen los giros de
+     * los huesos y el nodo de oscilación de {@code ApliqueRenderer}.
+     */
+    public static float exageracion = 1f;
+
     /** La clave de la vista previa (los estados de entidades reales no se tocan). */
     public static final Object CLAVE_VISTA_PREVIA = new Object();
 
@@ -77,6 +84,7 @@ public final class FisicaApliques {
      */
     public static void preparar(Object clave, @Nullable LivingEntity entidad, float tickDelta, Modo modo) {
         Estado e = ESTADOS.computeIfAbsent(clave, k -> new Estado());
+        exageracion = modo == Modo.SACUDIDA ? 2.5f : 1f;
         long ahora = System.nanoTime();
         float dt = e.nanos == 0 ? 0f : Math.min(0.1f, (ahora - e.nanos) / 1e9f);
         e.nanos = ahora;
@@ -96,10 +104,15 @@ public final class FisicaApliques {
                 }
             }
             case SACUDIDA -> {
-                float t = ahora / 1e9f;
-                fx = 38f * (float) Math.sin(t * 6.9f);
-                fy = 30f * (float) Math.sin(t * 10.7f + 1f);
-                fz = 26f * (float) Math.sin(t * 5.0f + 2f);
+                // Sacudones cada 2,4 s, alternando de lado: un empujón fuerte de 0,35 s y después se suelta, así se
+                // ve cómo el aplique pendulea y se va frenando (el resorte blando tarda ~2 s en asentarse).
+                double t = (ahora % 1_000_000_000_000L) / 1e9;
+                double ciclo = Math.floor(t / 2.4), fase = t - ciclo * 2.4;
+                float golpe = fase < 0.35 ? 170f * (float) Math.sin(Math.PI * fase / 0.35) : 0f;
+                float lado = ciclo % 2 == 0 ? 1f : -1f;
+                fx = lado * golpe;
+                fy = golpe * 0.35f * (ciclo % 3 == 0 ? 1f : -1f);
+                fz = golpe * 0.55f * (ciclo % 4 < 2 ? 1f : -1f);
             }
             case BRISA -> {
                 float t = ahora / 1e9f;
@@ -124,6 +137,10 @@ public final class FisicaApliques {
             }
         }
         e.ultimo = new Desplazamiento(new Vector3f(e.pb[0], e.pb[1], e.pb[2]), new Vector3f(e.pf[0], e.pf[1], e.pf[2]));
+        if (modo == Modo.SACUDIDA) {            // lo que ve el aplique: más allá del tope del resorte
+            e.ultimo.blando().mul(exageracion);
+            e.ultimo.firme().mul(exageracion);
+        }
         actual = e.ultimo;
     }
 

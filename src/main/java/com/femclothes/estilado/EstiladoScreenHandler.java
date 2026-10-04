@@ -38,6 +38,12 @@ public class EstiladoScreenHandler extends ScreenHandler {
             addSlot(new Slot(be, i, X_DERECHA + i * 26, Y_SLOTS) {
                 @Override
                 public boolean canInsert(ItemStack stack) { return be.isValid(indice, stack); }
+
+                /** El slot de objeto es solo de la Mesa creativa (2026-10-04). */
+                @Override
+                public boolean isEnabled() {
+                    return indice != EstiladoBlockEntity.SLOT_OBJETO || com.femclothes.util.MaquinaCreativa.es(be);
+                }
             });
         }
         for (int i = 0; i < 3; i++) {
@@ -52,6 +58,10 @@ public class EstiladoScreenHandler extends ScreenHandler {
     public boolean onButtonClick(PlayerEntity player, int id) {
         if (id == EstiladoBlockEntity.BTN_QUITAR) {
             be.quitar(player);
+            return true;
+        }
+        if (id == EstiladoBlockEntity.BTN_CREAR_MOLDE) {
+            be.crearMolde(player);
             return true;
         }
         return be.onButtonClick(id);

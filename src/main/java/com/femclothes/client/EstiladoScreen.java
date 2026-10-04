@@ -140,7 +140,21 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     /** Una página del panel: 0 = Colocación, 1 = Movimiento. */
     private int paginaPanel = 0;
     private int panelX;
-    private ButtonWidget btnPaginaColocacion, btnPaginaMovimiento, btnRestablecer, btnPivote, btnEje;
+    private ButtonWidget btnPaginaColocacion, btnPaginaMovimiento, btnRestablecer, btnPivote, btnEje, btnCrearMolde;
+    /** El slider de blandura de la Mesa normal (2026-10-04): como estaba antes del panel lateral. */
+    private SliderAjuste sliderNormal;
+
+    /** Si el molde es uno personalizado de un objeto (no pide retazo: la muestra de color es opcional). */
+    private static boolean plantillaDeObjeto(ItemStack molde) {
+        Aplique p = molde.getItem() instanceof com.femclothes.aplique.MoldeApliquePersonalizadoItem
+                ? com.femclothes.aplique.MoldeApliquePersonalizadoItem.plantilla(molde) : null;
+        return p != null && p.objeto() != null;
+    }
+
+    /** La Mesa creativa tiene el slot de objeto, el panel lateral y la fábrica de moldes; la normal, no. */
+    private boolean creativa() {
+        return com.femclothes.util.MaquinaCreativa.es(handler.be);
+    }
     private final ButtonWidget[] btnCaras = new ButtonWidget[6];
     private final List<SliderAjuste> slidersColocacion = new java.util.ArrayList<>();
     private final List<SliderAjuste> slidersMovimiento = new java.util.ArrayList<>();
@@ -319,7 +333,13 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
             var v = com.femclothes.aplique.Oscilacion.Eje.values();
             return a.conOscilacion(a.oscilacion().conEje(v[(a.oscilacion().eje().ordinal() + 1) % v.length]));
         }));
-        btnRestablecer = botonPanel(6, 232, PW - 12, Text.translatable("femclothes.estilado.panel.restablecer"),
+        sliderNormal = new SliderAjuste(this.x + X_DER, this.y + 150, 162, "blandura", 0f, 1f, 0.1f, true, Aplique::blandura,
+                (a, v) -> a.conBlandura(v));
+        sliderNormal.setTooltip(Tooltip.of(Text.translatable("femclothes.estilado.tooltip.blandura")));
+        this.addDrawableChild(sliderNormal);
+        btnCrearMolde = botonPanel(82, 232, 72, Text.translatable("femclothes.estilado.panel.crear_molde"),
+                "femclothes.estilado.tooltip.crear_molde", () -> clickBoton(EstiladoBlockEntity.BTN_CREAR_MOLDE));
+        btnRestablecer = botonPanel(6, 232, 72, Text.translatable("femclothes.estilado.panel.restablecer"),
                 "femclothes.estilado.tooltip.restablecer", () -> ajustar(a -> a
                         .conColocacion(com.femclothes.aplique.Colocacion.DEFECTO.conCara(a.colocacion().caraBase()))
                         .conOscilacion(com.femclothes.aplique.Oscilacion.DEFECTO)));
@@ -329,6 +349,19 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     private void actualizarPanel(@Nullable Aplique a) {
         boolean hay = a != null;
         boolean objeto = hay && a.objeto() != null;
+        boolean cre = creativa();
+        sliderNormal.visible = !cre;
+        sliderNormal.refrescar(a);
+        if (!cre) {
+            // La Mesa normal no tiene panel lateral.
+            for (var w : new ButtonWidget[] { btnPaginaColocacion, btnPaginaMovimiento, btnRestablecer, btnPivote, btnEje, btnCrearMolde }) w.visible = false;
+            for (SliderAjuste sl : slidersColocacion) sl.visible = false;
+            for (SliderAjuste sl : slidersMovimiento) sl.visible = false;
+            for (ButtonWidget b : btnCaras) b.visible = false;
+            return;
+        }
+        btnCrearMolde.visible = true;
+        btnCrearMolde.active = hay;
         btnPaginaColocacion.active = paginaPanel != 0;
         btnPaginaMovimiento.active = paginaPanel != 1;
         for (SliderAjuste s : slidersColocacion) {
@@ -355,6 +388,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     }
 
     private void dibujarPanel(DrawContext c) {
+        if (!creativa()) return;
         int x0 = panelX, y0 = this.y;
         c.fill(x0 - 1, y0 - 1, x0 + PW + 1, y0 + ALTO + 1, 0xFF2A180C);
         c.fill(x0, y0, x0 + PW, y0 + ALTO, 0xFF4B3F5A);
@@ -376,7 +410,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     @Override
     protected boolean isClickOutsideBounds(double mx, double my, int left, int top, int button) {
         // El panel está afuera de la ventana: tocarlo con un ítem en el cursor no lo tira.
-        if (mx >= panelX && mx < panelX + PW && my >= this.y && my < this.y + ALTO) return false;
+        if (creativa() && mx >= panelX && mx < panelX + PW && my >= this.y && my < this.y + ALTO) return false;
         return super.isClickOutsideBounds(mx, my, left, top, button);
     }
 
@@ -612,6 +646,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                     aviso = Text.translatable("femclothes.estilado.aviso.textura");
                 else if (!objeto && be.getStack(EstiladoBlockEntity.SLOT_MOLDE).isEmpty()) aviso = Text.translatable("femclothes.estilado.aviso.molde");
                 else if (!objeto && !(be.getStack(EstiladoBlockEntity.SLOT_RETAZO).getItem() instanceof com.femclothes.aplique.RetazoApliqueItem)
+                        && !(plantillaDeObjeto(be.getStack(EstiladoBlockEntity.SLOT_MOLDE)))
                         && !com.femclothes.util.MaquinaCreativa.es(be)) aviso = Text.translatable("femclothes.estilado.aviso.retazo");
                 else if (be.apliques().size() >= Aplique.MAXIMO_POR_PRENDA) aviso = Text.translatable("femclothes.estilado.aviso.lleno");
                 else if (t == null) aviso = Text.translatable("femclothes.estilado.aviso.fuera");
@@ -670,7 +705,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         btnGiro.active = btnEscala.active = btnQuitar.active = hay;
         actualizarPanel(hay ? apliques.get(sel) : null);
         com.femclothes.aplique.ObjetoAplique obj = hay ? apliques.get(sel).objeto() : null;
-        for (ButtonWidget b : objetoBotones()) b.visible = obj != null;
+        for (ButtonWidget b : objetoBotones()) b.visible = obj != null && creativa();
         if (obj != null) {
             boolean esBloque = com.femclothes.aplique.ObjetoAplique.bloqueDe(obj.item()) != null;
             btnObjModo.active = esBloque;
@@ -717,9 +752,11 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.slot.prenda"), X_DER - 1, y, EstiloPergamino.TEXTO, false);
         context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.slot.molde"), X_DER + 25, y + 30, EstiloPergamino.TEXTO, false);
         context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.slot.retazo"), X_DER + 51, y, EstiloPergamino.TEXTO, false);
-        context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.slot.objeto"), X_DER + 77, y + 30, EstiloPergamino.TEXTO, false);
+        if (creativa()) {
+            context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.slot.objeto"), X_DER + 77, y + 30, EstiloPergamino.TEXTO, false);
+        }
         context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.apliques", handler.be.apliques().size(),
-                Aplique.MAXIMO_POR_PRENDA), X_DER + 102, EstiladoScreenHandler.Y_SLOTS + 4, EstiloPergamino.TEXTO, false);
+                Aplique.MAXIMO_POR_PRENDA), X_DER + (creativa() ? 102 : 80), EstiladoScreenHandler.Y_SLOTS + 4, EstiloPergamino.TEXTO, false);
         Text ayuda = aviso != null ? aviso : Text.translatable("femclothes.estilado.ayuda");
         int color = aviso != null ? 0xFFFF9090 : 0xFFE8DCC8;
         for (var linea : this.textRenderer.wrapLines(ayuda, PX2 - PX1 - 12)) {
@@ -734,8 +771,10 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 this.backgroundWidth, this.backgroundHeight);
         // Marco del slot de objeto (2026-10-04), dibujado por código: el fondo no lo trae.
         int ox = this.x + X_DER + 3 * 26, oy = this.y + EstiladoScreenHandler.Y_SLOTS;
-        context.fill(ox - 1, oy - 1, ox + 17, oy + 17, 0xFF2A180C);
-        context.fill(ox, oy, ox + 16, oy + 16, 0xFF6B5A78);
+        if (creativa()) {
+            context.fill(ox - 1, oy - 1, ox + 17, oy + 17, 0xFF2A180C);
+            context.fill(ox, oy, ox + 16, oy + 16, 0xFF6B5A78);
+        }
         dibujarPanel(context);
     }
 }

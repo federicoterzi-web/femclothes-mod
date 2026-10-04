@@ -350,7 +350,9 @@ public final class ApliqueRenderer {
             double fase = (a.x() * 7.3 + a.y() * 13.1 + a.z() * 3.7);
             idle = (float) Math.sin(2 * Math.PI * os.velocidad() * t + fase);
         }
-        float[] g = TransformAplique.angulos(os.eje().ordinal(), (float) Math.toRadians(os.amplitud()), intensidad, dx, dz, idle);
+        // Con Sacudir, el balanceo se exagera para poder verlo (amplitud y empuje; con tope de 60°).
+        float amp = Math.min((float) Math.toRadians(60), (float) Math.toRadians(os.amplitud()) * FisicaApliques.exageracion);
+        float[] g = TransformAplique.angulos(os.eje().ordinal(), amp, intensidad, dx, dz, idle);
         if (g[0] == 0f && g[1] == 0f) return;
         float[] p = TransformAplique.pivote(os.pivote().ordinal(), ancho, alto, profundidad,
                 os.ox() / 16f, os.oy() / 16f, os.oz() / 16f);

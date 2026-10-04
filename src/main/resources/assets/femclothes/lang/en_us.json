@@ -683,5 +683,12 @@
   "femclothes.estilado.tooltip.velocidad": "Own sway in Hz. At 0 it only moves when its wearer moves",
   "femclothes.estilado.tooltip.amplitud": "How wide the swing opens, in degrees",
   "femclothes.estilado.tooltip.eje": "In plane: turns flat against the fabric. Hinge: lifts off the fabric (never goes through it). Both: both",
-  "femclothes.estilado.tooltip.restablecer": "Resets placement and motion to defaults (the resting face is kept)"
+  "femclothes.estilado.tooltip.restablecer": "Resets placement and motion to defaults (the resting face is kept)",
+  "item.femclothes.molde_aplique_personalizado": "Appliqué Mould",
+  "femclothes.aplique.molde_personalizado.cara": "Rests on: %s",
+  "femclothes.aplique.molde_personalizado.blandura": "Softness: %s%%",
+  "femclothes.aplique.molde_personalizado.ayuda": "Goes in the mould slot of the Styling Table: nothing is used up. It can be renamed at an anvil.",
+  "femclothes.estilado.panel.blandura": "Softness %s%%",
+  "femclothes.estilado.panel.crear_molde": "Make mould",
+  "femclothes.estilado.tooltip.crear_molde": "Makes an appliqué mould from the selected appliqué (object or model, placement and motion) for use in the normal Styling Table"
 }

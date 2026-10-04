@@ -74,6 +74,8 @@ public class EstiladoBlockEntity extends BlockEntity
      * así que "todos los moldes adentro" es poder elegirlos acá.
      */
     public static final int BTN_SIGUIENTE_MOLDE = 16;
+    /** Fabrica un molde de aplique personalizado con el aplique elegido (solo Mesa creativa, 2026-10-04). */
+    public static final int BTN_CREAR_MOLDE = 17;
     /** Blandura del aplique elegido: BASE + 0..10 = 0..100 % (2026-10-04, "tela blanda... un slider"). */
     public static final int BTN_BLANDURA_BASE = 20;
     public static final int BLANDURA_PASOS = 10;
@@ -128,9 +130,15 @@ public class EstiladoBlockEntity extends BlockEntity
         boolean gratis = com.femclothes.util.MaquinaCreativa.es(this);
         // Con un objeto en su slot (2026-10-04), el aplique es ese objeto y el molde no cuenta; la muestra de
         // color en el slot del retazo lo tiñe (opcional).
-        boolean esObjeto = !objeto.isEmpty();
+        boolean esObjeto = !objeto.isEmpty() && gratis;       // el slot de objeto es solo de la Mesa creativa
+        // Un molde personalizado (2026-10-04): trae el modelo u objeto y su colocación; no se gasta nada de él.
+        Aplique plantilla = !esObjeto && molde.getItem() instanceof com.femclothes.aplique.MoldeApliquePersonalizadoItem
+                ? com.femclothes.aplique.MoldeApliquePersonalizadoItem.plantilla(molde) : null;
         if (esObjeto) {
             if (prenda.isEmpty() || !ObjetoAplique.admite(objeto)) return false;
+        } else if (plantilla != null) {
+            // Un objeto del molde se tiñe con la muestra (opcional); un modelo del mod pide su retazo.
+            if (prenda.isEmpty() || (plantilla.objeto() == null && !(retazo.getItem() instanceof RetazoApliqueItem) && !gratis)) return false;
         } else if (prenda.isEmpty() || !(molde.getItem() instanceof MoldeApliqueItem)
                 || (!(retazo.getItem() instanceof RetazoApliqueItem) && !gratis)) {
             return false;
@@ -160,11 +168,21 @@ public class EstiladoBlockEntity extends BlockEntity
         if (esObjeto) {
             ItemStack muestra = retazo.getItem() instanceof com.femclothes.item.MuestraColorItem ? retazo : ItemStack.EMPTY;
             actuales.add(new Aplique(ModeloAplique.OBJETO, parte, x, y, z, cara, 0f, 1f, RetazoApliqueItem.BLANCO, superficie,
-                    BLANDURA_INICIAL, ObjetoAplique.de(objeto, muestra)));
+                    BLANDURA_INICIAL, ObjetoAplique.de(objeto, muestra).paraPoner(muestra)));
             if (!gratis) {
                 objeto.decrement(1);
                 if (!muestra.isEmpty()) muestra.decrement(1);
             }
+        } else if (plantilla != null) {
+            ItemStack muestra = plantilla.objeto() != null && retazo.getItem() instanceof com.femclothes.item.MuestraColorItem
+                    ? retazo : ItemStack.EMPTY;
+            ObjetoAplique ob = plantilla.objeto() == null ? null : plantilla.objeto().paraPoner(muestra);
+            java.util.List<Integer> colores = plantilla.objeto() == null && retazo.getItem() instanceof RetazoApliqueItem
+                    ? RetazoApliqueItem.colores(retazo) : RetazoApliqueItem.BLANCO;
+            actuales.add(new Aplique(plantilla.modelo(), parte, x, y, z, cara, plantilla.giro(), plantilla.escala(), colores,
+                    superficie, plantilla.blandura(), ob, plantilla.colocacion(), plantilla.oscilacion()));
+            // Un objeto de molde no gasta nada (ni el objeto ni la muestra de color); un modelo del mod gasta su retazo.
+            if (!gratis && plantilla.objeto() == null) retazo.decrement(1);
         } else {
             MoldeApliqueItem m = (MoldeApliqueItem) molde.getItem();
             actuales.add(new Aplique(m.modelo, parte, x, y, z, cara, 0f, 1f, RetazoApliqueItem.colores(retazo), superficie, BLANDURA_INICIAL));
@@ -181,8 +199,9 @@ public class EstiladoBlockEntity extends BlockEntity
         if (seleccionado < 0 || seleccionado >= actuales.size()) return;
         Aplique a = actuales.remove(seleccionado);
         if (a.objeto() != null) {
-            // Vuelve el objeto y la muestra, tal cual (en la Mesa creativa no se gastaron: no se devuelven).
-            if (!com.femclothes.util.MaquinaCreativa.es(this)) {
+            // Vuelve el objeto y la muestra, tal cual. Si el aplique se puso en la Mesa creativa o salió de un molde
+            // (marcado "de molde") no se gastó nada: no se devuelve nada, si no se duplicarían.
+            if (!com.femclothes.util.MaquinaCreativa.es(this) && !a.objeto().deMolde()) {
                 jugador.getInventory().offerOrDrop(a.objeto().item().copy());
                 if (!a.objeto().muestra().isEmpty()) jugador.getInventory().offerOrDrop(a.objeto().muestra().copy());
             }
@@ -193,6 +212,23 @@ public class EstiladoBlockEntity extends BlockEntity
         }
         seleccionado = Math.min(seleccionado, actuales.size() - 1);
         guardarApliques(actuales);
+    }
+
+    /**
+     * Fabrica un molde de aplique personalizado con el aplique elegido (2026-10-04, "que pueda producir un molde
+     * ahí para que se use en la normal"): sin posición (esa se elige al ponerlo), con el objeto sin muestra y
+     * marcado "de molde". Solo la Mesa creativa; no gasta nada.
+     */
+    public void crearMolde(PlayerEntity jugador) {
+        List<Aplique> actuales = apliques();
+        if (!com.femclothes.util.MaquinaCreativa.es(this) || seleccionado < 0 || seleccionado >= actuales.size()) return;
+        Aplique a = actuales.get(seleccionado);
+        Aplique plantilla = new Aplique(a.modelo(), Parte.TORSO, 0f, 0f, 0f, Direction.NORTH, a.giro(), a.escala(),
+                RetazoApliqueItem.BLANCO, Aplique.Superficie.CAJA, a.blandura(),
+                a.objeto() == null ? null : a.objeto().paraMolde(), a.colocacion(), a.oscilacion());
+        ItemStack molde = new ItemStack(FemclothesItems.MOLDE_APLIQUE_PERSONALIZADO);
+        molde.set(FemclothesComponents.APLIQUE_PLANTILLA, plantilla);
+        jugador.getInventory().offerOrDrop(molde);
     }
 
     public boolean onButtonClick(int id) {
@@ -251,6 +287,11 @@ public class EstiladoBlockEntity extends BlockEntity
         List<Aplique> actuales = new ArrayList<>(apliques());
         if (indice < 0 || indice >= actuales.size() || !Float.isFinite(blandura)) return false;
         Aplique a = actuales.get(indice);
+        // En la Mesa normal solo se toca la blandura (la colocación y el movimiento son de la creativa).
+        if (!com.femclothes.util.MaquinaCreativa.es(this)) {
+            colocacion = a.colocacion();
+            oscilacion = a.oscilacion();
+        }
         if (a.objeto() == null) colocacion = colocacion.conCara(Colocacion.DEFECTO.caraBase());
         actuales.set(indice, a.conColocacion(colocacion).conOscilacion(oscilacion)
                 .conBlandura(MathHelper.clamp(blandura, 0f, 1f)));
@@ -365,10 +406,11 @@ public class EstiladoBlockEntity extends BlockEntity
         return switch (slot) {
             case SLOT_PRENDA -> admite(stack);
             case SLOT_MOLDE -> stack.getItem() instanceof MoldeApliqueItem
+                    || stack.getItem() instanceof com.femclothes.aplique.MoldeApliquePersonalizadoItem
                     || stack.getItem() instanceof com.femclothes.item.MoldeTexturaItem;
             case SLOT_RETAZO -> stack.getItem() instanceof RetazoApliqueItem
                     || stack.getItem() instanceof com.femclothes.item.MuestraColorItem;
-            case SLOT_OBJETO -> ObjetoAplique.admite(stack);
+            case SLOT_OBJETO -> com.femclothes.util.MaquinaCreativa.es(this) && ObjetoAplique.admite(stack);
             default -> false;
         };
     }

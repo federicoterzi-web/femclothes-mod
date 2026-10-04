@@ -683,5 +683,12 @@
   "femclothes.estilado.tooltip.velocidad": "Vaivén propio en Hz. Con 0 solo se mueve cuando se mueve quien lo lleva",
   "femclothes.estilado.tooltip.amplitud": "Cuánto se abre el balanceo, en grados",
   "femclothes.estilado.tooltip.eje": "En el plano: gira pegado a la tela. Bisagra: se despega de la tela (nunca la atraviesa). Ambos: las dos cosas",
-  "femclothes.estilado.tooltip.restablecer": "Vuelve la colocación y el movimiento a sus valores de fábrica (la cara apoyada se mantiene)"
+  "femclothes.estilado.tooltip.restablecer": "Vuelve la colocación y el movimiento a sus valores de fábrica (la cara apoyada se mantiene)",
+  "item.femclothes.molde_aplique_personalizado": "Molde de aplique",
+  "femclothes.aplique.molde_personalizado.cara": "Se apoya por: %s",
+  "femclothes.aplique.molde_personalizado.blandura": "Blandura: %s %%",
+  "femclothes.aplique.molde_personalizado.ayuda": "Va en el slot del molde de la Mesa de estilado: no se gasta ni gasta el objeto. Se le puede cambiar el nombre en el yunque.",
+  "femclothes.estilado.panel.blandura": "Blandura %s%%",
+  "femclothes.estilado.panel.crear_molde": "Crear molde",
+  "femclothes.estilado.tooltip.crear_molde": "Fabrica un molde de aplique con el aplique elegido (objeto o modelo, colocación y movimiento) para usarlo en la Mesa de estilado normal"
 }

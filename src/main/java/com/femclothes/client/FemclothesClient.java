@@ -125,6 +125,10 @@ public class FemclothesClient implements ClientModInitializer {
             net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(item, icono);
         }
 
+        // Molde de aplique personalizado (2026-10-04): papel kraft con el objeto encima.
+        net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(
+                FemclothesItems.MOLDE_APLIQUE_PERSONALIZADO, new MoldeApliqueItemRenderer());
+
         // Retazo de aplique (2026-10-01): el ícono provisorio se tiñe con la zona 1.
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> tintIndex == 0
                 ? 0xFF000000 | com.femclothes.aplique.RetazoApliqueItem.colores(stack).get(0) : -1,

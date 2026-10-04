@@ -500,6 +500,14 @@ public final class FemclothesComponents {
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capucha_arriba"),
             ComponentType.<Boolean>builder().codec(com.mojang.serialization.Codec.BOOL).packetCodec(PacketCodecs.BOOL).build());
 
+    /** La plantilla de un molde de aplique personalizado (2026-10-04) — ver {@code aplique/MoldeApliquePersonalizadoItem}. */
+    public static final ComponentType<com.femclothes.aplique.Aplique> APLIQUE_PLANTILLA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "aplique_plantilla"),
+            ComponentType.<com.femclothes.aplique.Aplique>builder()
+                    .codec(com.femclothes.aplique.Aplique.CODEC)
+                    .packetCodec(PacketCodecs.registryCodec(com.femclothes.aplique.Aplique.CODEC))
+                    .build());
+
     /** Apliques puestos en una prenda (2026-10-01, Mesa de estilado) — ver {@code aplique/Aplique}. */
     public static final ComponentType<java.util.List<com.femclothes.aplique.Aplique>> APLIQUES = Registry.register(
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "apliques"),

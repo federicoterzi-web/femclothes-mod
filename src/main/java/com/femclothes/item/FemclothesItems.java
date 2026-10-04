@@ -76,6 +76,10 @@ public final class FemclothesItems {
             new com.femclothes.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.femclothes.aplique.ModeloAplique.MARIPOSA));
     public static final com.femclothes.aplique.MoldeApliqueItem MOLDE_APLIQUE_FLOR = register("molde_aplique_flor",
             new com.femclothes.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.femclothes.aplique.ModeloAplique.FLOR));
+    /** Lo fabrica la Mesa de estilado creativa (2026-10-04); no está en la pestaña creativa. */
+    public static final com.femclothes.aplique.MoldeApliquePersonalizadoItem MOLDE_APLIQUE_PERSONALIZADO = register(
+            "molde_aplique_personalizado",
+            new com.femclothes.aplique.MoldeApliquePersonalizadoItem(new Item.Settings().maxCount(1)));
     public static final com.femclothes.aplique.RetazoApliqueItem RETAZO_APLIQUE = register("retazo_aplique",
             new com.femclothes.aplique.RetazoApliqueItem(new Item.Settings().maxCount(64)));
 

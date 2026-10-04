@@ -28,9 +28,11 @@ import java.util.Set;
  * @param variante cuál de los estados útiles del bloque ({@link #estados})
  * @param inclinarX grados que se inclina hacia adelante/atrás (eje X del aplique)
  * @param inclinarY grados que gira de costado (eje Y del aplique)
+ * @param deMolde  vino de un molde de aplique personalizado (2026-10-04): el objeto no se gastó y, al quitar el
+ *                 aplique, no se devuelve (si no, el molde fabricaría objetos)
  */
 public record ObjetoAplique(ItemStack item, ItemStack muestra, boolean bloque, int variante,
-                            float inclinarX, float inclinarY) {
+                            float inclinarX, float inclinarY, boolean deMolde) {
 
     public static final Codec<ObjetoAplique> CODEC = RecordCodecBuilder.create(i -> i.group(
             ItemStack.CODEC.fieldOf("item").forGetter(ObjetoAplique::item),
@@ -38,13 +40,25 @@ public record ObjetoAplique(ItemStack item, ItemStack muestra, boolean bloque, i
             Codec.BOOL.optionalFieldOf("bloque", false).forGetter(ObjetoAplique::bloque),
             Codec.INT.optionalFieldOf("variante", 0).forGetter(ObjetoAplique::variante),
             Codec.FLOAT.optionalFieldOf("inclinar_x", 0f).forGetter(ObjetoAplique::inclinarX),
-            Codec.FLOAT.optionalFieldOf("inclinar_y", 0f).forGetter(ObjetoAplique::inclinarY)
+            Codec.FLOAT.optionalFieldOf("inclinar_y", 0f).forGetter(ObjetoAplique::inclinarY),
+            Codec.BOOL.optionalFieldOf("de_molde", false).forGetter(ObjetoAplique::deMolde)
     ).apply(i, ObjetoAplique::new));
 
     /** Un objeto recién puesto: como ítem, sin inclinar. */
     public static ObjetoAplique de(ItemStack item, ItemStack muestra) {
         return new ObjetoAplique(item.copyWithCount(1), muestra.isEmpty() ? ItemStack.EMPTY : muestra.copyWithCount(1),
-                false, 0, 0f, 0f);
+                false, 0, 0f, 0f, false);
+    }
+
+    /** El objeto de un molde puesto en una prenda: con la muestra del retazo (si hay) y marcado como "de molde". */
+    public ObjetoAplique paraPoner(ItemStack muestraNueva) {
+        return new ObjetoAplique(item.copyWithCount(1), muestraNueva.isEmpty() ? ItemStack.EMPTY : muestraNueva.copyWithCount(1),
+                bloque, variante, inclinarX, inclinarY, true);
+    }
+
+    /** El objeto tal como va guardado en un molde: sin muestra y marcado como "de molde". */
+    public ObjetoAplique paraMolde() {
+        return new ObjetoAplique(item.copyWithCount(1), ItemStack.EMPTY, bloque, variante, inclinarX, inclinarY, true);
     }
 
     // Un ItemStack no se compara por valor: sin esto el aplique nunca sería "igual" a su copia y el
@@ -52,24 +66,25 @@ public record ObjetoAplique(ItemStack item, ItemStack muestra, boolean bloque, i
     @Override
     public boolean equals(Object o) {
         return o instanceof ObjetoAplique p && ItemStack.areEqual(item, p.item) && ItemStack.areEqual(muestra, p.muestra)
-                && bloque == p.bloque && variante == p.variante && inclinarX == p.inclinarX && inclinarY == p.inclinarY;
+                && bloque == p.bloque && variante == p.variante && inclinarX == p.inclinarX && inclinarY == p.inclinarY
+                && deMolde == p.deMolde;
     }
 
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(ItemStack.hashCode(item), ItemStack.hashCode(muestra), bloque, variante, inclinarX, inclinarY);
+        return java.util.Objects.hash(ItemStack.hashCode(item), ItemStack.hashCode(muestra), bloque, variante, inclinarX, inclinarY, deMolde);
     }
 
     public ObjetoAplique conBloque(boolean b) {
-        return new ObjetoAplique(item, muestra, b, variante, inclinarX, inclinarY);
+        return new ObjetoAplique(item, muestra, b, variante, inclinarX, inclinarY, deMolde);
     }
 
     public ObjetoAplique conVariante(int v) {
-        return new ObjetoAplique(item, muestra, bloque, v, inclinarX, inclinarY);
+        return new ObjetoAplique(item, muestra, bloque, v, inclinarX, inclinarY, deMolde);
     }
 
     public ObjetoAplique conInclinacion(float x, float y) {
-        return new ObjetoAplique(item, muestra, bloque, variante, x, y);
+        return new ObjetoAplique(item, muestra, bloque, variante, x, y, deMolde);
     }
 
     // ── qué entra ──────────────────────────────────────────────────────────
