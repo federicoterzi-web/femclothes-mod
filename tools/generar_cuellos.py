@@ -36,6 +36,8 @@ CAPA_X, CAPA_Y0, CAPA_Y1 = (160, 224), 128, 160
 # Dónde queda el pico del medio del corazón (2026-10-04, "el corte de cuello corazon lo bajaria para que empiecen a
 # cubrir justo encima del medio de la teta"): antes 2.7; así los puntos más altos de la tela quedan en 3.0.
 CORAZON_BAJA = 5.0
+# Ancho (en texeles, de 0 a 8) del agujero de la tapa de arriba: el mismo que el corte del frente.
+ANCHO_TAPA = {"cuadrado": (2.0, 6.0), "corazon": (1.0, 7.0)}
 
 
 def agujero(cuello, x, y):
@@ -57,10 +59,13 @@ def cuerpo(largo_manga):
     for cuello in ("cuadrado", "corazon"):
         im = base.copy()
         px, pv = im.load(), en_v.load()
-        # La tapa de arriba: el mismo agujero que la V (2 texeles, las 4 filas).
+        # La tapa de arriba acompaña el ancho del corte del frente (2026-10-04, "la tapa de arriba de la ropa deberia
+        # acompañar el ancho del corte del cuello de frente"): antes copiaba el agujero de la V (2 texeles) y el
+        # cuadrado (4) y el corazón (6) quedaban con la tapa cerrada. Las 4 filas de profundidad.
+        ancho = ANCHO_TAPA[cuello]
         for y in range(CAPA_Y0, CAPA_Y1):
             for x in range(*CAPA_X):
-                if pv[x, y][3] == 0:
+                if ancho[0] <= (x - CAPA_X[0] + 0.5) / K <= ancho[1]:
                     px[x, y] = (0, 0, 0, 0)
         # El frente: la forma nueva, a resolución 8x.
         for y in range(Y0, Y0 + 5 * K + 8):
