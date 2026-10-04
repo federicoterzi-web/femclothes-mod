@@ -194,15 +194,77 @@ public final class ApliqueRenderer {
         matrices.pop();
     }
 
-    /** Cuánto mide un objeto con tamaño 100 % (bloques): un bloque entero queda de unos 5 px. */
+    /** Cuánto mide el lado más largo de un objeto con tamaño 100 % (bloques): unos 5 px. */
     private static final float TAMANO_OBJETO = 0.3f;
+
+    /** Los límites de un objeto en el cubo unitario del modelo (0..1), cacheados. */
+    private static final Map<String, net.minecraft.util.math.Box> LIMITES = new HashMap<>();
+
+    /**
+     * Dónde queda realmente el objeto dentro de su cubo unitario (2026-10-04, "los apliques de objeto
+     * orbitan alrededor de un punto alejado en lugar de girar desde la base"): una vela, una cabeza o una
+     * antorcha no llenan el cubo, así que pivotar desde su centro los dejaba girando lejos de ellos. Para un
+     * bloque sale de su forma; para un ítem, de los vértices de su modelo; sin dato (ítems con render propio),
+     * el cubo entero.
+     */
+    private static net.minecraft.util.math.Box limites(ObjetoAplique o, @org.jetbrains.annotations.Nullable BlockState estado) {
+        String clave = net.minecraft.registry.Registries.ITEM.getId(o.item().getItem()) + "#" + ItemStack.hashCode(o.item())
+                + (estado == null ? "" : "#" + estado);
+        net.minecraft.util.math.Box b = LIMITES.get(clave);
+        if (b != null) return b;
+        net.minecraft.util.math.Box unidad = new net.minecraft.util.math.Box(0, 0, 0, 1, 1, 1);
+        b = unidad;
+        try {
+            MinecraftClient mc = MinecraftClient.getInstance();
+            if (estado != null) {
+                var forma = estado.getOutlineShape(net.minecraft.world.EmptyBlockView.INSTANCE, net.minecraft.util.math.BlockPos.ORIGIN);
+                if (!forma.isEmpty()) b = forma.getBoundingBox();
+            } else {
+                var modelo = mc.getItemRenderer().getModel(o.item(), mc.world, null, 0);
+                if (modelo.isBuiltin()) {
+                    net.minecraft.block.Block bloque = ObjetoAplique.bloqueDe(o.item());
+                    if (bloque != null) {
+                        var forma = bloque.getDefaultState().getOutlineShape(net.minecraft.world.EmptyBlockView.INSTANCE,
+                                net.minecraft.util.math.BlockPos.ORIGIN);
+                        if (!forma.isEmpty()) b = forma.getBoundingBox();
+                    }
+                } else {
+                    float[] mn = { 9, 9, 9 }, mx = { -9, -9, -9 };
+                    var azar = net.minecraft.util.math.random.Random.create(42);
+                    List<net.minecraft.util.math.Direction> caras = new java.util.ArrayList<>();
+                    caras.add(null);
+                    caras.addAll(List.of(net.minecraft.util.math.Direction.values()));
+                    for (var cara : caras) {
+                        for (var quad : modelo.getQuads(null, cara, azar)) {
+                            int[] v = quad.getVertexData();
+                            for (int k = 0; k + 2 < v.length; k += 8) {
+                                for (int e = 0; e < 3; e++) {
+                                    float c = Float.intBitsToFloat(v[k + e]);
+                                    mn[e] = Math.min(mn[e], c);
+                                    mx[e] = Math.max(mx[e], c);
+                                }
+                            }
+                        }
+                    }
+                    if (mx[0] > mn[0] || mx[1] > mn[1] || mx[2] > mn[2]) {
+                        b = new net.minecraft.util.math.Box(mn[0], mn[1], mn[2], mx[0], mx[1], mx[2]);
+                    }
+                }
+            }
+        } catch (RuntimeException e) {
+            b = unidad;
+        }
+        LIMITES.put(clave, b);
+        return b;
+    }
 
     /**
      * Un aplique de objeto (2026-10-04, "un motor para generar apliques de bloques ya existentes"):
      * Minecraft dibuja el ítem (como en un marco) o el bloque colocado, con el frente hacia afuera
      * de la tela. La matriz ya trae el origen sobre la tela, el frente en -Z, "arriba" en +Y y el
-     * tamaño del aplique. Se inclina alrededor del punto de apoyo; con blandura, además cuelga y se
-     * balancea desde su borde de arriba como un colgante.
+     * tamaño del aplique. El objeto se ACHICA o agranda hasta que su lado más largo mida
+     * {@link #TAMANO_OBJETO} y se apoya por el centro de su cara de atrás sobre la tela; ese punto
+     * es el pivote de las inclinaciones. Con blandura, además cuelga y se balancea desde su borde de arriba.
      */
     private static void dibujarObjeto(Aplique a, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz,
                                       @org.jetbrains.annotations.Nullable Blando blando) {
@@ -210,24 +272,24 @@ public final class ApliqueRenderer {
         MinecraftClient mc = MinecraftClient.getInstance();
         BlockState estado = o.bloque() ? o.estado() : null;
         if (o.bloque() && (estado == null || estado.isAir())) estado = null;
-        boolean plano = false;
-        if (estado == null) {
-            var modelo = mc.getItemRenderer().getModel(o.item(), mc.world, null, 0);
-            plano = !modelo.hasDepth() && !modelo.isBuiltin();
-        }
-        float s = TAMANO_OBJETO;
+        net.minecraft.util.math.Box b = limites(o, estado);
+        float lx = (float) b.getLengthX(), ly = (float) b.getLengthY(), lz = (float) b.getLengthZ();
+        float k = TAMANO_OBJETO / Math.max(0.05f, Math.max(lx, Math.max(ly, lz)));
+        // En el espacio centrado en el cubo unitario: centro (x, y) del objeto y su cara de atrás (z más grande).
+        float cx = (float) (b.minX + b.maxX) / 2f - 0.5f, cy = (float) (b.minY + b.maxY) / 2f - 0.5f;
+        float zAtras = (float) b.maxZ - 0.5f;
         matrices.push();
         if (blando != null) {
+            float py = ly * k / 2f;
             float rz = blando.blando.x * 0.35f * blando.blandura, rx = -blando.blando.z * 0.3f * blando.blandura;
-            matrices.translate(0f, s / 2f, 0f);
+            matrices.translate(0f, py, 0f);
             matrices.multiply(new Quaternionf().rotationZ(rz).rotateX(rx));
-            matrices.translate(0f, -s / 2f, 0f);
+            matrices.translate(0f, -py, 0f);
         }
         if (o.inclinarX() != 0f) matrices.multiply(new Quaternionf().rotationX((float) Math.toRadians(o.inclinarX())));
         if (o.inclinarY() != 0f) matrices.multiply(new Quaternionf().rotationY((float) Math.toRadians(o.inclinarY())));
-        // Los ítems planos se apoyan casi pegados a la tela; los que tienen volumen, con la espalda pegada.
-        matrices.translate(0f, 0f, plano ? -s * 0.06f : -s / 2f);
-        matrices.scale(s, s, s);
+        matrices.scale(k, k, k);
+        matrices.translate(-cx, -cy, -zAtras);
         int tinte = o.tinte();
         VertexConsumerProvider proveedor = tinte < 0 ? vertexConsumers : new TintadoVertex(vertexConsumers, tinte);
         if (estado != null) {

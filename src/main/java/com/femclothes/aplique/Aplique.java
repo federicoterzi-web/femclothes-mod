@@ -85,9 +85,10 @@ public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float
             net.minecraft.util.StringIdentifiable.createCodec(Superficie::values)
                     .optionalFieldOf("superficie", Superficie.CAJA).forGetter(Aplique::superficie),
             Codec.FLOAT.optionalFieldOf("blandura", 0f).forGetter(Aplique::blandura),
-            ObjetoAplique.CODEC.optionalFieldOf("objeto").xmap(o -> o.orElse(null), java.util.Optional::ofNullable)
-                    .forGetter(Aplique::objeto)
-    ).apply(i, Aplique::new));
+            // Optional y no null: DataResult no acepta null (un aplique viejo sin objeto rompía la carga del jugador).
+            ObjetoAplique.CODEC.optionalFieldOf("objeto").forGetter(ap -> java.util.Optional.ofNullable(ap.objeto()))
+    ).apply(i, (modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, objeto) ->
+            new Aplique(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, objeto.orElse(null))));
 
     /** Color de la zona {@code zona} (0..2), blanco si falta. */
     public int color(int zona) {
