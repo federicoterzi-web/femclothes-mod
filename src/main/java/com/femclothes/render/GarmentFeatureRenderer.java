@@ -406,7 +406,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             matrices.push();
             matrices.translate(0f, sy / 16f, (sz + alejar) / 16f);
             CapaMalla.dibujarPano(matrices, buffer, luz, stack, CapaMalla.movimiento(jugador, tickDelta), agachado,
-                    jugador.age + tickDelta, piernas, hoodie);
+                    jugador.age + tickDelta, piernas, hoodie,
+                    !jugador.hasVehicle() && !jugador.isSwimming() && !jugador.isSleeping() && !jugador.isCrawling());
             matrices.pop();
 
             // Con hoodie, la capucha del hoodie manda: la capa no lleva cuello alto (2026-10-02).

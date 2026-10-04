@@ -19,9 +19,9 @@ import java.util.List;
 public class MoldeCapaItem extends Item {
 
     public enum Tipo {
-        RUEDO_RECTO, RUEDO_REDONDEADO, CON_CAPUCHA, SIN_CAPUCHA, CUELLO_ALTO, SIN_CUELLO;
+        RUEDO_RECTO, RUEDO_REDONDEADO, CON_CAPUCHA, SIN_CAPUCHA, CUELLO_ALTO, SIN_CUELLO, RUEDO_COLA;
 
-        public boolean esRuedo() { return this == RUEDO_RECTO || this == RUEDO_REDONDEADO; }
+        public boolean esRuedo() { return this == RUEDO_RECTO || this == RUEDO_REDONDEADO || this == RUEDO_COLA; }
         public boolean esCapucha() { return this == CON_CAPUCHA || this == SIN_CAPUCHA; }
         public boolean esCuello() { return this == CUELLO_ALTO || this == SIN_CUELLO; }
     }

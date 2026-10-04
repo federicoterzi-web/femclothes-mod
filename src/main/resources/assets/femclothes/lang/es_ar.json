@@ -443,6 +443,8 @@
   "femclothes.capa.largo.maximo": "Hasta el tobillo",
   "femclothes.capa.ruedo.recto": "recto",
   "femclothes.capa.ruedo.redondeado": "redondeado",
+  "femclothes.capa.ruedo.cola": "con cola (arrastra)",
+  "item.femclothes.molde_capa_ruedo_cola": "Molde de Capa: Ruedo con cola",
   "femclothes.modelado.categoria.capa": "Capa",
   "femclothes.region_pintura.capa_exterior": "Exterior",
   "femclothes.region_pintura.capa_forro": "Forro",

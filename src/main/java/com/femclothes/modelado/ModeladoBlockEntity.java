@@ -835,6 +835,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
         return switch (m.tipo) {
             case RUEDO_RECTO -> ComboCorte.capaRuedo(com.femclothes.item.CapaRuedo.RECTO);
             case RUEDO_REDONDEADO -> ComboCorte.capaRuedo(com.femclothes.item.CapaRuedo.REDONDEADO);
+            case RUEDO_COLA -> ComboCorte.capaRuedo(com.femclothes.item.CapaRuedo.COLA);
             case CON_CAPUCHA -> ComboCorte.capaCapucha(true);
             case SIN_CAPUCHA -> ComboCorte.capaCapucha(false);
             case CUELLO_ALTO -> ComboCorte.capaCuello(true);

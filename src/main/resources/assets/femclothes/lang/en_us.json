@@ -443,6 +443,8 @@
   "femclothes.capa.largo.maximo": "Ankle",
   "femclothes.capa.ruedo.recto": "straight",
   "femclothes.capa.ruedo.redondeado": "rounded",
+  "femclothes.capa.ruedo.cola": "with train (trailing)",
+  "item.femclothes.molde_capa_ruedo_cola": "Cape Template: Trailing hem",
   "femclothes.modelado.categoria.capa": "Cape",
   "femclothes.region_pintura.capa_exterior": "Outside",
   "femclothes.region_pintura.capa_forro": "Lining",

@@ -87,7 +87,7 @@ public final class CapaMalla {
      * @param piernas las piernas llevadas a este marco, o null
      */
     private static void doblar(float largo, Movimiento mv, boolean agachado, float tiempo,
-                               @Nullable PolleraMalla.Piernas piernas) {
+                               @Nullable PolleraMalla.Piernas piernas, float piso) {
         float total = 6f + mv.atras() / 2f + mv.vertical() + mv.paso() + (agachado ? 25f : 0f);
         float onda = Math.min(1f, mv.atras() / 60f) * 9f;
         tramo = largo / TRAMOS;
@@ -115,9 +115,18 @@ public final class CapaMalla {
                 if (!choca) break;
                 a += (float) Math.toRadians(3f);
             }
+            float yn = NODO_Y[k] + tramo * (float) Math.cos(a), zn = NODO_Z[k] + tramo * (float) Math.sin(a);
+            if (yn > piso) {
+                // Ruedo con cola (2026-10-04): la tela que pasaría del piso se apoya en él y sigue hacia atrás.
+                float dy = Math.max(0f, piso - NODO_Y[k]);
+                float dz = (float) Math.sqrt(Math.max(0f, tramo * tramo - dy * dy));
+                a = (float) Math.atan2(dz, dy);
+                yn = NODO_Y[k] + dy;
+                zn = NODO_Z[k] + dz;
+            }
             NODO_A[k] = a;
-            NODO_Y[k + 1] = NODO_Y[k] + tramo * (float) Math.cos(a);
-            NODO_Z[k + 1] = NODO_Z[k] + tramo * (float) Math.sin(a);
+            NODO_Y[k + 1] = yn;
+            NODO_Z[k + 1] = zn;
         }
         NODO_A[TRAMOS] = NODO_A[TRAMOS - 1];
     }
@@ -165,10 +174,21 @@ public final class CapaMalla {
     public static void dibujarPano(MatrixStack matrices, VertexConsumer vc, int luz, ItemStack stack,
                                    Movimiento mv, boolean agachado, float tiempo,
                                    @Nullable PolleraMalla.Piernas piernas, boolean sinCapucha) {
+        dibujarPano(matrices, vc, luz, stack, mv, agachado, tiempo, piernas, sinCapucha, true);
+    }
+
+    /** @param conCola false sentado, montado, nadando, durmiendo o gateando: la cola no se apoya en ningún piso */
+    public static void dibujarPano(MatrixStack matrices, VertexConsumer vc, int luz, ItemStack stack,
+                                   Movimiento mv, boolean agachado, float tiempo,
+                                   @Nullable PolleraMalla.Piernas piernas, boolean sinCapucha, boolean conCola) {
         MatrixStack.Entry e = matrices.peek();
-        float largo = CapaItem.largo(stack).pixeles;
-        doblar(largo, mv, agachado, tiempo, piernas);
-        boolean redondeado = CapaItem.ruedo(stack) == CapaRuedo.REDONDEADO;
+        CapaRuedo ruedo = CapaItem.ruedo(stack);
+        float cola = ruedo == CapaRuedo.COLA && conCola ? CapaRuedo.COLA_PIXELES : 0f;
+        float largo = CapaItem.largo(stack).pixeles + cola;
+        // El piso en el marco de la capa: los pies están 24 px debajo de los hombros (menos lo que baja agachado).
+        float piso = cola > 0f ? 24f - (agachado ? 1.85f : 0f) - 0.03f : Float.MAX_VALUE;
+        doblar(largo, mv, agachado, tiempo, piernas, piso);
+        boolean redondeado = ruedo == CapaRuedo.REDONDEADO;
         // Largo de cada columna: con ruedo redondeado las puntas suben en arco.
         float[] l = new float[COLS + 1];
         for (int c = 0; c <= COLS; c++) {

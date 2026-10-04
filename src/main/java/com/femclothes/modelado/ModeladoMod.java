@@ -106,6 +106,8 @@ public final class ModeladoMod {
     // Ruedo, capucha y cuello alto de la capa, cada uno para su pin. Exclusivos de la capa.
     public static final MoldeCapaItem MOLDE_CAPA_RUEDO_RECTO = new MoldeCapaItem(new Item.Settings().maxCount(1),
             MoldeCapaItem.Tipo.RUEDO_RECTO);
+    public static final MoldeCapaItem MOLDE_CAPA_RUEDO_COLA = new MoldeCapaItem(new Item.Settings().maxCount(1),
+            MoldeCapaItem.Tipo.RUEDO_COLA);
     public static final MoldeCapaItem MOLDE_CAPA_RUEDO_REDONDEADO = new MoldeCapaItem(new Item.Settings().maxCount(1),
             MoldeCapaItem.Tipo.RUEDO_REDONDEADO);
     public static final MoldeCapaItem MOLDE_CAPA_CON_CAPUCHA = new MoldeCapaItem(new Item.Settings().maxCount(1),
@@ -158,6 +160,7 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_pollera_tableada"), MOLDE_POLLERA_TABLEADA);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_ruedo_recto"), MOLDE_CAPA_RUEDO_RECTO);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_ruedo_redondeado"), MOLDE_CAPA_RUEDO_REDONDEADO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_ruedo_cola"), MOLDE_CAPA_RUEDO_COLA);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_con_capucha"), MOLDE_CAPA_CON_CAPUCHA);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_sin_capucha"), MOLDE_CAPA_SIN_CAPUCHA);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_cuello_alto"), MOLDE_CAPA_CUELLO_ALTO);

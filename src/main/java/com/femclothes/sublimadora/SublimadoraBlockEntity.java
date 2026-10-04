@@ -595,6 +595,7 @@ public class SublimadoraBlockEntity extends BlockEntity
     public boolean ponerRemera(ItemStack stack) {
         if (!remera.isEmpty() || estado != Estado.REPOSO) return false;
         remera = stack.copyWithCount(1);
+        soltarCapas();
         // La categoría de fijadas sigue automáticamente lo que se carga
         // — a pedido, ver el javadoc de {@link #categoria}.
         // La chaqueta comparte los diseños de la remera (misma tela, 2026-09-30).
@@ -772,6 +773,7 @@ public class SublimadoraBlockEntity extends BlockEntity
         if (slot == SLOT_REMERA) {
             ItemStack resultado = remera;
             remera = ItemStack.EMPTY;
+            soltarCapas();
             sincronizar();
             return resultado;
         }
@@ -779,6 +781,7 @@ public class SublimadoraBlockEntity extends BlockEntity
             ItemStack resultado = salida;
             salida = ItemStack.EMPTY;
             estado = Estado.REPOSO;
+            soltarCapas();
             sincronizar();
             return resultado;
         }
@@ -811,10 +814,17 @@ public class SublimadoraBlockEntity extends BlockEntity
                     ponerFoto(Estampa.Cara.values()[slot], stack, SublimadoraBlock.uuidDeFoto(stack));
                 }
             }
-            case SLOT_REMERA -> remera = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1);
+            case SLOT_REMERA -> {
+                ItemStack nueva = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1);
+                if (!ItemStack.areEqual(remera, nueva)) soltarCapas();
+                remera = nueva;
+            }
             case SLOT_SALIDA -> {
                 salida = stack;
-                if (salida.isEmpty() && estado == Estado.LISTO) estado = Estado.REPOSO;
+                if (salida.isEmpty() && estado == Estado.LISTO) {
+                    estado = Estado.REPOSO;
+                    soltarCapas();
+                }
             }
             default -> setCarga(slot, stack.isEmpty() ? 0
                     : MathHelper.clamp(stack.getCount(), 0, CARGA_MAXIMA));
@@ -1060,6 +1070,16 @@ public class SublimadoraBlockEntity extends BlockEntity
         return new CapaEstampa(cara,
                 new Estampa(id, escalaBorrador[i], xBorrador[i], yBorrador[i], anguloBorrador[i], false),
                 new Mascara(forma, mascaraEscala[i], mascaraX[i], mascaraY[i], mascaraAngulo[i]));
+    }
+
+    /**
+     * Suelta la lista de capas de la máquina cuando cambia la prenda (2026-10-04, "no puedo hacer que varias mascaras
+     * se sumen en la remera"): la lista se arma desde las capas de la prenda puesta al fijar la primera y, si
+     * quedaba de un trabajo anterior, reemplazaba las capas de la prenda siguiente al prensar y las perdía.
+     */
+    private void soltarCapas() {
+        capas.clear();
+        capaElegida = -1;
     }
 
     /** Chincheta con máscara: agrega la capa en curso de esa cara. */
@@ -1374,6 +1394,7 @@ public class SublimadoraBlockEntity extends BlockEntity
             ItemStack out = salida;
             salida = ItemStack.EMPTY;
             estado = Estado.REPOSO;
+            soltarCapas();
             sincronizar();
             return out;
         }
@@ -1388,6 +1409,7 @@ public class SublimadoraBlockEntity extends BlockEntity
         if (!remera.isEmpty()) {
             ItemStack out = remera;
             remera = ItemStack.EMPTY;
+            soltarCapas();
             sincronizar();
             return out;
         }

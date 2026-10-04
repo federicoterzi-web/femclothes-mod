@@ -976,6 +976,7 @@ public final class EstampaTextures {
     private static NativeImage telaCuerpo(Variante v) {
         if (TELAS.containsKey(v)) return TELAS.get(v);
         NativeImage img = leerRecurso(v.texturaCuerpo());
+        if (img != null) CuelloRecorte.aplicar(img, v.cuello());
         TELAS.put(v, img);
         return img;
     }
@@ -985,7 +986,7 @@ public final class EstampaTextures {
     private static NativeImage mascara(Variante v) {
         if (MASCARAS.containsKey(v)) return MASCARAS.get(v);
         NativeImage img = leerRecurso(Identifier.of(Femclothes.MOD_ID,
-                "textures/item/corte_" + v.clave() + ".png"));
+                "textures/item/corte_" + v.claveBase() + ".png"));
         MASCARAS.put(v, img);
         return img;
     }

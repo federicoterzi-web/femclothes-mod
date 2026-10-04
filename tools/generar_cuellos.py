@@ -1,4 +1,7 @@
-"""Genera las texturas de los cuellos CUADRADO y CORAZON de la remera.
+"""[Desde el 2026-10-04 las texturas cuerpo_* de abajo ya NO se generan: el recorte lo hace el juego en runtime, ver
+sublimadora/CuelloRecorte.java (mismas formas). Este script solo genera los íconos corte_* y sus modelos.]
+
+Genera las texturas de los cuellos CUADRADO y CORAZON de la remera.
 
 A pedido (2026-10-04, "esos son los moldes para cuello redondo en v polera cuadrado y corazon... haceme el cuello
 cuadrado y en forma de corazon" + "el molde corazon tiene que acompañar la silueta de los pechos"):
@@ -104,9 +107,9 @@ def modelos():
 
 if __name__ == "__main__":
     cortes = sorted(p.name[len("cuerpo_"):-len("_redondo.png")] for p in ENT.glob("cuerpo_*_redondo.png"))
-    for c in cortes:
-        cuerpo(c)
+    # Las texturas cuerpo_* ya no se generan: cuadrado y corazón se recortan en runtime
+    # (sublimadora/CuelloRecorte.java, 2026-10-04); cuerpo() queda de referencia de las formas.
     for ruta in ITEM.glob("corte_*_redondo.png"):
         icono(ruta.name[len("corte_"):-len("_redondo.png")])
     modelos()
-    print("cuerpos:", len(cortes) * 2, "· modelos:", len(list(MODELOS.glob("corte_*_cuadrado.json"))) * 2)
+    print("modelos:", len(list(MODELOS.glob("corte_*_cuadrado.json"))) * 2)

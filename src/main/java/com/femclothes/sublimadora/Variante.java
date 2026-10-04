@@ -154,7 +154,7 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
     }
 
     /** La clave de archivo: los largos nuevos usan la textura y el modelo del largo de siempre que los contiene. */
-    private String claveBase() {
+    public String claveBase() {
         return largo.base().clave + "_" + manga.clave + "_" + cuello.clave;
     }
 
@@ -163,7 +163,10 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
     }
 
     public Identifier texturaCuerpo() {
-        return Identifier.of(Femclothes.MOD_ID, "textures/entity/cuerpo_" + claveBase() + ".png");
+        // Cuadrado y corazón no tienen archivo: se recortan en runtime del redondo (ver CuelloRecorte).
+        Cuello archivo = CuelloRecorte.recortaEnRuntime(cuello) ? Cuello.REDONDO : cuello;
+        return Identifier.of(Femclothes.MOD_ID, "textures/entity/cuerpo_" + largo.base().clave + "_" + manga.clave
+                + "_" + archivo.clave + ".png");
     }
 
     public Identifier modeloItem() {
