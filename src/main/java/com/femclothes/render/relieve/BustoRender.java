@@ -557,15 +557,20 @@ public final class BustoRender {
         // adelante baja en pendiente hasta la punta y la de abajo vuelve al pecho.
         float arriba = ARRIBA - 0.25f * abrir;
         float largo = 4f + 0.4f * t + 0.3f * abrir;
+        // Cada capa es más ancha que la de abajo (2026-10-04, "piel con remera, en el lado del costado": los
+        // triángulos de los costados de la piel y de la tela caían en el mismo plano x = ±4 y se peleaban): la
+        // tela sale por el costado lo que está inflada y la rendija del medio se le cierra de a poco.
+        float lado = Math.max(0f, inflado) + 0.02f * Math.max(0f, inflado);
+        float rendija = Math.max(0.02f, SEPARACION - 0.5f * Math.max(0f, inflado));
         List<Vert[]> q = new ArrayList<>();
         if (!piel && carpa >= CARPA_MANTO) {
             float chato = 1f - 0.35f * Math.max(0f, Math.min(1f, (carpa - CARPA_MANTO) / 1.5f));
-            cuna(q, -4f, 4f, arriba, largo, plano, hondo * chato, 0f, dy, carpa * 1.5f, rigido);
+            cuna(q, -4f - lado, 4f + lado, arriba, largo, plano, hondo * chato, 0f, dy, carpa * 1.5f, rigido);
         } else {
             float colgar = piel ? 0f : carpa;
             // Una rendija entre los dos (2026-10-04, "q se note la division de los pechos").
-            cuna(q, -4f, -SEPARACION, arriba, largo, plano, hondo, dx, dy, colgar, rigido);
-            cuna(q, SEPARACION, 4f, arriba, largo, plano, hondo, dx, dy, colgar, rigido);
+            cuna(q, -4f - lado, -rendija, arriba, largo, plano, hondo, dx, dy, colgar, rigido);
+            cuna(q, rendija, 4f + lado, arriba, largo, plano, hondo, dx, dy, colgar, rigido);
         }
         return q;
     }
@@ -745,8 +750,10 @@ public final class BustoRender {
         float colgar = piel ? 0f : carpa * 0.5f;
         // Las mismas cuñas que el busto (2026-10-04, "quizas aplicable a las nalgas"), con una rendija más fina.
         List<Vert[]> q = new ArrayList<>();
-        cuna(q, -4f, -SEPARACION * 0.6f, arriba, largo, plano, hondo, 0f, dy - alterno, colgar, rigido);
-        cuna(q, SEPARACION * 0.6f, 4f, arriba, largo, plano, hondo, 0f, dy + alterno, colgar, rigido);
+        float lado = 1.02f * Math.max(0f, inflado);
+        float rendija = Math.max(0.02f, SEPARACION * 0.6f - 0.5f * Math.max(0f, inflado));
+        cuna(q, -4f - lado, -rendija, arriba, largo, plano, hondo, 0f, dy - alterno, colgar, rigido);
+        cuna(q, rendija, 4f + lado, arriba, largo, plano, hondo, 0f, dy + alterno, colgar, rigido);
         return q;
     }
 
