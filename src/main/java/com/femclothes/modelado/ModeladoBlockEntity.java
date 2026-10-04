@@ -60,7 +60,7 @@ import java.util.Map;
  * categoría actual se ve/usa. {@link #PRENDA} (1, física) y {@link #SALIDA}
  * (1, resultado) son genéricos, no por categoría.
  */
-public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
+public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, com.femclothes.util.ConSalida,
         net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity,
         com.femclothes.util.MaquinaCreativa.Cargable {
 
@@ -535,6 +535,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
     }
 
     public Estado estado() { return estado; }
+
+    /** El resultado esperando en la bandeja de salida (lo dibuja el hueso "cargo"). */
+    public ItemStack salidaVisible() { return items.get(SALIDA); }
     public int progreso() { return progreso; }
     /** Las fijadas de la categoría ACTUAL — ver {@link #fijadasPorCategoria}. */
     public List<ComboCorte> fijadas() { return fijadasPorCategoria.get(categoria); }
@@ -1426,6 +1429,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
     private net.minecraft.util.math.Direction ladoIzquierdo() {
         return getCachedState().get(ModeladoBlock.FACING).getOpposite().rotateYCounterclockwise();
     }
+
+    @Override
+    public net.minecraft.util.math.Direction ladoSalida() { return ladoDerecho(); }
 
     /** El lado opuesto al de carga — hacia ahí se empuja el resultado (ver {@link #tick}, caso LISTO). */
     private net.minecraft.util.math.Direction ladoDerecho() {

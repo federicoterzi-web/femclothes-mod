@@ -24,5 +24,12 @@ public class TinturasRenderer extends GeoBlockRenderer<TinturasBlockEntity> {
                 // Enrollada (2026-09-29): eje del rodillo en (y 12.2, z 3.2), largo 12.4;
                 // su sección (dos cuadrados de 2.9 cruzados) llega a ~2.05 del eje.
                 0f, 12.2f, 3.2f, 12f, 2.2f, com.femclothes.render.PrendaEnMaquinaLayer.Apoyo.ENROLLADA_EJE_X));
+        // La prenda terminada sobre la bandeja de salida, que se desliza hacia la
+        // cinta con el hueso "cargo" (2026-10-04, "el cargo tiene una prenda random
+        // habria q ponerle el icono de la prenda y empalmarla con la animacion de la
+        // cinta"): reemplaza al cubito de color que traía el modelo.
+        addRenderLayer(new com.femclothes.render.PrendaEnMaquinaLayer<>(this, "cargo",
+                be -> be.getSalida(), 5.6f, 5.08f, 0f, 2.4f,
+                com.femclothes.render.PrendaEnMaquinaLayer.Apoyo.ACOSTADA_FRENTE_MENOS_Z));
     }
 }

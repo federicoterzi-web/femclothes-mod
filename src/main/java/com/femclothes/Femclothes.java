@@ -36,6 +36,7 @@ public class Femclothes implements ModInitializer {
         com.femclothes.tinturas.TinturasMod.register();
         com.femclothes.guardarropas.GuardarropasMod.register();
         com.femclothes.maniqui.ManiquiMod.register();
+        com.femclothes.cinta.CintaMod.register();
         com.femclothes.estilado.EstiladoMod.register();
         registrarPestanaCreativa();
     }
@@ -66,6 +67,7 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.guardarropas.GuardarropasMod.GUARDARROPAS_BLOCK_ITEM);
             entries.add(com.femclothes.maniqui.ManiquiMod.MANIQUI_BLOCK_ITEM);
             entries.add(com.femclothes.estilado.EstiladoMod.ESTILADO_BLOCK_ITEM);
+            entries.add(com.femclothes.cinta.CintaMod.CINTA_ITEM);
             // Máquinas creativas (2026-10-01): sin espera ni insumos, cargadas al colocarlas.
             entries.add(com.femclothes.modelado.ModeladoMod.MODELADO_CREATIVA_ITEM);
             entries.add(com.femclothes.tinturas.TinturasMod.TINTURAS_CREATIVA_ITEM);

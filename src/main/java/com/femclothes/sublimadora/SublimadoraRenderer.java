@@ -48,6 +48,13 @@ public class SublimadoraRenderer extends GeoBlockRenderer<SublimadoraBlockEntity
         addRenderLayer(new com.femclothes.render.PrendaEnMaquinaLayer<>(this, "REMERA",
                 be -> !be.getRemera().isEmpty() ? be.getRemera() : be.getSalida(), 0f, 11.85f, -0.6f, 10f,
                 com.femclothes.render.PrendaEnMaquinaLayer.Apoyo.ACOSTADA_FRENTE_MENOS_Z));
+        // La prenda terminada sobre la bandeja de salida, que se desliza hacia la
+        // cinta con el hueso "cargo" (2026-10-04, "el cargo tiene una prenda random
+        // habria q ponerle el icono de la prenda y empalmarla con la animacion de la
+        // cinta"): reemplaza al cubito de color que traía el modelo.
+        addRenderLayer(new com.femclothes.render.PrendaEnMaquinaLayer<>(this, "cargo",
+                be -> be.getSalida(), -5.6f, 5.08f, 0f, 2.4f,
+                com.femclothes.render.PrendaEnMaquinaLayer.Apoyo.ACOSTADA_FRENTE_MENOS_Z));
     }
 
     @Override

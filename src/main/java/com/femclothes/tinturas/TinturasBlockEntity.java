@@ -87,7 +87,7 @@ import java.util.Map;
  * .reformarRemera}, que ya anticipaba esta estación.
  */
 public class TinturasBlockEntity extends BlockEntity
-        implements ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity, SidedInventory,
+        implements ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity, SidedInventory, com.femclothes.util.ConSalida,
         com.femclothes.util.MaquinaCreativa.Cargable {
 
     // Mismos índices/convención que SublimadoraBlockEntity.
@@ -1723,6 +1723,9 @@ public class TinturasBlockEntity extends BlockEntity
     private Direction ladoIzquierdo() {
         return getCachedState().get(TinturasBlock.FACING).rotateYCounterclockwise();
     }
+
+    @Override
+    public Direction ladoSalida() { return ladoDerecho(); }
 
     /** El lado opuesto al de carga — hacia ahí se empuja la prenda ya teñida. */
     private Direction ladoDerecho() {

@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "facing=north,forma=recta": {
+      "model": "femclothes:block/cinta_recta"
+    },
+    "facing=east,forma=recta": {
+      "model": "femclothes:block/cinta_recta",
+      "y": 90
+    },
+    "facing=south,forma=recta": {
+      "model": "femclothes:block/cinta_recta",
+      "y": 180
+    },
+    "facing=west,forma=recta": {
+      "model": "femclothes:block/cinta_recta",
+      "y": 270
+    },
+    "facing=north,forma=curva_izq": {
+      "model": "femclothes:block/cinta_curva_izq"
+    },
+    "facing=east,forma=curva_izq": {
+      "model": "femclothes:block/cinta_curva_izq",
+      "y": 90
+    },
+    "facing=south,forma=curva_izq": {
+      "model": "femclothes:block/cinta_curva_izq",
+      "y": 180
+    },
+    "facing=west,forma=curva_izq": {
+      "model": "femclothes:block/cinta_curva_izq",
+      "y": 270
+    },
+    "facing=north,forma=curva_der": {
+      "model": "femclothes:block/cinta_curva_der"
+    },
+    "facing=east,forma=curva_der": {
+      "model": "femclothes:block/cinta_curva_der",
+      "y": 90
+    },
+    "facing=south,forma=curva_der": {
+      "model": "femclothes:block/cinta_curva_der",
+      "y": 180
+    },
+    "facing=west,forma=curva_der": {
+      "model": "femclothes:block/cinta_curva_der",
+      "y": 270
+    }
+  }
+}

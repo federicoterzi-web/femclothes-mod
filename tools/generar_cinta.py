@@ -1,0 +1,181 @@
+"""Cinta transportadora (2026-10-04, "geometria de cinta transportadora... hace vos los assets").
+
+Genera los modelos de bloque (recta, curva izquierda y curva derecha), el
+blockstate, el modelo de ítem y las texturas (marco + banda animada) de la
+cinta. Uso: python tools/generar_cinta.py
+
+Convenciones:
+  * Los modelos miran al NORTE (la prenda sale por -Z); el blockstate los gira.
+  * La banda va a 1 px por tick (frametime 1, 4 frames de período 4 px), igual
+    que la velocidad del ítem en CintaBlockEntity (16 ticks por bloque recto).
+  * Curva izquierda = la prenda entra por el lado IZQUIERDO (oeste si mira al
+    norte) y sale por el frente; pivote en la esquina noroeste. La derecha es
+    el espejo.
+"""
+import json
+import math
+import os
+import random
+
+from PIL import Image
+
+RAIZ = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "femclothes")
+TEX = os.path.join(RAIZ, "textures", "block")
+MOD = os.path.join(RAIZ, "models", "block")
+ITEM = os.path.join(RAIZ, "models", "item")
+ESTADOS = os.path.join(RAIZ, "blockstates")
+
+CUERO_CLARO = (74, 66, 61, 255)
+CUERO_OSCURO = (52, 46, 43, 255)
+COSTURA = (118, 104, 92, 255)
+
+PERIODO = 4          # px de una nervadura (2 claras + 2 oscuras)
+FRAMES = 4           # un frame por px de avance
+RADIO_ANILLO = (2.0, 14.0)
+PASO_ARCO = PERIODO / 8.0   # rad por frame: a radio 8 es 1 px de arco por tick
+
+
+def marco():
+    """Madera clara con un filete de latón en el borde."""
+    rnd = random.Random(7)
+    img = Image.new("RGBA", (16, 16))
+    px = img.load()
+    for y in range(16):
+        for x in range(16):
+            v = 118 + rnd.randint(-6, 6) + (8 if (y // 4) % 2 else 0)
+            px[x, y] = (v, int(v * 0.74), int(v * 0.48), 255)
+    laton = (196, 156, 72, 255)
+    for i in range(16):
+        px[i, 0] = laton
+        px[i, 15] = (150, 114, 52, 255)
+        px[0, i] = laton
+        px[15, i] = (150, 114, 52, 255)
+    img.save(os.path.join(TEX, "cinta_marco.png"))
+
+
+def banda_recta():
+    img = Image.new("RGBA", (16, 16 * FRAMES), (0, 0, 0, 0))
+    px = img.load()
+    for k in range(FRAMES):
+        for y in range(16):
+            for x in range(2, 14):
+                banda = ((y + k) % PERIODO) < PERIODO // 2
+                c = CUERO_CLARO if banda else CUERO_OSCURO
+                if x in (2, 13):
+                    c = COSTURA if (y + k) % 4 == 0 else c
+                px[x, 16 * k + y] = c
+    img.save(os.path.join(TEX, "cinta_banda.png"))
+
+
+def banda_curva(nombre, espejo):
+    img = Image.new("RGBA", (16, 16 * FRAMES), (0, 0, 0, 0))
+    px = img.load()
+    for k in range(FRAMES):
+        for y in range(16):
+            for x in range(16):
+                cx = (15 - x if espejo else x) + 0.5
+                cz = y + 0.5
+                r = math.hypot(cx, cz)
+                if not (RADIO_ANILLO[0] <= r <= RADIO_ANILLO[1]):
+                    continue
+                phi = math.atan2(cx, cz)
+                banda = ((phi - k * PASO_ARCO) / (PERIODO / 8.0)) % 1.0 < 0.5
+                c = CUERO_CLARO if banda else CUERO_OSCURO
+                if r < RADIO_ANILLO[0] + 1 or r > RADIO_ANILLO[1] - 1:
+                    c = COSTURA if int((phi - k * PASO_ARCO) / (PERIODO / 8.0)) % 2 == 0 else c
+                px[x, 16 * k + y] = c
+    img.save(os.path.join(TEX, nombre))
+
+
+def mcmeta(nombre):
+    with open(os.path.join(TEX, nombre + ".mcmeta"), "w") as f:
+        json.dump({"animation": {"frametime": 1, "interpolate": False}}, f, indent=2)
+
+
+def caja(desde, hasta, cara="#marco"):
+    return {
+        "from": desde, "to": hasta,
+        "faces": {lado: {"texture": cara} for lado in ("north", "south", "east", "west", "up", "down")},
+    }
+
+
+def plano_banda(textura):
+    return {
+        "from": [0, 4.05, 0], "to": [16, 4.05, 16],
+        "faces": {"up": {"uv": [0, 0, 16, 16], "texture": textura}},
+    }
+
+
+def modelo_recta():
+    return {
+        "textures": {"marco": "femclothes:block/cinta_marco", "banda": "femclothes:block/cinta_banda",
+                     "particle": "femclothes:block/cinta_marco"},
+        "elements": [
+            caja([0, 0, 0], [16, 4, 16]),
+            caja([0, 4, 0], [2, 6, 16]),
+            caja([14, 4, 0], [16, 6, 16]),
+            plano_banda("#banda"),
+        ],
+    }
+
+
+def modelo_curva(espejo):
+    nombre = "cinta_curva_der" if espejo else "cinta_curva_izq"
+    elementos = [caja([0, 0, 0], [16, 4, 16])]
+
+    def x_(a, b):
+        return [16 - b, 16 - a] if espejo else [a, b]
+
+    # Poste interior (esquina del pivote).
+    xs = x_(0, 2)
+    elementos.append(caja([xs[0], 4, 0], [xs[1], 6, 2]))
+    # Pared exterior: columnas de 1 px entre r=14 y r=16 alrededor del pivote.
+    for c in range(16):
+        xc = c + 0.5
+        z_in = math.sqrt(max(0.0, RADIO_ANILLO[1] ** 2 - xc ** 2)) if xc < RADIO_ANILLO[1] else 0.0
+        z_out = min(16.0, math.sqrt(max(0.0, 16.0 ** 2 - xc ** 2)))
+        if z_out - z_in < 0.2:
+            continue
+        xs = x_(c, c + 1)
+        elementos.append(caja([xs[0], 4, round(z_in, 2)], [xs[1], 6, round(z_out, 2)]))
+    return nombre, {
+        "textures": {"marco": "femclothes:block/cinta_marco", "banda": f"femclothes:block/{nombre}",
+                     "particle": "femclothes:block/cinta_marco"},
+        "elements": elementos + [plano_banda("#banda")],
+    }
+
+
+def escribir(ruta, datos):
+    os.makedirs(os.path.dirname(ruta), exist_ok=True)
+    with open(ruta, "w", encoding="utf-8") as f:
+        json.dump(datos, f, indent=2)
+
+
+def main():
+    os.makedirs(TEX, exist_ok=True)
+    marco()
+    banda_recta()
+    mcmeta("cinta_banda.png")
+    for nombre, espejo in (("cinta_curva_izq.png", False), ("cinta_curva_der.png", True)):
+        banda_curva(nombre, espejo)
+        mcmeta(nombre)
+
+    escribir(os.path.join(MOD, "cinta_recta.json"), modelo_recta())
+    for espejo in (False, True):
+        nombre, datos = modelo_curva(espejo)
+        escribir(os.path.join(MOD, nombre + ".json"), datos)
+
+    giros = {"north": 0, "east": 90, "south": 180, "west": 270}
+    variantes = {}
+    for forma, modelo in (("recta", "cinta_recta"), ("curva_izq", "cinta_curva_izq"), ("curva_der", "cinta_curva_der")):
+        for lado, y in giros.items():
+            v = {"model": f"femclothes:block/{modelo}"}
+            if y:
+                v["y"] = y
+            variantes[f"facing={lado},forma={forma}"] = v
+    escribir(os.path.join(ESTADOS, "cinta.json"), {"variants": variantes})
+    escribir(os.path.join(ITEM, "cinta.json"), {"parent": "femclothes:block/cinta_recta"})
+
+
+if __name__ == "__main__":
+    main()

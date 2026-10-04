@@ -38,7 +38,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
  * Aca solo vive el dato: cuanta tinta queda, y su suavizado por tick.
  */
 public class SublimadoraBlockEntity extends BlockEntity
-        implements GeoBlockEntity, ExtendedScreenHandlerFactory<BlockPos>, SidedInventory {
+        implements GeoBlockEntity, ExtendedScreenHandlerFactory<BlockPos>, SidedInventory, com.femclothes.util.ConSalida {
 
     public static final int C = 0, M = 1, Y = 2, K = 3;
 
@@ -955,6 +955,9 @@ public class SublimadoraBlockEntity extends BlockEntity
     private Direction ladoAtras() {
         return getCachedState().get(SublimadoraBlock.FACING).getOpposite();
     }
+
+    @Override
+    public Direction ladoSalida() { return ladoDerecho(); }
 
     /** El lado opuesto al de carga — hacia ahí se empuja el resultado (ver {@link #empujarSalida}). */
     private Direction ladoDerecho() {

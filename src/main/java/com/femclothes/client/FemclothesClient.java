@@ -43,6 +43,12 @@ public class FemclothesClient implements ClientModInitializer {
                 com.femclothes.maniqui.ManiquiMod.MANIQUI_BLOCK_ENTITY,
                 com.femclothes.maniqui.ManiquiRenderer::new);
 
+        // Cinta transportadora (2026-10-04): la banda tiene huecos (alfa) en las curvas.
+        net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(
+                com.femclothes.cinta.CintaMod.CINTA_BLOCK_ENTITY, com.femclothes.cinta.CintaRenderer::new);
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(
+                com.femclothes.cinta.CintaMod.CINTA_BLOCK, net.minecraft.client.render.RenderLayer.getCutout());
+
         // El render de la Mesa de Modelado lo hace GeckoLib desde el block
         // entity (modelo garment_shaper) — mismo patrón que la sublimadora.
         net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(
