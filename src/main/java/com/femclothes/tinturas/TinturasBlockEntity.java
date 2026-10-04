@@ -1350,6 +1350,8 @@ public class TinturasBlockEntity extends BlockEntity
     /** Slot de Entrada de la GUI: deja la prenda cruda esperando el botón Teñir, sin arrancar el ciclo. */
     public void cargarEntradaSinArrancar(ItemStack stack) {
         prendaEntrada = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1);
+        Categoria entra = prendaEntrada.isEmpty() ? null : categoriaDe(prendaEntrada);
+        if (entra != null) categoria = entra;   // la GUI sigue a la prenda que entra (2026-10-04)
         sincronizar();
     }
 
@@ -1382,6 +1384,7 @@ public class TinturasBlockEntity extends BlockEntity
         if (cat == null) {
             return Text.translatable("femclothes.tinturas.aviso.no_es_prenda");
         }
+        categoria = cat;   // la GUI sigue a la prenda que entra (2026-10-04)
         // El diseño son los cuadraditos FIJADOS de esa categoría (2026-09-27).
         if (!hayFijadas(cat)) {
             return Text.translatable("femclothes.tinturas.aviso.sin_fijada_seleccionada");
@@ -1643,6 +1646,7 @@ public class TinturasBlockEntity extends BlockEntity
                 // iniciarTenido. Éxito o no, sincronizar() ya corrió adentro.
                 ItemStack copia = stack.copyWithCount(1);
                 Categoria catCadena = categoriaDe(copia);
+                if (catCadena != null) categoria = catCadena;   // la GUI sigue a la prenda que entra (2026-10-04)
                 if (com.femclothes.util.InventarioUtil.enCadena && estado == Estado.REPOSO
                         && prendaEntrada.isEmpty() && salida.isEmpty()
                         && (catCadena == null || capasDe(catCadena, false).isEmpty())) {

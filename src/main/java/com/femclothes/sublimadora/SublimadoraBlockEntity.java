@@ -393,7 +393,7 @@ public class SublimadoraBlockEntity extends BlockEntity
             }
             // Las capas con máscara de la máquina reemplazan las de la prenda
             // (la lista arrancó desde las de la prenda al fijar la primera).
-            if (!be.capas.isEmpty()) hecha = RemeraItem.conCapas(hecha, be.capas);
+            if (!be.capas.isEmpty()) hecha = RemeraItem.conCapas(hecha, sumarCapas(RemeraItem.capasDe(hecha), be.capas));
             be.salida = hecha;
             be.remera = ItemStack.EMPTY;
             // Esto es exactamente el tick en que se prende el LED verde, que
@@ -518,7 +518,7 @@ public class SublimadoraBlockEntity extends BlockEntity
                         new Estampa(id, getEscala(cara), getX(cara), getY(cara), getAngulo(cara), cubrir,
                                 simetria && admiteSimetria(copia.getItem())));
             }
-            java.util.List<CapaEstampa> vista = new java.util.ArrayList<>(capas.isEmpty() ? RemeraItem.capasDe(copia) : capas);
+            java.util.List<CapaEstampa> vista = sumarCapas(RemeraItem.capasDe(copia), capas);
             CapaEstampa enCurso = capaEnCurso(seleccion);
             if (enCurso != null && vista.size() < CapaEstampa.MAXIMO) vista.add(enCurso);
             return RemeraItem.conCapas(copia, vista);
@@ -827,6 +827,16 @@ public class SublimadoraBlockEntity extends BlockEntity
                 }
                 if (!ItemStack.areEqual(remera, nueva)) soltarCapas();
                 remera = nueva;
+                if (!nueva.isEmpty()) {
+                    // Como en ponerRemera: la GUI muestra el tipo de prenda que entró (2026-10-04, "al poner un x
+                    // input se seleccione automaticamente la gui de ese tipo de prenda").
+                    categoria = nueva.getItem() instanceof RemeraItem ? ModItems.REMERA : nueva.getItem();
+                    // Llegó por tolva/cadena (no a mano ni desde la GUI) con un diseño fijado: arranca sola.
+                    if (guiAbiertas == 0 && world != null && !world.isClient
+                            && (caraActiva(0) || caraActiva(1) || !capas.isEmpty()) && intentarPrensar()) {
+                        cerrarTapa();
+                    }
+                }
             }
             case SLOT_SALIDA -> {
                 salida = stack;
@@ -1091,16 +1101,23 @@ public class SublimadoraBlockEntity extends BlockEntity
      * quedaba de un trabajo anterior, reemplazaba las capas de la prenda siguiente al prensar y las perdía.
      */
     private void soltarCapas() {
-        capas.clear();
+        // 2026-10-04, "no esta guardando settings... tengo q pinear cada vez q le entra una prenda": la lista es el
+        // DISEÑO de la máquina (como las fijadas de Modeladora/Tintes) y se queda entre prendas; al prensar se suma a
+        // las capas que la prenda ya traía. Solo se suelta la selección.
         capaElegida = -1;
+    }
+
+    /** Las capas que ya traía la prenda y, encima, las del diseño de la máquina (hasta el tope). */
+    private static java.util.List<CapaEstampa> sumarCapas(java.util.List<CapaEstampa> deLaPrenda, java.util.List<CapaEstampa> deLaMaquina) {
+        java.util.List<CapaEstampa> todas = new java.util.ArrayList<>(deLaPrenda);
+        todas.addAll(deLaMaquina);
+        return todas.size() > CapaEstampa.MAXIMO ? new java.util.ArrayList<>(todas.subList(0, CapaEstampa.MAXIMO)) : todas;
     }
 
     /** Chincheta con máscara: agrega la capa en curso de esa cara. */
     private boolean fijarCapa(Estampa.Cara cara) {
         CapaEstampa capa = capaEnCurso(cara);
         if (capa == null) return false;
-        // Si la prenda ya traía capas, la lista arranca desde ellas (no se pierden al prensar).
-        if (capas.isEmpty() && !remera.isEmpty()) capas.addAll(RemeraItem.capasDe(remera));
         if (capas.size() >= CapaEstampa.MAXIMO) {
             avisar(Text.translatable("femclothes.sublimadora.capa_llena"));
             return false;
@@ -1485,6 +1502,37 @@ public class SublimadoraBlockEntity extends BlockEntity
             world.playSound(null, pos, SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE, SoundCategory.BLOCKS, 1.2f, 1.0f);
         }
         return null;
+    }
+
+    // ── la tapa sigue a la GUI (2026-10-04, "que la tapa se abra cuando entre a la gui y cuando salga se cierre y
+    // arranque como las otras maquinas") ──
+    private int guiAbiertas = 0;
+
+    private void cerrarTapa() {
+        if (world != null && getCachedState().get(SublimadoraBlock.OPEN)) {
+            world.setBlockState(pos, getCachedState().with(SublimadoraBlock.OPEN, false), net.minecraft.block.Block.NOTIFY_ALL);
+            world.playSound(null, pos, SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE, SoundCategory.BLOCKS, 1.2f, 1.0f);
+        }
+    }
+
+    /** Servidor: alguien abrió la pantalla — la tapa se abre (si no está prensando). */
+    public void alAbrirGui() {
+        guiAbiertas++;
+        if (world != null && !world.isClient && estado != Estado.PRENSANDO && !getCachedState().get(SublimadoraBlock.OPEN)) {
+            world.setBlockState(pos, getCachedState().with(SublimadoraBlock.OPEN, true), net.minecraft.block.Block.NOTIFY_ALL);
+            world.playSound(null, pos, SoundEvents.BLOCK_IRON_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 1.2f, 1.0f);
+        }
+    }
+
+    /**
+     * Servidor: se cerró la pantalla — al irse el último, intenta prensar y baja la tapa. Con una prenda lista
+     * esperando en la Salida la deja abierta para poder retirarla.
+     */
+    public void alCerrarGui() {
+        guiAbiertas = Math.max(0, guiAbiertas - 1);
+        if (guiAbiertas > 0 || world == null || world.isClient || !salida.isEmpty()) return;
+        intentarPrensar();
+        cerrarTapa();
     }
 
     /** Nombres de los cuatro tanques, para poder decir cual quedo vacio. */

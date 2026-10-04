@@ -87,6 +87,7 @@ public class SublimadoraScreenHandler extends ScreenHandler {
     public SublimadoraScreenHandler(int syncId, PlayerInventory playerInventory, SublimadoraBlockEntity be) {
         super(FemclothesScreenHandlers.SUBLIMADORA, syncId);
         this.be = be;
+        if (be.getWorld() != null && !be.getWorld().isClient()) be.alAbrirGui();
 
         // 2 slots de foto, uno por cara, sobre el dibujo de la prenda
         // (2026-09-28). canInsert delega en isValid: Slot no lo consulta solo.
@@ -147,6 +148,12 @@ public class SublimadoraScreenHandler extends ScreenHandler {
             return motivo == null;
         }
         return be.onButtonClick(id);
+    }
+
+    @Override
+    public void onClosed(PlayerEntity player) {
+        super.onClosed(player);
+        if (!player.getWorld().isClient()) be.alCerrarGui();
     }
 
     @Override

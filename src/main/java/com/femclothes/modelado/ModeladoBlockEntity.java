@@ -1346,6 +1346,12 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         int pin = pinDeSlot(slot);
         ItemStack antesPin = pin >= 0 ? items.get(slot).copy() : ItemStack.EMPTY;
         items.set(slot, stack);
+        if (slot == PRENDA && !stack.isEmpty()) {
+            // La GUI muestra el tipo de la prenda que entró (2026-10-04, "al poner un x input... se seleccione
+            // automaticamente la gui de ese tipo de prenda").
+            Categoria entra = categoriaDe(stack);
+            if (entra != null) categoria = entra;
+        }
         if (pin >= 0) {
             if (stack.getCount() > 1) stack.setCount(1);
             pinCambio(pin, antesPin, stack);
