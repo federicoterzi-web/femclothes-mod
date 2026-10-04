@@ -749,5 +749,7 @@
   "femclothes.maniqui.skin.makena": "Makena",
   "femclothes.maniqui.skin.noor": "Noor",
   "femclothes.maniqui.skin.sunny": "Sunny",
-  "femclothes.maniqui.skin.zuri": "Zuri"
+  "femclothes.maniqui.skin.zuri": "Zuri",
+  "femclothes.maniqui.emote": "Emote: %s",
+  "femclothes.maniqui.emote.ninguno": "Emote: none"
 }

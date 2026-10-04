@@ -90,6 +90,24 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
             }
         });
         this.addDrawableChild(btnSkin);
+
+        // Emote de Emotecraft (2026-10-04): solo si el mod está instalado.
+        if (EmotecraftCompat.disponible()) {
+            btnEmote = new EstiloPergamino.BotonPergamino(sx, this.y + 178, ancho, 14, Text.literal(""), b -> siguienteEmote());
+            this.addDrawableChild(btnEmote);
+        }
+    }
+
+    private ButtonWidget btnEmote;
+
+    /** Pasa por ninguno → cada emote cargado → ninguno. */
+    private void siguienteEmote() {
+        var lista = EmotecraftCompat.lista();
+        java.util.UUID actual = handler.be.emote();
+        int i = actual == null ? -1 : lista.indexOf(actual);
+        String siguiente = i + 1 < lista.size() ? lista.get(i + 1).toString() : "";
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+                new com.femclothes.maniqui.ElegirEmoteManiquiPayload(handler.be.getPos(), siguiente));
     }
 
     private net.minecraft.client.gui.widget.TextFieldWidget campoSkin;
@@ -211,6 +229,12 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
         }
         for (SliderPose sl : sliders) sl.active = toca;
         campoSkin.setEditable(toca);
+        if (btnEmote != null) {
+            btnEmote.active = toca;
+            java.util.UUID e = handler.be.emote();
+            btnEmote.setMessage(e == null ? Text.translatable("femclothes.maniqui.emote.ninguno")
+                    : Text.translatable("femclothes.maniqui.emote", EmotecraftCompat.nombre(e)));
+        }
         btnCandado.active = com.femclothes.util.Candado.puedeAlternar(handler.estado());
         btnCandado.setMessage(Text.translatable(com.femclothes.util.Candado.cerrado(handler.estado())
                 ? "femclothes.candado.cerrado" : "femclothes.candado.abierto"));

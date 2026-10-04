@@ -90,6 +90,12 @@ dependencies {
     // juego (además de compilarlo acá para poder programar contra su API).
     modImplementation files("libs/armor-model-api-1.0.0-1.21.1.jar")
 
+    // Emotecraft SOLO para compilar (2026-10-04, "animacion del emotecraft si esta instalado"): el Maniquí lee los
+    // emotes cargados y los evalúa con la player-animation-lib (jar anidado de Emotecraft, copiado a libs/ porque
+    // Loom no expone los anidados). Opcional en runtime: todo el acceso va aislado en compat/EmotecraftCompat
+    // detrás de isModLoaded. daqt5qcK = emotecraft-for-MC1.21.1-2.4.12-fabric.jar
+    modCompileOnly "maven.modrinth:emotecraft:daqt5qcK"
+    modCompileOnly files("libs/player-animation-lib-2.0.1-1.21.1.jar")
     // GeckoLib: la sublimadora es un bloque animado. Estuvo fijado en 4.7.7
     // por un bug de render en 4.8.4 (uv_size parcial por cara) — resuelto
     // río arriba para 4.9.3, confirmado jugando. Ver docs/SUBLIMADORA.md.

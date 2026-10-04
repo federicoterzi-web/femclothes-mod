@@ -64,6 +64,21 @@ public final class ManiquiMod {
                         }
                     }, context.server());
                 }));
+
+        // Emote de Emotecraft (2026-10-04): el servidor solo guarda el UUID, lo evalúa cada cliente.
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S()
+                .register(ElegirEmoteManiquiPayload.ID, ElegirEmoteManiquiPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(ElegirEmoteManiquiPayload.ID,
+                (payload, context) -> context.server().execute(() -> {
+                    var jugador = context.player();
+                    if (!(jugador.getWorld().getBlockEntity(payload.pos()) instanceof ManiquiBlockEntity be)
+                            || !be.canPlayerUse(jugador) || !be.candado().puedeTocar(jugador)) return;
+                    try {
+                        be.setEmote(payload.emote().isEmpty() ? null : java.util.UUID.fromString(payload.emote()));
+                    } catch (IllegalArgumentException ignorado) {
+                        // UUID mal escrito: se ignora.
+                    }
+                }));
     }
 
     private ManiquiMod() {}

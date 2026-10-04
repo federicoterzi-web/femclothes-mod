@@ -83,6 +83,9 @@ public class ManiquiBlockEntity extends BlockEntity
     private float[] angulos = PoseManiqui.PARADO.angulos();
     /** Ver {@code FIGURA_*}: qué cuerpo se dibuja. */
     private int figura = FIGURA_MANIQUI;
+    /** Emote de Emotecraft que baila la figura (null = ninguno); lo evalúa cada cliente que tenga el mod. */
+    @Nullable
+    private java.util.UUID emote;
     private final com.femclothes.util.Candado candado = new com.femclothes.util.Candado();
     /** Talle de busto de la figura: 0 = sin, 1..{@code PerfilCuerpo.BUSTO_MAXIMO} como los de los Estrógenos. */
     private int busto = 0;
@@ -121,6 +124,14 @@ public class ManiquiBlockEntity extends BlockEntity
     public static boolean predefinidaEsFina(String nombre) { return FINAS.contains(nombre); }
 
     public com.femclothes.util.Candado candado() { return candado; }
+
+    @Nullable
+    public java.util.UUID emote() { return emote; }
+
+    public void setEmote(@Nullable java.util.UUID nuevo) {
+        emote = nuevo;
+        markDirty();
+    }
 
     /** La skin de un jugador elegido por nombre (2026-10-04, "elegir skin escribiendo el nombre"). */
     public void elegirJugador(com.mojang.authlib.GameProfile perfil) {
@@ -411,6 +422,7 @@ public class ManiquiBlockEntity extends BlockEntity
         nbt.put("Angulos", lista);
         nbt.putInt("Figura", figura);
         candado.guardar(nbt);
+        if (emote != null) nbt.putUuid("Emote", emote);
         nbt.putInt("Busto", busto);
         if (dueno != null) {
             net.minecraft.component.type.ProfileComponent.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, dueno)
@@ -432,6 +444,7 @@ public class ManiquiBlockEntity extends BlockEntity
         // Los guardados de antes tenían solo "FiguraSkin" (true = tu skin).
         figura = nbt.contains("Figura") ? nbt.getInt("Figura") : (nbt.getBoolean("FiguraSkin") ? FIGURA_TU_SKIN : FIGURA_MANIQUI);
         candado.leer(nbt);
+        emote = nbt.containsUuid("Emote") ? nbt.getUuid("Emote") : null;
         busto = nbt.getInt("Busto");
         dueno = nbt.contains("Dueno")
                 ? net.minecraft.component.type.ProfileComponent.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, nbt.get("Dueno"))

@@ -147,6 +147,8 @@ public class ManiquiRenderer extends GeoBlockRenderer<ManiquiBlockEntity> {
         armaduraExterior.child = false;
         List<ItemStack> prendas = be.prendasPuestas();
         posar(cuerpo, be);
+        // Emote de Emotecraft (2026-10-04): si el cliente tiene el mod y el emote, pisa la pose.
+        if (be.emote() != null) com.femclothes.client.EmotecraftCompat.aplicar(be, be.emote(), cuerpo);
         ajustarAlCalce(cuerpo, prendas, slim);
         capasDeSkin(cuerpo, be.figuraSkin(), prendas);
         // Busto de la figura (2026-10-02, "agregale la opcion de ponerle tetas"): quieto, sin rebote.
