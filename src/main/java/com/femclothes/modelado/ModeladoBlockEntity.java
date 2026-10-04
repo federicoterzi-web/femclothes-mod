@@ -338,14 +338,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         if (item instanceof MoldeCalceItem) return true;
         // Molde de red (a pedido): mismo criterio que calce.
         if (item instanceof MoldeRedItem) return true;
-        // Materiales/capas de patrón (2026-09-24): transversal a las 4,
-        // igual que Calce/Red — arregla un gap real (el ítem ya declaraba
-        // en su tooltip que sirve para las 5 prendas, y PiezasDelMod ya lee
-        // sus capas en las 4 categorías vía RegionResolver.capasAplicadas,
-        // pero acá no estaba wireado a ninguna). La GUI (pines) hoy solo lo
-        // ofrece para REMERA — esto es aparte, la categorización para
-        // storage/isValid, no cambia qué pines existen.
-        if (item instanceof ClothingPatternItem) return true;
+        // Los patrones/tramas (ClothingPatternItem) ya NO sirven acá (2026-10-04, "patrones van en la estacion de
+        // tintes no hacen nada en la modeladora"): ocupaban 7 casilleros del almacén general (32 compartidos para
+        // 27 lugares) y no tienen nada que hacer en el corte.
         return switch (cat) {
             case REMERA -> item instanceof MoldeCuelloItem
                     || (item instanceof MoldeItem m && m.eje == MoldeItem.Eje.MANGA);
@@ -762,15 +757,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                 // Medias de red/calado (2026-09-25): un solo eje, cualquiera
                 // de los 3 pines la acepta. Los patrones son capas apiladas.
                 if (item instanceof MoldeRedItem m) c = ComboCorte.red(m.valor);
-                else if (item instanceof ClothingPatternItem m) {
-                    c = ComboCorte.capaPatron(rol == Rol.MAT1 ? 0 : rol == Rol.MAT2 ? 1 : 2, m.patternId);
-                }
             }
             case PERS_IZQ1, PERS_IZQ2, PERS_IZQ3, PERS_DER1, PERS_DER2, PERS_DER3 -> {
-                int capa = rol == Rol.PERS_IZQ1 || rol == Rol.PERS_DER1 ? 0
-                        : rol == Rol.PERS_IZQ2 || rol == Rol.PERS_DER2 ? 1 : 2;
                 if (item instanceof MoldeRedItem m) c = ComboCorte.red(m.valor);
-                else if (item instanceof ClothingPatternItem m) c = ComboCorte.capaPatron(capa, m.patternId, lado);
             }
             case MANGA_IZQ, MANGA_DER -> {
                 if (item instanceof MoldeRangoItem m) c = ComboCorte.remeraManga(mangaRemeraDeRango(m.rango), lado);
@@ -1492,7 +1481,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         return item instanceof MoldeItem || item instanceof MoldeDeCorteItem
                 || item instanceof MoldeRangoItem
                 || item instanceof MoldeCalceItem || item instanceof MoldeRedItem
-                || item instanceof MoldeCuelloItem || item instanceof ClothingPatternItem
+                || item instanceof MoldeCuelloItem
                 || item instanceof MoldePolleraItem || item instanceof MoldeCapaItem;
     }
 
