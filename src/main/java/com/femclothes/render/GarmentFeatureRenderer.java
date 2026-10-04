@@ -169,6 +169,9 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         // La capa no gobierna ninguna parte: se dibuja antes del corte de abajo.
         dibujarCapa(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta, false);
         if (conCuerpo.isEmpty() && porParte.isEmpty()) {
+            // La pollera no es una Pieza ni gobierna partes: sola, tiene que dibujarse igual (2026-10-04,
+            // "si pongo solo pollera no aparece puesta hasta que no pongo otra prenda").
+            dibujarPollera(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta);
             dibujarBustoEnLaSkin(entidad, biped, matrices, vertexConsumers, luz);
             com.femclothes.render.relieve.BustoRender.actual = null;
             dibujarCapa(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta, true);
