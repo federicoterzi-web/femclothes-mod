@@ -545,7 +545,7 @@
   "femclothes.estilado.giro": "Turn %s°",
   "femclothes.estilado.escala": "Size %s%%",
   "femclothes.estilado.apliques": "Appliqués %s/%s",
-  "femclothes.estilado.ayuda": "Click the garment: place · Right-drag: turn the view",
+  "femclothes.estilado.ayuda": "Click the garment: place · Right-drag: turn and tilt the view · Wheel: zoom",
   "femclothes.estilado.aviso.prenda": "Put in a garment",
   "femclothes.estilado.aviso.molde": "Missing appliqué mould",
   "femclothes.estilado.aviso.retazo": "Missing appliqué scrap",
@@ -625,5 +625,10 @@
   "femclothes.sublimadora.tooltip.slot_mascara": "Mask pattern: with one here, a face's pin fixes the picture as a layer with that shape.",
   "femclothes.sublimadora.capa_llena": "There are already 12 layers: delete one to fix another.",
   "femclothes.sublimadora.hint.mascara": "With a mask in place, a face's pin fixes the photo as a layer with that shape. 'Edit' switches between moving the image inside the mask or the mask on the garment.",
-  "femclothes.sublimadora.tooltip.chincheta_capa": "Pins the %s photo as a new layer with the mask."
+  "femclothes.sublimadora.tooltip.chincheta_capa": "Pins the %s photo as a new layer with the mask.",
+  "femclothes.estilado.blandura": "Softness %s%%",
+  "femclothes.estilado.tooltip.blandura": "How much the selected appliqué moves like soft fabric with motion (0% = rigid)",
+  "femclothes.estilado.sacudir": "Shake",
+  "femclothes.estilado.sacudir.parar": "Stop",
+  "femclothes.estilado.tooltip.sacudir": "Moves the dummy so you can see the appliqué fabric sway"
 }

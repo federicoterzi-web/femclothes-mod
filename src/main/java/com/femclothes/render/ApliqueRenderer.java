@@ -19,6 +19,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import software.bernie.geckolib.cache.GeckoLibCache;
@@ -70,8 +71,10 @@ public final class ApliqueRenderer {
                                VertexConsumerProvider vertexConsumers, int luz) {
         List<Aplique> apliques = item.get(FemclothesComponents.APLIQUES);
         if (apliques == null || apliques.isEmpty()) return;
+        // El marco del cuerpo (antes de la pose de cada parte): a él pertenecen los desplazamientos de la tela blanda.
+        Matrix3f marco = new Matrix3f(matrices.peek().getNormalMatrix());
         for (Aplique a : apliques) {
-            if (a.superficie() == Aplique.Superficie.CAJA) dibujarUno(a, dil, biped, matrices, vertexConsumers, luz);
+            if (a.superficie() == Aplique.Superficie.CAJA) dibujarUno(a, dil, biped, matrices, vertexConsumers, luz, marco);
         }
     }
 
@@ -104,7 +107,7 @@ public final class ApliqueRenderer {
      * siguen el movimiento de la tela.
      */
     public static void dibujarEnMalla(List<Aplique> apliques, MallaCapturada malla,
-                                      VertexConsumerProvider vertexConsumers, int luz) {
+                                      VertexConsumerProvider vertexConsumers, int luz, Matrix3f marco) {
         if (apliques.isEmpty() || malla.vacia()) return;
         float s = malla.escala();
         for (Aplique a : apliques) {
@@ -125,12 +128,13 @@ public final class ApliqueRenderer {
             ms.peek().getPositionMatrix().translation(pos).mul(base).scale(s * a.escala());
             ms.peek().getNormalMatrix().set(base.get3x3(new Matrix3f()));
             VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura(a)));
-            for (GeoBone hueso : modelo.topLevelBones()) dibujarHueso(hueso, ms, vc, luz);
+            Blando blando = Blando.de(a, base.get3x3(new Matrix3f()), marco);
+            for (GeoBone hueso : modelo.topLevelBones()) dibujarHueso(hueso, ms, vc, luz, blando);
         }
     }
 
     private static void dibujarUno(Aplique a, float dil, BipedEntityModel<?> biped, MatrixStack matrices,
-                                   VertexConsumerProvider vertexConsumers, int luz) {
+                                   VertexConsumerProvider vertexConsumers, int luz, Matrix3f marco) {
         ModelPart parte = CuerpoGeometria.delJugador(biped, a.parte());
         if (!parte.visible) return;
         BakedGeoModel modelo = GeckoLibCache.getBakedModels().get(a.modelo().geo());
@@ -169,7 +173,8 @@ public final class ApliqueRenderer {
         matrices.scale(a.escala(), a.escala(), a.escala());
 
         VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura(a)));
-        for (GeoBone hueso : modelo.topLevelBones()) dibujarHueso(hueso, matrices, vc, luz);
+        Blando blando = Blando.de(a, matrices.peek().getNormalMatrix(), marco);
+        for (GeoBone hueso : modelo.topLevelBones()) dibujarHueso(hueso, matrices, vc, luz, blando);
         matrices.pop();
     }
 
@@ -192,8 +197,10 @@ public final class ApliqueRenderer {
         return m.rotateZ((float) Math.toRadians(giroGrados));
     }
 
-    private static void dibujarHueso(GeoBone hueso, MatrixStack matrices, VertexConsumer vc, int luz) {
+    private static void dibujarHueso(GeoBone hueso, MatrixStack matrices, VertexConsumer vc, int luz,
+                                     @org.jetbrains.annotations.Nullable Blando blando) {
         matrices.push();
+        if (blando != null) blando.mover(hueso, matrices);
         RenderUtil.prepMatrixForBone(matrices, hueso);
         for (GeoCube cubo : hueso.getCubes()) {
             matrices.push();
@@ -213,8 +220,78 @@ public final class ApliqueRenderer {
             }
             matrices.pop();
         }
-        for (GeoBone hijo : hueso.getChildBones()) dibujarHueso(hijo, matrices, vc, luz);
+        for (GeoBone hijo : hueso.getChildBones()) dibujarHueso(hijo, matrices, vc, luz, blando);
         matrices.pop();
+    }
+
+    /**
+     * La tela blanda de UN aplique (2026-10-04): los desplazamientos de
+     * {@link FisicaApliques} pasados al espacio del modelo del aplique y
+     * escalados por su blandura, y el giro que le toca a cada hueso según su
+     * nombre:
+     * <ul>
+     *   <li>{@code cola*}: cadena de tramos anidados; cada tramo se inclina un poco
+     *       hacia donde lo empuja la inercia (blando), así la cinta se curva;</li>
+     *   <li>{@code ala*}: aleteo alrededor del eje largo, simétrico entre izq y der (firme);</li>
+     *   <li>{@code petalo*}: la corola se inclina apenas (firme);</li>
+     *   <li>{@code hojas}: cuelgan como una cola corta (blando).</li>
+     * </ul>
+     * El resto ({@code nudo}, {@code cuerpo}, {@code centro}) no se mueve.
+     */
+    private static final class Blando {
+        final float blandura;
+        /** Desplazamientos en el espacio del modelo del aplique (x, y, z). */
+        final Vector3f blando, firme;
+
+        Blando(float blandura, Vector3f blando, Vector3f firme) {
+            this.blandura = blandura;
+            this.blando = blando;
+            this.firme = firme;
+        }
+
+        /**
+         * null si el aplique es rígido o nada se mueve. {@code local} lleva del
+         * modelo del aplique al espacio de dibujo; {@code marco} del modelo del
+         * cuerpo al mismo espacio (las dos son rotaciones: la inversa es la transpuesta).
+         */
+        @org.jetbrains.annotations.Nullable
+        static Blando de(Aplique a, Matrix3f local, Matrix3f marco) {
+            FisicaApliques.Desplazamiento d = FisicaApliques.actual;
+            if (d == null || a.blandura() <= 0f) return null;
+            Matrix3f aLocal = new Matrix3f(local).transpose().mul(marco);
+            return new Blando(a.blandura(), aLocal.transform(new Vector3f(d.blando())), aLocal.transform(new Vector3f(d.firme())));
+        }
+
+        void mover(GeoBone hueso, MatrixStack matrices) {
+            String n = hueso.getName();
+            float rx = 0f, ry = 0f, rz = 0f;
+            if (n.startsWith("cola") || n.startsWith("cinta")) {
+                rz = blando.x * 0.28f;
+                rx = -blando.z * 0.28f;
+            } else if (n.equals("hojas")) {
+                rz = blando.x * 0.22f;
+                rx = -blando.z * 0.2f;
+            } else if (n.startsWith("ala")) {
+                // En el espacio horneado el ala "izq" se abre hacia +x: gira para un lado y la "der" para el otro.
+                float aleteo = (firme.y * 0.55f + firme.z * 0.3f) * (n.endsWith("izq") ? 1f : -1f);
+                ry = aleteo;
+                rz = firme.x * 0.1f;
+            } else if (n.startsWith("petalo")) {
+                rz = firme.x * 0.1f;
+                rx = -firme.z * 0.1f;
+            } else {
+                return;
+            }
+            rx *= blandura;
+            ry *= blandura;
+            rz *= blandura;
+            // Alrededor del pivote del hueso, en el marco del padre (antes del giro propio del hueso).
+            matrices.translate(hueso.getPivotX() / 16f, hueso.getPivotY() / 16f, hueso.getPivotZ() / 16f);
+            if (rz != 0f) matrices.multiply(new Quaternionf().rotationZ(rz));
+            if (ry != 0f) matrices.multiply(new Quaternionf().rotationY(ry));
+            if (rx != 0f) matrices.multiply(new Quaternionf().rotationX(rx));
+            matrices.translate(-hueso.getPivotX() / 16f, -hueso.getPivotY() / 16f, -hueso.getPivotZ() / 16f);
+        }
     }
 
     // ── textura teñida por zona ────────────────────────────────────────────

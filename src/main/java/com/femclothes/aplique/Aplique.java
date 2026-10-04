@@ -21,9 +21,12 @@ import java.util.List;
  * @param giro    grados alrededor de la normal
  * @param escala  1 = tamaño del modelo
  * @param colores las 3 zonas (RGB), del retazo con que se puso
+ * @param blandura 0..1: cuánto se mueve como tela blanda con el movimiento
+ *                 (2026-10-04, "tela blanda afectada por el movimiento... configurable por
+ *                 aplique"); 0 = rígido. Ver {@code render.FisicaApliques}.
  */
 public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float z, Direction cara,
-                      float giro, float escala, List<Integer> colores, Superficie superficie) {
+                      float giro, float escala, List<Integer> colores, Superficie superficie, float blandura) {
 
     public static final int MAXIMO_POR_PRENDA = 6;
 
@@ -42,6 +45,16 @@ public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float
         public String asString() {
             return name().toLowerCase(java.util.Locale.ROOT);
         }
+    }
+
+    public Aplique {
+        blandura = Math.max(0f, Math.min(1f, blandura));
+    }
+
+    /** Rígido (lo de antes de la tela blanda). */
+    public Aplique(ModeloAplique modelo, Parte parte, float x, float y, float z, Direction cara,
+                   float giro, float escala, List<Integer> colores, Superficie superficie) {
+        this(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, 0f);
     }
 
     /** En una caja de parte del cuerpo (lo de siempre). */
@@ -63,7 +76,8 @@ public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float
             Codec.FLOAT.optionalFieldOf("escala", 1f).forGetter(Aplique::escala),
             Codec.INT.listOf().optionalFieldOf("colores", List.of(0xFFFFFF, 0xFFFFFF, 0xFFFFFF)).forGetter(Aplique::colores),
             net.minecraft.util.StringIdentifiable.createCodec(Superficie::values)
-                    .optionalFieldOf("superficie", Superficie.CAJA).forGetter(Aplique::superficie)
+                    .optionalFieldOf("superficie", Superficie.CAJA).forGetter(Aplique::superficie),
+            Codec.FLOAT.optionalFieldOf("blandura", 0f).forGetter(Aplique::blandura)
     ).apply(i, Aplique::new));
 
     /** Color de la zona {@code zona} (0..2), blanco si falta. */
@@ -72,10 +86,14 @@ public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float
     }
 
     public Aplique conGiro(float g) {
-        return new Aplique(modelo, parte, x, y, z, cara, g, escala, colores, superficie);
+        return new Aplique(modelo, parte, x, y, z, cara, g, escala, colores, superficie, blandura);
     }
 
     public Aplique conEscala(float e) {
-        return new Aplique(modelo, parte, x, y, z, cara, giro, e, colores, superficie);
+        return new Aplique(modelo, parte, x, y, z, cara, giro, e, colores, superficie, blandura);
+    }
+
+    public Aplique conBlandura(float b) {
+        return new Aplique(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, b);
     }
 }

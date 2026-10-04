@@ -69,6 +69,11 @@ public class EstiladoBlockEntity extends BlockEntity
      * así que "todos los moldes adentro" es poder elegirlos acá.
      */
     public static final int BTN_SIGUIENTE_MOLDE = 16;
+    /** Blandura del aplique elegido: BASE + 0..10 = 0..100 % (2026-10-04, "tela blanda... un slider"). */
+    public static final int BTN_BLANDURA_BASE = 20;
+    public static final int BLANDURA_PASOS = 10;
+    /** La que trae un aplique recién puesto. */
+    public static final float BLANDURA_INICIAL = 0.5f;
 
     public static final float ESCALA_MIN = 0.5f, ESCALA_MAX = 2.5f, PASO_ESCALA = 0.25f;
 
@@ -135,7 +140,7 @@ public class EstiladoBlockEntity extends BlockEntity
                 z = MathHelper.clamp(z, -6, 6);
             }
         }
-        actuales.add(new Aplique(m.modelo, parte, x, y, z, cara, 0f, 1f, RetazoApliqueItem.colores(retazo), superficie));
+        actuales.add(new Aplique(m.modelo, parte, x, y, z, cara, 0f, 1f, RetazoApliqueItem.colores(retazo), superficie, BLANDURA_INICIAL));
         if (!gratis) retazo.decrement(1);
         seleccionado = actuales.size() - 1;
         guardarApliques(actuales);
@@ -167,6 +172,11 @@ public class EstiladoBlockEntity extends BlockEntity
         }
         if (seleccionado < 0 || seleccionado >= actuales.size()) return false;
         Aplique a = actuales.get(seleccionado);
+        if (id >= BTN_BLANDURA_BASE && id <= BTN_BLANDURA_BASE + BLANDURA_PASOS) {
+            actuales.set(seleccionado, a.conBlandura((id - BTN_BLANDURA_BASE) / (float) BLANDURA_PASOS));
+            guardarApliques(actuales);
+            return true;
+        }
         switch (id) {
             case BTN_GIRO -> actuales.set(seleccionado, a.conGiro((Math.round(a.giro()) + 15) % 360));
             case BTN_GIRO_ATRAS -> actuales.set(seleccionado, a.conGiro((Math.round(a.giro()) + 345) % 360));

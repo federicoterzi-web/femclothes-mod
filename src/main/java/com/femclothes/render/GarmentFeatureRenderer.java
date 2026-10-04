@@ -118,6 +118,12 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         if (!(getContextModel() instanceof BipedEntityModel<?> biped)) return;
 
         List<ItemStack> prendas = previewOverride != null ? previewOverride : equipadas(entidad);
+        // Tela blanda de los apliques (2026-10-04): la inercia de esta entidad, o la de la vista previa.
+        if (previewOverride != null) {
+            FisicaApliques.preparar(FisicaApliques.CLAVE_VISTA_PREVIA, null, tickDelta, FisicaApliques.modoVistaPrevia);
+        } else {
+            FisicaApliques.preparar(entidad, entidad, tickDelta, FisicaApliques.Modo.REAL);
+        }
         if (capturaPoses != null) {
             for (Parte parte : Parte.values()) {
                 ModelPart p = CuerpoGeometria.delJugador(biped, parte);
@@ -303,7 +309,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 dilatacion, new PolleraMalla.Piernas(biped.body, biped.rightLeg, biped.leftLeg), mov,
                 twirl, cola, delJugador.pitch));
         matrices.pop();
-        if (malla != null) ApliqueRenderer.dibujarEnMalla(apliques, malla, vertexConsumers, luz);
+        if (malla != null) ApliqueRenderer.dibujarEnMalla(apliques, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix());
     }
 
     /**
@@ -409,7 +415,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 matrices.pop();
             }
         });
-        if (malla != null) ApliqueRenderer.dibujarEnMalla(apliques, malla, vertexConsumers, luz);
+        if (malla != null) ApliqueRenderer.dibujarEnMalla(apliques, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix());
     }
 
     /**

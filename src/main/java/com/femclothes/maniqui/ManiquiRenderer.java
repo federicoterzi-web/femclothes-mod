@@ -97,6 +97,8 @@ public class ManiquiRenderer extends GeoBlockRenderer<ManiquiBlockEntity> {
         float angulo = be.avanzarAngulo(tiempo);
 
         super.render(be, tickDelta, matrices, vertexConsumers, luz, overlay);
+        // Los apliques se mecen apenas, como un adorno (2026-10-04, "balanceo suave").
+        com.femclothes.render.FisicaApliques.preparar(be, null, tickDelta, com.femclothes.render.FisicaApliques.Modo.BRISA);
 
         // ── figura ─────────────────────────────────────────────────────────
         matrices.push();

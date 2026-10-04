@@ -52,6 +52,12 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     private static final int X_DER = EstiladoScreenHandler.X_DERECHA;
 
     private float anguloVista = 0f;
+    /** Inclinación de la vista (grados, 2026-10-04): + = se ve más desde arriba, − desde abajo. */
+    private float inclinacionVista = 0f;
+    private float zoomVista = 1f;
+    private static final float INCLINACION_MAX = 85f;
+    /** Mueve el muñeco para ver cómo se agita la tela de los apliques (2026-10-04). */
+    private boolean sacudiendo = false;
     private boolean arrastrando = false;
     /** Matrices de la última vista previa (por parte). */
     private final Map<Parte, Matrix4f> poses = new EnumMap<>(Parte.class);
@@ -60,7 +66,8 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     @Nullable private Text aviso;
 
     private final ButtonWidget[] btnApliques = new ButtonWidget[Aplique.MAXIMO_POR_PRENDA];
-    private ButtonWidget btnGiro, btnEscala, btnQuitar;
+    private ButtonWidget btnGiro, btnEscala, btnQuitar, btnSacudir;
+    private SliderBlandura sliderBlandura;
 
     public EstiladoScreen(EstiladoScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -105,8 +112,15 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         boton(X_DER + 131, 108, 31, Text.literal("⟳"), "femclothes.estilado.tooltip.vista",
                 () -> anguloVista = Math.floorMod(Math.round(anguloVista) + 45, 360));
         // Textura de tela (2026-10-01, relieve): con un Molde de textura en el slot del molde.
-        btnTextura = boton(X_DER, 132, 162, Text.empty(), "femclothes.estilado.tooltip.textura",
+        btnTextura = boton(X_DER, 132, 96, Text.empty(), "femclothes.estilado.tooltip.textura",
                 () -> clickBoton(EstiladoBlockEntity.BTN_TEXTURA));
+        // Sacudir (2026-10-04, "boton de sacudir... alternar mover el muñeco"): prende y apaga el vaivén.
+        btnSacudir = boton(X_DER + 98, 132, 64, Text.empty(), "femclothes.estilado.tooltip.sacudir",
+                () -> sacudiendo = !sacudiendo);
+        // Blandura del aplique elegido (2026-10-04, "1 slider de blandura").
+        sliderBlandura = new SliderBlandura(this.x + X_DER, this.y + 150, 162, 11);
+        sliderBlandura.setTooltip(Tooltip.of(Text.translatable("femclothes.estilado.tooltip.blandura")));
+        this.addDrawableChild(sliderBlandura);
         // Mesa creativa (2026-10-01): elegir cualquier molde sin tenerlo.
         ButtonWidget moldeCreativo = boton(X_DER + 98, 44, 64, Text.translatable("femclothes.estilado.siguiente_molde"),
                 "femclothes.estilado.tooltip.siguiente_molde", () -> clickBoton(EstiladoBlockEntity.BTN_SIGUIENTE_MOLDE));
@@ -115,6 +129,65 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
 
     private ButtonWidget btnTextura;
 
+    /** Cuánto se mueve como tela el aplique elegido: 0 % = rígido, 100 % = muy suelto, de a 10 %. */
+    private final class SliderBlandura extends net.minecraft.client.gui.widget.SliderWidget {
+        private int pasoEnviado = -1;
+
+        SliderBlandura(int x, int y, int ancho, int alto) {
+            super(x, y, ancho, alto, Text.empty(), 0.5);
+            updateMessage();
+        }
+
+        private int paso() {
+            return (int) Math.round(value * EstiladoBlockEntity.BLANDURA_PASOS);
+        }
+
+        /** Sigue al aplique elegido (salvo mientras se lo arrastra). */
+        void refrescar(@Nullable Aplique a) {
+            active = a != null;
+            if (a != null && !isFocused() && pasoEnviado < 0) {
+                double v = Math.round(a.blandura() * EstiladoBlockEntity.BLANDURA_PASOS) / (double) EstiladoBlockEntity.BLANDURA_PASOS;
+                if (Math.abs(v - value) > 1e-3) value = v;
+            }
+            updateMessage();
+        }
+
+        @Override
+        protected void updateMessage() {
+            setMessage(Text.translatable("femclothes.estilado.blandura",
+                    paso() * 100 / EstiladoBlockEntity.BLANDURA_PASOS));
+        }
+
+        @Override
+        protected void applyValue() {
+            int paso = paso();
+            if (paso == pasoEnviado) return;
+            pasoEnviado = paso;
+            clickBoton(EstiladoBlockEntity.BTN_BLANDURA_BASE + paso);
+        }
+
+        @Override
+        public void onRelease(double mx, double my) {
+            super.onRelease(mx, my);
+            pasoEnviado = -1;
+        }
+
+        /** Riel de madera con mango, como los sliders de pose del Maniquí. */
+        @Override
+        public void renderWidget(DrawContext c, int mouseX, int mouseY, float delta) {
+            int x0 = getX(), y0 = getY(), w = getWidth(), h = getHeight();
+            c.fill(x0 - 1, y0 - 1, x0 + w + 1, y0 + h + 1, 0xFF2A180C);
+            c.fill(x0, y0, x0 + w, y0 + h, 0xFF5A4028);
+            c.fill(x0, y0 + h - 1, x0 + w, y0 + h, EstiloPergamino.tema().claro);
+            int mango = x0 + (int) (value * (w - 8));
+            EstiloPergamino.fondoBoton(c, mango, y0, 8, h, isHovered(), active);
+            var fuente = MinecraftClient.getInstance().textRenderer;
+            Text m = getMessage();
+            int tx = x0 + (w - fuente.getWidth(m)) / 2, ty = y0 + (h - 8) / 2 + 1;
+            c.drawText(fuente, m, tx + 1, ty + 1, 0xFF2A180C, false);
+            c.drawText(fuente, m, tx, ty, EstiloPergamino.TEXTO_CLARO, false);
+        }
+    }
     // ── vista previa ───────────────────────────────────────────────────────
     private boolean dentroDeVista(double mx, double my) {
         return mx >= this.x + PX1 && mx < this.x + PX2 && my >= this.y + PY1 && my < this.y + PY2;
@@ -143,8 +216,11 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 armadura.set(slot.getEntitySlotId(), prenda);
             }
             // mouseY en el centro: la vista no se inclina con el mouse (el click necesita una pose quieta).
-            PreviewJugador.dibujar(context, jugador, x1, y1, x2, y2, 78, anguloVista, (y1 + y2) / 2f);
+            actualizarModoDeTela();
+            PreviewJugador.dibujar(context, jugador, x1, y1, x2, y2, Math.round(78 * zoomVista), anguloVista,
+                    (y1 + y2) / 2f, inclinacionVista);
         } finally {
+            com.femclothes.render.FisicaApliques.modoVistaPrevia = com.femclothes.render.FisicaApliques.Modo.QUIETO;
             GarmentFeatureRenderer.previewOverride = null;
             GarmentFeatureRenderer.capturaPoses = null;
             GarmentFeatureRenderer.capturaMallas = null;
@@ -154,6 +230,12 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         poses.putAll(captura);
         mallas.clear();
         mallas.putAll(capturaMallas);
+    }
+
+    /** La tela de los apliques se agita en la vista previa solo mientras Sacudir está prendido. */
+    private void actualizarModoDeTela() {
+        com.femclothes.render.FisicaApliques.modoVistaPrevia = sacudiendo
+                ? com.femclothes.render.FisicaApliques.Modo.SACUDIDA : com.femclothes.render.FisicaApliques.Modo.QUIETO;
     }
 
     /** Resultado del click: parte, punto sobre la caja sin inflar (px) y cara. */
@@ -356,9 +438,20 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
         if (arrastrando) {
             anguloVista = Math.floorMod(Math.round(anguloVista + (float) dx * 1.15f), 360);
+            inclinacionVista = net.minecraft.util.math.MathHelper.clamp(
+                    inclinacionVista + (float) dy * 0.8f, -INCLINACION_MAX, INCLINACION_MAX);
             return true;
         }
         return super.mouseDragged(mx, my, button, dx, dy);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mx, double my, double horizontal, double vertical) {
+        if (dentroDeVista(mx, my)) {
+            zoomVista = net.minecraft.util.math.MathHelper.clamp(zoomVista + (float) vertical * 0.1f, 0.5f, 2.5f);
+            return true;
+        }
+        return super.mouseScrolled(mx, my, horizontal, vertical);
     }
 
     // ── dibujo ─────────────────────────────────────────────────────────────
@@ -373,6 +466,8 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         }
         boolean hay = sel >= 0 && sel < apliques.size();
         btnGiro.active = btnEscala.active = btnQuitar.active = hay;
+        sliderBlandura.refrescar(hay ? apliques.get(sel) : null);
+        btnSacudir.setMessage(Text.translatable(sacudiendo ? "femclothes.estilado.sacudir.parar" : "femclothes.estilado.sacudir"));
         btnGiro.setMessage(Text.translatable("femclothes.estilado.giro", hay ? Math.round(apliques.get(sel).giro()) : 0));
         btnEscala.setMessage(Text.translatable("femclothes.estilado.escala",
                 hay ? Math.round(apliques.get(sel).escala() * 100) : 100));

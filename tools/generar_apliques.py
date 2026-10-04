@@ -11,8 +11,9 @@ Convenciones (las usa render/ApliqueRenderer):
   - Atlas de 96x32: tres columnas de 32x32, una por ZONA de color (1, 2, 3). Cada
     cara de cada cubo apunta a la columna de su zona; el render tiñe cada columna
     con el color de esa zona (y la fase 4 pinta ahí los patrones de Tintes).
-  - Huesos con nombre para lo que se va a mover (física, fase 5): colas del moño,
-    alas de la mariposa, pétalos y hojas de la flor.
+  - Huesos con nombre para lo que se mueve (tela blanda, render/ApliqueRenderer lee el
+    prefijo): "cola*" = cadena de tramos anidados (cada uno pivota en su borde de arriba),
+    "ala*" = aleteo, "petalo*" y "hojas" = resorte firme; "nudo", "cuerpo" y "centro" no se mueven.
 
 Uso: python tools/generar_apliques.py
 """
@@ -65,6 +66,24 @@ def modelo(nombre, huesos):
     }
 
 
+def cadena(nombre, pivote, x0, ancho, y_arriba, largo, z0, prof, zona, rot, tramos=3):
+    """Una cola o cinta en TRAMOS tramos anidados (2026-10-04, tela blanda: "tela blanda
+    afectada por el movimiento"): cada tramo es hijo del anterior y pivota en su borde de
+    arriba, así `render/ApliqueRenderer` les da un giro a cada uno y la cinta se curva en
+    vez de girar entera. Nombres: <nombre>, <nombre>_2, <nombre>_3... (el render los
+    reconoce por el prefijo "cola"/"cinta")."""
+    huesos = []
+    alto = largo / tramos
+    for k in range(tramos):
+        top = y_arriba - k * alto
+        cubos = [cubo([x0, top - alto, z0], [ancho, alto, prof], zona)]
+        nom = nombre if k == 0 else f"{nombre}_{k + 1}"
+        padre = "root" if k == 0 else (nombre if k == 1 else f"{nombre}_{k}")
+        piv = pivote if k == 0 else [pivote[0], top, pivote[2]]
+        huesos.append(hueso(nom, piv, cubos, padre=padre, rot=rot if k == 0 else None))
+    return huesos
+
+
 def mono():
     # Zona 1: alas · Zona 2: nudo · Zona 3: colas.
     return modelo("mono", [
@@ -77,8 +96,8 @@ def mono():
             cubo([0.6, -1.1, -0.85], [2.4, 2.2, 0.7], 1),
             cubo([2.9, -0.6, -0.75], [0.3, 1.2, 0.5], 1),
         ]),
-        hueso("cola_izq", [-0.3, -0.5, -0.5], [cubo([-0.9, -3.1, -0.6], [0.6, 2.6, 0.25], 3)], rot=[0, 0, -18]),
-        hueso("cola_der", [0.3, -0.5, -0.5], [cubo([0.3, -3.1, -0.6], [0.6, 2.6, 0.25], 3)], rot=[0, 0, 18]),
+        *cadena("cola_izq", [-0.3, -0.5, -0.5], -0.9, 0.6, -0.5, 2.6, -0.6, 0.25, 3, [0, 0, -18]),
+        *cadena("cola_der", [0.3, -0.5, -0.5], 0.3, 0.6, -0.5, 2.6, -0.6, 0.25, 3, [0, 0, 18]),
     ])
 
 

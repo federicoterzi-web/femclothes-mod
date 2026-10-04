@@ -545,7 +545,7 @@
   "femclothes.estilado.giro": "Giro %s°",
   "femclothes.estilado.escala": "Tamaño %s%%",
   "femclothes.estilado.apliques": "Apliques %s/%s",
-  "femclothes.estilado.ayuda": "Click en la prenda: poner · Click derecho y arrastrar: girar la vista",
+  "femclothes.estilado.ayuda": "Click en la prenda: poner · Click derecho y arrastrar: girar e inclinar la vista · Rueda: zoom",
   "femclothes.estilado.aviso.prenda": "Poné una prenda",
   "femclothes.estilado.aviso.molde": "Falta el molde de aplique",
   "femclothes.estilado.aviso.retazo": "Falta un retazo de aplique",
@@ -625,5 +625,10 @@
   "femclothes.sublimadora.tooltip.slot_mascara": "Molde de máscara: con uno acá, la chincheta de una cara fija la foto como capa con esa forma.",
   "femclothes.sublimadora.capa_llena": "Ya hay 12 capas: borrá una para fijar otra.",
   "femclothes.sublimadora.hint.mascara": "Con una máscara puesta, la chincheta de una cara fija la foto como capa con esa forma. 'Editar' alterna entre mover la imagen adentro de la máscara o la máscara sobre la prenda.",
-  "femclothes.sublimadora.tooltip.chincheta_capa": "Fija la foto de %s como una capa nueva con la máscara."
+  "femclothes.sublimadora.tooltip.chincheta_capa": "Fija la foto de %s como una capa nueva con la máscara.",
+  "femclothes.estilado.blandura": "Blandura %s%%",
+  "femclothes.estilado.tooltip.blandura": "Cuánto se mueve el aplique elegido como tela blanda con el movimiento (0 % = rígido)",
+  "femclothes.estilado.sacudir": "Sacudir",
+  "femclothes.estilado.sacudir.parar": "Parar",
+  "femclothes.estilado.tooltip.sacudir": "Mueve el muñeco para ver cómo se agita la tela de los apliques"
 }
