@@ -12,8 +12,8 @@ cuadrado y en forma de corazon" + "el molde corazon tiene que acompañar la silu
 
 Formas (en texeles del frente del torso, x de 0 a 8):
   cuadrado: x 2..6, hasta 1.75 de hondo.
-  corazon:  dos lóbulos que son el arco de arriba de cada pecho (centros (2, 2.7) y (6, 2.7), radio 2) y se juntan
-            en una punta al centro, x 1..7. Hasta 2.7 de hondo.
+  corazon:  dos lóbulos que son el arco de arriba de cada pecho (centros (2, 5.0) y (6, 5.0), radio 2: puntos altos de la tela en y 3.0) y se juntan
+            en una punta al centro, x 1..7. Hasta 5.0 de hondo (bajado el 2026-10-04: la tela arranca justo arriba del medio del pecho).
 
 Uso: python tools/generar_cuellos.py
 """
@@ -33,6 +33,11 @@ X0, Y0 = 160, 160          # esquina del frente del torso
 CAPA_X, CAPA_Y0, CAPA_Y1 = (160, 224), 128, 160
 
 
+# Dónde queda el pico del medio del corazón (2026-10-04, "el corte de cuello corazon lo bajaria para que empiecen a
+# cubrir justo encima del medio de la teta"): antes 2.7; así los puntos más altos de la tela quedan en 3.0.
+CORAZON_BAJA = 5.0
+
+
 def agujero(cuello, x, y):
     """x, y en texeles del frente: True si ese punto queda recortado."""
     if cuello == "cuadrado":
@@ -41,7 +46,7 @@ def agujero(cuello, x, y):
         if not 1.0 <= x <= 7.0:
             return False
         cx = 2.0 if x <= 4.0 else 6.0
-        borde = 2.7 - math.sqrt(max(0.0, 4.0 - (x - cx) ** 2))
+        borde = CORAZON_BAJA - math.sqrt(max(0.0, 4.0 - (x - cx) ** 2))
         return y < borde
     return False
 
@@ -58,7 +63,7 @@ def cuerpo(largo_manga):
                 if pv[x, y][3] == 0:
                     px[x, y] = (0, 0, 0, 0)
         # El frente: la forma nueva, a resolución 8x.
-        for y in range(Y0, Y0 + 3 * K + 8):
+        for y in range(Y0, Y0 + 5 * K + 8):
             for x in range(X0, X0 + 8 * K):
                 if agujero(cuello, (x - X0 + 0.5) / K, (y - Y0 + 0.5) / K):
                     px[x, y] = (0, 0, 0, 0)
@@ -73,7 +78,8 @@ def icono(largo_manga):
     base = Image.open(ruta).convert("RGBA")
     quitar = {
         "cuadrado": [(6, 2), (7, 2), (8, 2), (9, 2), (6, 3), (7, 3), (8, 3), (9, 3)],
-        "corazon": [(6, 2), (7, 2), (8, 2), (9, 2), (5, 3), (7, 3), (8, 3), (10, 3), (7, 4), (8, 4)],
+        "corazon": [(6, 2), (7, 2), (8, 2), (9, 2), (5, 3), (6, 3), (7, 3), (8, 3), (9, 3), (10, 3),
+                    (7, 4), (8, 4), (7, 5), (8, 5)],
     }
     for cuello, pixeles in quitar.items():
         im = base.copy()

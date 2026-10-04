@@ -79,7 +79,8 @@ public final class FisicaBusto {
 
         float masa = 0.6f + 0.12f * busto;
         float k = Math.max(60f, 150f - 14f * busto);          // rigidez (1/s²)
-        float c = 2f * 0.13f * (float) Math.sqrt(k);           // amortiguación: rebota unas cuantas veces
+        // Amortiguación 0,45 (era 0,13; 2026-10-04, "las tetas quedan rebotando mucho tiempo"): rebota una o dos veces
+        float c = 2f * 0.45f * (float) Math.sqrt(k);
         // Empuje externo (px/s²): el cuerpo sube → el busto se queda abajo (+y es hacia abajo).
         float empujeY = (ay * 16f * 0.12f - caminar * 30f * (float) Math.sin(fase)) * masa;
         float empujeX = -aYaw * 0.004f * masa;
@@ -88,7 +89,7 @@ public final class FisicaBusto {
         // para arriba y la otra para abajo (sen de medio ciclo de piernas).
         float masaC = 0.7f + 0.15f * e.cola;
         float kc = Math.max(55f, 130f - 12f * e.cola);
-        float cc = 2f * 0.15f * (float) Math.sqrt(kc);
+        float cc = 2f * 0.45f * (float) Math.sqrt(kc);
         float empujeCY = (ay * 16f * 0.1f - caminar * 18f * (float) Math.sin(fase + 0.6f)) * masaC;
         float empujeCA = caminar * 26f * (float) Math.sin(fase * 0.5f) * masaC;
 

@@ -142,7 +142,7 @@ def borde_corazon():
         for i in range(n + 1):
             x = x0 + (x1 - x0) * i / n
             d = min(abs(x - cx), 4.25)
-            pts.append((x, 14.0 - (4.25 ** 2 - d ** 2) ** 0.5))
+            pts.append((x, 19.0 - (4.25 ** 2 - d ** 2) ** 0.5))   # 14.0 antes: bajado el 2026-10-04 ("el corte de cuello corazon lo bajaria")
     return pts
 
 
