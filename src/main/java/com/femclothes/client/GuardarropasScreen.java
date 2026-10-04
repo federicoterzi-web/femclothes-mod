@@ -41,6 +41,8 @@ public class GuardarropasScreen extends HandledScreen<GuardarropasScreenHandler>
     private boolean arrastrandoPreview = false;
     private ButtonWidget btnVista;
     private ButtonWidget btnFijar;
+    private ButtonWidget btnEquipar;
+    private ButtonWidget btnCandado;
     private final ButtonWidget[] btnFijadas = new ButtonWidget[GuardarropasBlockEntity.FIJADAS_MAXIMO];
 
     public GuardarropasScreen(GuardarropasScreenHandler handler, PlayerInventory inventory, Text title) {
@@ -69,7 +71,11 @@ public class GuardarropasScreen extends HandledScreen<GuardarropasScreenHandler>
         btnFijar = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 104, 78, 16, Text.translatable("femclothes.guardarropas.fijar"), b -> clickBoton(GuardarropasBlockEntity.BTN_FIJAR));
         this.addDrawableChild(btnFijar);
 
-        this.addDrawableChild(new EstiloPergamino.BotonPergamino(this.x + M_MEDIO + 82, this.y + 104, 80, 16, Text.translatable("femclothes.guardarropas.equipar"), b -> clickBoton(GuardarropasBlockEntity.BTN_EQUIPAR)));
+        btnEquipar = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO + 82, this.y + 104, 80, 16, Text.translatable("femclothes.guardarropas.equipar"), b -> clickBoton(GuardarropasBlockEntity.BTN_EQUIPAR));
+        this.addDrawableChild(btnEquipar);
+        // Candado (2026-10-04, "le pongamos un lock... tambien al guardarropas").
+        btnCandado = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 146, 162, 16, Text.literal(""), b -> clickBoton(GuardarropasBlockEntity.BTN_CANDADO));
+        this.addDrawableChild(btnCandado);
 
         for (int i = 0; i < btnFijadas.length; i++) {
             int id = GuardarropasBlockEntity.BTN_FIJADA_BASE + i;
@@ -124,8 +130,14 @@ public class GuardarropasScreen extends HandledScreen<GuardarropasScreenHandler>
         GuardarropasBlockEntity be = handler.be;
         int seleccionado = be.fijadaSeleccionada();
         int cantidad = be.fijadas().size();
+        boolean toca = handler.puedeTocar();
+        btnFijar.active = toca;
+        btnEquipar.active = toca;
+        btnCandado.active = com.femclothes.util.Candado.puedeAlternar(handler.estado());
+        btnCandado.setMessage(Text.translatable(com.femclothes.util.Candado.cerrado(handler.estado())
+                ? "femclothes.candado.cerrado" : "femclothes.candado.abierto"));
         for (int i = 0; i < btnFijadas.length; i++) {
-            btnFijadas[i].active = i <= cantidad;
+            btnFijadas[i].active = toca && i <= cantidad;
             btnFijadas[i].setMessage(Text.literal(i == seleccionado ? "[" + (i + 1) + "]" : Integer.toString(i + 1)));
         }
     }

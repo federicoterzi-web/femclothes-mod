@@ -21,6 +21,9 @@ public class ManiquiScreenHandler extends ScreenHandler {
     private static final int INV_START = ManiquiBlockEntity.TAMANO;
 
     public final ManiquiBlockEntity be;
+    private final PlayerEntity jugador;
+    /** Estado del candado para ESTE jugador, sincronizado al cliente (bits de {@code Candado#estado}). */
+    private int estado;
 
     /** Factory del lado del CLIENTE: busca el block entity REAL en la posición que mandó el servidor. */
     public static ManiquiScreenHandler deCliente(int syncId, PlayerInventory inv, BlockPos pos) {
@@ -34,6 +37,14 @@ public class ManiquiScreenHandler extends ScreenHandler {
     public ManiquiScreenHandler(int syncId, PlayerInventory playerInventory, ManiquiBlockEntity be) {
         super(FemclothesScreenHandlers.MANIQUI, syncId);
         this.be = be;
+        this.jugador = playerInventory.player;
+        addProperty(new net.minecraft.screen.Property() {
+            @Override
+            public int get() { return jugador.getWorld().isClient ? estado : be.candado().estado(jugador); }
+
+            @Override
+            public void set(int valor) { estado = valor; }
+        });
 
         // Slot anónimo con canInsert → isValid: Slot.canInsert no consulta
         // Inventory.isValid por su cuenta (trampa conocida, ver CLAUDE.md).
@@ -42,13 +53,16 @@ public class ManiquiScreenHandler extends ScreenHandler {
                 int index = categoria * ManiquiBlockEntity.POR_CATEGORIA + capa;
                 addSlot(new Slot(be, index, M_MEDIO + categoria * 20, 20 + capa * 20) {
                     @Override
-                    public boolean canInsert(ItemStack stack) { return be.isValid(index, stack); }
+                    public boolean canInsert(ItemStack stack) { return puedeTocar() && be.isValid(index, stack); }
+
+                    @Override
+                    public boolean canTakeItems(PlayerEntity player) { return puedeTocar(); }
                 });
             }
         }
 
         for (int i = 0; i < GuardarropasBlockEntity.SLOTS_ARMADURA.length; i++) {
-            addSlot(GuardarropasScreenHandler.slotArmadura(be, i));
+            addSlot(GuardarropasScreenHandler.slotArmadura(be, i, this::puedeTocar));
         }
 
         for (int i = 0; i < 3; i++) {
@@ -60,6 +74,11 @@ public class ManiquiScreenHandler extends ScreenHandler {
             addSlot(new Slot(playerInventory, i, M_MEDIO + i * 18, 238));
         }
     }
+
+    /** Cliente: viene de la propiedad sincronizada; servidor: se calcula en el momento. */
+    public int estado() { return jugador.getWorld().isClient ? estado : be.candado().estado(jugador); }
+
+    public boolean puedeTocar() { return com.femclothes.util.Candado.puedeTocar(estado()); }
 
     @Override
     public boolean onButtonClick(PlayerEntity player, int id) {
@@ -75,6 +94,7 @@ public class ManiquiScreenHandler extends ScreenHandler {
     public ItemStack quickMove(PlayerEntity player, int slot) {
         Slot clickedSlot = this.slots.get(slot);
         if (clickedSlot == null || !clickedSlot.hasStack()) return ItemStack.EMPTY;
+        if (!puedeTocar()) return ItemStack.EMPTY;
         ItemStack stack = clickedSlot.getStack();
         ItemStack result = stack.copy();
         if (slot < INV_START) {

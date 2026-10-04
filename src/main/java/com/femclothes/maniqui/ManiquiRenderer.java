@@ -122,7 +122,13 @@ public class ManiquiRenderer extends GeoBlockRenderer<ManiquiBlockEntity> {
     public void dibujarFigura(ManiquiBlockEntity be, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz) {
         Identifier textura;
         boolean slim;
-        if (be.figuraSkin() && be.dueno() != null) {
+        String predefinida = be.predefinida();
+        if (predefinida != null) {
+            // Skins de Mojang (2026-10-04): cada una existe ancha y fina; se usa la que trae por defecto.
+            boolean fina = ManiquiBlockEntity.predefinidaEsFina(predefinida);
+            textura = Identifier.of("minecraft", "textures/entity/player/" + (fina ? "slim/" : "wide/") + predefinida + ".png");
+            slim = fina;
+        } else if (be.figuraSkin() && be.dueno() != null) {
             SkinTextures skin = MinecraftClient.getInstance().getSkinProvider().getSkinTextures(be.dueno().gameProfile());
             textura = skin.texture();
             slim = skin.model() == SkinTextures.Model.SLIM;

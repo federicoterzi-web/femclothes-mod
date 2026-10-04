@@ -35,10 +35,18 @@ public class GuardarropasScreenHandler extends ScreenHandler {
      * uno por ítem, y el dibujito vanilla de la pieza cuando está vacío.
      */
     public static Slot slotArmadura(net.minecraft.inventory.Inventory inv, int i) {
+        return slotArmadura(inv, i, () -> true);
+    }
+
+    /** Con candado (2026-10-04): {@code puedeTocar} dice si el jugador de este handler puede meter/sacar. */
+    public static Slot slotArmadura(net.minecraft.inventory.Inventory inv, int i, java.util.function.BooleanSupplier puedeTocar) {
         int index = GuardarropasBlockEntity.ARMADURA_INICIO + i;
         return new Slot(inv, index, X_ARMADURA, 20 + i * 20) {
             @Override
-            public boolean canInsert(ItemStack stack) { return inv.isValid(index, stack); }
+            public boolean canInsert(ItemStack stack) { return puedeTocar.getAsBoolean() && inv.isValid(index, stack); }
+
+            @Override
+            public boolean canTakeItems(PlayerEntity player) { return puedeTocar.getAsBoolean(); }
 
             @Override
             public int getMaxItemCount() { return 1; }
@@ -53,6 +61,9 @@ public class GuardarropasScreenHandler extends ScreenHandler {
     private static final int INV_START = GuardarropasBlockEntity.TAMANO;
 
     public final GuardarropasBlockEntity be;
+    private final PlayerEntity jugador;
+    /** Estado del candado para ESTE jugador, sincronizado al cliente (bits de {@code Candado#estado}). */
+    private int estado;
 
     /** Factory del lado del CLIENTE: busca el block entity REAL en la posición que mandó el servidor. */
     public static GuardarropasScreenHandler deCliente(int syncId, PlayerInventory inv, BlockPos pos) {
@@ -66,6 +77,14 @@ public class GuardarropasScreenHandler extends ScreenHandler {
     public GuardarropasScreenHandler(int syncId, PlayerInventory playerInventory, GuardarropasBlockEntity be) {
         super(FemclothesScreenHandlers.GUARDARROPAS, syncId);
         this.be = be;
+        this.jugador = playerInventory.player;
+        addProperty(new net.minecraft.screen.Property() {
+            @Override
+            public int get() { return jugador.getWorld().isClient ? estado : be.candado().estado(jugador); }
+
+            @Override
+            public void set(int valor) { estado = valor; }
+        });
         // Abre la puerta del modelo (2026-09-30) — mismo par onOpen/onClose
         // que usan los cofres vanilla; del lado del cliente no hace nada.
         be.onOpen(playerInventory.player);
@@ -85,12 +104,15 @@ public class GuardarropasScreenHandler extends ScreenHandler {
                 int index = categoria * GuardarropasBlockEntity.POR_CATEGORIA + capa;
                 addSlot(new Slot(be, index, M_MEDIO + categoria * 20, 20 + capa * 20) {
                     @Override
-                    public boolean canInsert(ItemStack stack) { return be.isValid(index, stack); }
+                    public boolean canInsert(ItemStack stack) { return puedeTocar() && be.isValid(index, stack); }
+
+                    @Override
+                    public boolean canTakeItems(PlayerEntity player) { return puedeTocar(); }
                 });
             }
         }
 
-        for (int i = 0; i < GuardarropasBlockEntity.SLOTS_ARMADURA.length; i++) addSlot(slotArmadura(be, i));
+        for (int i = 0; i < GuardarropasBlockEntity.SLOTS_ARMADURA.length; i++) addSlot(slotArmadura(be, i, this::puedeTocar));
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 9; j++) {
@@ -102,8 +124,16 @@ public class GuardarropasScreenHandler extends ScreenHandler {
         }
     }
 
+    public int estado() { return jugador.getWorld().isClient ? estado : be.candado().estado(jugador); }
+
+    public boolean puedeTocar() { return com.femclothes.util.Candado.puedeTocar(estado()); }
+
     @Override
     public boolean onButtonClick(PlayerEntity player, int id) {
+        if (id == GuardarropasBlockEntity.BTN_CANDADO) {
+            return be.alternarCandado(player);
+        }
+        if (!be.candado().puedeTocar(player)) return false;
         if (id == GuardarropasBlockEntity.BTN_EQUIPAR) {
             be.equiparEn(player);
             return true;
@@ -126,6 +156,7 @@ public class GuardarropasScreenHandler extends ScreenHandler {
     public ItemStack quickMove(PlayerEntity player, int slot) {
         Slot clickedSlot = this.slots.get(slot);
         if (clickedSlot == null || !clickedSlot.hasStack()) return ItemStack.EMPTY;
+        if (!puedeTocar()) return ItemStack.EMPTY;
         ItemStack stack = clickedSlot.getStack();
         ItemStack result = stack.copy();
         if (slot < INV_START) {

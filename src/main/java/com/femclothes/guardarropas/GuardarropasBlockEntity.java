@@ -56,7 +56,7 @@ import java.util.List;
  * par de prendas de distinta categoría.
  */
 public class GuardarropasBlockEntity extends BlockEntity
-        implements Inventory, ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity {
+        implements net.minecraft.inventory.SidedInventory, ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity {
 
     public static final int POR_CATEGORIA = 4;
 
@@ -248,6 +248,34 @@ public class GuardarropasBlockEntity extends BlockEntity
     public static final int BTN_FIJAR = 0;
     public static final int BTN_FIJADA_BASE = 1; // .. + FIJADAS_MAXIMO
     public static final int BTN_EQUIPAR = BTN_FIJADA_BASE + FIJADAS_MAXIMO;
+    /** Cierra/abre el candado (2026-10-04, "le pongamos un lock... y tambien al guardarropas"). */
+    public static final int BTN_CANDADO = BTN_EQUIPAR + 1;
+
+    private final com.femclothes.util.Candado candado = new com.femclothes.util.Candado();
+
+    public com.femclothes.util.Candado candado() { return candado; }
+
+    public boolean alternarCandado(PlayerEntity player) {
+        if (!candado.alternar(player)) return false;
+        markDirty();
+        return true;
+    }
+
+    // ── SidedInventory: las tolvas respetan el candado ────────────────────
+    private static final int[] TODOS = java.util.stream.IntStream.range(0, TAMANO).toArray();
+
+    @Override
+    public int[] getAvailableSlots(net.minecraft.util.math.Direction side) { return TODOS; }
+
+    @Override
+    public boolean canInsert(int slot, ItemStack stack, @Nullable net.minecraft.util.math.Direction dir) {
+        return !candado.cerrado() && isValid(slot, stack);
+    }
+
+    @Override
+    public boolean canExtract(int slot, ItemStack stack, net.minecraft.util.math.Direction dir) {
+        return !candado.cerrado();
+    }
 
     /**
      * {@code BTN_EQUIPAR} NO pasa por acá — necesita el {@link PlayerEntity}
@@ -411,6 +439,7 @@ public class GuardarropasBlockEntity extends BlockEntity
         }
         nbt.put("Outfits", fijadasNbt);
         nbt.putInt("OutfitSeleccionado", fijadaSeleccionada);
+        candado.guardar(nbt);
     }
 
     @Override
@@ -435,5 +464,6 @@ public class GuardarropasBlockEntity extends BlockEntity
             }
         }
         fijadaSeleccionada = nbt.contains("OutfitSeleccionado") ? nbt.getInt("OutfitSeleccionado") : -1;
+        candado.leer(nbt);
     }
 }

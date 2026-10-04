@@ -107,6 +107,10 @@ public class ManiquiBlock extends BlockWithEntity {
             return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
         if (world.isClient) return ItemActionResult.SUCCESS;
+        if (!be.candado().puedeTocar(player)) {
+            player.sendMessage(Text.translatable("femclothes.candado.ajeno", be.candado().nombre()), true);
+            return ItemActionResult.FAIL;
+        }
         if (!be.ponerPrenda(stack)) {
             player.sendMessage(Text.translatable("femclothes.maniqui.sin_lugar"), true);
             return ItemActionResult.FAIL;
@@ -120,7 +124,7 @@ public class ManiquiBlock extends BlockWithEntity {
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (!(world.getBlockEntity(pos) instanceof ManiquiBlockEntity be)) return ActionResult.PASS;
         if (world.isClient) return ActionResult.SUCCESS;
-        if (player.isSneaking()) {
+        if (player.isSneaking() && be.candado().puedeTocar(player)) {
             be.alternarGiro();
             world.playSound(null, pos, SoundEvents.BLOCK_WOODEN_BUTTON_CLICK_ON, SoundCategory.BLOCKS, 0.6f, 1.0f);
             return ActionResult.SUCCESS;
@@ -137,7 +141,23 @@ public class ManiquiBlock extends BlockWithEntity {
         if (!world.isClient && placer instanceof PlayerEntity jugador
                 && world.getBlockEntity(pos) instanceof ManiquiBlockEntity be) {
             be.setDueno(jugador.getGameProfile());
+            be.candado().ponerDueno(jugador);
         }
+    }
+
+    /** Con el candado cerrado, los ajenos no lo rompen (2026-10-04); creativo y operadores sí. */
+    @Override
+    protected float calcBlockBreakingDelta(BlockState state, PlayerEntity player, BlockView world, BlockPos pos) {
+        if (world.getBlockEntity(pos) instanceof ManiquiBlockEntity be && !be.candado().puedeTocar(player)) return 0f;
+        return super.calcBlockBreakingDelta(state, player, world, pos);
+    }
+
+    /** Las explosiones tampoco se lo llevan si está cerrado. */
+    @Override
+    protected void onExploded(BlockState state, World world, BlockPos pos, net.minecraft.world.explosion.Explosion explosion,
+                              java.util.function.BiConsumer<ItemStack, BlockPos> stackMerger) {
+        if (world.getBlockEntity(pos) instanceof ManiquiBlockEntity be && be.candado().cerrado()) return;
+        super.onExploded(state, world, pos, explosion, stackMerger);
     }
 
     @Override

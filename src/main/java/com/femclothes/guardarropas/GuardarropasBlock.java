@@ -99,6 +99,31 @@ public class GuardarropasBlock extends BlockWithEntity {
         return ActionResult.SUCCESS;
     }
 
+    /** Con el candado cerrado, los ajenos no lo rompen (2026-10-04); creativo y operadores sí. */
+    @Override
+    protected float calcBlockBreakingDelta(BlockState state, PlayerEntity player, BlockView world, BlockPos pos) {
+        if (world.getBlockEntity(pos) instanceof GuardarropasBlockEntity be && !be.candado().puedeTocar(player)) return 0f;
+        return super.calcBlockBreakingDelta(state, player, world, pos);
+    }
+
+    @Override
+    protected void onExploded(BlockState state, World world, BlockPos pos, net.minecraft.world.explosion.Explosion explosion,
+                              java.util.function.BiConsumer<ItemStack, BlockPos> stackMerger) {
+        if (world.getBlockEntity(pos) instanceof GuardarropasBlockEntity be && be.candado().cerrado()) return;
+        super.onExploded(state, world, pos, explosion, stackMerger);
+    }
+
+    /** Quien lo pone es el dueño del candado. */
+    @Override
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable net.minecraft.entity.LivingEntity placer,
+                         ItemStack itemStack) {
+        super.onPlaced(world, pos, state, placer, itemStack);
+        if (!world.isClient && placer instanceof PlayerEntity jugador
+                && world.getBlockEntity(pos) instanceof GuardarropasBlockEntity be && !be.candado().tieneDueno()) {
+            be.candado().ponerDueno(jugador);
+        }
+    }
+
     /** Cae con todo adentro, como una shulker (ver {@link com.femclothes.util.DropMaquina}). */
     @Override
     protected java.util.List<ItemStack> getDroppedStacks(BlockState state,

@@ -53,7 +53,8 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
         btnGirar = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 104, 78, 16, Text.literal(""), b -> clickBoton(ManiquiBlockEntity.BTN_GIRAR));
         this.addDrawableChild(btnGirar);
 
-        this.addDrawableChild(new EstiloPergamino.BotonPergamino(this.x + M_MEDIO + 82, this.y + 104, 80, 16, Text.translatable("femclothes.maniqui.intercambiar"), b -> clickBoton(ManiquiBlockEntity.BTN_INTERCAMBIAR)));
+        btnIntercambiar = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO + 82, this.y + 104, 80, 16, Text.translatable("femclothes.maniqui.intercambiar"), b -> clickBoton(ManiquiBlockEntity.BTN_INTERCAMBIAR));
+        this.addDrawableChild(btnIntercambiar);
 
         // Poses y figura (2026-09-30).
         btnPose = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 124, 78, 16, Text.literal(""), b -> clickBoton(ManiquiBlockEntity.BTN_POSE));
@@ -61,8 +62,11 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
         btnFigura = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO + 82, this.y + 124, 80, 16, Text.literal(""), b -> clickBoton(ManiquiBlockEntity.BTN_FIGURA));
         this.addDrawableChild(btnFigura);
         // Busto de la figura (2026-10-02, "agregale la opcion de ponerle tetas").
-        btnBusto = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 144, 162, 16, Text.literal(""), b -> clickBoton(ManiquiBlockEntity.BTN_BUSTO));
+        btnBusto = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 144, 78, 16, Text.literal(""), b -> clickBoton(ManiquiBlockEntity.BTN_BUSTO));
         this.addDrawableChild(btnBusto);
+        // Candado (2026-10-04, "le pongamos un lock al maniqui").
+        btnCandado = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO + 82, this.y + 144, 80, 16, Text.literal(""), b -> clickBoton(ManiquiBlockEntity.BTN_CANDADO));
+        this.addDrawableChild(btnCandado);
 
         // A la derecha de los botones (M_MEDIO + 162) y de la columna de armadura.
         int sx = this.x + M_MEDIO + 170;
@@ -71,8 +75,28 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
             sliders[i] = new SliderPose(sx, this.y + 18 + i * 14, ancho, 12, i);
             this.addDrawableChild(sliders[i]);
         }
+
+        // Skin de un jugador por nombre (2026-10-04, "elegir skin escribiendo el nombre").
+        campoSkin = new net.minecraft.client.gui.widget.TextFieldWidget(this.textRenderer, sx, this.y + 162, ancho - 32, 14,
+                Text.translatable("femclothes.maniqui.skin.campo"));
+        campoSkin.setMaxLength(16);
+        campoSkin.setPlaceholder(Text.translatable("femclothes.maniqui.skin.campo"));
+        this.addDrawableChild(campoSkin);
+        btnSkin = new EstiloPergamino.BotonPergamino(sx + ancho - 30, this.y + 162, 30, 14, Text.translatable("femclothes.maniqui.skin.ir"), b -> {
+            String nombre = campoSkin.getText().trim();
+            if (!nombre.isEmpty()) {
+                net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+                        new com.femclothes.maniqui.ElegirSkinManiquiPayload(handler.be.getPos(), nombre));
+            }
+        });
+        this.addDrawableChild(btnSkin);
     }
 
+    private net.minecraft.client.gui.widget.TextFieldWidget campoSkin;
+    private ButtonWidget btnSkin;
+    private ButtonWidget btnCandado;
+
+    private ButtonWidget btnIntercambiar;
     private ButtonWidget btnPose;
     private ButtonWidget btnBusto;
     private ButtonWidget btnFigura;
@@ -155,6 +179,18 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
         }
     }
 
+    private Text nombreFigura() {
+        var be = handler.be;
+        String pre = be.predefinida();
+        if (pre != null) return Text.translatable("femclothes.maniqui.figura.pre", Text.translatable("femclothes.maniqui.skin." + pre));
+        return switch (be.figura()) {
+            case ManiquiBlockEntity.FIGURA_TU_SKIN -> Text.translatable("femclothes.maniqui.figura.skin");
+            case ManiquiBlockEntity.FIGURA_JUGADOR -> Text.translatable("femclothes.maniqui.figura.jugador",
+                    be.dueno() != null && be.dueno().name().isPresent() ? be.dueno().name().get() : "?");
+            default -> Text.translatable("femclothes.maniqui.figura.maniqui");
+        };
+    }
+
     private void clickBoton(int id) {
         this.client.interactionManager.clickButton(this.handler.syncId, id);
     }
@@ -167,8 +203,17 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
                 ? "femclothes.maniqui.detener" : "femclothes.maniqui.girar"));
         btnPose.setMessage(Text.translatable("femclothes.maniqui.pose",
                 Text.translatable(handler.be.pose().traduccion())));
-        btnFigura.setMessage(Text.translatable(handler.be.figuraSkin()
-                ? "femclothes.maniqui.figura.skin" : "femclothes.maniqui.figura.maniqui"));
+        btnFigura.setMessage(nombreFigura());
+        // Sin permiso (candado cerrado de otro) todo queda de solo lectura (2026-10-04).
+        boolean toca = handler.puedeTocar();
+        for (ButtonWidget b : new ButtonWidget[] {btnGirar, btnPose, btnFigura, btnBusto, btnSkin, btnIntercambiar}) {
+            if (b != null) b.active = toca;
+        }
+        for (SliderPose sl : sliders) sl.active = toca;
+        campoSkin.setEditable(toca);
+        btnCandado.active = com.femclothes.util.Candado.puedeAlternar(handler.estado());
+        btnCandado.setMessage(Text.translatable(com.femclothes.util.Candado.cerrado(handler.estado())
+                ? "femclothes.candado.cerrado" : "femclothes.candado.abierto"));
         btnBusto.setMessage(handler.be.busto() == 0 ? Text.translatable("femclothes.maniqui.busto.sin")
                 : Text.translatable("femclothes.maniqui.busto", handler.be.busto(), com.femclothes.body.PerfilCuerpo.BUSTO_MAXIMO));
         if (!arrastrando) for (SliderPose s : sliders) s.refrescar();
@@ -184,6 +229,14 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
      * ropa — dibujada por {@code ManiquiRenderer#dibujarFigura}.
      */
     private void dibujarPreview(DrawContext context, int mouseY) {
+        // Sin permiso (2026-10-04, "alguien que no es dueño... la preview de su personaje usando el outfit"): se ve
+        // el propio personaje con la ropa y la armadura del maniquí puestas, sin tocar nada.
+        if (!handler.puedeTocar() && MinecraftClient.getInstance().player != null) {
+            GuardarropasScreen.dibujarConOutfit(context, MinecraftClient.getInstance().player, handler.be,
+                    handler.be.prendasPuestas(), this.x + PREVIEW_X1_LOCAL, this.y + PREVIEW_Y1_LOCAL,
+                    this.x + PREVIEW_X2_LOCAL, this.y + PREVIEW_Y2_LOCAL, anguloVista, mouseY);
+            return;
+        }
         var dispatcher = MinecraftClient.getInstance().getBlockEntityRenderDispatcher();
         if (!(dispatcher.get(handler.be) instanceof com.femclothes.maniqui.ManiquiRenderer renderer)) return;
         int x1 = this.x + PREVIEW_X1_LOCAL, y1 = this.y + PREVIEW_Y1_LOCAL;

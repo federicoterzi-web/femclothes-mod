@@ -46,7 +46,7 @@ import java.util.List;
  * abierta.
  */
 public class ManiquiBlockEntity extends BlockEntity
-        implements Inventory, ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity {
+        implements net.minecraft.inventory.SidedInventory, ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity {
 
     public static final int POR_CATEGORIA = GuardarropasBlockEntity.POR_CATEGORIA;
     public static final int CATEGORIAS = GuardarropasBlockEntity.CATEGORIAS;
@@ -60,6 +60,17 @@ public class ManiquiBlockEntity extends BlockEntity
     public static final int BTN_FIGURA = 3;
     /** Pasa al siguiente talle de busto de la figura (2026-10-02, "agregale la opcion de ponerle tetas"). */
     public static final int BTN_BUSTO = 4;
+    /** Cierra/abre el candado (2026-10-04, "le pongamos un lock al maniqui"). */
+    public static final int BTN_CANDADO = 5;
+
+    /**
+     * Figuras (2026-10-04, "un par de modelos mas aparte del propio un steve un alex"): 0 maniquí, 1 la skin de
+     * quien aprieta, 2..10 las nueve skins de Mojang, 11 la skin de un jugador elegido por nombre.
+     */
+    public static final int FIGURA_MANIQUI = 0, FIGURA_TU_SKIN = 1, FIGURA_PREDEFINIDA_BASE = 2, FIGURA_JUGADOR = 11;
+    public static final String[] PREDEFINIDAS = {"steve", "alex", "ari", "efe", "kai", "makena", "noor", "sunny", "zuri"};
+    /** Las que Mojang trae con brazos finos (las demás son anchas). */
+    private static final java.util.Set<String> FINAS = java.util.Set.of("alex", "efe", "makena", "noor");
 
     /** Una vuelta entera cada 14 s — lo mismo que {@code animation.mannequin.girar} del zip. */
     public static final float TICKS_POR_VUELTA = 14 * 20;
@@ -70,8 +81,9 @@ public class ManiquiBlockEntity extends BlockEntity
     // ── pose y figura (2026-09-30) ────────────────────────────────────────
     private PoseManiqui pose = PoseManiqui.PARADO;
     private float[] angulos = PoseManiqui.PARADO.angulos();
-    /** true = la figura usa la skin de {@link #dueno}; false = textura de maniquí. */
-    private boolean figuraSkin = false;
+    /** Ver {@code FIGURA_*}: qué cuerpo se dibuja. */
+    private int figura = FIGURA_MANIQUI;
+    private final com.femclothes.util.Candado candado = new com.femclothes.util.Candado();
     /** Talle de busto de la figura: 0 = sin, 1..{@code PerfilCuerpo.BUSTO_MAXIMO} como los de los Estrógenos. */
     private int busto = 0;
     @Nullable
@@ -94,7 +106,28 @@ public class ManiquiBlockEntity extends BlockEntity
     /** Ángulo {@code i} de la pose, en grados (ver el orden en {@link PoseManiqui}). */
     public float angulo(int i) { return angulos[i]; }
 
-    public boolean figuraSkin() { return figuraSkin; }
+    /** true si la figura lleva una skin (propia, de Mojang o de un jugador) y no la textura de maniquí. */
+    public boolean figuraSkin() { return figura != FIGURA_MANIQUI; }
+
+    public int figura() { return figura; }
+
+    /** Nombre (clave de textura) de la skin de Mojang elegida, o null si la figura usa otra cosa. */
+    @Nullable
+    public String predefinida() {
+        int i = figura - FIGURA_PREDEFINIDA_BASE;
+        return i >= 0 && i < PREDEFINIDAS.length ? PREDEFINIDAS[i] : null;
+    }
+
+    public static boolean predefinidaEsFina(String nombre) { return FINAS.contains(nombre); }
+
+    public com.femclothes.util.Candado candado() { return candado; }
+
+    /** La skin de un jugador elegido por nombre (2026-10-04, "elegir skin escribiendo el nombre"). */
+    public void elegirJugador(com.mojang.authlib.GameProfile perfil) {
+        dueno = new net.minecraft.component.type.ProfileComponent(perfil);
+        figura = FIGURA_JUGADOR;
+        markDirty();
+    }
 
     public int busto() { return busto; }
 
@@ -219,6 +252,13 @@ public class ManiquiBlockEntity extends BlockEntity
     }
 
     public boolean onButtonClick(PlayerEntity player, int id) {
+        if (id == BTN_CANDADO) {
+            if (!candado.alternar(player)) return false;
+            markDirty();
+            return true;
+        }
+        // Con el candado cerrado, los ajenos no tocan nada (ni siquiera "Intercambiar", que se llevaría la ropa).
+        if (!candado.puedeTocar(player)) return false;
         if (id == BTN_GIRAR) {
             alternarGiro();
             return true;
@@ -237,10 +277,11 @@ public class ManiquiBlockEntity extends BlockEntity
             return true;
         }
         if (id == BTN_FIGURA) {
-            figuraSkin = !figuraSkin;
+            figura = figura == FIGURA_PREDEFINIDA_BASE + PREDEFINIDAS.length - 1 || figura == FIGURA_JUGADOR
+                    ? FIGURA_MANIQUI : figura + 1;
             // "Tu skin" = la de quien aprieta (así sirve también en maniquíes
             // puestos antes de esto, sin dueño guardado).
-            if (figuraSkin) dueno = new net.minecraft.component.type.ProfileComponent(player.getGameProfile());
+            if (figura == FIGURA_TU_SKIN) dueno = new net.minecraft.component.type.ProfileComponent(player.getGameProfile());
             markDirty();
             return true;
         }
@@ -317,6 +358,22 @@ public class ManiquiBlockEntity extends BlockEntity
         }
     }
 
+    // ── SidedInventory: las tolvas respetan el candado ────────────────────
+    private static final int[] TODOS = java.util.stream.IntStream.range(0, TAMANO).toArray();
+
+    @Override
+    public int[] getAvailableSlots(net.minecraft.util.math.Direction side) { return TODOS; }
+
+    @Override
+    public boolean canInsert(int slot, ItemStack stack, @Nullable net.minecraft.util.math.Direction dir) {
+        return !candado.cerrado() && isValid(slot, stack);
+    }
+
+    @Override
+    public boolean canExtract(int slot, ItemStack stack, net.minecraft.util.math.Direction dir) {
+        return !candado.cerrado();
+    }
+
     @Override
     public boolean canPlayerUse(PlayerEntity player) {
         return world != null && world.getBlockEntity(pos) == this
@@ -352,7 +409,8 @@ public class ManiquiBlockEntity extends BlockEntity
         net.minecraft.nbt.NbtList lista = new net.minecraft.nbt.NbtList();
         for (float a : angulos) lista.add(net.minecraft.nbt.NbtFloat.of(a));
         nbt.put("Angulos", lista);
-        nbt.putBoolean("FiguraSkin", figuraSkin);
+        nbt.putInt("Figura", figura);
+        candado.guardar(nbt);
         nbt.putInt("Busto", busto);
         if (dueno != null) {
             net.minecraft.component.type.ProfileComponent.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, dueno)
@@ -371,7 +429,9 @@ public class ManiquiBlockEntity extends BlockEntity
         net.minecraft.nbt.NbtList lista = nbt.getList("Angulos", net.minecraft.nbt.NbtElement.FLOAT_TYPE);
         for (int i = 0; i < base.length && i < lista.size(); i++) base[i] = lista.getFloat(i);
         angulos = base;
-        figuraSkin = nbt.getBoolean("FiguraSkin");
+        // Los guardados de antes tenían solo "FiguraSkin" (true = tu skin).
+        figura = nbt.contains("Figura") ? nbt.getInt("Figura") : (nbt.getBoolean("FiguraSkin") ? FIGURA_TU_SKIN : FIGURA_MANIQUI);
+        candado.leer(nbt);
         busto = nbt.getInt("Busto");
         dueno = nbt.contains("Dueno")
                 ? net.minecraft.component.type.ProfileComponent.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, nbt.get("Dueno"))

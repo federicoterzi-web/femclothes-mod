@@ -38,9 +38,31 @@ public final class ManiquiMod {
         net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(PoseManiquiPayload.ID,
                 (payload, context) -> context.server().execute(() -> {
                     if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof ManiquiBlockEntity be
-                            && be.canPlayerUse(context.player())) {
+                            && be.canPlayerUse(context.player()) && be.candado().puedeTocar(context.player())) {
                         be.setAngulo(payload.indice(), payload.grados());
                     }
+                }));
+
+        // Skin de un jugador por nombre (2026-10-04).
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S()
+                .register(ElegirSkinManiquiPayload.ID, ElegirSkinManiquiPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(ElegirSkinManiquiPayload.ID,
+                (payload, context) -> context.server().execute(() -> {
+                    var jugador = context.player();
+                    if (!(jugador.getWorld().getBlockEntity(payload.pos()) instanceof ManiquiBlockEntity be)
+                            || !be.canPlayerUse(jugador) || !be.candado().puedeTocar(jugador)) return;
+                    String nombre = payload.nombre().trim();
+                    if (!nombre.matches("[A-Za-z0-9_]{1,16}")) {
+                        jugador.sendMessage(net.minecraft.text.Text.translatable("femclothes.maniqui.skin.nombre_invalido"), true);
+                        return;
+                    }
+                    net.minecraft.block.entity.SkullBlockEntity.fetchProfileByName(nombre).thenAcceptAsync(perfil -> {
+                        if (perfil.isEmpty()) {
+                            jugador.sendMessage(net.minecraft.text.Text.translatable("femclothes.maniqui.skin.no_existe", nombre), true);
+                        } else if (be.getWorld() != null && be.getWorld().getBlockEntity(be.getPos()) == be) {
+                            be.elegirJugador(perfil.get());
+                        }
+                    }, context.server());
                 }));
     }
 
