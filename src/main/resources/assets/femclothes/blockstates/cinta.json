@@ -44,6 +44,36 @@
     "facing=west,forma=curva_der": {
       "model": "femclothes:block/cinta_curva_der",
       "y": 270
+    },
+    "facing=north,forma=rampa_sube": {
+      "model": "femclothes:block/cinta_rampa_sube"
+    },
+    "facing=east,forma=rampa_sube": {
+      "model": "femclothes:block/cinta_rampa_sube",
+      "y": 90
+    },
+    "facing=south,forma=rampa_sube": {
+      "model": "femclothes:block/cinta_rampa_sube",
+      "y": 180
+    },
+    "facing=west,forma=rampa_sube": {
+      "model": "femclothes:block/cinta_rampa_sube",
+      "y": 270
+    },
+    "facing=north,forma=rampa_baja": {
+      "model": "femclothes:block/cinta_rampa_baja"
+    },
+    "facing=east,forma=rampa_baja": {
+      "model": "femclothes:block/cinta_rampa_baja",
+      "y": 90
+    },
+    "facing=south,forma=rampa_baja": {
+      "model": "femclothes:block/cinta_rampa_baja",
+      "y": 180
+    },
+    "facing=west,forma=rampa_baja": {
+      "model": "femclothes:block/cinta_rampa_baja",
+      "y": 270
     }
   }
 }

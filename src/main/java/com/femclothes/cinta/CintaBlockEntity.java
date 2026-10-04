@@ -38,7 +38,7 @@ public class CintaBlockEntity extends BlockEntity implements SidedInventory {
     public long llegada() { return llegada; }
 
     public static int ticksDe(BlockState estado) {
-        return estado.get(CintaBlock.FORMA) == CintaBlock.Forma.RECTA ? TICKS_RECTA : TICKS_CURVA;
+        return estado.get(CintaBlock.FORMA).esCurva() ? TICKS_CURVA : TICKS_RECTA;   // la rampa va a la misma velocidad de banda
     }
 
     /** Servidor: cuando la prenda llegó al final, la empuja al inventario de enfrente (si no puede, espera). */
@@ -46,7 +46,11 @@ public class CintaBlockEntity extends BlockEntity implements SidedInventory {
         if (be.carga.isEmpty()) return;
         if (world.getTime() - be.llegada < ticksDe(state)) return;
         Direction frente = state.get(CintaBlock.FACING);
-        ItemStack resto = InventarioUtil.empujarA(world, pos.offset(frente), frente.getOpposite(), be.carga);
+        BlockPos destino = pos.offset(frente);
+        CintaBlock.Forma forma = state.get(CintaBlock.FORMA);
+        if (forma == CintaBlock.Forma.RAMPA_SUBE) destino = destino.up();
+        else if (forma == CintaBlock.Forma.RAMPA_BAJA) destino = destino.down();
+        ItemStack resto = InventarioUtil.empujarA(world, destino, frente.getOpposite(), be.carga);
         if (resto.getCount() != be.carga.getCount()) {
             be.carga = resto;
             be.sincronizar();

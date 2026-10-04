@@ -41,9 +41,15 @@ public class CintaRenderer implements BlockEntityRenderer<CintaBlockEntity> {
         float t = (be.getWorld().getTime() + tickDelta - be.llegada()) / CintaBlockEntity.ticksDe(estado);
         t = Math.max(0f, Math.min(1f, t));
 
-        // Posición y rumbo en el marco "mira al norte" centrado en el bloque.
+        // Posición y rumbo en el marco "mira al norte" centrado en el bloque. En las rampas la banda sube/baja
+        // un bloque entero en un bloque de recorrido (45°): el ícono se inclina con ella.
         float px, pz, tx, tz;
-        if (forma == CintaBlock.Forma.RECTA) {
+        float py = 0f, ty = 0f;
+        if (forma.esRampa()) {
+            float signo = forma == CintaBlock.Forma.RAMPA_SUBE ? 1f : -1f;
+            px = 0f; pz = 0.5f - t; tx = 0f; tz = -1f;
+            py = signo * t; ty = signo;
+        } else if (forma == CintaBlock.Forma.RECTA) {
             px = 0f; pz = 0.5f - t; tx = 0f; tz = -1f;
         } else {
             float fi = t * (float) Math.PI / 2f;
@@ -63,21 +69,30 @@ public class CintaRenderer implements BlockEntityRenderer<CintaBlockEntity> {
 
         // Arriba de la prenda = hacia donde avanza; su derecha = ese rumbo girado 90° en sentido horario.
         float rx = -tz, rz = tx;
+        // Rumbo unitario en 3D y normal = derecha × rumbo.
+        float lf = (float) Math.sqrt(tx * tx + ty * ty + tz * tz);
+        float fx = tx / lf, fy = ty / lf, fz = tz / lf;
+        float nx = 0f * fz - fy * rz * 0f;   // (rx,0,rz) × (fx,fy,fz)
+        nx = 0f * fz - rz * fy;
+        float ny = rz * fx - rx * fz;
+        float nz = rx * fy - 0f * fx;
         VertexConsumer vc = buffers.getBuffer(RenderLayer.getEntityCutoutNoCull(icono));
         MatrixStack.Entry e = matrices.peek();
-        vertice(vc, e, px - rx * MEDIO + tx * MEDIO, pz - rz * MEDIO + tz * MEDIO, 0, 0, luz);
-        vertice(vc, e, px - rx * MEDIO - tx * MEDIO, pz - rz * MEDIO - tz * MEDIO, 0, 1, luz);
-        vertice(vc, e, px + rx * MEDIO - tx * MEDIO, pz + rz * MEDIO - tz * MEDIO, 1, 1, luz);
-        vertice(vc, e, px + rx * MEDIO + tx * MEDIO, pz + rz * MEDIO + tz * MEDIO, 1, 0, luz);
+        float cy = ALTO + py;
+        vertice(vc, e, px - rx * MEDIO + fx * MEDIO, cy + fy * MEDIO, pz - rz * MEDIO + fz * MEDIO, 0, 0, luz, nx, ny, nz);
+        vertice(vc, e, px - rx * MEDIO - fx * MEDIO, cy - fy * MEDIO, pz - rz * MEDIO - fz * MEDIO, 0, 1, luz, nx, ny, nz);
+        vertice(vc, e, px + rx * MEDIO - fx * MEDIO, cy - fy * MEDIO, pz + rz * MEDIO - fz * MEDIO, 1, 1, luz, nx, ny, nz);
+        vertice(vc, e, px + rx * MEDIO + fx * MEDIO, cy + fy * MEDIO, pz + rz * MEDIO + fz * MEDIO, 1, 0, luz, nx, ny, nz);
         matrices.pop();
     }
 
-    private static void vertice(VertexConsumer vc, MatrixStack.Entry e, float x, float z, float u, float v, int luz) {
-        vc.vertex(e.getPositionMatrix(), x, ALTO, z)
+    private static void vertice(VertexConsumer vc, MatrixStack.Entry e, float x, float y, float z, float u, float v, int luz,
+                                float nx, float ny, float nz) {
+        vc.vertex(e.getPositionMatrix(), x, y, z)
                 .color(0xFFFFFFFF)
                 .texture(u, v)
                 .overlay(OverlayTexture.DEFAULT_UV)
                 .light(luz)
-                .normal(e, 0, 1, 0);
+                .normal(e, nx, ny, nz);
     }
 }

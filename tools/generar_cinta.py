@@ -145,6 +145,43 @@ def modelo_curva(espejo):
     }
 
 
+def plano_rampa(textura, y_centro, angulo):
+    """Plano de la banda inclinado 45° alrededor de su centro (como los rieles en subida de vanilla): con
+    rescale cubre 16 px de recorrido en z y sube/baja 16 px."""
+    return {
+        "from": [0, y_centro, 0], "to": [16, y_centro, 16],
+        "rotation": {"origin": [8, y_centro, 8], "axis": "x", "angle": angulo, "rescale": True},
+        "faces": {"up": {"uv": [0, 0, 16, 16], "texture": textura}},
+    }
+
+
+def modelo_rampa(sube):
+    """Rampa de un bloque. Mira al norte: entra por el sur a 4,05 px y sale por el norte 16 px más arriba
+    (sube) o 16 px más abajo (baja), al nivel de la banda del bloque siguiente."""
+    elementos = []
+    signo = 1 if sube else -1
+    y_atras = 4.05
+    y_centro = y_atras + signo * 8
+    for z0 in range(16):
+        # Altura de la banda en la franja [z0, z0+1]: z=16 (atrás) = 4,05, z=0 (adelante) = 4,05 + signo*16.
+        y_en = lambda z: y_atras + signo * (16 - z)
+        y_min = min(y_en(z0), y_en(z0 + 1))
+        y_max = max(y_en(z0), y_en(z0 + 1))
+        techo = round(y_min - 0.02, 2)
+        piso = 0 if sube else max(-16, round(techo - 3, 2))
+        elementos.append(caja([0, piso, z0], [16, techo, z0 + 1]))
+        # Paredes laterales: 2 px sobre la banda.
+        alto = round(y_max + 2, 2)
+        for x0, x1 in ((0, 2), (14, 16)):
+            elementos.append(caja([x0, techo, z0], [x1, alto, z0 + 1]))
+    elementos.append(plano_rampa("#banda", round(y_centro, 3), 45 * signo))
+    return {
+        "textures": {"marco": "femclothes:block/cinta_marco", "banda": "femclothes:block/cinta_banda",
+                     "particle": "femclothes:block/cinta_marco"},
+        "elements": elementos,
+    }
+
+
 def escribir(ruta, datos):
     os.makedirs(os.path.dirname(ruta), exist_ok=True)
     with open(ruta, "w", encoding="utf-8") as f:
@@ -165,9 +202,13 @@ def main():
         nombre, datos = modelo_curva(espejo)
         escribir(os.path.join(MOD, nombre + ".json"), datos)
 
+    escribir(os.path.join(MOD, "cinta_rampa_sube.json"), modelo_rampa(True))
+    escribir(os.path.join(MOD, "cinta_rampa_baja.json"), modelo_rampa(False))
+
     giros = {"north": 0, "east": 90, "south": 180, "west": 270}
     variantes = {}
-    for forma, modelo in (("recta", "cinta_recta"), ("curva_izq", "cinta_curva_izq"), ("curva_der", "cinta_curva_der")):
+    for forma, modelo in (("recta", "cinta_recta"), ("curva_izq", "cinta_curva_izq"), ("curva_der", "cinta_curva_der"),
+                           ("rampa_sube", "cinta_rampa_sube"), ("rampa_baja", "cinta_rampa_baja")):
         for lado, y in giros.items():
             v = {"model": f"femclothes:block/{modelo}"}
             if y:
