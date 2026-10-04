@@ -1,7 +1,9 @@
 package com.femclothes.estilado;
 
 import com.femclothes.aplique.Aplique;
+import com.femclothes.aplique.ModeloAplique;
 import com.femclothes.aplique.MoldeApliqueItem;
+import com.femclothes.aplique.ObjetoAplique;
 import com.femclothes.aplique.RetazoApliqueItem;
 import com.femclothes.garment.Garments;
 import com.femclothes.garment.Parte;
@@ -51,7 +53,8 @@ public class EstiladoBlockEntity extends BlockEntity
         implements GeoBlockEntity, Inventory, ExtendedScreenHandlerFactory<BlockPos>,
         com.femclothes.util.MaquinaCreativa.Cargable {
 
-    public static final int SLOT_PRENDA = 0, SLOT_MOLDE = 1, SLOT_RETAZO = 2, TAMANO = 3;
+    /** SLOT_OBJETO (2026-10-04, apliques de objeto): cualquier ítem; si hay uno, el aplique que se pone es ese objeto. */
+    public static final int SLOT_PRENDA = 0, SLOT_MOLDE = 1, SLOT_RETAZO = 2, SLOT_OBJETO = 3, TAMANO = 4;
 
     public static final int BTN_SELECCIONAR_BASE = 0;          // + 0..5
     public static final int BTN_GIRO = 10, BTN_GIRO_ATRAS = 11;
@@ -72,6 +75,11 @@ public class EstiladoBlockEntity extends BlockEntity
     /** Blandura del aplique elegido: BASE + 0..10 = 0..100 % (2026-10-04, "tela blanda... un slider"). */
     public static final int BTN_BLANDURA_BASE = 20;
     public static final int BLANDURA_PASOS = 10;
+    /** Aplique de objeto (2026-10-04): Ítem/Bloque, variante del bloque (vela encendida...) e inclinación de a 15°. */
+    public static final int BTN_OBJ_MODO = 40, BTN_OBJ_VARIANTE = 41;
+    public static final int BTN_OBJ_INCLINAR_X_MAS = 42, BTN_OBJ_INCLINAR_X_MENOS = 43;
+    public static final int BTN_OBJ_INCLINAR_Y_MAS = 44, BTN_OBJ_INCLINAR_Y_MENOS = 45;
+    public static final float ESCALA_MIN_OBJETO = 0.25f;
     /** La que trae un aplique recién puesto. */
     public static final float BLANDURA_INICIAL = 0.5f;
 
@@ -115,9 +123,18 @@ public class EstiladoBlockEntity extends BlockEntity
      */
     public boolean poner(Parte parte, float x, float y, float z, Direction cara, Aplique.Superficie superficie) {
         ItemStack prenda = items.get(SLOT_PRENDA), molde = items.get(SLOT_MOLDE), retazo = items.get(SLOT_RETAZO);
+        ItemStack objeto = items.get(SLOT_OBJETO);
         // Mesa creativa (2026-10-01): el retazo no hace falta ni se gasta (sin retazo, sale blanco).
         boolean gratis = com.femclothes.util.MaquinaCreativa.es(this);
-        if (prenda.isEmpty() || !(molde.getItem() instanceof MoldeApliqueItem m) || (retazo.isEmpty() && !gratis)) return false;
+        // Con un objeto en su slot (2026-10-04), el aplique es ese objeto y el molde no cuenta; la muestra de
+        // color en el slot del retazo lo tiñe (opcional).
+        boolean esObjeto = !objeto.isEmpty();
+        if (esObjeto) {
+            if (prenda.isEmpty() || !ObjetoAplique.admite(objeto)) return false;
+        } else if (prenda.isEmpty() || !(molde.getItem() instanceof MoldeApliqueItem)
+                || (!(retazo.getItem() instanceof RetazoApliqueItem) && !gratis)) {
+            return false;
+        }
         if (!admite(prenda) || !Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(z)) return false;
         List<Aplique> actuales = new ArrayList<>(apliques());
         if (actuales.size() >= Aplique.MAXIMO_POR_PRENDA) return false;
@@ -140,8 +157,19 @@ public class EstiladoBlockEntity extends BlockEntity
                 z = MathHelper.clamp(z, -6, 6);
             }
         }
-        actuales.add(new Aplique(m.modelo, parte, x, y, z, cara, 0f, 1f, RetazoApliqueItem.colores(retazo), superficie, BLANDURA_INICIAL));
-        if (!gratis) retazo.decrement(1);
+        if (esObjeto) {
+            ItemStack muestra = retazo.getItem() instanceof com.femclothes.item.MuestraColorItem ? retazo : ItemStack.EMPTY;
+            actuales.add(new Aplique(ModeloAplique.OBJETO, parte, x, y, z, cara, 0f, 1f, RetazoApliqueItem.BLANCO, superficie,
+                    BLANDURA_INICIAL, ObjetoAplique.de(objeto, muestra)));
+            if (!gratis) {
+                objeto.decrement(1);
+                if (!muestra.isEmpty()) muestra.decrement(1);
+            }
+        } else {
+            MoldeApliqueItem m = (MoldeApliqueItem) molde.getItem();
+            actuales.add(new Aplique(m.modelo, parte, x, y, z, cara, 0f, 1f, RetazoApliqueItem.colores(retazo), superficie, BLANDURA_INICIAL));
+            if (!gratis) retazo.decrement(1);
+        }
         seleccionado = actuales.size() - 1;
         guardarApliques(actuales);
         return true;
@@ -152,9 +180,17 @@ public class EstiladoBlockEntity extends BlockEntity
         List<Aplique> actuales = new ArrayList<>(apliques());
         if (seleccionado < 0 || seleccionado >= actuales.size()) return;
         Aplique a = actuales.remove(seleccionado);
-        ItemStack retazo = RetazoApliqueItem.conColores(new ItemStack(FemclothesItems.RETAZO_APLIQUE),
-                a.color(0), a.color(1), a.color(2));
-        jugador.getInventory().offerOrDrop(retazo);
+        if (a.objeto() != null) {
+            // Vuelve el objeto y la muestra, tal cual (en la Mesa creativa no se gastaron: no se devuelven).
+            if (!com.femclothes.util.MaquinaCreativa.es(this)) {
+                jugador.getInventory().offerOrDrop(a.objeto().item().copy());
+                if (!a.objeto().muestra().isEmpty()) jugador.getInventory().offerOrDrop(a.objeto().muestra().copy());
+            }
+        } else {
+            ItemStack retazo = RetazoApliqueItem.conColores(new ItemStack(FemclothesItems.RETAZO_APLIQUE),
+                    a.color(0), a.color(1), a.color(2));
+            jugador.getInventory().offerOrDrop(retazo);
+        }
         seleccionado = Math.min(seleccionado, actuales.size() - 1);
         guardarApliques(actuales);
     }
@@ -181,7 +217,28 @@ public class EstiladoBlockEntity extends BlockEntity
             case BTN_GIRO -> actuales.set(seleccionado, a.conGiro((Math.round(a.giro()) + 15) % 360));
             case BTN_GIRO_ATRAS -> actuales.set(seleccionado, a.conGiro((Math.round(a.giro()) + 345) % 360));
             case BTN_ESCALA -> actuales.set(seleccionado, a.conEscala(Math.min(ESCALA_MAX, a.escala() + PASO_ESCALA)));
-            case BTN_ESCALA_ATRAS -> actuales.set(seleccionado, a.conEscala(Math.max(ESCALA_MIN, a.escala() - PASO_ESCALA)));
+            case BTN_ESCALA_ATRAS -> actuales.set(seleccionado, a.conEscala(
+                    Math.max(a.objeto() != null ? ESCALA_MIN_OBJETO : ESCALA_MIN, a.escala() - PASO_ESCALA)));
+            case BTN_OBJ_MODO, BTN_OBJ_VARIANTE, BTN_OBJ_INCLINAR_X_MAS, BTN_OBJ_INCLINAR_X_MENOS,
+                 BTN_OBJ_INCLINAR_Y_MAS, BTN_OBJ_INCLINAR_Y_MENOS -> {
+                ObjetoAplique o = a.objeto();
+                if (o == null) return false;
+                switch (id) {
+                    case BTN_OBJ_MODO -> {
+                        if (ObjetoAplique.bloqueDe(o.item()) == null) return false;
+                        o = o.conBloque(!o.bloque()).conVariante(0);
+                    }
+                    case BTN_OBJ_VARIANTE -> {
+                        if (!o.bloque() || o.cantidadDeVariantes() < 2) return false;
+                        o = o.conVariante((o.variante() + 1) % o.cantidadDeVariantes());
+                    }
+                    case BTN_OBJ_INCLINAR_X_MAS -> o = o.conInclinacion(inclinar(o.inclinarX(), 15), o.inclinarY());
+                    case BTN_OBJ_INCLINAR_X_MENOS -> o = o.conInclinacion(inclinar(o.inclinarX(), -15), o.inclinarY());
+                    case BTN_OBJ_INCLINAR_Y_MAS -> o = o.conInclinacion(o.inclinarX(), inclinar(o.inclinarY(), 15));
+                    default -> o = o.conInclinacion(o.inclinarX(), inclinar(o.inclinarY(), -15));
+                }
+                actuales.set(seleccionado, a.conObjeto(o));
+            }
             default -> { return false; }
         }
         guardarApliques(actuales);
@@ -189,6 +246,13 @@ public class EstiladoBlockEntity extends BlockEntity
     }
 
     /** Con un Molde de textura: si la prenda ya la tiene, se la saca; si no, se la pone. El molde no se gasta. */
+    /** Suma grados y deja el resultado entre -180 y 180. */
+    private static float inclinar(float actual, float delta) {
+        float v = Math.round(actual + delta);
+        v = ((v + 180f) % 360f + 360f) % 360f - 180f;
+        return v == -180f ? 180f : v;
+    }
+
     private boolean alternarTextura() {
         ItemStack prenda = items.get(SLOT_PRENDA);
         if (prenda.isEmpty() || !(items.get(SLOT_MOLDE).getItem() instanceof com.femclothes.item.MoldeTexturaItem m)) return false;
@@ -290,7 +354,9 @@ public class EstiladoBlockEntity extends BlockEntity
             case SLOT_PRENDA -> admite(stack);
             case SLOT_MOLDE -> stack.getItem() instanceof MoldeApliqueItem
                     || stack.getItem() instanceof com.femclothes.item.MoldeTexturaItem;
-            case SLOT_RETAZO -> stack.getItem() instanceof RetazoApliqueItem;
+            case SLOT_RETAZO -> stack.getItem() instanceof RetazoApliqueItem
+                    || stack.getItem() instanceof com.femclothes.item.MuestraColorItem;
+            case SLOT_OBJETO -> ObjetoAplique.admite(stack);
             default -> false;
         };
     }

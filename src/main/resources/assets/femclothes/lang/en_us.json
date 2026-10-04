@@ -630,5 +630,13 @@
   "femclothes.estilado.tooltip.blandura": "How much the selected appliqué moves like soft fabric with motion (0% = rigid)",
   "femclothes.estilado.sacudir": "Shake",
   "femclothes.estilado.sacudir.parar": "Stop",
-  "femclothes.estilado.tooltip.sacudir": "Moves the dummy so you can see the appliqué fabric sway"
+  "femclothes.estilado.tooltip.sacudir": "Moves the dummy so you can see the appliqué fabric sway",
+  "femclothes.estilado.slot.objeto": "Object",
+  "femclothes.estilado.obj.item": "Item",
+  "femclothes.estilado.obj.bloque": "Block",
+  "femclothes.estilado.obj.variante": "Variant %s/%s",
+  "femclothes.estilado.tooltip.obj_modo": "Draw it as an item (like in a frame) or as the placed block with its properties. Only for block items",
+  "femclothes.estilado.tooltip.obj_variante": "Block mode: cycles the states that look different (lit candle, 1 to 4 candles...)",
+  "femclothes.estilado.tooltip.obj_inclinar_x": "Tilt the object forward / back (15° steps)",
+  "femclothes.estilado.tooltip.obj_inclinar_y": "Turn the object sideways (15° steps)"
 }

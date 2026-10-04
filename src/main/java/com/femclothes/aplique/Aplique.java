@@ -26,7 +26,8 @@ import java.util.List;
  *                 aplique"); 0 = rígido. Ver {@code render.FisicaApliques}.
  */
 public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float z, Direction cara,
-                      float giro, float escala, List<Integer> colores, Superficie superficie, float blandura) {
+                      float giro, float escala, List<Integer> colores, Superficie superficie, float blandura,
+                      @org.jetbrains.annotations.Nullable ObjetoAplique objeto) {
 
     public static final int MAXIMO_POR_PRENDA = 6;
 
@@ -49,6 +50,12 @@ public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float
 
     public Aplique {
         blandura = Math.max(0f, Math.min(1f, blandura));
+    }
+
+    /** Sin objeto (un modelo GeckoLib de siempre). */
+    public Aplique(ModeloAplique modelo, Parte parte, float x, float y, float z, Direction cara,
+                   float giro, float escala, List<Integer> colores, Superficie superficie, float blandura) {
+        this(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, null);
     }
 
     /** Rígido (lo de antes de la tela blanda). */
@@ -77,7 +84,9 @@ public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float
             Codec.INT.listOf().optionalFieldOf("colores", List.of(0xFFFFFF, 0xFFFFFF, 0xFFFFFF)).forGetter(Aplique::colores),
             net.minecraft.util.StringIdentifiable.createCodec(Superficie::values)
                     .optionalFieldOf("superficie", Superficie.CAJA).forGetter(Aplique::superficie),
-            Codec.FLOAT.optionalFieldOf("blandura", 0f).forGetter(Aplique::blandura)
+            Codec.FLOAT.optionalFieldOf("blandura", 0f).forGetter(Aplique::blandura),
+            ObjetoAplique.CODEC.optionalFieldOf("objeto").xmap(o -> o.orElse(null), java.util.Optional::ofNullable)
+                    .forGetter(Aplique::objeto)
     ).apply(i, Aplique::new));
 
     /** Color de la zona {@code zona} (0..2), blanco si falta. */
@@ -86,14 +95,18 @@ public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float
     }
 
     public Aplique conGiro(float g) {
-        return new Aplique(modelo, parte, x, y, z, cara, g, escala, colores, superficie, blandura);
+        return new Aplique(modelo, parte, x, y, z, cara, g, escala, colores, superficie, blandura, objeto);
     }
 
     public Aplique conEscala(float e) {
-        return new Aplique(modelo, parte, x, y, z, cara, giro, e, colores, superficie, blandura);
+        return new Aplique(modelo, parte, x, y, z, cara, giro, e, colores, superficie, blandura, objeto);
+    }
+
+    public Aplique conObjeto(ObjetoAplique o) {
+        return new Aplique(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, o);
     }
 
     public Aplique conBlandura(float b) {
-        return new Aplique(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, b);
+        return new Aplique(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, b, objeto);
     }
 }

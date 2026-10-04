@@ -630,5 +630,13 @@
   "femclothes.estilado.tooltip.blandura": "Cuánto se mueve el aplique elegido como tela blanda con el movimiento (0 % = rígido)",
   "femclothes.estilado.sacudir": "Sacudir",
   "femclothes.estilado.sacudir.parar": "Parar",
-  "femclothes.estilado.tooltip.sacudir": "Mueve el muñeco para ver cómo se agita la tela de los apliques"
+  "femclothes.estilado.tooltip.sacudir": "Mueve el muñeco para ver cómo se agita la tela de los apliques",
+  "femclothes.estilado.slot.objeto": "Objeto",
+  "femclothes.estilado.obj.item": "Ítem",
+  "femclothes.estilado.obj.bloque": "Bloque",
+  "femclothes.estilado.obj.variante": "Variante %s/%s",
+  "femclothes.estilado.tooltip.obj_modo": "Dibujarlo como ítem (como en un marco) o como el bloque colocado, con sus propiedades. Solo si el ítem es de un bloque",
+  "femclothes.estilado.tooltip.obj_variante": "En modo bloque: pasa por los estados que se ven distinto (vela encendida, 1 a 4 velas...)",
+  "femclothes.estilado.tooltip.obj_inclinar_x": "Inclinar el objeto hacia adelante / atrás (de a 15°)",
+  "femclothes.estilado.tooltip.obj_inclinar_y": "Girar el objeto de costado (de a 15°)"
 }

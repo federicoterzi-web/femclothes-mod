@@ -67,6 +67,9 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
 
     private final ButtonWidget[] btnApliques = new ButtonWidget[Aplique.MAXIMO_POR_PRENDA];
     private ButtonWidget btnGiro, btnEscala, btnQuitar, btnSacudir;
+    /** Controles del aplique de objeto (2026-10-04): arriba de la vista, solo con uno elegido. */
+    private ButtonWidget btnObjModo, btnObjVariante;
+    private final ButtonWidget[] btnObjInclinar = new ButtonWidget[4];
     private SliderBlandura sliderBlandura;
 
     public EstiladoScreen(EstiladoScreenHandler handler, PlayerInventory inventory, Text title) {
@@ -117,6 +120,22 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         // Sacudir (2026-10-04, "boton de sacudir... alternar mover el muñeco"): prende y apaga el vaivén.
         btnSacudir = boton(X_DER + 98, 132, 64, Text.empty(), "femclothes.estilado.tooltip.sacudir",
                 () -> sacudiendo = !sacudiendo);
+        // Aplique de objeto (2026-10-04, "poder rotar el modelo y seleccionar si item o bloque"): en la franja
+        // de arriba de la vista; solo se ven con un aplique de objeto elegido.
+        int by = PY1 + 3;
+        btnObjModo = boton(PX1 + 4, by, 58, Text.empty(), "femclothes.estilado.tooltip.obj_modo",
+                () -> clickBoton(EstiladoBlockEntity.BTN_OBJ_MODO));
+        btnObjVariante = boton(PX1 + 64, by, 58, Text.empty(), "femclothes.estilado.tooltip.obj_variante",
+                () -> clickBoton(EstiladoBlockEntity.BTN_OBJ_VARIANTE));
+        int[] ids = { EstiladoBlockEntity.BTN_OBJ_INCLINAR_X_MAS, EstiladoBlockEntity.BTN_OBJ_INCLINAR_X_MENOS,
+                EstiladoBlockEntity.BTN_OBJ_INCLINAR_Y_MENOS, EstiladoBlockEntity.BTN_OBJ_INCLINAR_Y_MAS };
+        String[] glifos = { "▲", "▼", "◀", "▶" };
+        for (int i = 0; i < 4; i++) {
+            int id = ids[i];
+            btnObjInclinar[i] = boton(PX1 + 126 + i * 17 + (i >= 2 ? 4 : 0), by, 16, Text.literal(glifos[i]),
+                    i < 2 ? "femclothes.estilado.tooltip.obj_inclinar_x" : "femclothes.estilado.tooltip.obj_inclinar_y",
+                    () -> clickBoton(id));
+        }
         // Blandura del aplique elegido (2026-10-04, "1 slider de blandura").
         sliderBlandura = new SliderBlandura(this.x + X_DER, this.y + 150, 162, 11);
         sliderBlandura.setTooltip(Tooltip.of(Text.translatable("femclothes.estilado.tooltip.blandura")));
@@ -402,6 +421,10 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
+        // Los botones de objeto están dentro de la vista: tienen prioridad sobre poner un aplique.
+        for (ButtonWidget b : objetoBotones()) {
+            if (b.visible && b.isMouseOver(mx, my)) return super.mouseClicked(mx, my, button);
+        }
         if (dentroDeVista(mx, my)) {
             if (button == 1) {
                 arrastrando = true;
@@ -410,11 +433,13 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
             if (button == 0) {
                 Toque t = tocar(mx, my);
                 EstiladoBlockEntity be = handler.be;
+                boolean objeto = !be.getStack(EstiladoBlockEntity.SLOT_OBJETO).isEmpty();
                 if (be.getStack(EstiladoBlockEntity.SLOT_PRENDA).isEmpty()) aviso = Text.translatable("femclothes.estilado.aviso.prenda");
-                else if (be.getStack(EstiladoBlockEntity.SLOT_MOLDE).getItem() instanceof com.femclothes.item.MoldeTexturaItem)
+                else if (!objeto && be.getStack(EstiladoBlockEntity.SLOT_MOLDE).getItem() instanceof com.femclothes.item.MoldeTexturaItem)
                     aviso = Text.translatable("femclothes.estilado.aviso.textura");
-                else if (be.getStack(EstiladoBlockEntity.SLOT_MOLDE).isEmpty()) aviso = Text.translatable("femclothes.estilado.aviso.molde");
-                else if (be.getStack(EstiladoBlockEntity.SLOT_RETAZO).isEmpty() && !com.femclothes.util.MaquinaCreativa.es(be)) aviso = Text.translatable("femclothes.estilado.aviso.retazo");
+                else if (!objeto && be.getStack(EstiladoBlockEntity.SLOT_MOLDE).isEmpty()) aviso = Text.translatable("femclothes.estilado.aviso.molde");
+                else if (!objeto && !(be.getStack(EstiladoBlockEntity.SLOT_RETAZO).getItem() instanceof com.femclothes.aplique.RetazoApliqueItem)
+                        && !com.femclothes.util.MaquinaCreativa.es(be)) aviso = Text.translatable("femclothes.estilado.aviso.retazo");
                 else if (be.apliques().size() >= Aplique.MAXIMO_POR_PRENDA) aviso = Text.translatable("femclothes.estilado.aviso.lleno");
                 else if (t == null) aviso = Text.translatable("femclothes.estilado.aviso.fuera");
                 else {
@@ -426,6 +451,12 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
             }
         }
         return super.mouseClicked(mx, my, button);
+    }
+
+    private List<ButtonWidget> objetoBotones() {
+        List<ButtonWidget> l = new java.util.ArrayList<>(List.of(btnObjModo, btnObjVariante));
+        l.addAll(List.of(btnObjInclinar));
+        return l;
     }
 
     @Override
@@ -467,6 +498,16 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         boolean hay = sel >= 0 && sel < apliques.size();
         btnGiro.active = btnEscala.active = btnQuitar.active = hay;
         sliderBlandura.refrescar(hay ? apliques.get(sel) : null);
+        com.femclothes.aplique.ObjetoAplique obj = hay ? apliques.get(sel).objeto() : null;
+        for (ButtonWidget b : objetoBotones()) b.visible = obj != null;
+        if (obj != null) {
+            boolean esBloque = com.femclothes.aplique.ObjetoAplique.bloqueDe(obj.item()) != null;
+            btnObjModo.active = esBloque;
+            btnObjModo.setMessage(Text.translatable(obj.bloque() ? "femclothes.estilado.obj.bloque" : "femclothes.estilado.obj.item"));
+            btnObjVariante.active = obj.bloque() && obj.cantidadDeVariantes() > 1;
+            btnObjVariante.setMessage(Text.translatable("femclothes.estilado.obj.variante",
+                    Math.floorMod(obj.variante(), obj.cantidadDeVariantes()) + 1, obj.cantidadDeVariantes()));
+        }
         btnSacudir.setMessage(Text.translatable(sacudiendo ? "femclothes.estilado.sacudir.parar" : "femclothes.estilado.sacudir"));
         btnGiro.setMessage(Text.translatable("femclothes.estilado.giro", hay ? Math.round(apliques.get(sel).giro()) : 0));
         btnEscala.setMessage(Text.translatable("femclothes.estilado.escala",
@@ -505,8 +546,9 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.slot.prenda"), X_DER - 1, y, EstiloPergamino.TEXTO, false);
         context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.slot.molde"), X_DER + 25, y + 30, EstiloPergamino.TEXTO, false);
         context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.slot.retazo"), X_DER + 51, y, EstiloPergamino.TEXTO, false);
+        context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.slot.objeto"), X_DER + 77, y + 30, EstiloPergamino.TEXTO, false);
         context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.apliques", handler.be.apliques().size(),
-                Aplique.MAXIMO_POR_PRENDA), X_DER + 80, EstiladoScreenHandler.Y_SLOTS + 4, EstiloPergamino.TEXTO, false);
+                Aplique.MAXIMO_POR_PRENDA), X_DER + 102, EstiladoScreenHandler.Y_SLOTS + 4, EstiloPergamino.TEXTO, false);
         Text ayuda = aviso != null ? aviso : Text.translatable("femclothes.estilado.ayuda");
         int color = aviso != null ? 0xFFFF9090 : 0xFFE8DCC8;
         for (var linea : this.textRenderer.wrapLines(ayuda, PX2 - PX1 - 12)) {
@@ -519,5 +561,9 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         context.drawTexture(TEXTURE, this.x, this.y, 0, 0, this.backgroundWidth, this.backgroundHeight,
                 this.backgroundWidth, this.backgroundHeight);
+        // Marco del slot de objeto (2026-10-04), dibujado por código: el fondo no lo trae.
+        int ox = this.x + X_DER + 3 * 26, oy = this.y + EstiladoScreenHandler.Y_SLOTS;
+        context.fill(ox - 1, oy - 1, ox + 17, oy + 17, 0xFF2A180C);
+        context.fill(ox, oy, ox + 16, oy + 16, 0xFF6B5A78);
     }
 }

@@ -2,6 +2,8 @@ package com.femclothes.render;
 
 import com.femclothes.Femclothes;
 import com.femclothes.aplique.Aplique;
+import com.femclothes.aplique.ObjetoAplique;
+import net.minecraft.block.BlockState;
 import com.femclothes.garment.Parte;
 import com.femclothes.item.Calce;
 import com.femclothes.item.FemclothesComponents;
@@ -113,8 +115,9 @@ public final class ApliqueRenderer {
         for (Aplique a : apliques) {
             MallaCapturada.Ubicacion ub = malla.enUv(a.x() / 64f, a.y() / 64f);
             if (ub == null) continue;
-            BakedGeoModel modelo = GeckoLibCache.getBakedModels().get(a.modelo().geo());
-            if (modelo == null) continue;
+            boolean objeto = a.objeto() != null;
+            BakedGeoModel modelo = objeto ? null : GeckoLibCache.getBakedModels().get(a.modelo().geo());
+            if (modelo == null && !objeto) continue;
             Vector3f atras = new Vector3f(ub.normal()).negate();          // +Z del modelo
             Vector3f arriba = new Vector3f(ub.arriba());
             Vector3f derecha = new Vector3f(arriba).cross(atras);
@@ -127,8 +130,12 @@ public final class ApliqueRenderer {
             MatrixStack ms = new MatrixStack();
             ms.peek().getPositionMatrix().translation(pos).mul(base).scale(s * a.escala());
             ms.peek().getNormalMatrix().set(base.get3x3(new Matrix3f()));
-            VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura(a)));
             Blando blando = Blando.de(a, base.get3x3(new Matrix3f()), marco);
+            if (objeto) {
+                dibujarObjeto(a, ms, vertexConsumers, luz, blando);
+                continue;
+            }
+            VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura(a)));
             for (GeoBone hueso : modelo.topLevelBones()) dibujarHueso(hueso, ms, vc, luz, blando);
         }
     }
@@ -137,8 +144,9 @@ public final class ApliqueRenderer {
                                    VertexConsumerProvider vertexConsumers, int luz, Matrix3f marco) {
         ModelPart parte = CuerpoGeometria.delJugador(biped, a.parte());
         if (!parte.visible) return;
-        BakedGeoModel modelo = GeckoLibCache.getBakedModels().get(a.modelo().geo());
-        if (modelo == null) return;
+        boolean objeto = a.objeto() != null;
+        BakedGeoModel modelo = objeto ? null : GeckoLibCache.getBakedModels().get(a.modelo().geo());
+        if (modelo == null && !objeto) return;
 
         Vector3f n = new Vector3f(a.cara().getOffsetX(), a.cara().getOffsetY(), a.cara().getOffsetZ());
         matrices.push();
@@ -169,12 +177,67 @@ public final class ApliqueRenderer {
         } else {
             matrices.translate((a.x() + n.x * afuera) / 16f, (a.y() + n.y * afuera) / 16f, (a.z() + n.z * afuera) / 16f);
         }
-        matrices.multiplyPositionMatrix(orientacion(n, a.giro()));
+        Matrix4f orient = orientacion(n, a.giro());
+        matrices.multiplyPositionMatrix(orient);
+        // También a las normales (es una rotación): la luz del ítem y la tela blanda leen este marco.
+        matrices.peek().getNormalMatrix().mul(orient.get3x3(new Matrix3f()));
         matrices.scale(a.escala(), a.escala(), a.escala());
 
-        VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura(a)));
         Blando blando = Blando.de(a, matrices.peek().getNormalMatrix(), marco);
+        if (objeto) {
+            dibujarObjeto(a, matrices, vertexConsumers, luz, blando);
+            matrices.pop();
+            return;
+        }
+        VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura(a)));
         for (GeoBone hueso : modelo.topLevelBones()) dibujarHueso(hueso, matrices, vc, luz, blando);
+        matrices.pop();
+    }
+
+    /** Cuánto mide un objeto con tamaño 100 % (bloques): un bloque entero queda de unos 5 px. */
+    private static final float TAMANO_OBJETO = 0.3f;
+
+    /**
+     * Un aplique de objeto (2026-10-04, "un motor para generar apliques de bloques ya existentes"):
+     * Minecraft dibuja el ítem (como en un marco) o el bloque colocado, con el frente hacia afuera
+     * de la tela. La matriz ya trae el origen sobre la tela, el frente en -Z, "arriba" en +Y y el
+     * tamaño del aplique. Se inclina alrededor del punto de apoyo; con blandura, además cuelga y se
+     * balancea desde su borde de arriba como un colgante.
+     */
+    private static void dibujarObjeto(Aplique a, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz,
+                                      @org.jetbrains.annotations.Nullable Blando blando) {
+        ObjetoAplique o = a.objeto();
+        MinecraftClient mc = MinecraftClient.getInstance();
+        BlockState estado = o.bloque() ? o.estado() : null;
+        if (o.bloque() && (estado == null || estado.isAir())) estado = null;
+        boolean plano = false;
+        if (estado == null) {
+            var modelo = mc.getItemRenderer().getModel(o.item(), mc.world, null, 0);
+            plano = !modelo.hasDepth() && !modelo.isBuiltin();
+        }
+        float s = TAMANO_OBJETO;
+        matrices.push();
+        if (blando != null) {
+            float rz = blando.blando.x * 0.35f * blando.blandura, rx = -blando.blando.z * 0.3f * blando.blandura;
+            matrices.translate(0f, s / 2f, 0f);
+            matrices.multiply(new Quaternionf().rotationZ(rz).rotateX(rx));
+            matrices.translate(0f, -s / 2f, 0f);
+        }
+        if (o.inclinarX() != 0f) matrices.multiply(new Quaternionf().rotationX((float) Math.toRadians(o.inclinarX())));
+        if (o.inclinarY() != 0f) matrices.multiply(new Quaternionf().rotationY((float) Math.toRadians(o.inclinarY())));
+        // Los ítems planos se apoyan casi pegados a la tela; los que tienen volumen, con la espalda pegada.
+        matrices.translate(0f, 0f, plano ? -s * 0.06f : -s / 2f);
+        matrices.scale(s, s, s);
+        int tinte = o.tinte();
+        VertexConsumerProvider proveedor = tinte < 0 ? vertexConsumers : new TintadoVertex(vertexConsumers, tinte);
+        if (estado != null) {
+            matrices.translate(-0.5f, -0.5f, -0.5f);
+            mc.getBlockRenderManager().renderBlockAsEntity(estado, matrices, proveedor, luz, OverlayTexture.DEFAULT_UV);
+        } else {
+            // NONE: sin la rotación y escala de exhibición del ítem; el modelo queda centrado en el origen.
+            mc.getItemRenderer().renderItem(o.item(), net.minecraft.client.render.model.json.ModelTransformationMode.NONE, luz,
+                    OverlayTexture.DEFAULT_UV, matrices, proveedor, mc.world, 0);
+        }
         matrices.pop();
     }
 

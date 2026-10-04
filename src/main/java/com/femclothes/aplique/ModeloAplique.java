@@ -14,7 +14,9 @@ import net.minecraft.util.StringIdentifiable;
 public enum ModeloAplique implements StringIdentifiable {
     MONO("mono"),
     MARIPOSA("mariposa"),
-    FLOR("flor");
+    FLOR("flor"),
+    /** Un ítem o bloque cualquiera dibujado por Minecraft (2026-10-04); ver {@link ObjetoAplique}. No tiene .geo.json. */
+    OBJETO("objeto");
 
     public final String clave;
 

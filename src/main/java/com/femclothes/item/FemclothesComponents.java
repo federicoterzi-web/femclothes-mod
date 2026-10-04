@@ -505,7 +505,7 @@ public final class FemclothesComponents {
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "apliques"),
             ComponentType.<java.util.List<com.femclothes.aplique.Aplique>>builder()
                     .codec(com.femclothes.aplique.Aplique.CODEC.listOf())
-                    .packetCodec(PacketCodecs.codec(com.femclothes.aplique.Aplique.CODEC.listOf()))
+                    .packetCodec(PacketCodecs.registryCodec(com.femclothes.aplique.Aplique.CODEC.listOf()))
                     .build());
 
     /** Los 3 colores de zona (RGB) de un retazo de aplique (2026-10-01). */
