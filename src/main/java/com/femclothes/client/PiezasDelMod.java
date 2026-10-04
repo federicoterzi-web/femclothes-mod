@@ -308,11 +308,15 @@ public final class PiezasDelMod {
         int[] filasIzq = PantalonItem.filasVisibles(stack, Lado.IZQUIERDA);
         int[] filasDer = PantalonItem.filasVisibles(stack, Lado.DERECHA);
         int filasTiro = PantalonItem.tiro(stack).filas;
-        return List.of(
-                new Pieza(Parte.PIERNA_IZQ, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA), dilatacion, filasIzq[0], filasIzq[1]),
-                new Pieza(Parte.PIERNA_DER, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.DERECHA), dilatacion, filasDer[0], filasDer[1]),
-                // La banda de cintura pinta las últimas filasTiro filas del torso (ver pintarCintura).
-                new Pieza(Parte.TORSO, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA), dilatacion, 12 - filasTiro, 12));
+        List<Pieza> piezas = new ArrayList<>(3);
+        piezas.add(new Pieza(Parte.PIERNA_IZQ, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA), dilatacion, filasIzq[0], filasIzq[1]));
+        piezas.add(new Pieza(Parte.PIERNA_DER, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.DERECHA), dilatacion, filasDer[0], filasDer[1]));
+        // La banda de cintura pinta las últimas filasTiro filas del torso (ver pintarCintura); con tiro 0 (a la
+        // cadera, 2026-10-04) no hay banda.
+        if (filasTiro > 0) {
+            piezas.add(new Pieza(Parte.TORSO, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA), dilatacion, 12 - filasTiro, 12));
+        }
+        return piezas;
     }
 
     private static Identifier texturaPantalon(Identifier base, ItemStack stack, Lado lado) {

@@ -398,71 +398,55 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
     }
 
     // ── traducción de rango abstracto a la escala real de cada prenda ───
+    //
+    // Los 7 niveles (2026-10-04, "agreguemos un molde y medida mas"; "los 6 niveles marquen solo la altura del
+    // brazo o de la pierna de arriba hacia abajo"): el nivel k es una LÍNEA a 2k filas desde arriba (hombro,
+    // cintura, cadera). El corte de abajo de una prenda (donde TERMINA la tela) guarda esa altura tal cual
+    // (anclaje Superior: 0..filas desde arriba); el corte de arriba (donde EMPIEZA) guarda 12 − 2k (anclaje
+    // Inferior, medido desde abajo). Nivel 0 = la línea más alta, nivel 6 = la más baja.
 
-    /**
-     * Pantalón: 6 escalones parejos 2/4/6/8/10/12 — mismo criterio que
-     * medias. Ya NO recibe {@code anclaje} (2026-09-23, "pantalones se
-     * fija solo el corte inferior") — el pantalón perdió el anclaje
-     * Superior, este método siempre devuelve la escala Inferior.
-     */
+    private static Botamanga botamangaDeFilas(int filas) {
+        for (Botamanga b : Botamanga.values()) if (b.filas == filas) return b;
+        return Botamanga.PIE;
+    }
+
+    private static Variante.Manga mangaDeFilas(int filas) {
+        for (Variante.Manga m : Variante.Manga.values()) if (m.filas == filas) return m;
+        return Variante.Manga.LARGA;
+    }
+
+    /** Pantalón: dónde termina la pierna, desde la cintura (anclaje Superior; 2026-10-04, "siempre superior"). */
     private static Botamanga pantalonDeRango(MoldeRangoItem.Rango r) {
-        return switch (r) {
-            case MINIMO -> Botamanga.MUSLO;
-            case CORTO -> Botamanga.RODILLA;
-            case MEDIO -> Botamanga.PANTORRILLA;
-            case MEDIOLARGO -> Botamanga.TOBILLO_ALTO;
-            case LARGO -> Botamanga.TOBILLO;
-            case MAXIMO -> Botamanga.PIE;
-        };
+        return botamangaDeFilas(2 * r.nivel());
     }
 
-    /**
-     * Los 6 escalones parejos que pidió el dueño, 2/4/6/8/10/12 — a
-     * pedido, "largo... tiene que llegar adonde antes llegaba máximo, y
-     * así corremos todas" + "mediolargo... para que tengamos 2 4 6 8 10
-     * 12". Misma escala que {@link #pantalonDeRango} desde que pantalón y
-     * medias comparten el eje {@link Botamanga} (2026-09-23).
-     */
+    /** Medias: dónde TERMINAN (corte de abajo). */
     private static Botamanga mediasDeRango(MoldeRangoItem.Rango r) {
-        return switch (r) {
-            case MINIMO -> Botamanga.MUSLO;
-            case CORTO -> Botamanga.RODILLA;
-            case MEDIO -> Botamanga.PANTORRILLA;
-            case MEDIOLARGO -> Botamanga.TOBILLO_ALTO;
-            case LARGO -> Botamanga.TOBILLO;
-            case MAXIMO -> Botamanga.PIE;
-        };
+        return botamangaDeFilas(2 * r.nivel());
     }
 
-    /** Calientabrazos: parejo 2/4/6/8/10/12, sin importar anclaje (ya tiene los dos, como medias). */
+    /** Medias: dónde EMPIEZAN (corte de arriba), medido desde abajo. */
+    private static Botamanga mediasInicioDeRango(MoldeRangoItem.Rango r) {
+        return botamangaDeFilas(12 - 2 * r.nivel());
+    }
+
+    /** Calientabrazos: dónde TERMINAN. */
     private static Variante.Manga mangaCalientabrazosDeRango(MoldeRangoItem.Rango r) {
-        return switch (r) {
-            case MINIMO -> Variante.Manga.MINIMA;
-            case CORTO -> Variante.Manga.CORTA;
-            case MEDIO -> Variante.Manga.MEDIA;
-            case MEDIOLARGO -> Variante.Manga.TRES_CUARTOS;
-            case LARGO -> Variante.Manga.SIETE_OCTAVOS;
-            case MAXIMO -> Variante.Manga.LARGA;
-        };
+        return mangaDeFilas(2 * r.nivel());
+    }
+
+    /** Calientabrazos: dónde EMPIEZAN, medido desde abajo. */
+    private static Variante.Manga mangaCalientabrazosInicioDeRango(MoldeRangoItem.Rango r) {
+        return mangaDeFilas(12 - 2 * r.nivel());
     }
 
     /**
-     * Manga de remera: UN SOLO anclaje (Superior, hombro hacia abajo) — a
-     * pedido, "manga tranquilamente puede tener solo anclaje superior".
-     * 0/2/4/6/8/10 — Larga(12) queda afuera del rango unificado por ahora
-     * (se puede seguir poniendo con el molde cíclico viejo si hace falta).
-     * Sin {@code private} a propósito: {@link ModeladoScreenHandler}
-     * (mismo paquete) la reusa para el slot del esquema visual.
+     * Manga de remera: dónde termina, del hombro hacia abajo. Los 7 niveles son los 7 valores de
+     * {@link Variante.Manga} (sin, mínima, corta, media, tres cuartos, siete octavos, larga). Sin
+     * {@code private} a propósito: {@link ModeladoScreenHandler} la reusa para el slot del esquema visual.
      */
     static Variante.Manga mangaRemeraDeRango(MoldeRangoItem.Rango r) {
-        return switch (r) {
-            case MINIMO -> Variante.Manga.SIN;
-            case CORTO -> Variante.Manga.MINIMA;
-            case MEDIO -> Variante.Manga.CORTA;
-            case MEDIOLARGO -> Variante.Manga.MEDIA;
-            case LARGO -> Variante.Manga.TRES_CUARTOS;
-            case MAXIMO -> Variante.Manga.SIETE_OCTAVOS;
-        };
+        return mangaDeFilas(2 * r.nivel());
     }
 
     private static Variante.Largo largoDeRango(MoldeTorsoItem.Rango r) {
@@ -473,11 +457,41 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
         };
     }
 
+    /** Largo de remera por nivel: 3, 5, 7, 9, 10, 11 y 12 filas desde el hombro (2026-10-04). */
+    private static Variante.Largo largoDeNivel(MoldeRangoItem.Rango r) {
+        return switch (r.nivel()) {
+            case 0 -> Variante.Largo.TOP;
+            case 1 -> Variante.Largo.CROP;
+            case 2 -> Variante.Largo.CORTO;
+            case 3 -> Variante.Largo.NORMAL;
+            case 4 -> Variante.Largo.CADERA_ALTA;
+            case 5 -> Variante.Largo.CADERA;
+            default -> Variante.Largo.LARGO;
+        };
+    }
+
     private static PantalonTiro tiroDeRango(MoldeTorsoItem.Rango r) {
         return switch (r) {
             case CORTO -> PantalonTiro.CORTO;
             case MEDIO -> PantalonTiro.MEDIO;
             case LARGO -> PantalonTiro.LARGO;
+        };
+    }
+
+    /**
+     * Tiro por nivel (2026-10-04, "tiro... extendamos hasta los hombros"): la línea de la cintura está a 2k filas
+     * desde el hombro, así que la banda sube 12 − 2k filas: hombros, pecho, bajo el pecho, muy alto, alto (el
+     * LARGO de siempre), medio (el MEDIO de siempre) y a la cadera.
+     */
+    private static PantalonTiro tiroDeNivel(MoldeRangoItem.Rango r) {
+        return switch (r.nivel()) {
+            case 0 -> PantalonTiro.HOMBROS;
+            case 1 -> PantalonTiro.PECHO;
+            case 2 -> PantalonTiro.BAJO_PECHO;
+            case 3 -> PantalonTiro.MUY_ALTO;
+            case 4 -> PantalonTiro.LARGO;
+            case 5 -> PantalonTiro.MEDIO;
+            default -> PantalonTiro.CADERA;
         };
     }
 
@@ -694,25 +708,25 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
                 // solo el corte inferior") — el pantalón perdió el anclaje
                 // Superior, ya no mira "anclaje" para decidir a cuál de
                 // los dos escribir.
-                if (activo.getItem() instanceof MoldeRangoItem m) yield ComboCorte.pantalonInferior(pantalonDeRango(m.rango), ladoBorrador);
+                if (activo.getItem() instanceof MoldeRangoItem m) yield ComboCorte.pantalonSuperior(pantalonDeRango(m.rango), ladoBorrador);
                 if (activo.getItem() instanceof MoldeTorsoItem m) yield ComboCorte.tiro(tiroDeRango(m.rango));
                 yield ComboCorte.VACIO;
             }
             case MEDIAS -> {
                 if (!(activo.getItem() instanceof MoldeRangoItem m)) yield ComboCorte.VACIO;
-                Botamanga v = mediasDeRango(m.rango);
                 yield anclaje == Anclaje.SUPERIOR
-                        ? ComboCorte.mediasSuperior(v, ladoBorrador)
-                        : ComboCorte.mediasInferior(v, ladoBorrador);
+                        ? ComboCorte.mediasSuperior(mediasDeRango(m.rango), ladoBorrador)
+                        : ComboCorte.mediasInferior(mediasInicioDeRango(m.rango), ladoBorrador);
             }
             case CALIENTABRAZOS -> {
-                Variante.Manga v = activo.getItem() instanceof MoldeRangoItem m ? mangaCalientabrazosDeRango(m.rango) : calientabrazosCobertura;
+                Variante.Manga fin = activo.getItem() instanceof MoldeRangoItem m ? mangaCalientabrazosDeRango(m.rango) : calientabrazosCobertura;
+                Variante.Manga inicio = activo.getItem() instanceof MoldeRangoItem m ? mangaCalientabrazosInicioDeRango(m.rango) : calientabrazosCobertura;
                 yield anclaje == Anclaje.SUPERIOR
-                        ? ComboCorte.calientabrazosSuperior(v, ladoBorrador)
-                        : ComboCorte.calientabrazosInferior(v, ladoBorrador);
+                        ? ComboCorte.calientabrazosSuperior(fin, ladoBorrador)
+                        : ComboCorte.calientabrazosInferior(inicio, ladoBorrador);
             }
             case POLLERA -> {
-                if (activo.getItem() instanceof MoldeRangoItem m)
+                if (activo.getItem() instanceof MoldeRangoItem m && m.rango.esDeSeis())
                     yield ComboCorte.polleraLargo(com.femclothes.item.PolleraLargo.valueOf(m.rango.name()));
                 if (activo.getItem() instanceof MoldePolleraItem m) yield ComboCorte.polleraForma(m.valor);
                 yield ComboCorte.VACIO;
@@ -784,20 +798,22 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
             }
             case TORSO -> {
                 if (item instanceof MoldeTorsoItem m) c = ComboCorte.remeraLargo(largoDeRango(m.rango));
+                else if (item instanceof MoldeRangoItem m) c = ComboCorte.remeraLargo(largoDeNivel(m.rango));
             }
             case TIRO -> {
                 if (item instanceof MoldeTorsoItem m) c = ComboCorte.tiro(tiroDeRango(m.rango));
+                else if (item instanceof MoldeRangoItem m) c = ComboCorte.tiro(tiroDeNivel(m.rango));
             }
             case FORMA_POLLERA -> {
                 if (item instanceof MoldePolleraItem m) c = ComboCorte.polleraForma(m.valor);
             }
             case LARGO_POLLERA -> {
                 // Los 6 rangos del pantalón, 1 a 1 (2026-09-29, "Los 6 rangos del pantalón").
-                if (item instanceof MoldeRangoItem m) c = ComboCorte.polleraLargo(com.femclothes.item.PolleraLargo.valueOf(m.rango.name()));
+                if (item instanceof MoldeRangoItem m && m.rango.esDeSeis()) c = ComboCorte.polleraLargo(com.femclothes.item.PolleraLargo.valueOf(m.rango.name()));
             }
             case LARGO_CAPA -> {
                 // Los 6 rangos, 1 a 1 (2026-09-29, "Los 6 rangos").
-                if (item instanceof MoldeRangoItem m) c = ComboCorte.capaLargo(com.femclothes.item.CapaLargo.valueOf(m.rango.name()));
+                if (item instanceof MoldeRangoItem m && m.rango.esDeSeis()) c = ComboCorte.capaLargo(com.femclothes.item.CapaLargo.valueOf(m.rango.name()));
             }
             case RUEDO_CAPA -> {
                 if (item instanceof MoldeCapaItem m && m.tipo.esRuedo()) c = comboDeMoldeCapa(item);
@@ -809,21 +825,22 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
                 if (item instanceof MoldeCapaItem m && m.tipo.esCuello()) c = comboDeMoldeCapa(item);
             }
             case BOTA_IZQ, BOTA_DER -> {
-                if (item instanceof MoldeRangoItem m) c = ComboCorte.pantalonInferior(pantalonDeRango(m.rango), lado);
+                if (item instanceof MoldeRangoItem m) c = ComboCorte.pantalonSuperior(pantalonDeRango(m.rango), lado);
             }
             case SUP_IZQ, SUP_DER, INF_IZQ, INF_DER -> {
-                // El pin de ARRIBA del esquema controla el borde de arriba de la prenda, que es el
-                // anclaje INFERIOR (crece desde el tobillo/muñeca hacia arriba); el de abajo, el borde
-                // de abajo = anclaje SUPERIOR. Antes estaba cruzado: "Corte Superior" movía el borde de abajo.
+                // El pin de ARRIBA del esquema dice dónde EMPIEZA la tela (guarda el anclaje INFERIOR: 12 − altura);
+                // el de abajo dónde TERMINA (anclaje SUPERIOR: la altura tal cual). Los dos miden la altura de la
+                // línea desde arriba (2026-10-04, "el slot de corte de arriba indique donde empieza la tela y el
+                // de abajo donde termina").
                 boolean sup = rol == Rol.INF_IZQ || rol == Rol.INF_DER;
                 if (cat == Categoria.MEDIAS) {
                     if (item instanceof MoldeRangoItem m) {
-                        Botamanga v = mediasDeRango(m.rango);
-                        c = sup ? ComboCorte.mediasSuperior(v, lado) : ComboCorte.mediasInferior(v, lado);
+                        c = sup ? ComboCorte.mediasSuperior(mediasDeRango(m.rango), lado)
+                                : ComboCorte.mediasInferior(mediasInicioDeRango(m.rango), lado);
                     }
                 } else if (cat == Categoria.CALIENTABRAZOS && item instanceof MoldeRangoItem m) {
-                    Variante.Manga v = mangaCalientabrazosDeRango(m.rango);
-                    c = sup ? ComboCorte.calientabrazosSuperior(v, lado) : ComboCorte.calientabrazosInferior(v, lado);
+                    c = sup ? ComboCorte.calientabrazosSuperior(mangaCalientabrazosDeRango(m.rango), lado)
+                            : ComboCorte.calientabrazosInferior(mangaCalientabrazosInicioDeRango(m.rango), lado);
                 }
             }
             default -> { }
@@ -834,7 +851,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
     /** El corte de un {@link MoldeCapaItem} (o del molde de rango, como largo de capa), o null. */
     @Nullable
     private static ComboCorte comboDeMoldeCapa(Item item) {
-        if (item instanceof MoldeRangoItem m) return ComboCorte.capaLargo(com.femclothes.item.CapaLargo.valueOf(m.rango.name()));
+        if (item instanceof MoldeRangoItem m) {
+            return m.rango.esDeSeis() ? ComboCorte.capaLargo(com.femclothes.item.CapaLargo.valueOf(m.rango.name())) : null;
+        }
         if (!(item instanceof MoldeCapaItem m)) return null;
         return switch (m.tipo) {
             case RUEDO_RECTO -> ComboCorte.capaRuedo(com.femclothes.item.CapaRuedo.RECTO);
@@ -854,12 +873,12 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
             case MANGA_DER, BOTA_DER, SUP_DER, INF_DER, PERS_DER1, PERS_DER2, PERS_DER3 -> Lado.DERECHA;
             default -> Lado.AMBAS;
         };
-        // El esquema de medias y calientabrazos se lee "de frente" (izquierda del dibujo = izquierda de
-        // pantalla), pero la Izq. anatómica del jugador queda a la derecha en el visor: se cruzan.
-        if (cat == Categoria.MEDIAS || cat == Categoria.CALIENTABRAZOS) {
-            if (lado == Lado.IZQUIERDA) return Lado.DERECHA;
-            if (lado == Lado.DERECHA) return Lado.IZQUIERDA;
-        }
+        // Todos los esquemas se leen "de frente" (izquierda del dibujo = izquierda de pantalla), pero la Izq.
+        // anatómica del jugador queda a la derecha en el visor: se cruzan siempre (2026-10-04, "el corte de mangas
+        // en modeladora, remera esta invertido izquierda derecha, igual en pantalon"; antes solo medias y
+        // calientabrazos).
+        if (lado == Lado.IZQUIERDA) return Lado.DERECHA;
+        if (lado == Lado.DERECHA) return Lado.IZQUIERDA;
         return lado;
     }
 

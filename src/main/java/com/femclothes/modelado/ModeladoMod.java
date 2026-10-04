@@ -49,6 +49,7 @@ public final class ModeladoMod {
     // MoldeRangoItem y ModeladoBlockEntity#fijar (traduce el rango a la
     // escala real de cada prenda). Anclaje/Lado aplican normal.
 
+    public static final MoldeRangoItem MOLDE_RANGO_CERO = new MoldeRangoItem(new Item.Settings().maxCount(1), MoldeRangoItem.Rango.CERO);
     public static final MoldeRangoItem MOLDE_RANGO_MINIMO = new MoldeRangoItem(new Item.Settings().maxCount(1), MoldeRangoItem.Rango.MINIMO);
     public static final MoldeRangoItem MOLDE_RANGO_CORTO = new MoldeRangoItem(new Item.Settings().maxCount(1), MoldeRangoItem.Rango.CORTO);
     public static final MoldeRangoItem MOLDE_RANGO_MEDIO = new MoldeRangoItem(new Item.Settings().maxCount(1), MoldeRangoItem.Rango.MEDIO);
@@ -136,6 +137,7 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_de_corte"), MOLDE_DE_CORTE);
 
 
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_rango_cero"), MOLDE_RANGO_CERO);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_rango_minimo"), MOLDE_RANGO_MINIMO);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_rango_corto"), MOLDE_RANGO_CORTO);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_rango_medio"), MOLDE_RANGO_MEDIO);

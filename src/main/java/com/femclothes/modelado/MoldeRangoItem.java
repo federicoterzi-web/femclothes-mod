@@ -33,7 +33,24 @@ import java.util.List;
  */
 public class MoldeRangoItem extends Item {
 
-    public enum Rango { MINIMO, CORTO, MEDIO, MEDIOLARGO, LARGO, MAXIMO }
+    /**
+     * Los 7 niveles, de la línea más alta (0) a la más baja (12 filas): {@code CERO}, {@code MINIMO}, {@code CORTO},
+     * {@code MEDIO}, {@code MEDIOLARGO}, {@code LARGO} y {@code MAXIMO}. {@code CERO} se agregó el 2026-10-04
+     * ("agreguemos un molde y medida mas") y va al FINAL del enum; {@link #nivel()} da su posición real.
+     */
+    public enum Rango {
+        MINIMO, CORTO, MEDIO, MEDIOLARGO, LARGO, MAXIMO, CERO;
+
+        /** 0 (CERO) a 6 (MAXIMO): la línea está a {@code 2 * nivel} filas desde arriba. */
+        public int nivel() {
+            return this == CERO ? 0 : ordinal() + 1;
+        }
+
+        /** Los 6 niveles de pollera y capa (no tienen el 0). */
+        public boolean esDeSeis() {
+            return this != CERO;
+        }
+    }
 
     public final Rango rango;
 
@@ -47,6 +64,7 @@ public class MoldeRangoItem extends Item {
         super.appendTooltip(stack, context, tooltip, type);
         tooltip.add(Text.translatable("femclothes.categoria.molde").formatted(Formatting.GOLD));
         tooltip.add(PrendaLore.seUsaEn("pantalon", "medias", "calientabrazos", "remera").formatted(Formatting.DARK_GRAY));
+        tooltip.add(Text.translatable("femclothes.molde_rango.nivel", rango.nivel(), 2 * rango.nivel()).formatted(Formatting.DARK_GRAY));
         tooltip.add(Text.translatable("femclothes.sublimadora.molde.ayuda").formatted(Formatting.DARK_GRAY));
     }
 }

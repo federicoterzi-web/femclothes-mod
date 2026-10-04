@@ -134,6 +134,7 @@ public class Femclothes implements ModInitializer {
             // Molde de rango unificado (a pedido): mismos 5, sirven para
             // pantalón/medias/calientabrazos/manga de remera, cada una
             // traduciéndolo a su propia escala real al fijar.
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RANGO_CERO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RANGO_MINIMO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RANGO_CORTO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RANGO_MEDIO);
