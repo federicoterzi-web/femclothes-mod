@@ -137,6 +137,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         // Cuerpo entero: la vista previa de elegir cuerpo, o un perfil que usa
         // el cuerpo como skin aunque no haya ropa (2026-09-29, "un selector que
         // directamente te deje esa skin de default").
+        com.femclothes.render.relieve.RelieveRender.fijarVolumen(perfilDe(entidad));
         boolean cuerpoEntero = perfilOverride != null || perfilDe(entidad).siempre();
         // Busto (2026-10-01, estilo Only Jugs): uno por dibujo, con su rebote.
         prepararBusto(entidad, tickDelta);

@@ -31,14 +31,36 @@ public final class RelieveRender {
 
     private RelieveRender() {}
 
-    public enum Estilo { SUAVE, ESCALONADO, APAGADO }
+    public enum Estilo { SUAVE, ESCALONADO, APAGADO, ESCALONADO_GRUESO }
 
+    /** El estilo del cuadro en curso: sale del volumen del perfil que se dibuja ({@link #fijarVolumen}) o del debug. */
     public static Estilo estilo = Estilo.SUAVE;
+    /** Estilo forzado por {@code /femclothesdebug relieve} (null = el del perfil). */
+    @Nullable
+    public static Estilo forzado;
 
-    /** Celdas por px de skin al dibujar. */
-    private static final int CELDAS_POR_PX = 2;
-    /** Escalón de altura del estilo escalonado (px). */
-    private static final float ESCALON = 0.25f;
+    /**
+     * Fija el estilo del cuadro según el perfil (2026-10-04, "que el volumen de las skins base tambien pueda
+     * alternar entre redondeado y voxelizado como los pechos"): lo llama quien va a dibujar cuerpo o tela con
+     * relieve antes de empezar.
+     */
+    public static void fijarVolumen(com.femclothes.body.PerfilCuerpo perfil) {
+        estilo = forzado != null ? forzado : switch (perfil.volumen()) {
+            case com.femclothes.body.PerfilCuerpo.VOLUMEN_VOXEL -> Estilo.ESCALONADO;
+            case com.femclothes.body.PerfilCuerpo.VOLUMEN_VOXEL_GRUESO -> Estilo.ESCALONADO_GRUESO;
+            default -> Estilo.SUAVE;
+        };
+    }
+
+    /** Celdas por px de skin al dibujar (el voxel grueso, bloques de 1 px). */
+    private static int celdasPorPx() {
+        return estilo == Estilo.ESCALONADO_GRUESO ? 1 : 2;
+    }
+
+    /** Escalón de altura del estilo escalonado (px): 1/4 px el fino, 1/2 px el grueso. */
+    private static float escalonDeAltura() {
+        return estilo == Estilo.ESCALONADO_GRUESO ? 0.5f : 0.25f;
+    }
 
     /**
      * Corrimiento del busto de este cuadro ({@link FisicaBusto}), en fracción
@@ -132,11 +154,11 @@ public final class RelieveRender {
         int x0 = MapaRelieve.inicioCara(parte, caraIdx, slim), arriba = MapaRelieve.arribaCostados(parte);
         float fu0 = (umin * 64f - x0) / ancho, fu1 = (umax * 64f - x0) / ancho;
         float fv0 = (vmin * 64f - arriba) / MapaRelieve.FILAS_PX, fv1 = (vmax * 64f - arriba) / MapaRelieve.FILAS_PX;
-        int nu = Math.max(1, Math.round((fu1 - fu0) * ancho * CELDAS_POR_PX));
-        int nv = Math.max(1, Math.round((fv1 - fv0) * MapaRelieve.FILAS_PX * CELDAS_POR_PX));
+        int nu = Math.max(1, Math.round((fu1 - fu0) * ancho * celdasPorPx()));
+        int nv = Math.max(1, Math.round((fv1 - fv0) * MapaRelieve.FILAS_PX * celdasPorPx()));
 
         Geo g = new Geo(e, vc, luz, ov, pa, ab, ad, n, escala, umin, umax, vmin, vmax);
-        if (estilo == Estilo.ESCALONADO) {
+        if (estilo == Estilo.ESCALONADO || estilo == Estilo.ESCALONADO_GRUESO) {
             escalonado(g, ctx, caraIdx, ancho, fu0, fu1, fv0, fv1, nu, nv, tu, tv);
         } else {
             suave(g, ctx, caraIdx, ancho, fu0, fu1, fv0, fv1, nu, nv, tu, tv);
@@ -214,7 +236,7 @@ public final class RelieveRender {
 
     private static float escalon(Contexto ctx, int cara, float fu, float fv) {
         if (fu < 0f || fu > 1f) return 0f;
-        return Math.round(altura(ctx, cara, fu, fv) / ESCALON) * ESCALON;
+        return Math.round(altura(ctx, cara, fu, fv) / escalonDeAltura()) * escalonDeAltura();
     }
 
     private static void pared(Geo g, float h, float vecino, float sA, float tA, float sB, float tB, Vector3f normal) {

@@ -79,6 +79,14 @@ public final class ComandoCuerpo {
                                 IntegerArgumentType.integer(0, PerfilCuerpo.DEFINICION_MAXIMA))
                         .executes(ctx -> aplicar(ctx.getSource(),
                                 p -> p.conDefinicion(IntegerArgumentType.getInteger(ctx, "porcentaje"))))))
+                // Volumen del cuerpo y la tela (2026-10-04): redondeado, voxel (fino) o grueso.
+                .then(CommandManager.literal("volumen")
+                        .then(CommandManager.literal("redondeado").executes(ctx ->
+                                aplicar(ctx.getSource(), p -> p.conVolumen(PerfilCuerpo.VOLUMEN_REDONDEADO))))
+                        .then(CommandManager.literal("voxel").executes(ctx ->
+                                aplicar(ctx.getSource(), p -> p.conVolumen(PerfilCuerpo.VOLUMEN_VOXEL))))
+                        .then(CommandManager.literal("grueso").executes(ctx ->
+                                aplicar(ctx.getSource(), p -> p.conVolumen(PerfilCuerpo.VOLUMEN_VOXEL_GRUESO)))))
                 .then(CommandManager.literal("ver").executes(ctx -> ver(ctx.getSource())))
                 // Vuelve a abrir la GUI de elegir cuerpo (2026-09-29).
                 .then(CommandManager.literal("elegir").executes(ctx -> {

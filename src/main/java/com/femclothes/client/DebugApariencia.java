@@ -95,11 +95,18 @@ public final class DebugApariencia {
         for (com.femclothes.render.relieve.RelieveRender.Estilo e : com.femclothes.render.relieve.RelieveRender.Estilo.values()) {
             String nombre = e.name().toLowerCase(java.util.Locale.ROOT);
             raiz.then(ClientCommandManager.literal(nombre).executes(ctx -> {
+                com.femclothes.render.relieve.RelieveRender.forzado = e;
                 com.femclothes.render.relieve.RelieveRender.estilo = e;
                 ctx.getSource().sendFeedback(Text.literal("[femclothes debug] relieve " + nombre));
                 return 1;
             }));
         }
+        // "perfil" suelta el forzado: vuelve a mandar el volumen que eligió cada jugador.
+        raiz.then(ClientCommandManager.literal("perfil").executes(ctx -> {
+            com.femclothes.render.relieve.RelieveRender.forzado = null;
+            ctx.getSource().sendFeedback(Text.literal("[femclothes debug] relieve según el perfil"));
+            return 1;
+        }));
         return raiz;
     }
 

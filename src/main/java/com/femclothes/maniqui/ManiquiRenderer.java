@@ -202,6 +202,7 @@ public class ManiquiRenderer extends GeoBlockRenderer<ManiquiBlockEntity> {
             if (dueno != null) perfil = com.femclothes.body.PerfilesDeCuerpo.de(dueno);
         }
         perfil = perfil.conBusto(be.busto(), Long.MAX_VALUE);
+        com.femclothes.render.relieve.RelieveRender.fijarVolumen(perfil);
         com.femclothes.render.relieve.MapaRelieve mapa = com.femclothes.render.relieve.RelieveCuerpo.de(perfil, slim);
         cuerpo.head.render(matrices, vc, luz, ov);
         cuerpo.hat.render(matrices, vc, luz, ov);

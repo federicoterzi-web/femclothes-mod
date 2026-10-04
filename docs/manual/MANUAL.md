@@ -114,7 +114,8 @@ El cuerpo y la ropa ya no son cajas planas: **los costados de torso, brazos y pi
 - **Arrugas automáticas** en codos, rodillas, cintura, axilas, muñecas y tobillos, más marcadas cuanto más holgado el calce (Pegado no arruga).
 - **Detalles en relieve por prenda:** el **hoodie** tiene el bolsillo canguro con su costura, rib en el ruedo y los puños y la costura de la sisa; el **pantalón**, costuras laterales, bolsillos de atrás, pretina y bragueta; las **medias**, tejido acanalado.
 - **Textura de tela** con un **Molde de textura** en la Mesa de estilado: **Fruncido** (pliegues finos verticales) o **Acolchado** (almohadones en rombo).
-- **Dos estilos para comparar** (solo para vos): `/femclothesdebug relieve suave` (superficie continua, el de fábrica), `escalonado` (bloquecitos de medio píxel, como 3D Skin Layers) y `apagado` (las cajas de antes).
+- **Volumen: redondeado o voxel** (2026-10-04): en la pantalla de elegir cuerpo, el botón **Volumen** alterna **Redondeado** (superficie suave, el de fábrica), **Voxel** (bloquecitos finos de medio píxel, como 3D Skin Layers) y **Voxel grueso** (bloques de 1 px). Cambia el volumen del cuerpo y de la tela de la ropa juntos; el busto sigue con su propio botón (redondo o cuadrado). Se guarda en el perfil y lo ven los demás jugadores. Por comando: `/femclothes volumen redondeado|voxel|grueso`.
+- **Forzar un estilo para comparar** (solo para vos): `/femclothesdebug relieve suave` (superficie continua), `escalonado`, `escalonado_grueso` y `apagado` (las cajas de antes); `/femclothesdebug relieve perfil` suelta el forzado y vuelve a usar el volumen que eligió cada jugador.
 
 El relieve se ve donde el mod dibuja el cuerpo: debajo de la ropa del mod, o en todo el cuerpo con **Skin siempre**. En el Maniquí la ropa tiene arrugas y detalles, pero la figura no tiene forma.
 
@@ -133,6 +134,7 @@ Sin permisos especiales, cada quien cambia el propio:
 | `/femclothes tono <número>` | Tono de piel a mano, como color RGB en decimal (ej. 14329120). |
 | `/femclothes busto <0..7>` | Dosis de Estrógenos (talle de busto), por 24 horas reales. |
 | `/femclothes definicion <0..200>` | Cuánto se marcan los músculos del relieve, en %. |
+| `/femclothes volumen redondeado\|voxel\|grueso` | Volumen del cuerpo y la tela: suave, bloquecitos finos o bloques de 1 px. |
 | `/femclothes ver` | Muestra tu configuración actual. |
 | `/femclothes reset` | Vuelve todo al valor por defecto. |
 

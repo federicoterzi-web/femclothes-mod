@@ -30,9 +30,9 @@ public final class RedCuerpo {
      */
     public record Elegir(String cuerpo, int tono, int claro, int oscuro, int rubor, int fuerza,
                          String arriba, String abajo, int colorInterior, boolean siempre,
-                         boolean bustoCuadrado) implements CustomPayload {
+                         boolean bustoCuadrado, int volumen) implements CustomPayload {
         public static final Id<Elegir> ID = new Id<>(Identifier.of(Femclothes.MOD_ID, "elegir_cuerpo"));
-        /** A mano: son 11 campos y {@code PacketCodec.tuple} llega hasta 6. */
+        /** A mano: son 12 campos y {@code PacketCodec.tuple} llega hasta 6. */
         public static final PacketCodec<RegistryByteBuf, Elegir> CODEC = PacketCodec.of(
                 (e, buf) -> {
                     buf.writeString(e.cuerpo(), 32);
@@ -46,9 +46,10 @@ public final class RedCuerpo {
                     buf.writeInt(e.colorInterior());
                     buf.writeBoolean(e.siempre());
                     buf.writeBoolean(e.bustoCuadrado());
+                    buf.writeVarInt(e.volumen());
                 },
                 buf -> new Elegir(buf.readString(32), buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt(),
-                        buf.readVarInt(), buf.readString(32), buf.readString(32), buf.readInt(), buf.readBoolean(), buf.readBoolean()));
+                        buf.readVarInt(), buf.readString(32), buf.readString(32), buf.readInt(), buf.readBoolean(), buf.readBoolean(), buf.readVarInt()));
 
         @Override
         public Id<? extends CustomPayload> getId() { return ID; }
@@ -86,7 +87,8 @@ public final class RedCuerpo {
                                     net.minecraft.util.math.MathHelper.clamp(payload.fuerza(), 0, 100))
                             .conInterior(interiorDe(payload))
                             .conSiempre(payload.siempre())
-                            .conBustoCuadrado(payload.bustoCuadrado()));
+                            .conBustoCuadrado(payload.bustoCuadrado())
+                            .conVolumen(payload.volumen()));
                 }));
     }
 
