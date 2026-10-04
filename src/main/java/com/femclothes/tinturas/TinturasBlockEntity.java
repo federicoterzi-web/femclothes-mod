@@ -131,6 +131,8 @@ public class TinturasBlockEntity extends BlockEntity
     public static final int CASILLAS_POLLERA = 3;
     /** Capa (2026-09-29, "forro aparte"): Exterior, Forro y Detalles (capucha y cuello alto). */
     public static final int CASILLAS_CAPA = 3;
+    /** Las zonas del retazo de aplique (2026-10-04). */
+    public static final int CASILLAS_APLIQUE = 3;
     public static final int CASILLAS_INICIO = ALMACEN_FIN;
     public static final int TAMANO = CASILLAS_INICIO + CASILLAS * Categoria.values().length;
     /** Opacidad en pasos de 10% (10..100). */
@@ -392,7 +394,11 @@ public class TinturasBlockEntity extends BlockEntity
      * que {@code ModeladoBlockEntity.Categoria}.
      */
     /** Siempre al FINAL: los cuadraditos de cada categoría se guardan por índice (ver {@link #casillaSlot}). */
-    public enum Categoria { REMERA, PANTALON, MEDIAS, CALIENTABRAZOS, POLLERA, CAPA }
+    /**
+     * {@code APLIQUE} (2026-10-04, fase 4: "Tintes con categoría Aplique"): el retazo de aplique con 3 cuadraditos,
+     * uno por zona (1, 2, 3), de color liso por ahora; los patrones por zona vienen en la segunda tanda.
+     */
+    public enum Categoria { REMERA, PANTALON, MEDIAS, CALIENTABRAZOS, POLLERA, CAPA, APLIQUE }
 
     private Categoria categoria = Categoria.REMERA;
     private final Casilla[][] casillas = new Casilla[Categoria.values().length][CASILLAS];
@@ -429,6 +435,7 @@ public class TinturasBlockEntity extends BlockEntity
     public static com.femclothes.region.RegionPintura regionDe(Categoria cat, int i) {
         if (i < 0 || i >= CASILLAS) return null;
         if (cat == Categoria.POLLERA) return i < CASILLAS_POLLERA ? com.femclothes.region.RegionPintura.TODO : null;
+        if (cat == Categoria.APLIQUE) return i < CASILLAS_APLIQUE ? com.femclothes.region.RegionPintura.TODO : null;
         if (cat == Categoria.CAPA) {
             return switch (i) {
                 case 0 -> com.femclothes.region.RegionPintura.CAPA_EXTERIOR;
@@ -505,6 +512,7 @@ public class TinturasBlockEntity extends BlockEntity
         if (stack.getItem() instanceof com.femclothes.item.CalientabrazosItem) return Categoria.CALIENTABRAZOS;
         if (stack.getItem() instanceof com.femclothes.item.PolleraItem) return Categoria.POLLERA;
         if (stack.getItem() instanceof com.femclothes.item.CapaItem) return Categoria.CAPA;
+        if (stack.getItem() instanceof com.femclothes.aplique.RetazoApliqueItem) return Categoria.APLIQUE;
         return null;
     }
 
@@ -653,7 +661,7 @@ public class TinturasBlockEntity extends BlockEntity
             List<RegionResolver.CapaPatron> capas = be.capasDe(cat, false);
             if (!capas.isEmpty()) {
                 resultado = resultado.copy();
-                pintarStack(resultado, capas);
+                be.pintar(resultado, cat, false);
                 be.registrarColorUsado(capas.get(capas.size() - 1).color() & 0xFFFFFF);
             }
         }
@@ -1439,6 +1447,32 @@ public class TinturasBlockEntity extends BlockEntity
      * anterior, y el color base de la prenda queda como estaba (una capa
      * lisa de prenda entera lo tapa si se quiere).
      */
+    /** ¿Entra al slot de entrada? Las prendas y el retazo de aplique (2026-10-04, fase 4). */
+    public static boolean aceptaEntrada(ItemStack stack) {
+        return FemclothesDye.isClothing(stack) || stack.getItem() instanceof com.femclothes.aplique.RetazoApliqueItem;
+    }
+
+    /**
+     * Pinta {@code stack} con el diseño de {@code cat}: las capas de siempre, o, en un retazo de aplique, los 3
+     * colores de sus zonas (2026-10-04, fase 4): cada cuadradito 1..3 fijado (o en el borrador) manda en su zona y
+     * las zonas sin tocar conservan el color que ya traía el retazo.
+     */
+    private void pintar(ItemStack stack, Categoria cat, boolean borrador) {
+        if (cat != Categoria.APLIQUE) {
+            pintarStack(stack, capasDe(cat, borrador));
+            return;
+        }
+        List<Integer> actuales = com.femclothes.aplique.RetazoApliqueItem.colores(stack);
+        int c = cat.ordinal();
+        int[] nuevos = new int[3];
+        for (int i = 0; i < 3; i++) {
+            Casilla cas = casillas[c][i];
+            boolean aplica = (borrador ? enBorrador(cat, i) : cas.fijada) && !cas.oculta;
+            nuevos[i] = aplica ? cas.color() & 0xFFFFFF : actuales.get(i);
+        }
+        com.femclothes.aplique.RetazoApliqueItem.conColores(stack, nuevos[0], nuevos[1], nuevos[2]);
+    }
+
     private static void pintarStack(ItemStack stack, List<RegionResolver.CapaPatron> capas) {
         RegionResolver.quitarPatron(stack, Lado.AMBAS);
         if (capas.isEmpty()) return;
@@ -1485,14 +1519,14 @@ public class TinturasBlockEntity extends BlockEntity
             Categoria cat = categoriaDe(prendaEntrada);
             if (cat != null) {
                 ItemStack copia = prendaEntrada.copy();
-                pintarStack(copia, capasDe(cat, true));
+                pintar(copia, cat, true);
                 return conVelo(copia, cat, resaltada);
             }
         }
         net.minecraft.item.Item item = itemRepresentativo(categoria);
         if (item == null) return ItemStack.EMPTY;
         ItemStack stack = new ItemStack(item);
-        pintarStack(stack, capasDe(categoria, true));
+        pintar(stack, categoria, true);
         return conVelo(stack, categoria, resaltada);
     }
 
@@ -1529,7 +1563,7 @@ public class TinturasBlockEntity extends BlockEntity
             Categoria cat = categoriaDe(prendaEntrada);
             if (cat != null) {
                 ItemStack copia = prendaEntrada.copy();
-                pintarStack(copia, capasDe(cat, true));
+                pintar(copia, cat, true);
                 ultimaVistaPrevia = copia;
                 return ultimaVistaPrevia;
             }
@@ -1546,6 +1580,7 @@ public class TinturasBlockEntity extends BlockEntity
             case CALIENTABRAZOS -> com.femclothes.item.FemclothesItems.CALIENTABRAZOS;
             case POLLERA -> com.femclothes.item.FemclothesItems.POLLERA;
             case CAPA -> com.femclothes.item.FemclothesItems.CAPA;
+            case APLIQUE -> com.femclothes.item.FemclothesItems.RETAZO_APLIQUE;
         };
     }
 
@@ -1688,7 +1723,7 @@ public class TinturasBlockEntity extends BlockEntity
             // prenda cruda todo el ciclo, ver tick()) así que esta
             // condición ya alcanzaría sola, pero el chequeo explícito
             // documenta la regla igual si el orden interno cambiara.
-            return estado == Estado.REPOSO && prendaEntrada.isEmpty() && FemclothesDye.isClothing(stack);
+            return estado == Estado.REPOSO && prendaEntrada.isEmpty() && aceptaEntrada(stack);
         }
         // Salida: solo la máquina escribe acá — igual que SALIDA en
         // ModeladoBlockEntity/SublimadoraBlockEntity, no se puede insertar

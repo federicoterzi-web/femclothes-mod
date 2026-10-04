@@ -118,6 +118,10 @@ public class TinturasScreenHandler extends ScreenHandler {
             @Override
             public boolean canInsert(ItemStack stack) { return be.isValid(TinturasBlockEntity.SLOT_PRENDA_ENTRADA, stack); }
 
+            /** De a uno: el retazo de aplique se apila a 64 y el resto se perdería (2026-10-04). */
+            @Override
+            public int getMaxItemCount() { return 1; }
+
             // Desde la GUI la prenda solo se CARGA — arranca con el botón
             // Teñir (2026-09-28, "sigue empezando a funcionar apenas pongo
             // la prenda"). El hopper/click derecho siguen arrancando solos
@@ -159,11 +163,12 @@ public class TinturasScreenHandler extends ScreenHandler {
     private static final int[][] POS_CAPA = {{48, 53}, {189, 96}, {175, 18}};
 
     public static int[] posCasilla(TinturasBlockEntity.Categoria cat, int i) {
-        if (cat == TinturasBlockEntity.Categoria.POLLERA || cat == TinturasBlockEntity.Categoria.CAPA) {
+        if (cat == TinturasBlockEntity.Categoria.POLLERA || cat == TinturasBlockEntity.Categoria.CAPA
+                || cat == TinturasBlockEntity.Categoria.APLIQUE) {
             // Sobre el dibujo de esquema_tintes_<prenda>.png (2026-10-04, "adaptalos"): origen del ítem de 16x16
             // en px de GUI dentro del esquema de 240x136 (arranca en ESQUEMA_Y). Pollera: cintura, falda, ruedo.
             // Capa: exterior (izq.), forro (abajo der.), detalles (capucha, arriba der.).
-            int[][] p = cat == TinturasBlockEntity.Categoria.POLLERA ? POS_POLLERA : POS_CAPA;
+            int[][] p = cat == TinturasBlockEntity.Categoria.POLLERA ? POS_POLLERA : POS_CAPA;   // el retazo usa el esquema de la capa (provisorio)
             return new int[]{M_MEDIO + p[i][0], ESQUEMA_Y + p[i][1]};
         }
         int[] p = ModeladoScreenHandler.PIN_POS[cat.ordinal()][i];
@@ -172,7 +177,8 @@ public class TinturasScreenHandler extends ScreenHandler {
 
     /** Centro de la chincheta del cuadradito {@code i} (relativo al panel) — {@code PIN_BTN} de la Modeladora, o arriba a la derecha del slot en Pollera. */
     public static int[] posChincheta(TinturasBlockEntity.Categoria cat, int i) {
-        if (cat == TinturasBlockEntity.Categoria.POLLERA || cat == TinturasBlockEntity.Categoria.CAPA) {
+        if (cat == TinturasBlockEntity.Categoria.POLLERA || cat == TinturasBlockEntity.Categoria.CAPA
+                || cat == TinturasBlockEntity.Categoria.APLIQUE) {
             int[] s = posCasilla(cat, i);
             return new int[]{s[0] + 17, s[1] - 1};
         }
@@ -288,7 +294,7 @@ public class TinturasScreenHandler extends ScreenHandler {
             boolean movio = this.insertItem(stack, SLOT_ALMACEN_INICIO, SLOT_CASILLAS_INICIO, false);
             if (!stack.isEmpty()) movio |= this.insertItem(stack, base, base + TinturasBlockEntity.CASILLAS, false);
             if (!movio) return ItemStack.EMPTY;
-        } else if (com.femclothes.item.FemclothesDye.isClothing(stack)) {
+        } else if (TinturasBlockEntity.aceptaEntrada(stack)) {
             if (!this.insertItem(stack, SLOT_ENTRADA, SLOT_ENTRADA + 1, false)) return ItemStack.EMPTY;
         } else if (!this.insertItem(stack, INV_START, this.slots.size(), false)) {
             return ItemStack.EMPTY;

@@ -64,6 +64,8 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
             // posiciones en TinturasScreenHandler#posCasilla.
             Identifier.of("femclothes", "textures/gui/container/esquema_tintes_pollera.png"),
             Identifier.of("femclothes", "textures/gui/container/esquema_tintes_capa.png"),
+            // Retazo de aplique (2026-10-04, fase 4): provisoriamente el esquema de la capa (3 cuadraditos).
+            Identifier.of("femclothes", "textures/gui/container/esquema_tintes_capa.png"),
     };
     private static final int ESQUEMA_Y = TinturasScreenHandler.ESQUEMA_Y;
     private static final int ESQUEMA_ANCHO = 240, ESQUEMA_ALTO = 136;
@@ -359,6 +361,10 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
         PlayerEntity jugador = client.player;
         if (jugador == null) return;
 
+        if (handler.be.categoria() == TinturasBlockEntity.Categoria.APLIQUE) {
+            dibujarMuestrasRetazo(context, handler.be.prendaDeVistaPrevia(resaltada));
+            return;
+        }
         ItemStack prenda = handler.be.prendaDeVistaPrevia(resaltada);
         List<ItemStack> prendas = new ArrayList<>(GarmentFeatureRenderer.equipadas(jugador));
         if (!prenda.isEmpty()) {
@@ -373,6 +379,28 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
             PreviewJugador.dibujar(context, jugador, x1, y1, x2, y2, Math.round(35 * zoomVista), anguloVista, (float) mouseY);
         } finally {
             GarmentFeatureRenderer.previewOverride = null;
+        }
+    }
+
+    /** Vista previa del retazo de aplique (2026-10-04, fase 4): el ítem grande y las 3 zonas con su color. */
+    private void dibujarMuestrasRetazo(DrawContext context, ItemStack retazo) {
+        int x1 = this.x + PREVIEW_X1_LOCAL, y1 = this.y + PREVIEW_Y1_LOCAL;
+        int x2 = this.x + PREVIEW_X2_LOCAL, y2 = this.y + PREVIEW_Y2_LOCAL;
+        int w = x2 - x1, h = y2 - y1;
+        var m = context.getMatrices();
+        m.push();
+        m.translate(x1 + w / 2f - 24, y1 + 6, 0);
+        m.scale(3f, 3f, 1f);
+        context.drawItem(retazo, 0, 0);
+        m.pop();
+        List<Integer> colores = com.femclothes.aplique.RetazoApliqueItem.colores(retazo);
+        int alto = Math.min(26, (h - 70) / 3);
+        for (int i = 0; i < 3; i++) {
+            int ty = y1 + 62 + i * (alto + 4);
+            context.fill(x1 + 6, ty - 1, x2 - 6, ty + alto + 1, 0xFF2A180C);
+            context.fill(x1 + 7, ty, x2 - 7, ty + alto, 0xFF000000 | colores.get(i));
+            context.drawText(this.textRenderer, Text.translatable("femclothes.aplique.zona", i + 1),
+                    x1 + 10, ty + alto / 2 - 4, 0xFFFFFFFF, true);
         }
     }
 

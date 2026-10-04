@@ -173,7 +173,7 @@ public class TinturasBlock extends BlockWithEntity {
             return ItemActionResult.SUCCESS;
         }
 
-        boolean esPrenda = FemclothesDye.isClothing(stack);
+        boolean esPrenda = TinturasBlockEntity.aceptaEntrada(stack);
         if (!esPrenda) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         if (world.isClient) return ItemActionResult.SUCCESS;
 
