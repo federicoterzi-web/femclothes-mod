@@ -270,13 +270,33 @@ public final class PolleraMalla {
         // ahora que no hay cinto, 2026-10-01) a casi elipse (2.4) en el ruedo.
         float n = 2.4f + 9.6f * (1f - t) * (1f - t);
         float[][] out = new float[COLUMNAS + 1][];
+        // Columnas a igual largo de arco, con el centro del frente en COL_FRENTE (2026-10-04, "es literal un corte
+        // en la tela, no enganchan las dos partes"): espaciadas por el perímetro de la caja (s parejo), la vuelta
+        // de tela no repartía su u entre 16 y 40 y en el ruedo la costura leía texeles de afuera de la franja del
+        // torso (transparentes). Con arco parejo la costura cae justo en u 16 = 40.
+        final int muestras = 240;
+        float[] arco = new float[muestras + 1];
+        float[] ant = seccion(0f, a, b, n);
+        for (int i = 1; i <= muestras; i++) {
+            float[] q = seccion(i * PERIMETRO / muestras, a, b, n);
+            arco[i] = arco[i - 1] + (float) Math.hypot(q[0] - ant[0], q[1] - ant[1]);
+            ant = q;
+        }
+        float total = arco[muestras], arcoFrente = arco[muestras / 3];   // s = 8
         for (int c = 0; c <= COLUMNAS; c++) {
-            float s = c * PERIMETRO / COLUMNAS;
+            // Mismo entero para la columna 0 y la última: la costura cierra exacta.
+            int k = Math.floorMod(c - COL_FRENTE, COLUMNAS);
+            float objetivo = (arcoFrente + k * total / COLUMNAS) % total;
+            int i = java.util.Arrays.binarySearch(arco, objetivo);
+            if (i < 0) i = -i - 2;
+            i = Math.max(0, Math.min(muestras - 1, i));
+            float tramo = arco[i + 1] - arco[i];
+            float s = (i + (tramo <= 1e-6f ? 0f : (objetivo - arco[i]) / tramo)) * PERIMETRO / muestras;
             float[] q = seccion(s, a, b, n);
             float x = q[0], z = q[1];
             if (tableada) {
                 // Zigzag: 4 columnas por tabla, picos afuera/adentro alternados.
-                float fase = (s * TABLAS / PERIMETRO) % 1f;
+                float fase = (c * (float) TABLAS / COLUMNAS) % 1f;
                 float tri = (fase < 0.5f ? fase * 2f : 2f - fase * 2f) * 2f - 1f;
                 float amp = (0.45f + 0.035f * l) * t;
                 float nx = x / (a * a), nz = z / (b * b);
@@ -372,6 +392,7 @@ public final class PolleraMalla {
                 if (c < COL_FRENTE) pf.u[f][c] = 24f - 12f * (frente - acum[c]) / mitadDer;
                 else if (c <= COL_ESPALDA) pf.u[f][c] = 24f + 12f * (acum[c] - frente) / mitadIzq;
                 else pf.u[f][c] = 36f + 12f * (acum[c] - espalda) / mitadDer;
+                pf.u[f][c] = Math.max(16f, Math.min(40f, pf.u[f][c]));   // la franja del torso, ni un px afuera
             }
         }
         // v: largo de tela bajando (promedio de todas las columnas).
