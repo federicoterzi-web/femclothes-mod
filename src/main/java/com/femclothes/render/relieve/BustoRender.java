@@ -552,88 +552,78 @@ public final class BustoRender {
             dx = b.rebote().dx() * 8f;
         }
         float plano = -2f - inflado;
-        float arriba = ARRIBA + 1.2f - 0.25f * abrir;
-        float abajo = ARRIBA + 1.2f + 2.6f + 0.3f * t + 0.3f * abrir;
-        // Cubos girados (2026-10-04, "dos cubos inclinados... bajan suave por el pecho hasta la punta y de ahí
-        // se inserta en el pecho"): más inclinados cuanto más talle, más firmes en armaduras.
-        float giro = (float) Math.toRadians(10f + 25f * Math.min(1f, t / 6f)) * (rigido ? 0.4f : 1f)
-                + dy * 0.04f;
+        // Como el Female Gender Mod (2026-10-04, "investiga como hace el jenys mod y el female gender mod... porque
+        // tus tetas salieron horribles"): una cuña que cuelga de su arista de arriba, pegada al pecho; la cara de
+        // adelante baja en pendiente hasta la punta y la de abajo vuelve al pecho.
+        float arriba = ARRIBA - 0.25f * abrir;
+        float largo = 4f + 0.4f * t + 0.3f * abrir;
         List<Vert[]> q = new ArrayList<>();
         if (!piel && carpa >= CARPA_MANTO) {
             float chato = 1f - 0.35f * Math.max(0f, Math.min(1f, (carpa - CARPA_MANTO) / 1.5f));
-            caja(q, -4f, 4f, arriba, abajo, plano, hondo * chato, giro * 0.5f, 0f, dy, carpa * 1.5f);
+            cuna(q, -4f, 4f, arriba, largo, plano, hondo * chato, 0f, dy, carpa * 1.5f, rigido);
         } else {
             float colgar = piel ? 0f : carpa;
             // Una rendija entre los dos (2026-10-04, "q se note la division de los pechos").
-            caja(q, -4f, -SEPARACION, arriba, abajo, plano, hondo, giro, dx, dy, colgar);
-            caja(q, SEPARACION, 4f, arriba, abajo, plano, hondo, giro, dx, dy, colgar);
+            cuna(q, -4f, -SEPARACION, arriba, largo, plano, hondo, dx, dy, colgar, rigido);
+            cuna(q, SEPARACION, 4f, arriba, largo, plano, hondo, dx, dy, colgar, rigido);
         }
         return q;
     }
 
     /** Mitad de la rendija entre los dos pechos cuadrados (px). */
-    private static final float SEPARACION = 0.5f;
+    private static final float SEPARACION = 0.25f;
 
     /**
-     * Un cubo de x0..x1 sobre el pecho, girado {@code giro} radianes alrededor de su eje horizontal (2026-10-04,
-     * "dos cubos inclinados en que lados a bajan suave por el pecho hasta la punta y de ahí lado b se inserta en
-     * el pecho"): la tapa de arriba baja en pendiente desde el pecho hasta la punta, la cara de abajo vuelve al
-     * pecho y se entierra, y la de atrás queda adentro (no se dibuja). Sale {@code hondo} px por delante del plano.
-     * Ocupa de {@code arriba} a {@code abajo}; {@code dx}/{@code dy} es el rebote; {@code colgar} baja la arista de
-     * atrás de abajo (la tela cae en carpa hasta el pecho). La textura va proyectada de frente.
+     * Una cuña de x0..x1 (la forma del Female Gender Mod: una caja que cuelga de su arista de arriba, pegada al
+     * pecho, girada hacia adelante; 2026-10-04, "dos cubos inclinados en que lados a bajan suave por el pecho
+     * hasta la punta y de ahí lado b se inserta en el pecho"). Perfil: A (arriba, en el plano del pecho) →
+     * B (la punta, {@code hondo} px por delante) → C (abajo, otra vez en el plano). Se dibujan el frente A-B, la
+     * base B-C y los dos costados triangulares; la tapa y el fondo quedan adentro del pecho.
+     *
+     * @param largo  de A a C, sobre el pecho (px); {@code colgar} baja C (la tela cae en carpa hasta el pecho)
+     * @param hondo  cuánto sale la punta
+     * @param rigido armaduras: menos inclinadas
      */
-    private static void caja(List<Vert[]> q, float x0, float x1, float arriba, float abajo, float plano, float hondo,
-                             float giro, float dx, float dy, float colgar) {
-        if (x1 - x0 < 0.05f) return;
+    private static void cuna(List<Vert[]> q, float x0, float x1, float arriba, float largo, float plano, float hondo,
+                             float dx, float dy, float colgar, boolean rigido) {
+        if (x1 - x0 < 0.05f || hondo <= 0.01f) return;
+        // La punta sale hondo = alto·sen θ y C queda a alto/cos θ: con alto = largo·cos θ, hondo = largo·sen θ·cos θ.
+        float s2 = Math.min(1f, 2f * hondo / largo);
+        float giro = Math.min((float) Math.toRadians(42f), 0.5f * (float) Math.asin(s2)) * (rigido ? 0.6f : 1f)
+                + dy * 0.04f;
+        giro = Math.max(0.05f, giro);
         float co = (float) Math.cos(giro), si = (float) Math.sin(giro);
-        float alto = abajo - arriba, yc = arriba + alto * 0.5f;
-        float prof = hondo / co;                                  // la punta sale `hondo`
-        float[] xs = {x0, x1, x1, x0};
-        float[] lado = {-1f, -1f, 1f, 1f};                        // -1 = tapa de arriba, +1 = base: esquinas 0..3
-        Vector3f[] at = new Vector3f[4], fr = new Vector3f[4];
-        float[][] uvA = new float[4][], uvF = new float[4][], base = new float[4][];
-        for (int k = 0; k < 4; k++) {
-            float d = lado[k] * alto * 0.5f;
-            for (int cara = 0; cara < 2; cara++) {
-                float dz = cara == 0 ? 0f : -prof;
-                float y = yc + d * co - dz * si;
-                float z = plano + dz * co - d * si + alto * 0.5f * si;   // la arista de atrás de abajo, en el plano
-                if (cara == 0 && lado[k] > 0) y += colgar;
-                float[] uv = {xs[k], y};
-                Vector3f v = new Vector3f(xs[k] + dx, y + dy, z);
-                if (cara == 0) { at[k] = v; uvA[k] = uv; } else { fr[k] = v; uvF[k] = uv; }
-                base[k] = uv;
-            }
+        float alto = largo * co;
+        float yB = arriba + alto * co, zB = plano - alto * si, yC = arriba + largo + colgar;
+        float[] xs = {x0, x1};
+        Vector3f[] a = new Vector3f[2], b = new Vector3f[2], c = new Vector3f[2];
+        float[][] uvA = new float[2][], uvB = new float[2][], uvC = new float[2][];
+        for (int k = 0; k < 2; k++) {
+            a[k] = new Vector3f(xs[k] + dx, arriba + dy, plano);
+            b[k] = new Vector3f(xs[k] + dx, yB + dy, zB);
+            c[k] = new Vector3f(xs[k] + dx, yC + dy, plano);
+            // Textura de frente, sin el rebote: lo que se ve desde adelante.
+            uvA[k] = new float[]{xs[k], arriba};
+            uvB[k] = new float[]{xs[k], yB};
+            uvC[k] = new float[]{xs[k], yC};
         }
-        // Frente.
-        cara(q, new Vector3f(0, 0, -1), new int[][]{{1, 0}, {1, 1}, {1, 2}, {1, 3}}, at, fr, uvA, uvF, base);
-        // Tapa de arriba, de abajo y los dos costados.
-        cara(q, new Vector3f(0, -1, 0), new int[][]{{0, 0}, {0, 1}, {1, 1}, {1, 0}}, at, fr, uvA, uvF, base);
-        cara(q, new Vector3f(0, 1, 0), new int[][]{{0, 3}, {0, 2}, {1, 2}, {1, 3}}, at, fr, uvA, uvF, base);
-        cara(q, new Vector3f(-1, 0, 0), new int[][]{{0, 0}, {0, 3}, {1, 3}, {1, 0}}, at, fr, uvA, uvF, base);
-        cara(q, new Vector3f(1, 0, 0), new int[][]{{0, 1}, {0, 2}, {1, 2}, {1, 1}}, at, fr, uvA, uvF, base);
+        // Frente (A-B) y base (B-C).
+        quad(q, new Vector3f(0, -0.5f, -1), new Vector3f[]{a[0], a[1], b[1], b[0]}, new float[][]{uvA[0], uvA[1], uvB[1], uvB[0]});
+        quad(q, new Vector3f(0, 1, -0.5f), new Vector3f[]{b[0], b[1], c[1], c[0]}, new float[][]{uvB[0], uvB[1], uvC[1], uvC[0]});
+        // Costados: el triángulo A-B-C (el último vértice se repite).
+        quad(q, new Vector3f(-1, 0, 0), new Vector3f[]{a[0], b[0], c[0], c[0]}, new float[][]{uvA[0], uvB[0], uvC[0], uvC[0]});
+        quad(q, new Vector3f(1, 0, 0), new Vector3f[]{a[1], b[1], c[1], c[1]}, new float[][]{uvA[1], uvB[1], uvC[1], uvC[1]});
     }
 
-    /**
-     * Una cara de la caja: {@code idx} = {0 atrás | 1 frente, esquina}. La
-     * normal sale de los vértices (orientada hacia {@code afuera}), y el orden
-     * se da vuelta si hace falta para que gire igual que las cúpulas.
-     */
-    private static void cara(List<Vert[]> q, Vector3f afuera, int[][] idx, Vector3f[] at, Vector3f[] fr,
-                             float[][] uvA, float[][] uvF, float[][] base) {
-        Vert[] v = new Vert[4];
-        Vector3f[] p = new Vector3f[4];
-        for (int i = 0; i < 4; i++) p[i] = idx[i][0] == 0 ? at[idx[i][1]] : fr[idx[i][1]];
+    /** Un cuadrilátero (o triángulo con el último vértice repetido) con la normal sacada de sus vértices, hacia {@code afuera}. */
+    private static void quad(List<Vert[]> q, Vector3f afuera, Vector3f[] p, float[][] uv) {
         Vector3f nor = new Vector3f(p[2]).sub(p[0]).cross(new Vector3f(p[3]).sub(p[1]));
-        if (nor.lengthSquared() < 1e-10f) return;                   // cara aplastada (sin hondo)
+        if (nor.lengthSquared() < 1e-10f) return;
         boolean alReves = nor.dot(afuera) > 0;
         if (nor.dot(afuera) < 0) nor.negate();
         nor.normalize();
-        for (int i = 0; i < 4; i++) {
-            float[] uv = idx[i][0] == 0 ? uvA[idx[i][1]] : uvF[idx[i][1]];
-            float[] b = base[idx[i][1]];
-            v[i] = new Vert(p[i], nor, uv[0], uv[1], b[0], b[1]);
-        }
+        Vert[] v = new Vert[4];
+        for (int i = 0; i < 4; i++) v[i] = new Vert(p[i], nor, uv[i][0], uv[i][1], uv[i][0], uv[i][1]);
         // Las cúpulas giran con cruz(lado1, lado2) hacia ADENTRO.
         q.add(alReves ? new Vert[]{v[3], v[2], v[1], v[0]} : v);
     }
@@ -751,13 +741,12 @@ public final class BustoRender {
             alterno = b.reboteCola().dx() * 8f * 0.6f;
         }
         float plano = -2f - inflado;
-        float arriba = 8.2f - 0.2f * abrir, abajo = 12f + 0.2f * abrir;
-        // Mismos cubos girados que el busto, menos inclinados (2026-10-04, "quizas aplicable a las nalgas").
-        float giro = (float) Math.toRadians(6f + 12f * Math.min(1f, cuerpo / 2.5f)) * (rigido ? 0.4f : 1f);
+        float arriba = 8.2f - 0.2f * abrir, largo = 3.8f + 0.4f * abrir;
         float colgar = piel ? 0f : carpa * 0.5f;
+        // Las mismas cuñas que el busto (2026-10-04, "quizas aplicable a las nalgas"), con una rendija más fina.
         List<Vert[]> q = new ArrayList<>();
-        caja(q, -4f, -SEPARACION * 0.6f, arriba, abajo, plano, hondo, giro, 0f, dy - alterno, colgar);
-        caja(q, SEPARACION * 0.6f, 4f, arriba, abajo, plano, hondo, giro, 0f, dy + alterno, colgar);
+        cuna(q, -4f, -SEPARACION * 0.6f, arriba, largo, plano, hondo, 0f, dy - alterno, colgar, rigido);
+        cuna(q, SEPARACION * 0.6f, 4f, arriba, largo, plano, hondo, 0f, dy + alterno, colgar, rigido);
         return q;
     }
 
