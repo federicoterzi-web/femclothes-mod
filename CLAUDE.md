@@ -110,7 +110,7 @@ La descripción completa de mecánicas, comandos y recetas está en [docs/manual
 
 **Otros, sin empezar:**
 - Volumen 3D real en la ropa con 3D Skin Layers.
-- Cadena textil: el hueso `cargo` de las máquinas debería moverse solo con máquinas encadenadas de izquierda a derecha.
+- Cadena textil (2026-10-04, "activemos la linea de produccion textil"; hecha, falta probar): `getAvailableSlots` de las 3 máquinas acepta la prenda también por la cara IZQUIERDA (`ladoIzquierdo()`, cada máquina tiene el suyo: Tintes va invertido); la salida ya se empujaba a la derecha con `InventarioUtil.empujarA`, que ahora marca `InventarioUtil.enCadena` y el `setStack` de la que recibe saltea la prenda (la pasa a su salida, `LISTO`/`empujarSalida`) si no tiene nada fijado (Modeladora `!hayFijadas()`, Tintes sin `capasDe`, Sublimadora sin `hayFijadas()` ni `capas`). Solo vale para lo que llega por `empujarA`: tolva/mano arriba se comporta como antes. Animación del `cargo` apagada a propósito ("esta dentro de la maquina"); idea futura: conectar a un bloque de distancia con geometría de cinta transportadora. Sublimadora con fotos fijadas espera la tapa. La Mesa de estilado no participa (necesita rework).
 - Cadena de tolvas: la base existe (`SidedInventory`), falta probarla de punta a punta.
 - Guardarropas: sistema de estilos guardados (hay un prototipo de outfits de 4 prendas).
 - Ropa en el brazo de primera persona.

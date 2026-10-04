@@ -164,10 +164,13 @@ Las máquinas se pueden encadenar con tolvas (hoppers):
 | Cara del bloque | Qué entra o sale |
 |---|---|
 | **Arriba** | La prenda a procesar (entra sola y arranca sola). |
+| **Izquierda** | También entra la prenda (es la cara donde empalma la máquina de al lado). |
 | **Atrás** | Los insumos: tintes (C, M, Y, K) y papel. |
 | **Derecha** | La prenda terminada sale sola hacia un cofre o tolva de ese lado. |
 
-Con tolva, la prenda **arranca sola** si hay un diseño fijado. Desde la interfaz, las tres tienen un botón sobre la flecha Entrada → Salida: **Modelar**, **Teñir** y **Prensar**. Además, la Modeladora arranca al cerrar la interfaz (solo si hay prenda en la Entrada, algo fijado y la Salida libre; si no, queda apagada) y la Sublimadora al cerrar la tapa. *(La cadena completa de máquinas todavía no se probó a fondo.)*
+Con tolva, la prenda **arranca sola** si hay un diseño fijado. Desde la interfaz, las tres tienen un botón sobre la flecha Entrada → Salida: **Modelar**, **Teñir** y **Prensar**. Además, la Modeladora arranca al cerrar la interfaz (solo si hay prenda en la Entrada, algo fijado y la Salida libre; si no, queda apagada) y la Sublimadora al cerrar la tapa. 
+
+**Línea de producción** (2026-10-04): si ponés dos máquinas una al lado de la otra (la salida de la primera mira a la entrada izquierda de la segunda, mismo sentido), la prenda terminada pasa directo a la siguiente sin tolvas, y la última la deja en un cofre/tolva a su derecha. Si una máquina de la cadena no tiene nada fijado para esa prenda (sin corte, sin cuadraditos de tinte o sin fotos/máscaras), la **saltea** y la prenda sigue de largo. Una prenda que cargás a mano o con tolva por arriba se comporta como siempre (espera en la entrada). La Sublimadora con fotos fijadas deja la prenda esperando a que cierres la tapa. *(La cadena completa todavía no se probó a fondo; la Mesa de estilado queda afuera hasta que se rehaga.)*
 
 
 ### Máquinas creativas y kits

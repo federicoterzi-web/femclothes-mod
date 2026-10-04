@@ -816,6 +816,15 @@ public class SublimadoraBlockEntity extends BlockEntity
             }
             case SLOT_REMERA -> {
                 ItemStack nueva = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1);
+                if (!nueva.isEmpty() && com.femclothes.util.InventarioUtil.enCadena && estado == Estado.REPOSO
+                        && remera.isEmpty() && salida.isEmpty() && !hayFijadas() && capas.isEmpty()) {
+                    // Llegó por la cadena y no hay nada que estampar: pasa de
+                    // largo (2026-10-04, "me parece perfecto que saltee").
+                    salida = nueva;
+                    estado = Estado.LISTO;
+                    sincronizar();
+                    return;
+                }
                 if (!ItemStack.areEqual(remera, nueva)) soltarCapas();
                 remera = nueva;
             }
@@ -978,7 +987,8 @@ public class SublimadoraBlockEntity extends BlockEntity
     // papel/tinta siguen por atrás, sin cambios.
     @Override
     public int[] getAvailableSlots(Direction side) {
-        if (side == Direction.UP) return new int[]{SLOT_REMERA};
+        // También por la IZQUIERDA (2026-10-04, "poder cargarles prendas por la izquierda").
+        if (side == Direction.UP || side == ladoIzquierdo()) return new int[]{SLOT_REMERA};
         if (side == ladoAtras()) return new int[]{SLOT_PAPEL, SLOT_TINTA_BASE, SLOT_TINTA_BASE + 1, SLOT_TINTA_BASE + 2, SLOT_TINTA_BASE + 3};
         return new int[0];
     }

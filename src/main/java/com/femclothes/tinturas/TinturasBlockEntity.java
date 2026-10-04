@@ -1642,6 +1642,16 @@ public class TinturasBlockEntity extends BlockEntity
                 // Arranca el ciclo (2026-09-21, 10s) — ver el javadoc de
                 // iniciarTenido. Éxito o no, sincronizar() ya corrió adentro.
                 ItemStack copia = stack.copyWithCount(1);
+                Categoria catCadena = categoriaDe(copia);
+                if (com.femclothes.util.InventarioUtil.enCadena && estado == Estado.REPOSO
+                        && prendaEntrada.isEmpty() && salida.isEmpty()
+                        && (catCadena == null || capasDe(catCadena, false).isEmpty())) {
+                    // Llegó por la cadena y no hay nada que teñir: pasa de
+                    // largo (2026-10-04, "me parece perfecto que saltee").
+                    salida = copia;
+                    empujarSalida();
+                    return;
+                }
                 Text motivo = iniciarTenido(copia);
                 if (motivo != null) {
                     // No se pudo arrancar (sin fijada, sin tinta, ya
@@ -1743,7 +1753,8 @@ public class TinturasBlockEntity extends BlockEntity
     // tinta sigue por atrás, sin cambios.
     @Override
     public int[] getAvailableSlots(Direction side) {
-        if (side == Direction.UP) return new int[]{SLOT_PRENDA_ENTRADA};
+        // También por la IZQUIERDA (2026-10-04, "poder cargarles prendas por la izquierda").
+        if (side == Direction.UP || side == ladoIzquierdo()) return new int[]{SLOT_PRENDA_ENTRADA};
         if (side == ladoAtras()) return new int[]{SLOT_TINTA_BASE, SLOT_TINTA_BASE + 1, SLOT_TINTA_BASE + 2, SLOT_TINTA_BASE + 3};
         return new int[0];
     }

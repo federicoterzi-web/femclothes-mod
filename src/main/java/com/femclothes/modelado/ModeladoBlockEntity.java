@@ -1348,6 +1348,18 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
             pinCambio(pin, antesPin, stack);
         }
         if (stack.getCount() > getMaxCountPerStack()) stack.setCount(getMaxCountPerStack());
+        if (slot == PRENDA && !stack.isEmpty() && com.femclothes.util.InventarioUtil.enCadena
+                && guiAbiertas == 0 && !hayFijadas() && estado == Estado.REPOSO
+                && !encendida && items.get(SALIDA).isEmpty()) {
+            // Llegó por la cadena y no hay nada que cortar: la saltea
+            // (2026-10-04, "me parece perfecto que saltee") y sale a la derecha.
+            items.set(SALIDA, stack);
+            items.set(PRENDA, ItemStack.EMPTY);
+            estado = Estado.LISTO;
+            markDirty();
+            sincronizar();
+            return;
+        }
         if (slot == PRENDA && !stack.isEmpty() && guiAbiertas == 0 && hayFijadas()) {
             // Arranca sola al cargar la prenda POR ARRIBA (hopper/bloque) con
             // algo fijado (2026-09-22, "que arranque cuando le ponen prenda").
@@ -1439,7 +1451,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory,
 
     @Override
     public int[] getAvailableSlots(net.minecraft.util.math.Direction side) {
-        return side == net.minecraft.util.math.Direction.UP ? new int[]{PRENDA} : new int[0];
+        // También por la IZQUIERDA (2026-10-04, "poder cargarles prendas por la izquierda"):
+        // es la cara donde empalma la salida de la máquina de al lado.
+        return side == net.minecraft.util.math.Direction.UP || side == ladoIzquierdo() ? new int[]{PRENDA} : new int[0];
     }
 
     @Override
