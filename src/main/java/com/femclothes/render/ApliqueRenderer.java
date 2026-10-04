@@ -55,6 +55,16 @@ public final class ApliqueRenderer {
     private ApliqueRenderer() {}
 
     private static final Identifier ATLAS = Identifier.of(Femclothes.MOD_ID, "textures/entity/aplique_atlas.png");
+
+    /**
+     * Dónde quedó cada aplique en el último dibujo (2026-10-04, apliques sobre apliques): la matriz de su espacio de
+     * objeto a la pantalla y su caja ahí (centrada, en bloques). La Mesa de estilado los pone en {@link #capturaApliques}
+     * mientras dibuja la vista previa y con eso apunta el click contra la caja de cada aplique.
+     */
+    public record Captura(Matrix4f matriz, float[] min, float[] max) {}
+
+    @org.jetbrains.annotations.Nullable
+    public static Map<Integer, Captura> capturaApliques;
     private static final int ANCHO_ZONA = 32;
 
     /** Los apliques de todas las prendas de {@code prendas} (los de caja; pollera y capa van en su malla). */
@@ -77,8 +87,9 @@ public final class ApliqueRenderer {
         if (apliques == null || apliques.isEmpty()) return;
         // El marco del cuerpo (antes de la pose de cada parte): a él pertenecen los desplazamientos de la tela blanda.
         Matrix3f marco = new Matrix3f(matrices.peek().getNormalMatrix());
-        for (Aplique a : apliques) {
-            if (a.superficie() == Aplique.Superficie.CAJA) dibujarUno(a, dil, biped, matrices, vertexConsumers, luz, marco);
+        for (int i = 0; i < apliques.size(); i++) {
+            Aplique a = apliques.get(i);
+            if (a.superficie() == Aplique.Superficie.CAJA) dibujarUno(a, i, apliques, dil, biped, matrices, vertexConsumers, luz, marco);
         }
     }
 
@@ -108,18 +119,19 @@ public final class ApliqueRenderer {
      * ({@link MallaCapturada}, 2026-10-02, "no se pueden generar apliques en
      * pollera ni capa"): se ubican donde quedó ese punto de la tela este
      * cuadro, con su normal y "arriba" hacia la cintura/los hombros, así
-     * siguen el movimiento de la tela.
+     * siguen el movimiento de la tela. {@code sup} elige los de esa malla; los que van sobre otro aplique los
+     * dibuja su padre.
      */
-    public static void dibujarEnMalla(List<Aplique> apliques, MallaCapturada malla,
+    public static void dibujarEnMalla(ItemStack item, Aplique.Superficie sup, MallaCapturada malla,
                                       VertexConsumerProvider vertexConsumers, int luz, Matrix3f marco) {
-        if (apliques.isEmpty() || malla.vacia()) return;
+        List<Aplique> todos = item.get(FemclothesComponents.APLIQUES);
+        if (todos == null || todos.isEmpty() || malla.vacia()) return;
         float s = malla.escala();
-        for (Aplique a : apliques) {
+        for (int idx = 0; idx < todos.size(); idx++) {
+            Aplique a = todos.get(idx);
+            if (a.superficie() != sup) continue;
             MallaCapturada.Ubicacion ub = malla.enUv(a.x() / 64f, a.y() / 64f);
             if (ub == null) continue;
-            boolean objeto = a.objeto() != null;
-            BakedGeoModel modelo = objeto ? null : GeckoLibCache.getBakedModels().get(a.modelo().geo());
-            if (modelo == null && !objeto) continue;
             Vector3f atras = new Vector3f(ub.normal()).negate();          // +Z del modelo
             Vector3f arriba = new Vector3f(ub.arriba());
             Vector3f derecha = new Vector3f(arriba).cross(atras);
@@ -132,25 +144,14 @@ public final class ApliqueRenderer {
             MatrixStack ms = new MatrixStack();
             ms.peek().getPositionMatrix().translation(pos).mul(base).scale(s * a.escala());
             ms.peek().getNormalMatrix().set(base.get3x3(new Matrix3f()));
-            Blando blando = Blando.de(a, base.get3x3(new Matrix3f()), marco);
-            if (objeto) {
-                dibujarObjeto(a, ms, vertexConsumers, luz, blando);
-                continue;
-            }
-            colocarGeo(a, ms);
-            blando = Blando.de(a, ms.peek().getNormalMatrix(), marco);
-            VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura(a)));
-            for (GeoBone hueso : modelo.topLevelBones()) dibujarHueso(hueso, ms, vc, luz, blando);
+            dibujarEnMarco(a, idx, todos, ms, vertexConsumers, luz, marco);
         }
     }
 
-    private static void dibujarUno(Aplique a, float dil, BipedEntityModel<?> biped, MatrixStack matrices,
-                                   VertexConsumerProvider vertexConsumers, int luz, Matrix3f marco) {
+    private static void dibujarUno(Aplique a, int idx, List<Aplique> todos, float dil, BipedEntityModel<?> biped,
+                                   MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz, Matrix3f marco) {
         ModelPart parte = CuerpoGeometria.delJugador(biped, a.parte());
         if (!parte.visible) return;
-        boolean objeto = a.objeto() != null;
-        BakedGeoModel modelo = objeto ? null : GeckoLibCache.getBakedModels().get(a.modelo().geo());
-        if (modelo == null && !objeto) return;
 
         Vector3f n = new Vector3f(a.cara().getOffsetX(), a.cara().getOffsetY(), a.cara().getOffsetZ());
         matrices.push();
@@ -187,17 +188,117 @@ public final class ApliqueRenderer {
         matrices.peek().getNormalMatrix().mul(orient.get3x3(new Matrix3f()));
         matrices.scale(a.escala(), a.escala(), a.escala());
 
-        Blando blando = Blando.de(a, matrices.peek().getNormalMatrix(), marco);
-        if (objeto) {
-            dibujarObjeto(a, matrices, vertexConsumers, luz, blando);
-            matrices.pop();
+        dibujarEnMarco(a, idx, todos, matrices, vertexConsumers, luz, marco);
+        matrices.pop();
+    }
+
+    /**
+     * Dibuja un aplique (objeto o modelo del mod) con la pila ya puesta en su marco S (origen sobre la superficie,
+     * frente en -Z, arriba en +Y, escala del aplique) y, adentro de su propio marco, los apliques que van sobre él.
+     */
+    private static void dibujarEnMarco(Aplique a, int idx, List<Aplique> todos, MatrixStack matrices,
+                                       VertexConsumerProvider vertexConsumers, int luz, Matrix3f marco) {
+        if (a.objeto() != null) {
+            dibujarObjeto(a, idx, todos, matrices, vertexConsumers, luz,
+                    Blando.de(a, matrices.peek().getNormalMatrix(), marco), marco);
             return;
         }
-        colocarGeo(a, matrices);
-        blando = Blando.de(a, matrices.peek().getNormalMatrix(), marco);
+        BakedGeoModel modelo = GeckoLibCache.getBakedModels().get(a.modelo().geo());
+        if (modelo == null) return;
+        Matrix4f pm = colocarGeo(a, matrices);
+        // Los huesos leen el marco con la rotación del usuario ya aplicada.
+        Matrix3f local = new Matrix3f(matrices.peek().getNormalMatrix()).mul(pm.normal(new Matrix3f()));
+        Blando blando = Blando.de(a, local, marco);
+        float[][] caja = limitesGeo(modelo);
+        capturar(idx, matrices, pm, caja[0], caja[1]);
+        dibujarHijos(idx, todos, matrices, pm, vertexConsumers, luz, marco);
+        matrices.push();
+        aplicar(matrices, pm);
         VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura(a)));
         for (GeoBone hueso : modelo.topLevelBones()) dibujarHueso(hueso, matrices, vc, luz, blando);
         matrices.pop();
+    }
+
+    // ── apliques sobre apliques (2026-10-04) ───────────────────────────────
+
+    /** Anota dónde quedó el aplique {@code idx}: su espacio de objeto (con {@code pm}) a la pantalla, y su caja. */
+    private static void capturar(int idx, MatrixStack matrices, Matrix4f pm, float[] min, float[] max) {
+        Map<Integer, Captura> c = capturaApliques;
+        if (c == null) return;
+        c.put(idx, new Captura(new Matrix4f(matrices.peek().getPositionMatrix()).mul(pm), min.clone(), max.clone()));
+    }
+
+    /** La caja de un modelo del mod en su espacio (bloques): los vértices de todos sus cubos, sin los giros de huesos. */
+    private static final Map<BakedGeoModel, float[][]> LIMITES_GEO = new java.util.WeakHashMap<>();
+
+    private static float[][] limitesGeo(BakedGeoModel modelo) {
+        float[][] b = LIMITES_GEO.get(modelo);
+        if (b != null) return b;
+        float[] mn = { 9, 9, 9 }, mx = { -9, -9, -9 };
+        java.util.ArrayDeque<GeoBone> pendientes = new java.util.ArrayDeque<>(modelo.topLevelBones());
+        while (!pendientes.isEmpty()) {
+            GeoBone h = pendientes.pop();
+            pendientes.addAll(h.getChildBones());
+            for (GeoCube cubo : h.getCubes()) {
+                for (GeoQuad q : cubo.quads()) {
+                    if (q == null) continue;
+                    for (GeoVertex v : q.vertices()) {
+                        mn[0] = Math.min(mn[0], v.position().x()); mx[0] = Math.max(mx[0], v.position().x());
+                        mn[1] = Math.min(mn[1], v.position().y()); mx[1] = Math.max(mx[1], v.position().y());
+                        mn[2] = Math.min(mn[2], v.position().z()); mx[2] = Math.max(mx[2], v.position().z());
+                    }
+                }
+            }
+        }
+        if (mx[0] < mn[0]) { mn = new float[] { -0.1f, -0.1f, -0.1f }; mx = new float[] { 0.1f, 0.1f, 0.1f }; }
+        b = new float[][] { mn, mx };
+        LIMITES_GEO.put(modelo, b);
+        return b;
+    }
+
+    /**
+     * Dibuja los apliques que van sobre el aplique {@code idx} (cada uno apoyado en una cara de su caja) con la pila
+     * en el marco del padre ({@code pm}: de su espacio de objeto a ese marco). El hijo hereda la posición y la
+     * orientación del padre pero NO su escala (un objeto chiquito no achica lo que lleva encima).
+     */
+    private static void dibujarHijos(int idx, List<Aplique> todos, MatrixStack matrices, Matrix4f pm,
+                                     VertexConsumerProvider vertexConsumers, int luz, Matrix3f marco) {
+        Matrix3f normales = pm.normal(new Matrix3f());
+        for (int h = idx + 1; h < todos.size(); h++) {
+            Aplique c = todos.get(h);
+            if (c.superficie() != Aplique.Superficie.APLIQUE || c.padre() != idx) continue;
+            Vector3f ancla = pm.transformPosition(new Vector3f(c.x() / 16f, c.y() / 16f, c.z() / 16f));
+            Vector3f n = normales.transform(new Vector3f(c.cara().getOffsetX(), c.cara().getOffsetY(), c.cara().getOffsetZ()));
+            if (n.lengthSquared() < 1e-10f) continue;
+            n.normalize();
+            matrices.push();
+            matrices.translate(ancla.x, ancla.y, ancla.z);
+            Matrix4f orient = orientacionS(n, c.giro());
+            matrices.multiplyPositionMatrix(orient);
+            matrices.peek().getNormalMatrix().mul(orient.get3x3(new Matrix3f()));
+            matrices.scale(c.escala(), c.escala(), c.escala());
+            dibujarEnMarco(c, h, todos, matrices, vertexConsumers, luz, marco);
+            matrices.pop();
+        }
+    }
+
+    /**
+     * Como {@link #orientacion} pero en el marco S de un aplique padre (+Y arriba, -Z hacia afuera): -Z del modelo del
+     * hijo → la normal de la cara donde se apoya; "arriba" del hijo = +Y del padre proyectado sobre esa cara (sobre
+     * las tapas de arriba y abajo, hacia afuera del padre).
+     */
+    private static Matrix4f orientacionS(Vector3f normal, float giroGrados) {
+        Vector3f arriba = new Vector3f(0, 1, 0);
+        if (Math.abs(normal.y) > 0.9f) arriba.set(0, 0, -1);
+        arriba.sub(new Vector3f(normal).mul(arriba.dot(normal))).normalize();
+        Vector3f atras = new Vector3f(normal).negate();
+        Vector3f derecha = new Vector3f(arriba).cross(atras);
+        Matrix4f m = new Matrix4f(
+                derecha.x, derecha.y, derecha.z, 0,
+                arriba.x, arriba.y, arriba.z, 0,
+                atras.x, atras.y, atras.z, 0,
+                0, 0, 0, 1);
+        return m.rotateZ((float) Math.toRadians(giroGrados));
     }
 
     /** Cuánto mide el lado más largo de un objeto con tamaño 100 % (bloques): unos 5 px. */
@@ -281,8 +382,9 @@ public final class ApliqueRenderer {
      * La cara elegida del objeto queda sobre la tela con su centro en el origen: ese punto es el pivote de la
      * rotación y del tamaño; la oscilación cuelga del centro del borde de arriba de esa cara.
      */
-    private static void dibujarObjeto(Aplique a, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz,
-                                      @org.jetbrains.annotations.Nullable Blando blando) {
+    private static void dibujarObjeto(Aplique a, int idx, List<Aplique> todos, MatrixStack matrices,
+                                      VertexConsumerProvider vertexConsumers, int luz,
+                                      @org.jetbrains.annotations.Nullable Blando blando, Matrix3f marco) {
         ObjetoAplique o = a.objeto();
         Colocacion c = a.colocacion();
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -300,6 +402,8 @@ public final class ApliqueRenderer {
                 new float[] { c.rx(), c.ry(), c.rz() }, new float[] { c.sx(), c.sy(), c.sz() });
         matrices.push();
         entreTelaYNodo(a, matrices, blando, r.ancho(), r.alto(), r.profundidad(), true);
+        capturar(idx, matrices, r.matriz(), mn, mx);
+        dibujarHijos(idx, todos, matrices, r.matriz(), vertexConsumers, luz, marco);
         aplicar(matrices, r.matriz());
         int tinte = o.tinte();
         VertexConsumerProvider proveedor = tinte < 0 ? vertexConsumers : new TintadoVertex(vertexConsumers, tinte);
@@ -319,12 +423,13 @@ public final class ApliqueRenderer {
      * parte del objeto (la cara de contacto es siempre su plano de atrás, z = 0). La oscilación de todo el
      * modelo es solo el vaivén propio (con velocidad > 0): la inercia ya la mueven los huesos ({@code Blando}).
      */
-    private static void colocarGeo(Aplique a, MatrixStack matrices) {
+    private static Matrix4f colocarGeo(Aplique a, MatrixStack matrices) {
         Colocacion c = a.colocacion();
         entreTelaYNodo(a, matrices, null, 0f, 0f, 0f, false);
-        aplicar(matrices, new Matrix4f()
+        // La rotación y la escala del usuario NO se aplican a la pila: los apliques que van encima parten del marco sin ellas.
+        return new Matrix4f()
                 .rotationZYX((float) Math.toRadians(c.rz()), (float) Math.toRadians(c.ry()), (float) Math.toRadians(c.rx()))
-                .scale(c.sx(), c.sy(), c.sz()));
+                .scale(c.sx(), c.sy(), c.sz());
     }
 
     /**

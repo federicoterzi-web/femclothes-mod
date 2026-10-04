@@ -58,7 +58,7 @@ public class EstiladoBlockEntity extends BlockEntity
     /** SLOT_OBJETO (2026-10-04, apliques de objeto): cualquier ítem; si hay uno, el aplique que se pone es ese objeto. */
     public static final int SLOT_PRENDA = 0, SLOT_MOLDE = 1, SLOT_RETAZO = 2, SLOT_OBJETO = 3, TAMANO = 4;
 
-    public static final int BTN_SELECCIONAR_BASE = 0;          // + 0..5
+    public static final int BTN_SELECCIONAR_BASE = 100;        // + 0..11 (antes 0..5: chocaba con el resto al subir a 12 apliques)
     public static final int BTN_GIRO = 10, BTN_GIRO_ATRAS = 11;
     public static final int BTN_ESCALA = 12, BTN_ESCALA_ATRAS = 13;
     /** Lo atiende el ScreenHandler: necesita al jugador para devolverle el retazo. */
@@ -122,6 +122,14 @@ public class EstiladoBlockEntity extends BlockEntity
      * de su tela (px de 64) y la prenda tiene que ser de ese tipo.
      */
     public boolean poner(Parte parte, float x, float y, float z, Direction cara, Aplique.Superficie superficie) {
+        return poner(parte, x, y, z, cara, superficie, -1);
+    }
+
+    /**
+     * Sobre otro aplique (2026-10-04, "podemos poner apliques sobre apliques?"): con superficie APLIQUE, {@code padre}
+     * es el índice del aplique que lo lleva y x, y, z el punto de su caja (px, centrado en su espacio de objeto).
+     */
+    public boolean poner(Parte parte, float x, float y, float z, Direction cara, Aplique.Superficie superficie, int padre) {
         ItemStack prenda = items.get(SLOT_PRENDA), molde = items.get(SLOT_MOLDE), retazo = items.get(SLOT_RETAZO);
         ItemStack objeto = items.get(SLOT_OBJETO);
         // Mesa creativa (2026-10-01): el retazo no hace falta ni se gasta (sin retazo, sale blanco).
@@ -157,6 +165,13 @@ public class EstiladoBlockEntity extends BlockEntity
                 y = MathHelper.clamp(y, 0, 64);
                 z = 0;
             }
+            case APLIQUE -> {
+                if (padre < 0 || padre >= actuales.size()) return false;
+                parte = actuales.get(padre).parte();      // la parte del cuerpo del aplique que lo lleva
+                x = MathHelper.clamp(x, -24, 24);
+                y = MathHelper.clamp(y, -24, 24);
+                z = MathHelper.clamp(z, -24, 24);
+            }
             default -> {
                 x = MathHelper.clamp(x, -8, 8);
                 y = MathHelper.clamp(y, -10, 14);
@@ -186,6 +201,9 @@ public class EstiladoBlockEntity extends BlockEntity
             actuales.add(new Aplique(m.modelo, parte, x, y, z, cara, 0f, 1f, RetazoApliqueItem.colores(retazo), superficie, BLANDURA_INICIAL));
             if (!gratis) retazo.decrement(1);
         }
+        if (superficie == Aplique.Superficie.APLIQUE) {
+            actuales.set(actuales.size() - 1, actuales.get(actuales.size() - 1).conPadre(padre));
+        }
         seleccionado = actuales.size() - 1;
         guardarApliques(actuales);
         return true;
@@ -195,7 +213,37 @@ public class EstiladoBlockEntity extends BlockEntity
     public void quitar(PlayerEntity jugador) {
         List<Aplique> actuales = new ArrayList<>(apliques());
         if (seleccionado < 0 || seleccionado >= actuales.size()) return;
-        Aplique a = actuales.remove(seleccionado);
+        // Se va el elegido y todo lo que lleva encima (2026-10-04, apliques sobre apliques); los hijos siempre
+        // tienen un índice mayor que su padre, así que alcanza con una pasada.
+        boolean[] sale = new boolean[actuales.size()];
+        sale[seleccionado] = true;
+        for (int i = seleccionado + 1; i < actuales.size(); i++) {
+            Aplique h = actuales.get(i);
+            if (h.superficie() == Aplique.Superficie.APLIQUE && h.padre() >= 0 && h.padre() < i && sale[h.padre()]) sale[i] = true;
+        }
+        int[] nuevoIndice = new int[actuales.size()];
+        List<Aplique> quedan = new ArrayList<>();
+        for (int i = 0; i < actuales.size(); i++) {
+            Aplique a = actuales.get(i);
+            if (sale[i]) {
+                devolver(jugador, a);
+                nuevoIndice[i] = -1;
+            } else {
+                nuevoIndice[i] = quedan.size();
+                quedan.add(a);
+            }
+        }
+        // Los que quedan apuntan a su padre por índice: se corrigen.
+        for (int i = 0; i < quedan.size(); i++) {
+            Aplique a = quedan.get(i);
+            if (a.superficie() == Aplique.Superficie.APLIQUE) quedan.set(i, a.conPadre(a.padre() >= 0 ? nuevoIndice[a.padre()] : -1));
+        }
+        seleccionado = Math.min(seleccionado, quedan.size() - 1);
+        guardarApliques(quedan);
+    }
+
+    /** Le devuelve al jugador lo que gastó ese aplique (retazo, o objeto y muestra), como antes. */
+    private void devolver(PlayerEntity jugador, Aplique a) {
         if (a.objeto() != null) {
             // Vuelve el objeto y la muestra, tal cual. Si el aplique se puso en la Mesa creativa o salió de un molde
             // (marcado "de molde") no se gastó nada: no se devuelve nada, si no se duplicarían.
@@ -208,8 +256,6 @@ public class EstiladoBlockEntity extends BlockEntity
                     a.color(0), a.color(1), a.color(2));
             jugador.getInventory().offerOrDrop(retazo);
         }
-        seleccionado = Math.min(seleccionado, actuales.size() - 1);
-        guardarApliques(actuales);
     }
 
     /**

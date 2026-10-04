@@ -14,11 +14,11 @@ import net.minecraft.util.math.BlockPos;
  * o, en la pollera y la capa ({@code superficie}), el punto (u, v) de su tela.
  * Lleva floats, así que no entra en un clickButton.
  */
-public record PonerApliquePayload(BlockPos pos, int parte, float x, float y, float z, int cara, int superficie)
+public record PonerApliquePayload(BlockPos pos, int parte, float x, float y, float z, int cara, int superficie, int padre)
         implements CustomPayload {
 
     public static final Id<PonerApliquePayload> ID = new Id<>(Identifier.of(Femclothes.MOD_ID, "poner_aplique"));
-    /** A mano: son 7 campos y {@code PacketCodec.tuple} llega hasta 6. */
+    /** A mano: son 8 campos y {@code PacketCodec.tuple} llega hasta 6. */
     public static final PacketCodec<RegistryByteBuf, PonerApliquePayload> CODEC = PacketCodec.of(
             (p, buf) -> {
                 buf.writeBlockPos(p.pos());
@@ -28,9 +28,10 @@ public record PonerApliquePayload(BlockPos pos, int parte, float x, float y, flo
                 buf.writeFloat(p.z());
                 buf.writeVarInt(p.cara());
                 buf.writeVarInt(p.superficie());
+                buf.writeVarInt(p.padre() + 1);
             },
             buf -> new PonerApliquePayload(buf.readBlockPos(), buf.readVarInt(), buf.readFloat(), buf.readFloat(),
-                    buf.readFloat(), buf.readVarInt(), buf.readVarInt()));
+                    buf.readFloat(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt() - 1));
 
     @Override
     public Id<? extends CustomPayload> getId() { return ID; }

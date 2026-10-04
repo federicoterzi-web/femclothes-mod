@@ -309,7 +309,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 dilatacion, new PolleraMalla.Piernas(biped.body, biped.rightLeg, biped.leftLeg), mov,
                 twirl, cola, delJugador.pitch));
         matrices.pop();
-        if (malla != null) ApliqueRenderer.dibujarEnMalla(apliques, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix());
+        if (malla != null) ApliqueRenderer.dibujarEnMalla(stack, com.femclothes.aplique.Aplique.Superficie.POLLERA, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix());
     }
 
     /**
@@ -415,7 +415,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 matrices.pop();
             }
         });
-        if (malla != null) ApliqueRenderer.dibujarEnMalla(apliques, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix());
+        if (malla != null) ApliqueRenderer.dibujarEnMalla(stack, com.femclothes.aplique.Aplique.Superficie.CAPA, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix());
     }
 
     /**

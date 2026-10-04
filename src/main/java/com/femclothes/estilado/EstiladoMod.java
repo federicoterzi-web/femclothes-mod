@@ -55,7 +55,7 @@ public final class EstiladoMod {
                     if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof EstiladoBlockEntity be
                             && be.canPlayerUse(context.player())) {
                         be.poner(partes[payload.parte()], payload.x(), payload.y(), payload.z(), caras[payload.cara()],
-                                superficies[payload.superficie()]);
+                                superficies[payload.superficie()], payload.padre());
                     }
                 }));
 

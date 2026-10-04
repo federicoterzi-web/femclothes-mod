@@ -59,6 +59,8 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     /** Mueve el muñeco para ver cómo se agita la tela de los apliques (2026-10-04). */
     private boolean sacudiendo = false;
     private boolean arrastrando = false;
+    /** Dónde quedó cada aplique en la última vista previa (2026-10-04, para poner apliques sobre apliques). */
+    private final Map<Integer, ApliqueRenderer.Captura> cajasApliques = new java.util.HashMap<>();
     /** Matrices de la última vista previa (por parte). */
     private final Map<Parte, Matrix4f> poses = new EnumMap<>(Parte.class);
     /** Las mallas de la pollera y la capa del último dibujo de la vista, en pantalla (2026-10-02). */
@@ -98,7 +100,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         super.init();
         for (int i = 0; i < btnApliques.length; i++) {
             int id = EstiladoBlockEntity.BTN_SELECCIONAR_BASE + i;
-            btnApliques[i] = boton(X_DER + i * 26, 66, 22, Text.literal(Integer.toString(i + 1)),
+            btnApliques[i] = boton(X_DER + Math.round(i * 13.5f), 66, 13, Text.literal(Integer.toString(i + 1)),
                     "femclothes.estilado.tooltip.aplique", () -> clickBoton(id));
         }
         boton(X_DER, 88, 14, Text.literal("<"), "femclothes.estilado.tooltip.giro", () -> clickBoton(EstiladoBlockEntity.BTN_GIRO_ATRAS));
@@ -443,6 +445,8 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         GarmentFeatureRenderer.previewOverride = delMod ? List.of(prenda) : List.of();
         GarmentFeatureRenderer.capturaPoses = captura;
         GarmentFeatureRenderer.capturaMallas = capturaMallas;
+        Map<Integer, ApliqueRenderer.Captura> capturaApliques = new java.util.HashMap<>();
+        ApliqueRenderer.capturaApliques = capturaApliques;
         // Una armadura (2026-10-02, "extender apliques para toda armadura o
         // wearable"): puesta de mentira en el inventario del jugador SOLO del
         // cliente durante este dibujo, como la vista previa del Guardarropas.
@@ -462,9 +466,12 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
             com.femclothes.render.FisicaApliques.modoVistaPrevia = com.femclothes.render.FisicaApliques.Modo.QUIETO;
             GarmentFeatureRenderer.previewOverride = null;
             GarmentFeatureRenderer.capturaPoses = null;
+            ApliqueRenderer.capturaApliques = null;
             GarmentFeatureRenderer.capturaMallas = null;
             for (int i = 0; i < antes.length; i++) armadura.set(i, antes[i]);
         }
+        cajasApliques.clear();
+        cajasApliques.putAll(capturaApliques);
         poses.clear();
         poses.putAll(captura);
         mallas.clear();
@@ -479,9 +486,20 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
 
     /** Resultado del click: parte, punto sobre la caja sin inflar (px) y cara. */
     private record Toque(Parte parte, float x, float y, float z, Direction cara, float profundidad,
-                         Aplique.Superficie superficie) {
+                         Aplique.Superficie superficie, int padre) {
         Toque(Parte parte, float x, float y, float z, Direction cara, float profundidad) {
-            this(parte, x, y, z, cara, profundidad, Aplique.Superficie.CAJA);
+            this(parte, x, y, z, cara, profundidad, Aplique.Superficie.CAJA, -1);
+        }
+
+        Toque(Parte parte, float x, float y, float z, Direction cara, float profundidad, Aplique.Superficie superficie) {
+            this(parte, x, y, z, cara, profundidad, superficie, -1);
+        }
+
+        /** La profundidad en el mismo eje para todos: z de pantalla (más alto = más cerca de quien mira). */
+        float zPantalla() {
+            // La malla de pollera/capa ya guarda el z de pantalla; las cajas guardan el parámetro t del rayo (de -10000 a 10000).
+            return superficie == Aplique.Superficie.POLLERA || superficie == Aplique.Superficie.CAPA
+                    ? profundidad : -10000f + 20000f * profundidad;
         }
     }
 
@@ -520,8 +538,62 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         return out;
     }
 
+    /** Lo más cercano a quien mira entre la prenda y los apliques que ya tiene (2026-10-04, apliques sobre apliques). */
     @Nullable
     private Toque tocar(double mx, double my) {
+        Toque prenda = tocarPrenda(mx, my);
+        Toque aplique = tocarApliques((float) mx, (float) my);
+        if (aplique == null) return prenda;
+        return prenda == null || aplique.zPantalla() > prenda.zPantalla() ? aplique : prenda;
+    }
+
+    /** El rayo del mouse contra la caja de cada aplique (el espacio de objeto de su padre): el punto y la cara tocados. */
+    @Nullable
+    private Toque tocarApliques(float mx, float my) {
+        Toque mejor = null;
+        for (var e : cajasApliques.entrySet()) {
+            ApliqueRenderer.Captura c = e.getValue();
+            Matrix4f m = c.matriz();
+            if (Math.abs(m.determinant()) < 1e-12f) continue;
+            Matrix4f inversa = new Matrix4f(m).invert();
+            final float Z = 10000f;
+            Vector3f p0 = inversa.transformPosition(new Vector3f(mx, my, -Z));
+            Vector3f p1 = inversa.transformPosition(new Vector3f(mx, my, Z));
+            float[] o = { p0.x, p0.y, p0.z };
+            float[] d = { p1.x - p0.x, p1.y - p0.y, p1.z - p0.z };
+            float tMin = -Float.MAX_VALUE, tMax = Float.MAX_VALUE;
+            int eje = -1;
+            float signo = 0;
+            boolean fuera = false;
+            for (int i = 0; i < 3 && !fuera; i++) {
+                if (Math.abs(d[i]) < 1e-9f) {
+                    if (o[i] < c.min()[i] || o[i] > c.max()[i]) fuera = true;
+                    continue;
+                }
+                float t1 = (c.min()[i] - o[i]) / d[i], t2 = (c.max()[i] - o[i]) / d[i];
+                float cerca = Math.min(t1, t2), lejos = Math.max(t1, t2);
+                if (cerca > tMin) tMin = cerca;
+                if (lejos < tMax) {
+                    tMax = lejos;
+                    eje = i;
+                    signo = d[i] > 0 ? 1 : -1;
+                }
+            }
+            if (fuera || eje < 0 || tMin > tMax || tMax < 0 || tMax > 1) continue;
+            // La cara que se ve es por donde sale el rayo (la más cercana a quien mira).
+            float[] p = { o[0] + d[0] * tMax, o[1] + d[1] * tMax, o[2] + d[2] * tMax };
+            for (int i = 0; i < 3; i++) {
+                p[i] = i == eje ? (signo > 0 ? c.max()[i] : c.min()[i]) : Math.max(c.min()[i], Math.min(c.max()[i], p[i]));
+            }
+            Direction cara = Direction.getFacing(eje == 0 ? signo : 0, eje == 1 ? signo : 0, eje == 2 ? signo : 0);
+            Toque t = new Toque(Parte.TORSO, p[0] * 16f, p[1] * 16f, p[2] * 16f, cara, tMax, Aplique.Superficie.APLIQUE, e.getKey());
+            if (mejor == null || t.profundidad() > mejor.profundidad()) mejor = t;
+        }
+        return mejor;
+    }
+
+    @Nullable
+    private Toque tocarPrenda(double mx, double my) {
         ItemStack prenda = handler.be.getStack(EstiladoBlockEntity.SLOT_PRENDA);
         PlayerEntity jugador = MinecraftClient.getInstance().player;
         if (prenda.isEmpty() || jugador == null || poses.isEmpty()) return null;
@@ -666,7 +738,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 else {
                     aviso = null;
                     ClientPlayNetworking.send(new PonerApliquePayload(be.getPos(), t.parte().ordinal(),
-                            t.x(), t.y(), t.z(), t.cara().ordinal(), t.superficie().ordinal()));
+                            t.x(), t.y(), t.z(), t.cara().ordinal(), t.superficie().ordinal(), t.padre()));
                 }
                 return true;
             }
