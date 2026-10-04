@@ -1,6 +1,8 @@
 package com.femclothes.estilado;
 
 import com.femclothes.aplique.Aplique;
+import com.femclothes.aplique.Colocacion;
+import com.femclothes.aplique.Oscilacion;
 import com.femclothes.aplique.ModeloAplique;
 import com.femclothes.aplique.MoldeApliqueItem;
 import com.femclothes.aplique.ObjetoAplique;
@@ -77,8 +79,6 @@ public class EstiladoBlockEntity extends BlockEntity
     public static final int BLANDURA_PASOS = 10;
     /** Aplique de objeto (2026-10-04): Ítem/Bloque, variante del bloque (vela encendida...) e inclinación de a 15°. */
     public static final int BTN_OBJ_MODO = 40, BTN_OBJ_VARIANTE = 41;
-    public static final int BTN_OBJ_INCLINAR_X_MAS = 42, BTN_OBJ_INCLINAR_X_MENOS = 43;
-    public static final int BTN_OBJ_INCLINAR_Y_MAS = 44, BTN_OBJ_INCLINAR_Y_MENOS = 45;
     public static final float ESCALA_MIN_OBJETO = 0.25f;
     /** La que trae un aplique recién puesto. */
     public static final float BLANDURA_INICIAL = 0.5f;
@@ -219,8 +219,7 @@ public class EstiladoBlockEntity extends BlockEntity
             case BTN_ESCALA -> actuales.set(seleccionado, a.conEscala(Math.min(ESCALA_MAX, a.escala() + PASO_ESCALA)));
             case BTN_ESCALA_ATRAS -> actuales.set(seleccionado, a.conEscala(
                     Math.max(a.objeto() != null ? ESCALA_MIN_OBJETO : ESCALA_MIN, a.escala() - PASO_ESCALA)));
-            case BTN_OBJ_MODO, BTN_OBJ_VARIANTE, BTN_OBJ_INCLINAR_X_MAS, BTN_OBJ_INCLINAR_X_MENOS,
-                 BTN_OBJ_INCLINAR_Y_MAS, BTN_OBJ_INCLINAR_Y_MENOS -> {
+            case BTN_OBJ_MODO, BTN_OBJ_VARIANTE -> {
                 ObjetoAplique o = a.objeto();
                 if (o == null) return false;
                 switch (id) {
@@ -232,10 +231,7 @@ public class EstiladoBlockEntity extends BlockEntity
                         if (!o.bloque() || o.cantidadDeVariantes() < 2) return false;
                         o = o.conVariante((o.variante() + 1) % o.cantidadDeVariantes());
                     }
-                    case BTN_OBJ_INCLINAR_X_MAS -> o = o.conInclinacion(inclinar(o.inclinarX(), 15), o.inclinarY());
-                    case BTN_OBJ_INCLINAR_X_MENOS -> o = o.conInclinacion(inclinar(o.inclinarX(), -15), o.inclinarY());
-                    case BTN_OBJ_INCLINAR_Y_MAS -> o = o.conInclinacion(o.inclinarX(), inclinar(o.inclinarY(), 15));
-                    default -> o = o.conInclinacion(o.inclinarX(), inclinar(o.inclinarY(), -15));
+                    default -> { return false; }
                 }
                 actuales.set(seleccionado, a.conObjeto(o));
             }
@@ -246,11 +242,20 @@ public class EstiladoBlockEntity extends BlockEntity
     }
 
     /** Con un Molde de textura: si la prenda ya la tiene, se la saca; si no, se la pone. El molde no se gasta. */
-    /** Suma grados y deja el resultado entre -180 y 180. */
-    private static float inclinar(float actual, float delta) {
-        float v = Math.round(actual + delta);
-        v = ((v + 180f) % 360f + 360f) % 360f - 180f;
-        return v == -180f ? 180f : v;
+    /**
+     * Ajusta la colocación, la oscilación y la blandura del aplique {@code indice} (2026-10-04, panel lateral de
+     * la Mesa): llega por {@code AjustarApliquePayload} con valores ya acotados por los records. Para los modelos
+     * del mod la cara base no cuenta (siempre se apoyan por atrás).
+     */
+    public boolean ajustar(int indice, Colocacion colocacion, Oscilacion oscilacion, float blandura) {
+        List<Aplique> actuales = new ArrayList<>(apliques());
+        if (indice < 0 || indice >= actuales.size() || !Float.isFinite(blandura)) return false;
+        Aplique a = actuales.get(indice);
+        if (a.objeto() == null) colocacion = colocacion.conCara(Colocacion.DEFECTO.caraBase());
+        actuales.set(indice, a.conColocacion(colocacion).conOscilacion(oscilacion)
+                .conBlandura(MathHelper.clamp(blandura, 0f, 1f)));
+        guardarApliques(actuales);
+        return true;
     }
 
     private boolean alternarTextura() {

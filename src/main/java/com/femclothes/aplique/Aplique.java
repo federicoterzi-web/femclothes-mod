@@ -27,7 +27,8 @@ import java.util.List;
  */
 public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float z, Direction cara,
                       float giro, float escala, List<Integer> colores, Superficie superficie, float blandura,
-                      @org.jetbrains.annotations.Nullable ObjetoAplique objeto) {
+                      @org.jetbrains.annotations.Nullable ObjetoAplique objeto,
+                      Colocacion colocacion, Oscilacion oscilacion) {
 
     public static final int MAXIMO_POR_PRENDA = 6;
 
@@ -50,12 +51,23 @@ public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float
 
     public Aplique {
         blandura = Math.max(0f, Math.min(1f, blandura));
+        if (colocacion == null) colocacion = Colocacion.DEFECTO;
+        if (oscilacion == null) oscilacion = Oscilacion.DEFECTO;
+    }
+
+    /** Con objeto y colocación por defecto. */
+    public Aplique(ModeloAplique modelo, Parte parte, float x, float y, float z, Direction cara,
+                   float giro, float escala, List<Integer> colores, Superficie superficie, float blandura,
+                   @org.jetbrains.annotations.Nullable ObjetoAplique objeto) {
+        this(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, objeto,
+                Colocacion.DEFECTO, Oscilacion.DEFECTO);
     }
 
     /** Sin objeto (un modelo GeckoLib de siempre). */
     public Aplique(ModeloAplique modelo, Parte parte, float x, float y, float z, Direction cara,
                    float giro, float escala, List<Integer> colores, Superficie superficie, float blandura) {
-        this(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, null);
+        this(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, null,
+                Colocacion.DEFECTO, Oscilacion.DEFECTO);
     }
 
     /** Rígido (lo de antes de la tela blanda). */
@@ -86,9 +98,18 @@ public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float
                     .optionalFieldOf("superficie", Superficie.CAJA).forGetter(Aplique::superficie),
             Codec.FLOAT.optionalFieldOf("blandura", 0f).forGetter(Aplique::blandura),
             // Optional y no null: DataResult no acepta null (un aplique viejo sin objeto rompía la carga del jugador).
-            ObjetoAplique.CODEC.optionalFieldOf("objeto").forGetter(ap -> java.util.Optional.ofNullable(ap.objeto()))
-    ).apply(i, (modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, objeto) ->
-            new Aplique(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, objeto.orElse(null))));
+            ObjetoAplique.CODEC.optionalFieldOf("objeto").forGetter(ap -> java.util.Optional.ofNullable(ap.objeto())),
+            Colocacion.CODEC.optionalFieldOf("colocacion", Colocacion.DEFECTO).forGetter(Aplique::colocacion),
+            Oscilacion.CODEC.optionalFieldOf("oscilacion", Oscilacion.DEFECTO).forGetter(Aplique::oscilacion)
+    ).apply(i, (modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, objeto, colocacion, oscilacion) -> {
+        ObjetoAplique obj = objeto.orElse(null);
+        // Migración (2026-10-04): las inclinaciones de antes del objeto pasan a ser rotación de la colocación.
+        if (obj != null && (obj.inclinarX() != 0f || obj.inclinarY() != 0f)) {
+            colocacion = colocacion.conRotacion(colocacion.rx() + obj.inclinarX(), colocacion.ry() + obj.inclinarY(), colocacion.rz());
+            obj = obj.conInclinacion(0f, 0f);
+        }
+        return new Aplique(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, obj, colocacion, oscilacion);
+    }));
 
     /** Color de la zona {@code zona} (0..2), blanco si falta. */
     public int color(int zona) {
@@ -96,18 +117,26 @@ public record Aplique(ModeloAplique modelo, Parte parte, float x, float y, float
     }
 
     public Aplique conGiro(float g) {
-        return new Aplique(modelo, parte, x, y, z, cara, g, escala, colores, superficie, blandura, objeto);
+        return new Aplique(modelo, parte, x, y, z, cara, g, escala, colores, superficie, blandura, objeto, colocacion, oscilacion);
     }
 
     public Aplique conEscala(float e) {
-        return new Aplique(modelo, parte, x, y, z, cara, giro, e, colores, superficie, blandura, objeto);
+        return new Aplique(modelo, parte, x, y, z, cara, giro, e, colores, superficie, blandura, objeto, colocacion, oscilacion);
     }
 
     public Aplique conObjeto(ObjetoAplique o) {
-        return new Aplique(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, o);
+        return new Aplique(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, o, colocacion, oscilacion);
+    }
+
+    public Aplique conColocacion(Colocacion c) {
+        return new Aplique(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, objeto, c, oscilacion);
+    }
+
+    public Aplique conOscilacion(Oscilacion o) {
+        return new Aplique(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, blandura, objeto, colocacion, o);
     }
 
     public Aplique conBlandura(float b) {
-        return new Aplique(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, b, objeto);
+        return new Aplique(modelo, parte, x, y, z, cara, giro, escala, colores, superficie, b, objeto, colocacion, oscilacion);
     }
 }

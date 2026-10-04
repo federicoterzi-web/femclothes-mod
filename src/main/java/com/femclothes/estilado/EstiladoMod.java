@@ -58,6 +58,17 @@ public final class EstiladoMod {
                                 superficies[payload.superficie()]);
                     }
                 }));
+
+        // Panel lateral: colocación, oscilación y blandura (2026-10-04).
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S()
+                .register(AjustarApliquePayload.ID, AjustarApliquePayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(AjustarApliquePayload.ID,
+                (payload, context) -> context.server().execute(() -> {
+                    if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof EstiladoBlockEntity be
+                            && be.canPlayerUse(context.player())) {
+                        be.ajustar(payload.indice(), payload.colocacion(), payload.oscilacion(), payload.blandura());
+                    }
+                }));
     }
 
     private EstiladoMod() {}

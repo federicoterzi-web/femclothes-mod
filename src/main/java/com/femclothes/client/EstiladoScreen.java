@@ -69,8 +69,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     private ButtonWidget btnGiro, btnEscala, btnQuitar, btnSacudir;
     /** Controles del aplique de objeto (2026-10-04): arriba de la vista, solo con uno elegido. */
     private ButtonWidget btnObjModo, btnObjVariante;
-    private final ButtonWidget[] btnObjInclinar = new ButtonWidget[4];
-    private SliderBlandura sliderBlandura;
+
 
     public EstiladoScreen(EstiladoScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -120,93 +119,267 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         // Sacudir (2026-10-04, "boton de sacudir... alternar mover el muñeco"): prende y apaga el vaivén.
         btnSacudir = boton(X_DER + 98, 132, 64, Text.empty(), "femclothes.estilado.tooltip.sacudir",
                 () -> sacudiendo = !sacudiendo);
-        // Aplique de objeto (2026-10-04, "poder rotar el modelo y seleccionar si item o bloque"): en la franja
-        // de arriba de la vista; solo se ven con un aplique de objeto elegido.
+        // Aplique de objeto (2026-10-04, "seleccionar si item o bloque"): en la franja de arriba de la vista; solo
+        // se ven con un aplique de objeto elegido. La colocación y el movimiento están en el panel lateral.
         int by = PY1 + 3;
         btnObjModo = boton(PX1 + 4, by, 58, Text.empty(), "femclothes.estilado.tooltip.obj_modo",
                 () -> clickBoton(EstiladoBlockEntity.BTN_OBJ_MODO));
         btnObjVariante = boton(PX1 + 64, by, 58, Text.empty(), "femclothes.estilado.tooltip.obj_variante",
                 () -> clickBoton(EstiladoBlockEntity.BTN_OBJ_VARIANTE));
-        int[] ids = { EstiladoBlockEntity.BTN_OBJ_INCLINAR_X_MAS, EstiladoBlockEntity.BTN_OBJ_INCLINAR_X_MENOS,
-                EstiladoBlockEntity.BTN_OBJ_INCLINAR_Y_MENOS, EstiladoBlockEntity.BTN_OBJ_INCLINAR_Y_MAS };
-        String[] glifos = { "▲", "▼", "◀", "▶" };
-        for (int i = 0; i < 4; i++) {
-            int id = ids[i];
-            btnObjInclinar[i] = boton(PX1 + 126 + i * 17 + (i >= 2 ? 4 : 0), by, 16, Text.literal(glifos[i]),
-                    i < 2 ? "femclothes.estilado.tooltip.obj_inclinar_x" : "femclothes.estilado.tooltip.obj_inclinar_y",
-                    () -> clickBoton(id));
-        }
-        // Blandura del aplique elegido (2026-10-04, "1 slider de blandura").
-        sliderBlandura = new SliderBlandura(this.x + X_DER, this.y + 150, 162, 11);
-        sliderBlandura.setTooltip(Tooltip.of(Text.translatable("femclothes.estilado.tooltip.blandura")));
-        this.addDrawableChild(sliderBlandura);
         // Mesa creativa (2026-10-01): elegir cualquier molde sin tenerlo.
         ButtonWidget moldeCreativo = boton(X_DER + 98, 44, 64, Text.translatable("femclothes.estilado.siguiente_molde"),
                 "femclothes.estilado.tooltip.siguiente_molde", () -> clickBoton(EstiladoBlockEntity.BTN_SIGUIENTE_MOLDE));
         moldeCreativo.visible = com.femclothes.util.MaquinaCreativa.es(handler.be);
+        crearPanel();
     }
 
     private ButtonWidget btnTextura;
 
-    /** Cuánto se mueve como tela el aplique elegido: 0 % = rígido, 100 % = muy suelto, de a 10 %. */
-    private final class SliderBlandura extends net.minecraft.client.gui.widget.SliderWidget {
-        private int pasoEnviado = -1;
+    // ── panel lateral (2026-10-04, "posición, rotación, escala, cara de contacto, profundidad, pivote, oscilación") ──
+    private static final int PW = 160;
+    /** Una página del panel: 0 = Colocación, 1 = Movimiento. */
+    private int paginaPanel = 0;
+    private int panelX;
+    private ButtonWidget btnPaginaColocacion, btnPaginaMovimiento, btnRestablecer, btnPivote, btnEje;
+    private final ButtonWidget[] btnCaras = new ButtonWidget[6];
+    private final List<SliderAjuste> slidersColocacion = new java.util.ArrayList<>();
+    private final List<SliderAjuste> slidersMovimiento = new java.util.ArrayList<>();
+    /** La cara de contacto de cada botón: arriba, abajo, izquierda, derecha, frente, atrás (del objeto). */
+    private static final Direction[] CARAS = { Direction.UP, Direction.DOWN, Direction.EAST, Direction.WEST,
+            Direction.NORTH, Direction.SOUTH };
+    private static final String[] NOMBRE_CARA = { "arriba", "abajo", "izquierda", "derecha", "frente", "atras" };
 
-        SliderBlandura(int x, int y, int ancho, int alto) {
-            super(x, y, ancho, alto, Text.empty(), 0.5);
-            updateMessage();
+    /** El aplique elegido, o null. */
+    @Nullable
+    private Aplique elegido() {
+        List<Aplique> l = handler.be.apliques();
+        int sel = handler.be.seleccionado();
+        return sel >= 0 && sel < l.size() ? l.get(sel) : null;
+    }
+
+    /** Aplica un cambio al aplique elegido: se ve YA en la vista (copia local) y se manda al servidor. */
+    private void ajustar(java.util.function.UnaryOperator<Aplique> cambio) {
+        Aplique a = elegido();
+        if (a == null) return;
+        Aplique nuevo = cambio.apply(a);
+        int sel = handler.be.seleccionado();
+        handler.be.ajustar(sel, nuevo.colocacion(), nuevo.oscilacion(), nuevo.blandura());
+        ClientPlayNetworking.send(new com.femclothes.estilado.AjustarApliquePayload(handler.be.getPos(), sel,
+                nuevo.colocacion(), nuevo.oscilacion(), nuevo.blandura()));
+    }
+
+    /** Un slider del panel: mapea su 0..1 a [min, max] en pasos, lee el valor del aplique elegido y manda el cambio. */
+    private final class SliderAjuste extends net.minecraft.client.gui.widget.SliderWidget {
+        private final String clave;
+        private final float min, max, paso;
+        private final java.util.function.Function<Aplique, Float> leer;
+        private final java.util.function.BiFunction<Aplique, Float, Aplique> escribir;
+        private final boolean porcentaje;
+        private boolean editando = false;
+        private float ultimo = Float.NaN;
+
+        SliderAjuste(int x, int y, int ancho, String clave, float min, float max, float paso, boolean porcentaje,
+                     java.util.function.Function<Aplique, Float> leer,
+                     java.util.function.BiFunction<Aplique, Float, Aplique> escribir) {
+            super(x, y, ancho, 12, Text.empty(), 0.5);
+            this.clave = clave;
+            this.min = min;
+            this.max = max;
+            this.paso = paso;
+            this.porcentaje = porcentaje;
+            this.leer = leer;
+            this.escribir = escribir;
         }
 
-        private int paso() {
-            return (int) Math.round(value * EstiladoBlockEntity.BLANDURA_PASOS);
+        private float valor() {
+            float v = min + (float) value * (max - min);
+            return Math.round(v / paso) * paso;
         }
 
-        /** Sigue al aplique elegido (salvo mientras se lo arrastra). */
+        /** Sigue al aplique elegido, salvo mientras se lo arrastra. */
         void refrescar(@Nullable Aplique a) {
             active = a != null;
-            if (a != null && !isFocused() && pasoEnviado < 0) {
-                double v = Math.round(a.blandura() * EstiladoBlockEntity.BLANDURA_PASOS) / (double) EstiladoBlockEntity.BLANDURA_PASOS;
-                if (Math.abs(v - value) > 1e-3) value = v;
+            if (a != null && !editando) {
+                float v = leer.apply(a);
+                value = (v - min) / (max - min);
             }
             updateMessage();
         }
 
         @Override
         protected void updateMessage() {
-            setMessage(Text.translatable("femclothes.estilado.blandura",
-                    paso() * 100 / EstiladoBlockEntity.BLANDURA_PASOS));
+            float v = valor();
+            String t = porcentaje ? Integer.toString(Math.round(v * 100))
+                    : (v == Math.rint(v) ? Integer.toString((int) v) : String.format(java.util.Locale.ROOT, "%.2f", v));
+            setMessage(Text.translatable("femclothes.estilado.panel." + clave, t));
         }
 
         @Override
         protected void applyValue() {
-            int paso = paso();
-            if (paso == pasoEnviado) return;
-            pasoEnviado = paso;
-            clickBoton(EstiladoBlockEntity.BTN_BLANDURA_BASE + paso);
+            float v = valor();
+            if (v == ultimo) return;
+            ultimo = v;
+            ajustar(a -> escribir.apply(a, v));
+        }
+
+        @Override
+        public void onClick(double mx, double my) {
+            editando = true;
+            ultimo = Float.NaN;
+            super.onClick(mx, my);
         }
 
         @Override
         public void onRelease(double mx, double my) {
             super.onRelease(mx, my);
-            pasoEnviado = -1;
+            editando = false;
         }
 
-        /** Riel de madera con mango, como los sliders de pose del Maniquí. */
         @Override
         public void renderWidget(DrawContext c, int mouseX, int mouseY, float delta) {
             int x0 = getX(), y0 = getY(), w = getWidth(), h = getHeight();
             c.fill(x0 - 1, y0 - 1, x0 + w + 1, y0 + h + 1, 0xFF2A180C);
-            c.fill(x0, y0, x0 + w, y0 + h, 0xFF5A4028);
+            c.fill(x0, y0, x0 + w, y0 + h, active ? 0xFF5A4028 : 0xFF3A2C1C);
             c.fill(x0, y0 + h - 1, x0 + w, y0 + h, EstiloPergamino.tema().claro);
-            int mango = x0 + (int) (value * (w - 8));
-            EstiloPergamino.fondoBoton(c, mango, y0, 8, h, isHovered(), active);
+            int mango = x0 + (int) (value * (w - 6));
+            EstiloPergamino.fondoBoton(c, mango, y0, 6, h, isHovered(), active);
             var fuente = MinecraftClient.getInstance().textRenderer;
             Text m = getMessage();
             int tx = x0 + (w - fuente.getWidth(m)) / 2, ty = y0 + (h - 8) / 2 + 1;
             c.drawText(fuente, m, tx + 1, ty + 1, 0xFF2A180C, false);
-            c.drawText(fuente, m, tx, ty, EstiloPergamino.TEXTO_CLARO, false);
+            c.drawText(fuente, m, tx, ty, active ? EstiloPergamino.TEXTO_CLARO : EstiloPergamino.TEXTO_APAGADO, false);
         }
     }
+
+    private SliderAjuste slider(List<SliderAjuste> pagina, int y, String clave, float min, float max, float paso,
+                                boolean porcentaje, java.util.function.Function<Aplique, Float> leer,
+                                java.util.function.BiFunction<Aplique, Float, Aplique> escribir, String tooltip) {
+        SliderAjuste s = new SliderAjuste(panelX + 6, this.y + y, PW - 12, clave, min, max, paso, porcentaje, leer, escribir);
+        if (tooltip != null) s.setTooltip(Tooltip.of(Text.translatable(tooltip)));
+        this.addDrawableChild(s);
+        pagina.add(s);
+        return s;
+    }
+
+    private ButtonWidget botonPanel(int x, int y, int w, Text texto, String tooltip, Runnable accion) {
+        ButtonWidget b = new EstiloPergamino.BotonPergamino(panelX + x, this.y + y, w, 14, texto, btn -> accion.run());
+        if (tooltip != null) b.setTooltip(Tooltip.of(Text.translatable(tooltip)));
+        this.addDrawableChild(b);
+        return b;
+    }
+
+    private void crearPanel() {
+        // A la derecha de la ventana; si no hay lugar, a la izquierda.
+        panelX = this.x + ANCHO + 4;
+        if (panelX + PW > this.width && this.x - PW - 4 >= 0) panelX = this.x - PW - 4;
+        slidersColocacion.clear();
+        slidersMovimiento.clear();
+        btnPaginaColocacion = botonPanel(6, 6, 72, Text.translatable("femclothes.estilado.panel.pagina.colocacion"),
+                null, () -> paginaPanel = 0);
+        btnPaginaMovimiento = botonPanel(82, 6, 72, Text.translatable("femclothes.estilado.panel.pagina.movimiento"),
+                null, () -> paginaPanel = 1);
+
+        // Página Colocación: cara de contacto (solo objetos), profundidad, desplazamiento, rotación, escala.
+        for (int i = 0; i < 6; i++) {
+            int idx = i;
+            btnCaras[i] = botonPanel(6 + (i % 3) * 50, 40 + (i / 3) * 16, 48,
+                    Text.translatable("femclothes.estilado.cara." + NOMBRE_CARA[i]), "femclothes.estilado.tooltip.cara_base",
+                    () -> ajustar(a -> a.conColocacion(a.colocacion().conCara(CARAS[idx]))));
+        }
+        slider(slidersColocacion, 74, "profundidad", -8f, 8f, 0.25f, false, a -> a.colocacion().campo(0),
+                (a, v) -> a.conColocacion(a.colocacion().conCampo(0, v)), "femclothes.estilado.tooltip.profundidad");
+        String[] ejes = { "x", "y", "z" };
+        for (int i = 0; i < 3; i++) {
+            int c = i;
+            slider(slidersColocacion, 90 + i * 14, "d" + ejes[i], -16f, 16f, 0.25f, false, a -> a.colocacion().campo(1 + c),
+                    (a, v) -> a.conColocacion(a.colocacion().conCampo(1 + c, v)), null);
+            slider(slidersColocacion, 136 + i * 14, "r" + ejes[i], -180f, 180f, 5f, false, a -> a.colocacion().campo(4 + c),
+                    (a, v) -> a.conColocacion(a.colocacion().conCampo(4 + c, v)), null);
+            slider(slidersColocacion, 182 + i * 14, "s" + ejes[i], 0.1f, 4f, 0.05f, true, a -> a.colocacion().campo(7 + c),
+                    (a, v) -> a.conColocacion(a.colocacion().conCampo(7 + c, v)), null);
+        }
+
+        // Página Movimiento: pivote, intensidad (= blandura), velocidad, amplitud y eje.
+        btnPivote = botonPanel(6, 34, PW - 12, Text.empty(), "femclothes.estilado.tooltip.pivote", () -> ajustar(a -> {
+            var v = com.femclothes.aplique.Oscilacion.Pivote.values();
+            return a.conOscilacion(a.oscilacion().conPivote(v[(a.oscilacion().pivote().ordinal() + 1) % v.length]));
+        }));
+        for (int i = 0; i < 3; i++) {
+            int c = i;
+            slider(slidersMovimiento, 52 + i * 14, "po" + ejes[i], -16f, 16f, 0.25f, false, a -> a.oscilacion().campo(c),
+                    (a, v) -> a.conOscilacion(a.oscilacion().conCampo(c, v)), "femclothes.estilado.tooltip.pivote_offset");
+        }
+        slider(slidersMovimiento, 98, "intensidad", 0f, 1f, 0.1f, true, Aplique::blandura,
+                (a, v) -> a.conBlandura(v), "femclothes.estilado.tooltip.blandura");
+        slider(slidersMovimiento, 112, "velocidad", 0f, 4f, 0.1f, false, a -> a.oscilacion().campo(3),
+                (a, v) -> a.conOscilacion(a.oscilacion().conCampo(3, v)), "femclothes.estilado.tooltip.velocidad");
+        slider(slidersMovimiento, 126, "amplitud", 0f, 60f, 1f, false, a -> a.oscilacion().campo(4),
+                (a, v) -> a.conOscilacion(a.oscilacion().conCampo(4, v)), "femclothes.estilado.tooltip.amplitud");
+        btnEje = botonPanel(6, 144, PW - 12, Text.empty(), "femclothes.estilado.tooltip.eje", () -> ajustar(a -> {
+            var v = com.femclothes.aplique.Oscilacion.Eje.values();
+            return a.conOscilacion(a.oscilacion().conEje(v[(a.oscilacion().eje().ordinal() + 1) % v.length]));
+        }));
+        btnRestablecer = botonPanel(6, 232, PW - 12, Text.translatable("femclothes.estilado.panel.restablecer"),
+                "femclothes.estilado.tooltip.restablecer", () -> ajustar(a -> a
+                        .conColocacion(com.femclothes.aplique.Colocacion.DEFECTO.conCara(a.colocacion().caraBase()))
+                        .conOscilacion(com.femclothes.aplique.Oscilacion.DEFECTO)));
+    }
+
+    /** Muestra la página elegida y pone en cada control el valor del aplique elegido. */
+    private void actualizarPanel(@Nullable Aplique a) {
+        boolean hay = a != null;
+        boolean objeto = hay && a.objeto() != null;
+        btnPaginaColocacion.active = paginaPanel != 0;
+        btnPaginaMovimiento.active = paginaPanel != 1;
+        for (SliderAjuste s : slidersColocacion) {
+            s.visible = paginaPanel == 0;
+            s.refrescar(a);
+        }
+        for (SliderAjuste s : slidersMovimiento) {
+            s.visible = paginaPanel == 1;
+            s.refrescar(a);
+        }
+        for (int i = 0; i < 6; i++) {
+            btnCaras[i].visible = paginaPanel == 0;
+            btnCaras[i].active = objeto && a.colocacion().caraBase() != CARAS[i];
+        }
+        btnPivote.visible = btnEje.visible = paginaPanel == 1;
+        btnRestablecer.visible = true;
+        btnRestablecer.active = hay;
+        if (hay) {
+            btnPivote.setMessage(Text.translatable("femclothes.estilado.panel.pivote",
+                    Text.translatable("femclothes.estilado.pivote." + a.oscilacion().pivote().asString())));
+            btnEje.setMessage(Text.translatable("femclothes.estilado.panel.eje",
+                    Text.translatable("femclothes.estilado.eje." + a.oscilacion().eje().asString())));
+        }
+    }
+
+    private void dibujarPanel(DrawContext c) {
+        int x0 = panelX, y0 = this.y;
+        c.fill(x0 - 1, y0 - 1, x0 + PW + 1, y0 + ALTO + 1, 0xFF2A180C);
+        c.fill(x0, y0, x0 + PW, y0 + ALTO, 0xFF4B3F5A);
+        c.fill(x0 + 2, y0 + 2, x0 + PW - 2, y0 + ALTO - 2, 0xFF5C4F6E);
+        var fuente = MinecraftClient.getInstance().textRenderer;
+        Aplique a = elegido();
+        if (a == null) {
+            c.drawTextWrapped(fuente, Text.translatable("femclothes.estilado.panel.ninguno"), x0 + 8, y0 + 40, PW - 16,
+                    EstiloPergamino.TEXTO_CLARO);
+            return;
+        }
+        if (paginaPanel == 0) {
+            Text t = a.objeto() != null ? Text.translatable("femclothes.estilado.panel.cara_base")
+                    : Text.translatable("femclothes.estilado.panel.cara_modelo");
+            c.drawText(fuente, t, x0 + 8, y0 + 28, EstiloPergamino.TEXTO_CLARO, false);
+        }
+    }
+
+    @Override
+    protected boolean isClickOutsideBounds(double mx, double my, int left, int top, int button) {
+        // El panel está afuera de la ventana: tocarlo con un ítem en el cursor no lo tira.
+        if (mx >= panelX && mx < panelX + PW && my >= this.y && my < this.y + ALTO) return false;
+        return super.isClickOutsideBounds(mx, my, left, top, button);
+    }
+
     // ── vista previa ───────────────────────────────────────────────────────
     private boolean dentroDeVista(double mx, double my) {
         return mx >= this.x + PX1 && mx < this.x + PX2 && my >= this.y + PY1 && my < this.y + PY2;
@@ -454,9 +627,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     }
 
     private List<ButtonWidget> objetoBotones() {
-        List<ButtonWidget> l = new java.util.ArrayList<>(List.of(btnObjModo, btnObjVariante));
-        l.addAll(List.of(btnObjInclinar));
-        return l;
+        return List.of(btnObjModo, btnObjVariante);
     }
 
     @Override
@@ -497,7 +668,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         }
         boolean hay = sel >= 0 && sel < apliques.size();
         btnGiro.active = btnEscala.active = btnQuitar.active = hay;
-        sliderBlandura.refrescar(hay ? apliques.get(sel) : null);
+        actualizarPanel(hay ? apliques.get(sel) : null);
         com.femclothes.aplique.ObjetoAplique obj = hay ? apliques.get(sel).objeto() : null;
         for (ButtonWidget b : objetoBotones()) b.visible = obj != null;
         if (obj != null) {
@@ -565,5 +736,6 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         int ox = this.x + X_DER + 3 * 26, oy = this.y + EstiladoScreenHandler.Y_SLOTS;
         context.fill(ox - 1, oy - 1, ox + 17, oy + 17, 0xFF2A180C);
         context.fill(ox, oy, ox + 16, oy + 16, 0xFF6B5A78);
+        dibujarPanel(context);
     }
 }

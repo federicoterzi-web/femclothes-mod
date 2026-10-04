@@ -2,6 +2,8 @@ package com.femclothes.render;
 
 import com.femclothes.Femclothes;
 import com.femclothes.aplique.Aplique;
+import com.femclothes.aplique.Colocacion;
+import com.femclothes.aplique.Oscilacion;
 import com.femclothes.aplique.ObjetoAplique;
 import net.minecraft.block.BlockState;
 import com.femclothes.garment.Parte;
@@ -135,6 +137,8 @@ public final class ApliqueRenderer {
                 dibujarObjeto(a, ms, vertexConsumers, luz, blando);
                 continue;
             }
+            colocarGeo(a, ms);
+            blando = Blando.de(a, ms.peek().getNormalMatrix(), marco);
             VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura(a)));
             for (GeoBone hueso : modelo.topLevelBones()) dibujarHueso(hueso, ms, vc, luz, blando);
         }
@@ -189,6 +193,8 @@ public final class ApliqueRenderer {
             matrices.pop();
             return;
         }
+        colocarGeo(a, matrices);
+        blando = Blando.de(a, matrices.peek().getNormalMatrix(), marco);
         VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(textura(a)));
         for (GeoBone hueso : modelo.topLevelBones()) dibujarHueso(hueso, matrices, vc, luz, blando);
         matrices.pop();
@@ -258,38 +264,43 @@ public final class ApliqueRenderer {
         return b;
     }
 
+    /** Aplica a la pila una matriz de 4x4 también a las normales (la inversa traspuesta; sirve con escalas no uniformes). */
+    private static void aplicar(MatrixStack ms, Matrix4f m) {
+        ms.peek().getPositionMatrix().mul(m);
+        ms.peek().getNormalMatrix().mul(m.normal(new Matrix3f()));
+    }
+
     /**
-     * Un aplique de objeto (2026-10-04, "un motor para generar apliques de bloques ya existentes"):
-     * Minecraft dibuja el ítem (como en un marco) o el bloque colocado, con el frente hacia afuera
-     * de la tela. La matriz ya trae el origen sobre la tela, el frente en -Z, "arriba" en +Y y el
-     * tamaño del aplique. El objeto se ACHICA o agranda hasta que su lado más largo mida
-     * {@link #TAMANO_OBJETO} y se apoya por el centro de su cara de atrás sobre la tela; ese punto
-     * es el pivote de las inclinaciones. Con blandura, además cuelga y se balancea desde su borde de arriba.
+     * Un aplique de objeto (2026-10-04, "un motor para generar apliques de bloques ya existentes", y después
+     * "separar orientación, pivote, cara de contacto, posición y profundidad"). La matriz ya trae el marco S de
+     * la superficie (origen sobre la tela, +Z hacia adentro, +Y arriba, escala y giro del aplique). La cadena,
+     * de afuera hacia adentro (ver {@link TransformAplique}):
+     * <pre>
+     *   offset normal · desplazamiento · [nodo de oscilación] · rotación · escala · Q(cara base) · k · T(-centro de la cara)
+     * </pre>
+     * La cara elegida del objeto queda sobre la tela con su centro en el origen: ese punto es el pivote de la
+     * rotación y del tamaño; la oscilación cuelga del centro del borde de arriba de esa cara.
      */
     private static void dibujarObjeto(Aplique a, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz,
                                       @org.jetbrains.annotations.Nullable Blando blando) {
         ObjetoAplique o = a.objeto();
+        Colocacion c = a.colocacion();
         MinecraftClient mc = MinecraftClient.getInstance();
         BlockState estado = o.bloque() ? o.estado() : null;
         if (o.bloque() && (estado == null || estado.isAir())) estado = null;
         net.minecraft.util.math.Box b = limites(o, estado);
         float lx = (float) b.getLengthX(), ly = (float) b.getLengthY(), lz = (float) b.getLengthZ();
         float k = TAMANO_OBJETO / Math.max(0.05f, Math.max(lx, Math.max(ly, lz)));
-        // En el espacio centrado en el cubo unitario: centro (x, y) del objeto y su cara de atrás (z más grande).
-        float cx = (float) (b.minX + b.maxX) / 2f - 0.5f, cy = (float) (b.minY + b.maxY) / 2f - 0.5f;
-        float zAtras = (float) b.maxZ - 0.5f;
+        // La caja en el espacio centrado en el cubo unitario.
+        float[] mn = { (float) b.minX - 0.5f, (float) b.minY - 0.5f, (float) b.minZ - 0.5f };
+        float[] mx = { (float) b.maxX - 0.5f, (float) b.maxY - 0.5f, (float) b.maxZ - 0.5f };
+        net.minecraft.util.math.Direction f = c.caraBase();
+        TransformAplique.Resultado r = TransformAplique.calcular(
+                new int[] { f.getOffsetX(), f.getOffsetY(), f.getOffsetZ() }, mn, mx, k,
+                new float[] { c.rx(), c.ry(), c.rz() }, new float[] { c.sx(), c.sy(), c.sz() });
         matrices.push();
-        if (blando != null) {
-            float py = ly * k / 2f;
-            float rz = blando.blando.x * 0.35f * blando.blandura, rx = -blando.blando.z * 0.3f * blando.blandura;
-            matrices.translate(0f, py, 0f);
-            matrices.multiply(new Quaternionf().rotationZ(rz).rotateX(rx));
-            matrices.translate(0f, -py, 0f);
-        }
-        if (o.inclinarX() != 0f) matrices.multiply(new Quaternionf().rotationX((float) Math.toRadians(o.inclinarX())));
-        if (o.inclinarY() != 0f) matrices.multiply(new Quaternionf().rotationY((float) Math.toRadians(o.inclinarY())));
-        matrices.scale(k, k, k);
-        matrices.translate(-cx, -cy, -zAtras);
+        entreTelaYNodo(a, matrices, blando, r.ancho(), r.alto(), r.profundidad(), true);
+        aplicar(matrices, r.matriz());
         int tinte = o.tinte();
         VertexConsumerProvider proveedor = tinte < 0 ? vertexConsumers : new TintadoVertex(vertexConsumers, tinte);
         if (estado != null) {
@@ -301,6 +312,51 @@ public final class ApliqueRenderer {
                     OverlayTexture.DEFAULT_UV, matrices, proveedor, mc.world, 0);
         }
         matrices.pop();
+    }
+
+    /**
+     * Un modelo de aplique del mod con su colocación (2026-10-04): lo mismo que {@link #dibujarObjeto} sin la
+     * parte del objeto (la cara de contacto es siempre su plano de atrás, z = 0). La oscilación de todo el
+     * modelo es solo el vaivén propio (con velocidad > 0): la inercia ya la mueven los huesos ({@code Blando}).
+     */
+    private static void colocarGeo(Aplique a, MatrixStack matrices) {
+        Colocacion c = a.colocacion();
+        entreTelaYNodo(a, matrices, null, 0f, 0f, 0f, false);
+        aplicar(matrices, new Matrix4f()
+                .rotationZYX((float) Math.toRadians(c.rz()), (float) Math.toRadians(c.ry()), (float) Math.toRadians(c.rx()))
+                .scale(c.sx(), c.sy(), c.sz()));
+    }
+
+    /**
+     * Lo común de afuera: el offset normal y el desplazamiento (px → bloques) y el nodo de oscilación, que gira
+     * alrededor del pivote. {@code inercia}: si la oscilación también responde al movimiento de quien lo lleva.
+     */
+    private static void entreTelaYNodo(Aplique a, MatrixStack matrices, @org.jetbrains.annotations.Nullable Blando blando,
+                                       float ancho, float alto, float profundidad, boolean inercia) {
+        Colocacion c = a.colocacion();
+        matrices.translate(0f, 0f, -c.offsetNormal() / 16f);
+        matrices.translate(c.dx() / 16f, c.dy() / 16f, -c.dz() / 16f);
+        float intensidad = a.blandura();
+        Oscilacion os = a.oscilacion();
+        if (intensidad <= 0f) return;
+        float dx = 0f, dz = 0f;
+        if (inercia && blando != null) {
+            dx = blando.blando.x;
+            dz = blando.blando.z;
+        }
+        float idle = 0f;
+        if (os.velocidad() > 0f) {
+            double t = (System.nanoTime() % 1_000_000_000_000L) / 1e9;
+            double fase = (a.x() * 7.3 + a.y() * 13.1 + a.z() * 3.7);
+            idle = (float) Math.sin(2 * Math.PI * os.velocidad() * t + fase);
+        }
+        float[] g = TransformAplique.angulos(os.eje().ordinal(), (float) Math.toRadians(os.amplitud()), intensidad, dx, dz, idle);
+        if (g[0] == 0f && g[1] == 0f) return;
+        float[] p = TransformAplique.pivote(os.pivote().ordinal(), ancho, alto, profundidad,
+                os.ox() / 16f, os.oy() / 16f, os.oz() / 16f);
+        matrices.translate(p[0], p[1], p[2]);
+        matrices.multiply(new Quaternionf().rotationZ(g[1]).rotateX(g[0]));
+        matrices.translate(-p[0], -p[1], -p[2]);
     }
 
     /**
