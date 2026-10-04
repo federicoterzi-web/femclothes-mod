@@ -24,6 +24,15 @@ NOMBRES = ["cero", "minimo", "corto", "medio", "mediolargo", "largo", "maximo"]
 COBRE_CLARO = np.array([242, 170, 120])
 COBRE_MEDIO = np.array([184, 102, 56])
 COBRE_OSCURO = np.array([96, 44, 22])
+# Destaques (2026-10-04, "mas brillante e iconica a la chincheta y a la tijera. Y a la linea de corte"): cobre vivo.
+VIVO = np.array([255, 138, 58])
+VIVO_LUZ = np.array([255, 214, 160])
+VIVO_SOMBRA = np.array([176, 72, 28])
+TINTA = np.array([59, 36, 16])
+ACERO = np.array([206, 215, 226])
+ACERO_LUZ = np.array([248, 250, 253])
+ACERO_SOMBRA = np.array([128, 138, 154])
+XP, X_PIVOTE, X_PUNTA = 17, 45, 37      # centro de la chincheta, eje y puntas de la tijera
 
 
 def mascaras(a):
@@ -86,41 +95,105 @@ def ajustar(img):
     x_tij = int(der.min()) if len(der) else int(np.where(naranja[y0:y1 + 1].any(axis=0))[0].max()) - 8
     xa, xb = x_pin + 2, x_tij - 2           # tramo libre de la línea
 
-    # Piezas = todo lo naranja/gris que NO es el tramo libre de la línea.
+    # Piezas viejas = lo naranja/gris dentro de las ventanas de la chincheta y la tijera.
+    yc = (y0 + y1) // 2
+    ventana = np.zeros_like(naranja)
+    ventana[max(0, yc - 10):yc + 11, 10:27] = True
+    ventana[max(0, yc - 10):yc + 11, 38:64] = True
+    piezas = (naranja | gris) & ventana
     tramo = np.zeros_like(naranja)
-    tramo[max(0, y0 - 1):y1 + 2, xa:xb + 1] = True
-    piezas = (naranja | gris) & ~tramo
+    tramo[max(0, y0 - 1):y1 + 2, :] = True
+    vieja_linea = naranja & ~ventana & tramo
     barrera = dilatar(piezas, 1)
-    dentro = interior(oscuro, barrera | (tramo & naranja), (32, 40))
+    dentro = interior(oscuro, barrera | vieja_linea, (32, 40))
 
-    # 3) puntadas de adentro: mediana (5x5, dos pasadas) solo dentro del contorno y lejos de línea y piezas
+    # puntadas de adentro: mediana (5x5, dos pasadas) solo dentro del contorno y lejos de las piezas y la línea
     suave = Image.fromarray(a).filter(ImageFilter.MedianFilter(5)).filter(ImageFilter.MedianFilter(5))
     suave = np.array(suave)
-    zona = dentro & ~barrera
-    zona[max(0, y0 - 1):y1 + 2, xa:xb + 1] = False
+    zona = dentro & ~barrera & ~tramo
     b = a.copy()
     b[zona] = suave[zona]
 
-    # borrar la línea vieja: mezcla vertical entre la fila de arriba y la de abajo de la banda
-    ya, yb = max(0, y0 - 3), min(63, y1 + 3)
-    for x in range(xa, xb + 1):
-        for y in range(y0 - 1, y1 + 2):
-            if naranja[y, x]:
-                t = (y - ya) / max(1, (yb - ya))
-                b[y, x] = ((1 - t) * b[ya, x] + t * b[yb, x]).astype(np.uint8)
+    # sacar lo viejo (piezas y línea): promedio de los vecinos que no son piezas
+    sacar = dilatar(piezas, 1) | vieja_linea   # +1 px: se lleva también el contorno de tinta de lo viejo
+    valido = ~sacar
+    for _ in range(4):
+        nuevo_b = b.copy()
+        for y, x in zip(*np.where(sacar)):
+            ys, xs = slice(max(0, y - 2), y + 3), slice(max(0, x - 2), x + 3)
+            v = valido[ys, xs]
+            if v.any():
+                nuevo_b[y, x] = b[ys, xs][v].mean(axis=0)
+                valido[y, x] = True
+        b = nuevo_b
+        sacar = sacar & ~valido
 
-    # 1) recolorear el naranja de las piezas → cobre según el brillo
-    for (y, x) in zip(*np.where(naranja & piezas)):
-        v = int(a[y, x, 1])      # el verde separa luz, cuerpo y sombra del naranja
-        b[y, x] = COBRE_CLARO if v > 140 else COBRE_MEDIO if v > 95 else COBRE_OSCURO
+    # Los destaques se dibujan en una capa aparte y se les pone contorno de tinta (más icónicos).
+    capa = np.zeros((64, 64, 4), dtype=np.uint8)
 
-    # nueva línea de corte: 3 px, trazos de 4 con 2 de hueco, brillo arriba y sombra abajo
-    yc = (y0 + y1) // 2
+    def px(x, y, c):
+        if 0 <= x < 64 and 0 <= y < 64:
+            capa[y, x, :3] = c
+            capa[y, x, 3] = 255
+
+    def disco(cx, cy, r, c):
+        for y in range(cy - r, cy + r + 1):
+            for x in range(cx - r, cx + r + 1):
+                if (x - cx) ** 2 + (y - cy) ** 2 <= r * r + r * 0.6:
+                    px(x, y, c)
+
+    # línea de corte: 3 px, trazos de 4 con 2 de hueco, entre la chincheta y la tijera
+    xa, xb = XP + 5, X_PUNTA - 1
     for x in range(xa, xb + 1):
         if ((x - xa) % 6) < 4:
-            b[yc - 1, x] = COBRE_CLARO
-            b[yc, x] = COBRE_MEDIO
-            b[yc + 1, x] = COBRE_OSCURO
+            px(x, yc - 1, VIVO_LUZ)
+            px(x, yc, VIVO)
+            px(x, yc + 1, VIVO_SOMBRA)
+
+    # chincheta: cabeza redonda con luz y sombra, y la aguja que asoma abajo
+    for k in range(5):
+        px(XP - 1 - k // 2 - 1, yc + 4 + k, ACERO if k < 4 else ACERO_SOMBRA)
+    disco(XP, yc, 5, VIVO_SOMBRA)
+    disco(XP - 1, yc - 1, 4, VIVO)
+    disco(XP - 2, yc - 2, 2, VIVO_LUZ)
+    px(XP - 3, yc - 3, ACERO_LUZ)
+    px(XP - 2, yc - 3, ACERO_LUZ)
+
+    # tijera: dos hojas gruesas cruzadas en el eje, entreabiertas hacia la línea, y dos anillos con agujero
+    def hoja(x0, y0_, x1, y1_, claro, medio, sombra):
+        n = max(abs(x1 - x0), abs(y1 - y0_))
+        for k in range(n + 1):
+            t = k / n
+            x = round(x0 + (x1 - x0) * t)
+            y = round(y0_ + (y1 - y0_) * t)
+            alto = 3 if t < 0.55 else 2        # se afina hacia la punta
+            px(x, y - 1, claro)
+            px(x, y, medio)
+            if alto == 3:
+                px(x, y + 1, sombra)
+    # la hoja que sale del anillo de arriba termina abajo, y al revés (así se cruzan en el eje)
+    hoja(X_PIVOTE + 7, yc - 4, X_PUNTA, yc + 3, ACERO_LUZ, ACERO, ACERO_SOMBRA)
+    hoja(X_PIVOTE + 7, yc + 4, X_PUNTA, yc - 3, ACERO_LUZ, ACERO, ACERO_SOMBRA)
+    for sg in (-1, 1):
+        cy = yc + sg * 5
+        disco(X_PIVOTE + 10, cy, 3, VIVO_SOMBRA)
+        disco(X_PIVOTE + 10, cy, 2, VIVO)
+        px(X_PIVOTE + 9, cy - 2, VIVO_LUZ)
+        px(X_PIVOTE + 10, cy - 2, VIVO_LUZ)
+        for ddx in (-1, 0, 1):               # el agujero del anillo, del color del papel
+            px(X_PIVOTE + 10 + ddx, cy, np.array([232, 202, 160]))
+        px(X_PIVOTE + 10, cy - 1, np.array([232, 202, 160]))
+        px(X_PIVOTE + 10, cy + 1, np.array([232, 202, 160]))
+    disco(X_PIVOTE + 3, yc, 1, VIVO_SOMBRA)        # el tornillo del eje
+    px(X_PIVOTE + 3, yc, VIVO_LUZ)
+
+    # contorno de tinta de 1 px alrededor de todo lo dibujado
+    mascara = capa[..., 3] > 0
+    borde = dilatar(mascara, 1) & ~mascara
+    for y, x in zip(*np.where(borde)):
+        b[y, x] = TINTA
+    for y, x in zip(*np.where(mascara)):
+        b[y, x] = capa[y, x, :3]
     return Image.fromarray(b)
 
 
