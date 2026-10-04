@@ -335,8 +335,15 @@ public class EstiladoBlockEntity extends BlockEntity
 
     @Override
     public void setStack(int slot, ItemStack stack) {
+        ItemStack antes = items.get(slot);
         items.set(slot, stack);
-        if (slot == SLOT_PRENDA) seleccionado = -1;
+        // Solo se suelta la selección si cambió la PRENDA (2026-10-04, "cuando clickeo algo del panel lateral se me
+        // deselecciona"): el servidor reenvía el slot cada vez que se ajusta un aplique (la prenda cambia de
+        // componentes) y ese reenvío no es una prenda nueva.
+        if (slot == SLOT_PRENDA && (antes.isEmpty() || stack.isEmpty() || !ItemStack.areItemsEqual(antes, stack))) {
+            seleccionado = -1;
+        }
+        if (seleccionado >= apliques().size()) seleccionado = apliques().size() - 1;
         markDirty();
     }
 
