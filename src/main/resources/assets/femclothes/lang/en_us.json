@@ -694,5 +694,6 @@
   "item.femclothes.molde_cuello_cuadrado": "Neckline Mould: Square",
   "item.femclothes.molde_cuello_corazon": "Neckline Mould: Sweetheart",
   "femclothes.sublimadora.cuello.cuadrado": "square",
-  "femclothes.sublimadora.cuello.corazon": "sweetheart"
+  "femclothes.sublimadora.cuello.corazon": "sweetheart",
+  "femclothes.estilado.panel.nombre": "Mould name"
 }

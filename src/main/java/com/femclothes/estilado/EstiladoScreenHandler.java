@@ -60,10 +60,6 @@ public class EstiladoScreenHandler extends ScreenHandler {
             be.quitar(player);
             return true;
         }
-        if (id == EstiladoBlockEntity.BTN_CREAR_MOLDE) {
-            be.crearMolde(player);
-            return true;
-        }
         return be.onButtonClick(id);
     }
 

@@ -143,6 +143,8 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     private ButtonWidget btnPaginaColocacion, btnPaginaMovimiento, btnRestablecer, btnPivote, btnEje, btnCrearMolde;
     /** El slider de blandura de la Mesa normal (2026-10-04): como estaba antes del panel lateral. */
     private SliderAjuste sliderNormal;
+    /** El nombre del molde que se va a fabricar (2026-10-04, "me falta un casillero para ponerle el nombre al aplique"). */
+    private net.minecraft.client.gui.widget.TextFieldWidget txtNombreMolde;
 
     /** Si el molde es uno personalizado de un objeto (no pide retazo: la muestra de color es opcional). */
     private static boolean plantillaDeObjeto(ItemStack molde) {
@@ -338,7 +340,15 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         sliderNormal.setTooltip(Tooltip.of(Text.translatable("femclothes.estilado.tooltip.blandura")));
         this.addDrawableChild(sliderNormal);
         btnCrearMolde = botonPanel(82, 232, 72, Text.translatable("femclothes.estilado.panel.crear_molde"),
-                "femclothes.estilado.tooltip.crear_molde", () -> clickBoton(EstiladoBlockEntity.BTN_CREAR_MOLDE));
+                "femclothes.estilado.tooltip.crear_molde", () -> {
+                    ClientPlayNetworking.send(new com.femclothes.estilado.CrearMoldePayload(handler.be.getPos(), txtNombreMolde.getText()));
+                    txtNombreMolde.setText("");
+                });
+        txtNombreMolde = new net.minecraft.client.gui.widget.TextFieldWidget(this.textRenderer, panelX + 6, this.y + 214, PW - 12, 14,
+                Text.translatable("femclothes.estilado.panel.nombre"));
+        txtNombreMolde.setMaxLength(40);
+        txtNombreMolde.setPlaceholder(Text.translatable("femclothes.estilado.panel.nombre"));
+        this.addDrawableChild(txtNombreMolde);
         btnRestablecer = botonPanel(6, 232, 72, Text.translatable("femclothes.estilado.panel.restablecer"),
                 "femclothes.estilado.tooltip.restablecer", () -> ajustar(a -> a
                         .conColocacion(com.femclothes.aplique.Colocacion.DEFECTO.conCara(a.colocacion().caraBase()))
@@ -355,6 +365,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         if (!cre) {
             // La Mesa normal no tiene panel lateral.
             for (var w : new ButtonWidget[] { btnPaginaColocacion, btnPaginaMovimiento, btnRestablecer, btnPivote, btnEje, btnCrearMolde }) w.visible = false;
+            txtNombreMolde.visible = false;
             for (SliderAjuste sl : slidersColocacion) sl.visible = false;
             for (SliderAjuste sl : slidersMovimiento) sl.visible = false;
             for (ButtonWidget b : btnCaras) b.visible = false;
@@ -362,6 +373,8 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         }
         btnCrearMolde.visible = true;
         btnCrearMolde.active = hay;
+        txtNombreMolde.visible = true;
+        txtNombreMolde.setEditable(hay);
         btnPaginaColocacion.active = paginaPanel != 0;
         btnPaginaMovimiento.active = paginaPanel != 1;
         for (SliderAjuste s : slidersColocacion) {
@@ -689,6 +702,14 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
             return true;
         }
         return super.mouseScrolled(mx, my, horizontal, vertical);
+    }
+
+    /** Sin esto, escribir una "e" en el nombre del molde cierra la pantalla (mismo motivo que la Sublimadora). */
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (txtNombreMolde != null && txtNombreMolde.visible
+                && (txtNombreMolde.keyPressed(keyCode, scanCode, modifiers) || txtNombreMolde.isActive())) return true;
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     // ── dibujo ─────────────────────────────────────────────────────────────

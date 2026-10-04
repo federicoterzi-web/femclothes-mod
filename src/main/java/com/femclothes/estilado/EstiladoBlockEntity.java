@@ -74,8 +74,6 @@ public class EstiladoBlockEntity extends BlockEntity
      * así que "todos los moldes adentro" es poder elegirlos acá.
      */
     public static final int BTN_SIGUIENTE_MOLDE = 16;
-    /** Fabrica un molde de aplique personalizado con el aplique elegido (solo Mesa creativa, 2026-10-04). */
-    public static final int BTN_CREAR_MOLDE = 17;
     /** Blandura del aplique elegido: BASE + 0..10 = 0..100 % (2026-10-04, "tela blanda... un slider"). */
     public static final int BTN_BLANDURA_BASE = 20;
     public static final int BLANDURA_PASOS = 10;
@@ -219,7 +217,7 @@ public class EstiladoBlockEntity extends BlockEntity
      * ahí para que se use en la normal"): sin posición (esa se elige al ponerlo), con el objeto sin muestra y
      * marcado "de molde". Solo la Mesa creativa; no gasta nada.
      */
-    public void crearMolde(PlayerEntity jugador) {
+    public void crearMolde(PlayerEntity jugador, String nombre) {
         List<Aplique> actuales = apliques();
         if (!com.femclothes.util.MaquinaCreativa.es(this) || seleccionado < 0 || seleccionado >= actuales.size()) return;
         Aplique a = actuales.get(seleccionado);
@@ -228,6 +226,11 @@ public class EstiladoBlockEntity extends BlockEntity
                 a.objeto() == null ? null : a.objeto().paraMolde(), a.colocacion(), a.oscilacion());
         ItemStack molde = new ItemStack(FemclothesItems.MOLDE_APLIQUE_PERSONALIZADO);
         molde.set(FemclothesComponents.APLIQUE_PLANTILLA, plantilla);
+        // El nombre que escribió el jugador en el casillero del panel (2026-10-04, "me falta un casillero para
+        // ponerle el nombre al aplique").
+        String limpio = nombre == null ? "" : nombre.strip();
+        if (limpio.length() > 40) limpio = limpio.substring(0, 40);
+        if (!limpio.isEmpty()) molde.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal(limpio));
         jugador.getInventory().offerOrDrop(molde);
     }
 

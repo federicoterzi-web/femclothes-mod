@@ -694,5 +694,6 @@
   "item.femclothes.molde_cuello_cuadrado": "Molde de Cuello: Cuadrado",
   "item.femclothes.molde_cuello_corazon": "Molde de Cuello: Corazón",
   "femclothes.sublimadora.cuello.cuadrado": "cuadrado",
-  "femclothes.sublimadora.cuello.corazon": "corazón"
+  "femclothes.sublimadora.cuello.corazon": "corazón",
+  "femclothes.estilado.panel.nombre": "Nombre del molde"
 }

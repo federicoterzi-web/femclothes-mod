@@ -3,7 +3,6 @@ package com.femclothes.client;
 import com.femclothes.aplique.Aplique;
 import com.femclothes.aplique.MoldeApliquePersonalizadoItem;
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -20,15 +19,20 @@ import net.minecraft.util.Identifier;
  */
 public class MoldeApliqueItemRenderer implements BuiltinItemRendererRegistry.DynamicItemRenderer {
 
-    private static final Identifier PAPEL = Identifier.of("femclothes", "textures/item/molde_de_corte.png");
     /** Media del grosor de un item/generated (1/16). */
     private static final float Z = 0.5f / 16f;
 
     @Override
     public void render(ItemStack stack, ModelTransformationMode modo, MatrixStack matrices,
                        VertexConsumerProvider vertexConsumers, int luz, int overlay) {
+        Aplique a = MoldeApliquePersonalizadoItem.plantilla(stack);
+        // Un objeto: el ícono armado en el juego (papel doblado + dibujo lineal + recuadro lila). Un modelo del mod:
+        // el ícono dibujado a mano de su molde.
+        Identifier textura = a == null ? Identifier.of("femclothes", "textures/item/molde_de_corte.png")
+                : a.objeto() != null ? IconoMoldeAplique.de(a.objeto())
+                : Identifier.of("femclothes", "textures/item/molde_aplique_" + a.modelo().clave + ".png");
         // vanilla ya hizo translate(-0.5,-0.5,-0.5): el ítem ocupa [0,1]³.
-        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(PAPEL));
+        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(textura));
         MatrixStack.Entry e = matrices.peek();
         float zf = 0.5f + Z, za = 0.5f - Z;
         vertice(buffer, e, 0, 0, zf, 0, 1, 0, 0, 1, luz, overlay);
@@ -39,17 +43,6 @@ public class MoldeApliqueItemRenderer implements BuiltinItemRendererRegistry.Dyn
         vertice(buffer, e, 1, 1, za, 1, 0, 0, 0, -1, luz, overlay);
         vertice(buffer, e, 1, 0, za, 1, 1, 0, 0, -1, luz, overlay);
         vertice(buffer, e, 0, 0, za, 0, 1, 0, 0, -1, luz, overlay);
-
-        Aplique a = MoldeApliquePersonalizadoItem.plantilla(stack);
-        if (a == null || a.objeto() == null) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        matrices.push();
-        // Al centro de la cara de adelante, achicado, y aplastado para que un bloque no sobresalga del papel.
-        matrices.translate(0.5f, 0.5f, zf + 0.02f);
-        matrices.scale(0.62f, 0.62f, 0.2f);
-        mc.getItemRenderer().renderItem(a.objeto().item(), ModelTransformationMode.GUI, luz, overlay, matrices,
-                vertexConsumers, mc.world, 0);
-        matrices.pop();
     }
 
     private static void vertice(VertexConsumer buffer, MatrixStack.Entry e, float x, float y, float z,

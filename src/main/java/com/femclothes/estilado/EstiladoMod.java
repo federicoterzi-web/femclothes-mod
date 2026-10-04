@@ -69,6 +69,17 @@ public final class EstiladoMod {
                         be.ajustar(payload.indice(), payload.colocacion(), payload.oscilacion(), payload.blandura());
                     }
                 }));
+
+        // Crear molde con nombre (2026-10-04).
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S()
+                .register(CrearMoldePayload.ID, CrearMoldePayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(CrearMoldePayload.ID,
+                (payload, context) -> context.server().execute(() -> {
+                    if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof EstiladoBlockEntity be
+                            && be.canPlayerUse(context.player())) {
+                        be.crearMolde(context.player(), payload.nombre());
+                    }
+                }));
     }
 
     private EstiladoMod() {}
