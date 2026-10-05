@@ -19,7 +19,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public class EmpalmeBlockEntity extends BlockEntity implements SidedInventory {
 
-    public static final int TICKS = 8;
+    /** A 1 px por tick como las cintas (2026-10-05, "un viaje smooth"): recto 16, por un costado (arco) 13, desde arriba 8. */
+    public static final int TICKS_RECTO = CintaBlockEntity.TICKS_RECTA, TICKS_LADO = CintaBlockEntity.TICKS_CURVA, TICKS_ARRIBA = 8;
 
     private ItemStack carga = ItemStack.EMPTY;
     private long llegada;
@@ -28,6 +29,8 @@ public class EmpalmeBlockEntity extends BlockEntity implements SidedInventory {
     private int turno;
     /** La cara por la que se consultó la última inserción (el setStack que sigue es de esa entrada). */
     private Direction ultimaEntrada;
+    /** Por qué cara entró lo que lleva ahora (null: a mano o de una versión vieja = como si viniera de atrás). */
+    @Nullable private Direction entrada;
 
     public EmpalmeBlockEntity(BlockPos pos, BlockState state) {
         super(CintaMod.EMPALME_BLOCK_ENTITY, pos, state);
@@ -36,6 +39,20 @@ public class EmpalmeBlockEntity extends BlockEntity implements SidedInventory {
     public ItemStack carga() { return carga; }
 
     public long llegada() { return llegada; }
+
+    /** 0 = atrás, 1 = izquierda, 2 = derecha, 3 = arriba (respecto del frente del empalme). */
+    public int lado() {
+        if (entrada == null) return 0;
+        if (entrada == Direction.UP) return 3;
+        Direction f = getCachedState().get(EmpalmeBlock.FACING);
+        if (entrada == f.rotateYCounterclockwise()) return 1;
+        if (entrada == f.rotateYClockwise()) return 2;
+        return 0;
+    }
+
+    public int ticks() {
+        return switch (lado()) { case 1, 2 -> TICKS_LADO; case 3 -> TICKS_ARRIBA; default -> TICKS_RECTO; };
+    }
 
     public float tiempoEfectivo(float tickDelta) {
         if (pausadoDesde >= 0) return pausadoDesde;
@@ -63,7 +80,7 @@ public class EmpalmeBlockEntity extends BlockEntity implements SidedInventory {
             be.pausadoDesde = -1;
             be.sincronizar();
         }
-        if (pausada || be.carga.isEmpty() || world.getTime() - be.llegada < TICKS) return;
+        if (pausada || be.carga.isEmpty() || world.getTime() - be.llegada < be.ticks()) return;
         Direction frente = state.get(EmpalmeBlock.FACING);
         BlockPos destino = pos.offset(frente);
         BlockState abajo = world.getBlockState(destino.down());
@@ -101,6 +118,7 @@ public class EmpalmeBlockEntity extends BlockEntity implements SidedInventory {
         carga = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1);
         llegada = world != null ? world.getTime() : 0;
         if (ultimaEntrada != null && !carga.isEmpty()) aceptoPor(ultimaEntrada);
+        entrada = ultimaEntrada;
         ultimaEntrada = null;
         pausadoDesde = getCachedState().get(EmpalmeBlock.POWERED) && world != null ? world.getTime() : -1;
         sincronizar();
@@ -143,6 +161,7 @@ public class EmpalmeBlockEntity extends BlockEntity implements SidedInventory {
         nbt.putLong("Llegada", llegada);
         nbt.putLong("PausadoDesde", pausadoDesde);
         nbt.putInt("Turno", turno);
+        nbt.putInt("Entrada", entrada == null ? -1 : entrada.getId());
     }
 
     @Override
@@ -152,6 +171,8 @@ public class EmpalmeBlockEntity extends BlockEntity implements SidedInventory {
         llegada = nbt.getLong("Llegada");
         pausadoDesde = nbt.contains("PausadoDesde") ? nbt.getLong("PausadoDesde") : -1;
         turno = nbt.getInt("Turno");
+        int e = nbt.contains("Entrada") ? nbt.getInt("Entrada") : -1;
+        entrada = e < 0 ? null : Direction.byId(e);
     }
 
     @Override public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) { return createNbt(registries); }

@@ -32,11 +32,13 @@ COSTURA = (118, 104, 92, 255)
 PERIODO = 4          # px de una nervadura (2 claras + 2 oscuras)
 FRAMES = 4           # un frame por px de avance
 RADIO_ANILLO = (2.0, 14.0)
-PASO_ARCO = PERIODO / 8.0   # rad por frame: a radio 8 es 1 px de arco por tick
+PASO_ARCO = 1.0 / 8.0       # rad por frame: a radio 8 es 1 px de arco por tick (4 frames = un período de 0,5 rad)
+# Antes valía PERIODO / 8 = un período entero por frame: los 4 cuadros salían iguales y la banda de las curvas no se movía.
 
 
 def marco():
-    """Madera clara con un filete de latón en el borde."""
+    """Madera clara lisa: sin filete en el borde (2026-10-05, "sigue habiendo un pixel de maderita al borde"), que marcaba una
+    costura en cada bloque de la cinta."""
     rnd = random.Random(7)
     img = Image.new("RGBA", (16, 16))
     px = img.load()
@@ -44,12 +46,6 @@ def marco():
         for x in range(16):
             v = 118 + rnd.randint(-6, 6) + (8 if (y // 4) % 2 else 0)
             px[x, y] = (v, int(v * 0.74), int(v * 0.48), 255)
-    laton = (196, 156, 72, 255)
-    for i in range(16):
-        px[i, 0] = laton
-        px[i, 15] = (150, 114, 52, 255)
-        px[0, i] = laton
-        px[15, i] = (150, 114, 52, 255)
     img.save(os.path.join(TEX, "cinta_marco.png"))
 
 
@@ -58,7 +54,7 @@ def banda_recta():
     px = img.load()
     for k in range(FRAMES):
         for y in range(16):
-            for x in range(2, 14):
+            for x in range(16):
                 banda = ((y + k) % PERIODO) < PERIODO // 2
                 c = CUERO_CLARO if banda else CUERO_OSCURO
                 if x in (2, 13):
@@ -77,6 +73,7 @@ def banda_curva(nombre, espejo):
                 cz = y + 0.5
                 r = math.hypot(cx, cz)
                 if not (RADIO_ANILLO[0] <= r <= RADIO_ANILLO[1]):
+                    px[x, 16 * k + y] = CUERO_OSCURO       # lo que queda fuera del anillo: cuero quieto, sin madera a la vista
                     continue
                 phi = math.atan2(cx, cz)
                 banda = ((phi - k * PASO_ARCO) / (PERIODO / 8.0)) % 1.0 < 0.5
@@ -131,7 +128,7 @@ def caja(desde, hasta, cara="#marco"):
 
 def plano_banda(textura):
     return {
-        "from": [0, 4.3, 0], "to": [16, 4.3, 16],
+        "from": [0, 4.32, 0], "to": [16, 4.32, 16],
         "faces": {"up": {"uv": [0, 0, 16, 16], "texture": textura}},
     }
 
@@ -141,7 +138,7 @@ def modelo_recta(q=""):
         "textures": {"marco": "femclothes:block/cinta_marco", "banda": "femclothes:block/cinta_banda" + q,
                      "particle": "femclothes:block/cinta_marco"},
         "elements": [
-            caja([0, 0, 0], [16, 4, 16]),
+            caja([0, 0, 0], [16, 4.3, 16]),
             caja([0, 4, 0], [2, 6, 16]),
             caja([14, 4, 0], [16, 6, 16]),
             plano_banda("#banda"),
@@ -151,7 +148,7 @@ def modelo_recta(q=""):
 
 def modelo_curva(espejo, q=""):
     nombre = "cinta_curva_der" if espejo else "cinta_curva_izq"
-    elementos = [caja([0, 0, 0], [16, 4, 16])]
+    elementos = [caja([0, 0, 0], [16, 4.3, 16])]
 
     def x_(a, b):
         return [16 - b, 16 - a] if espejo else [a, b]
@@ -217,7 +214,7 @@ def modelo_empalme(q=""):
     """Empalme (2026-10-05, "un empalme que una hasta tres entradas laterales... una superior de tolva y una salida"):
     una losa con la banda arriba y cuatro postes en las esquinas, abierta por los costados y por atrás (entradas) y por
     el frente (salida, -Z). La tolva carga por arriba."""
-    elementos = [caja([0, 0, 0], [16, 4, 16])]
+    elementos = [caja([0, 0, 0], [16, 4.3, 16])]
     for x0 in (0, 14):
         for z0 in (0, 14):
             elementos.append(caja([x0, 4, z0], [x0 + 2, 5.5, z0 + 2]))   # postes bajitos: "bajale un poquito al bordecito" (2026-10-05)

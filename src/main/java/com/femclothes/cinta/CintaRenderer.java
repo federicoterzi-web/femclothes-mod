@@ -33,8 +33,6 @@ public class CintaRenderer implements BlockEntityRenderer<CintaBlockEntity> {
                        VertexConsumerProvider buffers, int luz, int overlay) {
         ItemStack stack = be.carga();
         if (stack.isEmpty() || be.getWorld() == null) return;
-        Identifier icono = IconoPrenda.de(stack);
-
         var estado = be.getCachedState();
         CintaBlock.Forma forma = estado.get(CintaBlock.FORMA);
         float t = (be.tiempoEfectivo(tickDelta) - be.llegada()) / CintaBlockEntity.ticksDe(estado);
@@ -67,10 +65,22 @@ public class CintaRenderer implements BlockEntityRenderer<CintaBlockEntity> {
         matrices.translate(0.5, 0, 0.5);
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-giroBloque));
 
+        dibujarCarga(stack, be.getWorld(), matrices, buffers, luz, overlay, px, py, pz, tx, ty, tz);
+        matrices.pop();
+    }
+
+    /**
+     * Lo que viaja, en el marco "mira al norte" centrado en el bloque ya aplicado a {@code matrices}: la prenda con su
+     * ícono acostado y apuntando al rumbo (tx, ty, tz), o cualquier ítem acostado. Lo usan la cinta y el empalme, así se
+     * ven igual (2026-10-05, "la conjunction belt muestra los items diferentes").
+     */
+    static void dibujarCarga(ItemStack stack, net.minecraft.world.World mundo, MatrixStack matrices,
+                             VertexConsumerProvider buffers, int luz, int overlay,
+                             float px, float py, float pz, float tx, float ty, float tz) {
+        Identifier icono = IconoPrenda.de(stack);
         if (icono == null) {
             // Cualquier otro ítem (2026-10-05, "que no solo transporte ropa"): dibujado plano sobre la banda.
-            dibujarItem(stack, be.getWorld(), matrices, buffers, luz, overlay, px, ALTO + py, pz);
-            matrices.pop();
+            dibujarItem(stack, mundo, matrices, buffers, luz, overlay, px, ALTO + py, pz);
             return;
         }
         // Arriba de la prenda = hacia donde avanza; su derecha = ese rumbo girado 90° en sentido horario.
@@ -89,7 +99,6 @@ public class CintaRenderer implements BlockEntityRenderer<CintaBlockEntity> {
         vertice(vc, e, px - rx * MEDIO - fx * MEDIO, cy - fy * MEDIO, pz - rz * MEDIO - fz * MEDIO, 0, 1, luz, nx, ny, nz);
         vertice(vc, e, px + rx * MEDIO - fx * MEDIO, cy - fy * MEDIO, pz + rz * MEDIO - fz * MEDIO, 1, 1, luz, nx, ny, nz);
         vertice(vc, e, px + rx * MEDIO + fx * MEDIO, cy + fy * MEDIO, pz + rz * MEDIO + fz * MEDIO, 1, 0, luz, nx, ny, nz);
-        matrices.pop();
     }
 
     /** Un ítem cualquiera apoyado en (x, y, z) del marco actual, como los ítems tirados al piso pero quieto. */
