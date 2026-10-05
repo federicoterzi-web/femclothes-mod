@@ -971,7 +971,10 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         return switch (perfil.interior().arriba()) {
             case BRALETTE, DEPORTIVO -> 5f;
             case BINDER -> 8f;
-            default -> 12f;
+            // Sin nada arriba (2026-10-05, "rompio las tetas sin top"): el busto grande baja hasta la fila donde
+            // empieza el slip y su textura leía ese blanco (una media luna blanca abajo de cada teta); se aprieta
+            // para terminar justo antes de la ropa interior de abajo.
+            default -> techoBombacha(perfil) > 0f ? techoBombacha(perfil) - 0.1f : 12f;
         };
     }
 
