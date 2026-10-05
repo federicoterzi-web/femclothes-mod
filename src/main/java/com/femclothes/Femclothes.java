@@ -31,6 +31,8 @@ public class Femclothes implements ModInitializer {
         com.femclothes.body.RedCuerpo.init();
         com.femclothes.util.RedTwirl.init();
         com.femclothes.util.RedCapucha.init();
+        com.femclothes.ropa.Cosmeticos.init();
+        com.femclothes.ropa.RedRopa.init();
         FemclothesScreenHandlers.init();
         com.femclothes.modelado.ModeladoMod.register();
         com.femclothes.tinturas.TinturasMod.register();

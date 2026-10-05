@@ -12,7 +12,11 @@
     "PlayerEntityRendererFirstPersonArmMixin",
     "HandledScreenSlotInfoMixin",
     "BustoEnModelosMixin",
-    "ArmaduraBustoMixin"
+    "ArmaduraBustoMixin",
+    "PlayerEntityCosmeticosMixin",
+    "RopaOcultaEnInventarioMixin",
+    "TrinketScreenManagerMixin",
+    "HandledScreenAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

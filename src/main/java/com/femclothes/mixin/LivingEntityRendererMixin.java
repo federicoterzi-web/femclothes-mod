@@ -70,6 +70,7 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, M extend
         com.femclothes.render.relieve.BustoEnModelos.enEntidad = entidad instanceof AbstractClientPlayerEntity
                 ? GarmentFeatureRenderer.bustoDe(entidad, g, true) : null;
         com.femclothes.render.relieve.BustoEnModelos.modeloPrincipal = this.model;
+        com.femclothes.ropa.CosmeticosRender.entidad = entidad;   // armadura cosmética (2026-10-05)
     }
 
     @Inject(method = "render(Lnet/minecraft/entity/LivingEntity;FFLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V",
@@ -78,6 +79,7 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, M extend
                                           VertexConsumerProvider vertexConsumers, int luz, CallbackInfo ci) {
         com.femclothes.render.relieve.BustoEnModelos.enEntidad = null;
         com.femclothes.render.relieve.BustoEnModelos.modeloPrincipal = null;
+        com.femclothes.ropa.CosmeticosRender.entidad = null;
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE",

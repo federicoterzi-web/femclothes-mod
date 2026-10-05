@@ -73,4 +73,9 @@ public final class FemclothesScreenHandlers {
     }
 
     private FemclothesScreenHandlers() {}
+
+    /** Pantalla de Ropa (2026-10-05): sin datos extra, todo sale del jugador. */
+    public static final ScreenHandlerType<com.femclothes.ropa.RopaScreenHandler> ROPA = Registry.register(
+            Registries.SCREEN_HANDLER, Identifier.of("femclothes", "ropa"),
+            new ScreenHandlerType<>(com.femclothes.ropa.RopaScreenHandler::new, FeatureSet.empty()));
 }

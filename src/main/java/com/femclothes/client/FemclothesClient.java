@@ -26,6 +26,7 @@ public class FemclothesClient implements ClientModInitializer {
         HandledScreens.register(FemclothesScreenHandlers.SUBLIMADORA, SublimadoraScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.GUARDARROPAS, GuardarropasScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.MANIQUI, ManiquiScreen::new);
+        HandledScreens.register(FemclothesScreenHandlers.ROPA, RopaScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.ESTILADO, EstiladoScreen::new);
 
         // Los 3 bloques del zip "Bloque de sublimadora Minecraft" (2026-09-30):
@@ -80,6 +81,7 @@ public class FemclothesClient implements ClientModInitializer {
         ElegirCuerpoCliente.init();
         TwirlCliente.init();
         CapuchaCliente.init();
+        RopaCliente.init();
 
         // TODA la ropa del mod se dibuja desde un solo feature renderer.
         //
