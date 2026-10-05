@@ -81,6 +81,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     private int colorActivo = 0;
     private ButtonWidget btnModoColor, btnColorEntero;
     private final ButtonWidget[][] btnColorZona = new ButtonWidget[3][3];
+    private final ButtonWidget[] btnPatronZona = new ButtonWidget[3];
     /** Los controles de apliques que se esconden mientras se colorea. */
     private final List<ButtonWidget> grupoAplique = new java.util.ArrayList<>();
 
@@ -148,6 +149,11 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                             clickBoton(id);
                         });
             }
+        }
+        for (int z = 0; z < 3; z++) {
+            final int id = EstiladoBlockEntity.BTN_PATRON_BASE + z;
+            btnPatronZona[z] = boton(X_DER + 98, 66 + z * 22, 64, Text.empty(), "femclothes.estilado.tooltip.patron_zona",
+                    () -> clickBoton(id));
         }
         btnColorEntero = boton(X_DER, 132, 96, Text.translatable("femclothes.estilado.color.entero"),
                 "femclothes.estilado.tooltip.color_entero", () -> clickBoton(EstiladoBlockEntity.BTN_COLOR_ENTERO));
@@ -709,11 +715,60 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         return mejor;
     }
 
+    /**
+     * El rayo del mouse contra las cajas del sombrero (2026-10-05, "apliques apoyados en el cono"): el punto y la cara
+     * tocados, en px del marco de la cabeza; gana la superficie más cercana a quien mira (por donde sale el rayo).
+     */
+    @Nullable
+    private Toque tocarSombrero(double mx, double my, ItemStack prenda) {
+        Matrix4f m = poses.get(Parte.CABEZA);
+        if (m == null || Math.abs(m.determinant()) < 1e-12f) return null;
+        Matrix4f inversa = new Matrix4f(m).invert();
+        final float Z = 10000f;
+        Vector3f p0 = inversa.transformPosition(new Vector3f((float) mx, (float) my, -Z));
+        Vector3f p1 = inversa.transformPosition(new Vector3f((float) mx, (float) my, Z));
+        float[] o = { p0.x, p0.y, p0.z };
+        float[] d = { p1.x - p0.x, p1.y - p0.y, p1.z - p0.z };
+        Toque mejor = null;
+        for (com.femclothes.render.SombreroRenderer.Caja c : com.femclothes.render.SombreroRenderer.cajas(prenda)) {
+            float tMin = -Float.MAX_VALUE, tMax = Float.MAX_VALUE;
+            int eje = -1;
+            float signo = 0;
+            boolean fuera = false;
+            for (int i = 0; i < 3 && !fuera; i++) {
+                float mn = c.min()[i] / 16f, mx2 = c.max()[i] / 16f;
+                if (Math.abs(d[i]) < 1e-9f) {
+                    if (o[i] < mn || o[i] > mx2) fuera = true;
+                    continue;
+                }
+                float t1 = (mn - o[i]) / d[i], t2 = (mx2 - o[i]) / d[i];
+                float cerca = Math.min(t1, t2), lejos = Math.max(t1, t2);
+                if (cerca > tMin) tMin = cerca;
+                if (lejos < tMax) {
+                    tMax = lejos;
+                    eje = i;
+                    signo = d[i] > 0 ? 1 : -1;
+                }
+            }
+            if (fuera || eje < 0 || tMin > tMax || tMax < 0 || tMax > 1) continue;
+            float[] p = { o[0] + d[0] * tMax, o[1] + d[1] * tMax, o[2] + d[2] * tMax };
+            for (int i = 0; i < 3; i++) {
+                float mn = c.min()[i] / 16f, mx2 = c.max()[i] / 16f;
+                p[i] = i == eje ? (signo > 0 ? mx2 : mn) : Math.max(mn, Math.min(mx2, p[i]));
+            }
+            Direction cara = Direction.getFacing(eje == 0 ? signo : 0, eje == 1 ? signo : 0, eje == 2 ? signo : 0);
+            Toque t = new Toque(Parte.CABEZA, p[0] * 16f, p[1] * 16f, p[2] * 16f, cara, tMax);
+            if (mejor == null || t.profundidad() > mejor.profundidad()) mejor = t;
+        }
+        return mejor;
+    }
+
     @Nullable
     private Toque tocarPrenda(double mx, double my) {
         ItemStack prenda = handler.be.getStack(EstiladoBlockEntity.SLOT_PRENDA);
         PlayerEntity jugador = MinecraftClient.getInstance().player;
         if (prenda.isEmpty() || jugador == null || poses.isEmpty()) return null;
+        if (prenda.getItem() instanceof com.femclothes.item.SombreroBrujaItem) return tocarSombrero(mx, my, prenda);
         boolean slim = MinecraftClient.getInstance().player.getSkinTextures().model() == SkinTextures.Model.SLIM;
         // Pollera y capa (2026-10-02, "no registran click on garment"): contra su malla, por UV.
         Aplique.Superficie malla = prenda.getItem() instanceof com.femclothes.item.PolleraItem ? Aplique.Superficie.POLLERA
@@ -943,6 +998,11 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         }
         btnColorEntero.visible = modoColor;
         btnColorEntero.active = fuente != null;
+        for (int z = 0; z < 3; z++) {
+            btnPatronZona[z].visible = modoColor;
+            if (sombrero) btnPatronZona[z].setMessage(Text.translatable(
+                    com.femclothes.item.SombreroBrujaItem.patrones(enPrenda).get(z).traduccion()));
+        }
         btnGiro.active = btnEscala.active = btnQuitar.active = hay;
         actualizarPanel(hay ? apliques.get(sel) : null);
         com.femclothes.aplique.ObjetoAplique obj = hay ? apliques.get(sel).objeto() : null;

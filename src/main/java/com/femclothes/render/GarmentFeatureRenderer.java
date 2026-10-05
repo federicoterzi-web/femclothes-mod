@@ -445,7 +445,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         TrinketsApi.getTrinketComponent(entidad).ifPresent(c -> {
             for (var par : c.getAllEquipped()) {
                 ItemStack puesto = par.getRight();
-                if (puesto.isEmpty() || Garments.esPrenda(puesto)) continue;
+                // Los del sombrero los dibuja SombreroRenderer (también en la vista previa y el Maniquí).
+                if (puesto.isEmpty() || Garments.esPrenda(puesto) || puesto.getItem() instanceof com.femclothes.item.SombreroBrujaItem) continue;
                 ApliqueRenderer.dibujar(puesto, ApliqueRenderer.dilatacionDeSlot(null), biped, matrices, vertexConsumers, luz);
             }
         });

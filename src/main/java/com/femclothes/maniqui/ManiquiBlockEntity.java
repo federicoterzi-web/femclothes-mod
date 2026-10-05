@@ -199,6 +199,9 @@ public class ManiquiBlockEntity extends BlockEntity
         return out;
     }
 
+    /** El sombrero de bruja puesto (2026-10-05), o vacío. */
+    public ItemStack sombrero() { return items.get(GuardarropasBlockEntity.SLOT_SOMBRERO); }
+
     /** La pieza de armadura de ese slot del cuerpo (HEAD/CHEST/LEGS/FEET), o vacío. */
     public ItemStack armadura(net.minecraft.entity.EquipmentSlot slot) {
         for (int i = 0; i < GuardarropasBlockEntity.SLOTS_ARMADURA.length; i++) {
@@ -251,6 +254,14 @@ public class ManiquiBlockEntity extends BlockEntity
                     items.set(slot, delJugador);
                 }
             }
+        });
+        // Sombrero (2026-10-05): también intercambia con el slot head/sombrero de Trinkets.
+        dev.emi.trinkets.api.TrinketsApi.getTrinketComponent(player).ifPresent(componente -> {
+            var inv = GuardarropasBlockEntity.inventarioSombrero(componente);
+            if (inv == null || inv.size() < 1) return;
+            ItemStack delJugador = inv.getStack(0).copy();
+            inv.setStack(0, items.get(GuardarropasBlockEntity.SLOT_SOMBRERO).copy());
+            items.set(GuardarropasBlockEntity.SLOT_SOMBRERO, delJugador);
         });
         // Armadura: slot por slot, vacíos incluidos (2026-09-30).
         for (int i = 0; i < GuardarropasBlockEntity.SLOTS_ARMADURA.length; i++) {

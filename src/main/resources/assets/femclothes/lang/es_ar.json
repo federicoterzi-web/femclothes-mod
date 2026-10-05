@@ -778,5 +778,11 @@
   "item.femclothes.molde_sombrero_ala_ancha": "Molde de Sombrero: Ala ancha",
   "item.femclothes.molde_sombrero_ala_corta": "Molde de Sombrero: Ala corta",
   "item.femclothes.molde_sombrero_punta_recta": "Molde de Sombrero: Punta recta",
-  "item.femclothes.molde_sombrero_punta_doblada": "Molde de Sombrero: Punta doblada"
+  "item.femclothes.molde_sombrero_punta_doblada": "Molde de Sombrero: Punta doblada",
+  "femclothes.sombrero.patron.liso": "Liso",
+  "femclothes.sombrero.patron.rayas": "Rayas",
+  "femclothes.sombrero.patron.rayas_verticales": "Rayas verticales",
+  "femclothes.sombrero.patron.lunares": "Lunares",
+  "femclothes.sombrero.patron.cuadros": "Cuadros",
+  "femclothes.estilado.tooltip.patron_zona": "Cambia el dibujo de esta zona del sombrero (se pinta con su color y un tono de contraste)"
 }

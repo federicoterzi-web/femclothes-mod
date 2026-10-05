@@ -298,5 +298,6 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         context.drawTexture(TEXTURE, this.x, this.y, 0, 0,
                 this.backgroundWidth, this.backgroundHeight, this.backgroundWidth, this.backgroundHeight);
+        GuardarropasScreen.marcoSombrero(context, this.x, this.y);
     }
 }

@@ -3,6 +3,7 @@ package com.femclothes.render;
 import com.femclothes.Femclothes;
 import com.femclothes.item.SombreroAla;
 import com.femclothes.item.SombreroBrujaItem;
+import com.femclothes.item.SombreroPatron;
 import com.femclothes.item.SombreroPunta;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.model.ModelPart;
@@ -52,8 +53,9 @@ public final class SombreroRenderer {
         SombreroAla ala = SombreroBrujaItem.ala(sombrero);
         SombreroPunta punta = SombreroBrujaItem.punta(sombrero);
         List<Integer> colores = SombreroBrujaItem.colores(sombrero);
+        List<SombreroPatron> patrones = SombreroBrujaItem.patrones(sombrero);
 
-        GarmentFeatureRenderer.dibujarModelPart(ala(ala), CuerpoGeometria.Superficie.CUERPO, textura(colores.get(0)),
+        GarmentFeatureRenderer.dibujarModelPart(ala(ala), CuerpoGeometria.Superficie.CUERPO, textura(colores.get(0), patrones.get(0)),
                 biped.head, matrices, vertexConsumers, luz);
         ModelPart cono = cono(punta);
         // La punta: inclinación de fábrica + lo que la inercia le suma (los dos tramos, el de arriba el doble).
@@ -69,10 +71,13 @@ public final class SombreroRenderer {
         p1.roll = roll * 0.5f;
         p2.pitch = punta.inclinacion2 + pitch * 0.5f;
         p2.roll = roll * 0.5f;
-        GarmentFeatureRenderer.dibujarModelPart(cono, CuerpoGeometria.Superficie.CUERPO, textura(colores.get(1)),
+        GarmentFeatureRenderer.dibujarModelPart(cono, CuerpoGeometria.Superficie.CUERPO, textura(colores.get(1), patrones.get(1)),
                 biped.head, matrices, vertexConsumers, luz);
-        GarmentFeatureRenderer.dibujarModelPart(cinta(), CuerpoGeometria.Superficie.CUERPO, textura(colores.get(2)),
+        GarmentFeatureRenderer.dibujarModelPart(cinta(), CuerpoGeometria.Superficie.CUERPO, textura(colores.get(2), patrones.get(2)),
                 biped.head, matrices, vertexConsumers, luz);
+        // Apliques apoyados en el ala y el cono (2026-10-05): su punto es de una caja del sombrero en el marco de la
+        // cabeza, así que ya no flotan medio píxel como en un wearable cualquiera (dil 0).
+        ApliqueRenderer.dibujar(sombrero, 0f, biped, matrices, vertexConsumers, luz);
     }
 
     /** Una caja del sombrero en el marco de la cabeza (px): para saber qué zona se clickea en la Mesa de estilado. */
@@ -116,6 +121,15 @@ public final class SombreroRenderer {
         return new ModelPart.Cuboid(0, 0, x, y, z, sx, sy, sz, 0, 0, 0, false, TEX, TEX, TODAS);
     }
 
+    /**
+     * Con fase (2026-10-05, patrones por zona): el v de la caja se corre para que la primera fila de sus costados caiga
+     * en {@code fase} (módulo 4), así los tramos apilados del cono siguen el mismo ritmo de rayas.
+     */
+    private static ModelPart.Cuboid caja(float x, float y, float z, float sx, float sy, float sz, int fase) {
+        int v = Math.floorMod(fase - Math.round(sz), 4);
+        return new ModelPart.Cuboid(0, v, x, y, z, sx, sy, sz, 0, 0, 0, false, TEX, TEX, TODAS);
+    }
+
     private static ModelPart ala(SombreroAla ala) {
         String key = "ala|" + ala;
         ModelPart c = CACHE.get(key);
@@ -141,10 +155,11 @@ public final class SombreroRenderer {
         if (c != null) return c;
         List<ModelPart.Cuboid> base = new java.util.ArrayList<>();
         float y = Y_ALA;
+        int k = 0;
         for (float s : TRAMOS) {
             y -= ALTO_TRAMO;
             // +0.02 de solape para que no se vea la rendija entre tramos.
-            base.add(caja(-s / 2f, y, -s / 2f, s, ALTO_TRAMO + 0.02f, s));
+            base.add(caja(-s / 2f, y, -s / 2f, s, ALTO_TRAMO + 0.02f, s, (k++ % 2) * 2));
         }
         float yCima = y;
         List<ModelPart.Cuboid> t2 = new java.util.ArrayList<>();
@@ -172,16 +187,22 @@ public final class SombreroRenderer {
     // ── textura lisa por color ────────────────────────────────────────────
     private static final Map<Integer, Identifier> TEXTURAS = new HashMap<>();
 
-    private static Identifier textura(int rgb) {
+    private static Identifier textura(int rgb, SombreroPatron patron) {
         int key = rgb & 0xFFFFFF;
-        Identifier id = TEXTURAS.get(key);
+        int clave = key | (patron.ordinal() << 24);
+        Identifier id = TEXTURAS.get(clave);
         if (id != null) return id;
         NativeImage img = new NativeImage(TEX, TEX, true);
-        int abgr = 0xFF000000 | ((key & 0xFF) << 16) | (key & 0xFF00) | ((key >> 16) & 0xFF);
-        for (int y = 0; y < TEX; y++) for (int x = 0; x < TEX; x++) img.setColor(x, y, abgr);
-        id = Identifier.of(Femclothes.MOD_ID, "dynamic/sombrero_" + Integer.toHexString(key));
+        int abgr = abgr(key);
+        int abgr2 = abgr(SombreroPatron.tonoDeContraste(key));
+        for (int y = 0; y < TEX; y++) for (int x = 0; x < TEX; x++) img.setColor(x, y, patron.contraste(x, y) ? abgr2 : abgr);
+        id = Identifier.of(Femclothes.MOD_ID, "dynamic/sombrero_" + Integer.toHexString(key) + "_" + patron.clave);
         MinecraftClient.getInstance().getTextureManager().registerTexture(id, new NativeImageBackedTexture(img));
-        TEXTURAS.put(key, id);
+        TEXTURAS.put(clave, id);
         return id;
+    }
+
+    private static int abgr(int rgb) {
+        return 0xFF000000 | ((rgb & 0xFF) << 16) | (rgb & 0xFF00) | ((rgb >> 16) & 0xFF);
     }
 }

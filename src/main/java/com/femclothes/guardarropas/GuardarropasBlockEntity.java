@@ -86,7 +86,20 @@ public class GuardarropasBlockEntity extends BlockEntity
             net.minecraft.entity.EquipmentSlot.LEGS, net.minecraft.entity.EquipmentSlot.FEET,
     };
 
-    public static final int TAMANO = PRENDAS + SLOTS_ARMADURA.length;
+    /**
+     * Sombrero de bruja (2026-10-05, "segunda tanda del sombrero... Maniquí/Guardarropas"): un slot más, al FINAL
+     * (24), así los guardados de antes no se corren. Va en el slot de Trinkets {@code head/sombrero}.
+     */
+    public static final int SLOT_SOMBRERO = ARMADURA_INICIO + SLOTS_ARMADURA.length;
+
+    public static final int TAMANO = SLOT_SOMBRERO + 1;
+
+    /** El inventario de Trinkets del sombrero del jugador, o null si no existe. */
+    @Nullable
+    public static dev.emi.trinkets.api.TrinketInventory inventarioSombrero(dev.emi.trinkets.api.TrinketComponent componente) {
+        var grupo = componente.getInventory().get("head");
+        return grupo == null ? null : grupo.get("sombrero");
+    }
 
     /**
      * ¿Entra {@code stack} en el slot {@code slot}? Prendas por categoría,
@@ -94,6 +107,7 @@ public class GuardarropasBlockEntity extends BlockEntity
      * élitros, calabaza, cabezas). Compartido con el Maniquí.
      */
     public static boolean esValidoEn(int slot, ItemStack stack) {
+        if (slot == SLOT_SOMBRERO) return stack.getItem() instanceof com.femclothes.item.SombreroBrujaItem;
         if (slot >= ARMADURA_INICIO) {
             int i = slot - ARMADURA_INICIO;
             if (i >= SLOTS_ARMADURA.length) return false;
@@ -106,6 +120,7 @@ public class GuardarropasBlockEntity extends BlockEntity
 
     /** El slot de armadura que le toca a {@code stack}, o -1 si no es armadura. */
     public static int slotArmaduraDe(ItemStack stack) {
+        if (stack.getItem() instanceof com.femclothes.item.SombreroBrujaItem) return SLOT_SOMBRERO;
         for (int i = 0; i < SLOTS_ARMADURA.length; i++) {
             if (esValidoEn(ARMADURA_INICIO + i, stack)) return ARMADURA_INICIO + i;
         }
@@ -325,6 +340,18 @@ public class GuardarropasBlockEntity extends BlockEntity
                 equiparCategoria(componente, categoria, player);
             }
         });
+        // Sombrero: mismo criterio, en el slot head/sombrero de Trinkets.
+        ItemStack sombrero = items.get(SLOT_SOMBRERO);
+        if (!sombrero.isEmpty()) {
+            dev.emi.trinkets.api.TrinketsApi.getTrinketComponent(player).ifPresent(componente -> {
+                var inv = inventarioSombrero(componente);
+                if (inv == null || inv.size() < 1) return;
+                ItemStack anterior = inv.getStack(0);
+                if (!anterior.isEmpty()) player.getInventory().offerOrDrop(anterior.copy());
+                inv.setStack(0, sombrero.copy());
+                items.set(SLOT_SOMBRERO, ItemStack.EMPTY);
+            });
+        }
         // Armadura: mismo criterio (un slot vacío no desequipa; lo reemplazado
         // vuelve al inventario del jugador).
         for (int i = 0; i < SLOTS_ARMADURA.length; i++) {

@@ -553,6 +553,14 @@ public final class FemclothesComponents {
                     .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
                     .build());
 
+    /** Dibujo de cada zona del sombrero (2026-10-05): ordinales de {@link SombreroPatron}, ala/cono/cinta. */
+    public static final ComponentType<java.util.List<Integer>> PATRONES_SOMBRERO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "patrones_sombrero"),
+            ComponentType.<java.util.List<Integer>>builder()
+                    .codec(com.mojang.serialization.Codec.INT.listOf())
+                    .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
+                    .build());
+
     /** La mezcla C/M/Y/K/T de una muestra de color (2026-09-30), 5 niveles de 0..20. */
     public static final ComponentType<java.util.List<Integer>> MEZCLA_COLOR = Registry.register(
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "mezcla_color"),

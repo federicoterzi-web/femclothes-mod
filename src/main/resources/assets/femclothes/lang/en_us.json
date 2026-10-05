@@ -778,5 +778,11 @@
   "item.femclothes.molde_sombrero_ala_ancha": "Hat Template: Wide brim",
   "item.femclothes.molde_sombrero_ala_corta": "Hat Template: Short brim",
   "item.femclothes.molde_sombrero_punta_recta": "Hat Template: Straight tip",
-  "item.femclothes.molde_sombrero_punta_doblada": "Hat Template: Bent tip"
+  "item.femclothes.molde_sombrero_punta_doblada": "Hat Template: Bent tip",
+  "femclothes.sombrero.patron.liso": "Plain",
+  "femclothes.sombrero.patron.rayas": "Stripes",
+  "femclothes.sombrero.patron.rayas_verticales": "Vertical stripes",
+  "femclothes.sombrero.patron.lunares": "Polka dots",
+  "femclothes.sombrero.patron.cuadros": "Checks",
+  "femclothes.estilado.tooltip.patron_zona": "Changes this hat zone's pattern (painted with its color and a contrast tone)"
 }

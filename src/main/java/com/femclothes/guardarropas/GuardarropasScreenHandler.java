@@ -58,6 +58,24 @@ public class GuardarropasScreenHandler extends ScreenHandler {
             }
         };
     }
+
+    /** El slot del sombrero (2026-10-05), debajo de la columna de armadura; el marco lo dibuja la pantalla por código. */
+    public static final int Y_SOMBRERO = 20 + GuardarropasBlockEntity.SLOTS_ARMADURA.length * 20;
+
+    public static Slot slotSombrero(net.minecraft.inventory.Inventory inv, java.util.function.BooleanSupplier puedeTocar) {
+        int index = GuardarropasBlockEntity.SLOT_SOMBRERO;
+        return new Slot(inv, index, X_ARMADURA, Y_SOMBRERO) {
+            @Override
+            public boolean canInsert(ItemStack stack) { return puedeTocar.getAsBoolean() && inv.isValid(index, stack); }
+
+            @Override
+            public boolean canTakeItems(PlayerEntity player) { return puedeTocar.getAsBoolean(); }
+
+            @Override
+            public int getMaxItemCount() { return 1; }
+        };
+    }
+
     private static final int INV_START = GuardarropasBlockEntity.TAMANO;
 
     public final GuardarropasBlockEntity be;
@@ -113,6 +131,7 @@ public class GuardarropasScreenHandler extends ScreenHandler {
         }
 
         for (int i = 0; i < GuardarropasBlockEntity.SLOTS_ARMADURA.length; i++) addSlot(slotArmadura(be, i, this::puedeTocar));
+        addSlot(slotSombrero(be, this::puedeTocar));
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 9; j++) {

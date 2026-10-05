@@ -182,6 +182,9 @@ public class ManiquiRenderer extends GeoBlockRenderer<ManiquiBlockEntity> {
                 }
             }
             dibujarArmadura(be, cuerpo, matrices, vertexConsumers, luz);
+            if (!be.sombrero().isEmpty()) {
+                com.femclothes.render.SombreroRenderer.dibujar(be.sombrero(), cuerpo, matrices, vertexConsumers, luz);
+            }
             if (!prendas.isEmpty()) {
                 GarmentFeatureRenderer.dibujarTela(cuerpo, slim, prendas, matrices, vertexConsumers, luz, busto);
             }

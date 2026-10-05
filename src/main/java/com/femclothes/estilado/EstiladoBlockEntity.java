@@ -73,6 +73,8 @@ public class EstiladoBlockEntity extends BlockEntity
      * No se gasta el retazo.
      */
     public static final int BTN_COLOR_BASE = 300, BTN_COLOR_ENTERO = 320;
+    /** {@code BTN_PATRON_BASE + zona}: pasa la zona del sombrero al siguiente dibujo (liso, rayas, lunares...) — 2026-10-05, patrones por zona. */
+    public static final int BTN_PATRON_BASE = 330;
     public static final int BTN_SELECCIONAR_BASE = 100;        // + 0..11 (antes 0..5: chocaba con el resto al subir a 12 apliques)
     public static final int BTN_GIRO = 10, BTN_GIRO_ATRAS = 11;
     public static final int BTN_ESCALA = 12, BTN_ESCALA_ATRAS = 13;
@@ -188,9 +190,17 @@ public class EstiladoBlockEntity extends BlockEntity
                 z = MathHelper.clamp(z, -24, 24);
             }
             default -> {
-                x = MathHelper.clamp(x, -8, 8);
-                y = MathHelper.clamp(y, -10, 14);
-                z = MathHelper.clamp(z, -6, 6);
+                if (prenda.getItem() instanceof com.femclothes.item.SombreroBrujaItem) {
+                    // Sobre el ala o el cono (2026-10-05): el punto es de una caja del sombrero en el marco de la cabeza (y
+                    // negativo = arriba), así que el rango llega hasta la punta y el borde del ala ancha.
+                    x = MathHelper.clamp(x, -11, 11);
+                    y = MathHelper.clamp(y, -32, 4);
+                    z = MathHelper.clamp(z, -11, 11);
+                } else {
+                    x = MathHelper.clamp(x, -8, 8);
+                    y = MathHelper.clamp(y, -10, 14);
+                    z = MathHelper.clamp(z, -6, 6);
+                }
             }
         }
         if (esObjeto) {
@@ -333,6 +343,15 @@ public class EstiladoBlockEntity extends BlockEntity
     public boolean onButtonClick(int id) {
         if (id == BTN_TEXTURA) return alternarTextura();
         if (id == BTN_SIGUIENTE_MOLDE) return siguienteMolde();
+        if (id >= BTN_PATRON_BASE && id < BTN_PATRON_BASE + 3) {
+            ItemStack prenda = items.get(SLOT_PRENDA);
+            if (!(prenda.getItem() instanceof com.femclothes.item.SombreroBrujaItem)) return false;
+            int zona = id - BTN_PATRON_BASE;
+            com.femclothes.item.SombreroBrujaItem.conPatron(prenda, zona,
+                    com.femclothes.item.SombreroBrujaItem.patrones(prenda).get(zona).siguiente());
+            markDirty();
+            return true;
+        }
         if (id >= BTN_COLOR_BASE && id <= BTN_COLOR_ENTERO) return colorearSombrero(id);
         List<Aplique> actuales = new ArrayList<>(apliques());
         if (id >= BTN_SELECCIONAR_BASE && id < BTN_SELECCIONAR_BASE + Aplique.MAXIMO_POR_PRENDA) {
