@@ -1,6 +1,7 @@
 package com.femclothes.aplique;
 
 import com.femclothes.item.FemclothesComponents;
+import com.femclothes.item.PrendaLore;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
@@ -30,6 +31,7 @@ public class MoldeApliquePersonalizadoItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
+        PrendaLore.molde(tooltip, "aplique", PrendaLore.Maquina.ESTILADO, "todas");
         Aplique a = plantilla(stack);
         if (a == null) return;
         Text que = a.objeto() != null ? a.objeto().item().getName() : Text.translatable(a.modelo().traduccion());

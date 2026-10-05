@@ -220,7 +220,7 @@ def modelo_empalme(q=""):
     elementos = [caja([0, 0, 0], [16, 4, 16])]
     for x0 in (0, 14):
         for z0 in (0, 14):
-            elementos.append(caja([x0, 4, z0], [x0 + 2, 8, z0 + 2]))
+            elementos.append(caja([x0, 4, z0], [x0 + 2, 5.5, z0 + 2]))   # postes bajitos: "bajale un poquito al bordecito" (2026-10-05)
     elementos.append(plano_banda("#banda"))
     return {
         "textures": {"marco": "femclothes:block/cinta_marco", "banda": "femclothes:block/cinta_banda" + q,

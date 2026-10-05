@@ -1,5 +1,6 @@
 package com.femclothes.sublimadora;
 
+import com.femclothes.item.PrendaLore;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
@@ -26,7 +27,7 @@ public class MoldeMascaraItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        tooltip.add(Text.translatable("femclothes.categoria.molde").formatted(Formatting.GOLD));
+        PrendaLore.molde(tooltip, "mascara", PrendaLore.Maquina.SUBLIMADORA, "remera", "pantalon", "medias", "calientabrazos", "pollera", "capa");
         tooltip.add(Text.translatable("femclothes.sublimadora.mascara.ayuda").formatted(Formatting.DARK_GRAY));
     }
 }

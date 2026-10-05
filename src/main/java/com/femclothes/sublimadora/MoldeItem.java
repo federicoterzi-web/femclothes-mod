@@ -68,15 +68,11 @@ public class MoldeItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        tooltip.add(Text.translatable("femclothes.categoria.molde").formatted(Formatting.GOLD));
-        net.minecraft.text.MutableText prendas = switch (eje) {
-            // MANGA es el mismo molde para remera Y calientabrazos (ver
-            // FemclothesComponents.CALIENTABRAZOS_COBERTURA) — CUELLO sigue
-            // siendo exclusivo de remera.
-            case MANGA -> PrendaLore.seUsaEn("remera", "calientabrazos");
-            case CUELLO -> PrendaLore.seUsaEn("remera");
-        };
-        tooltip.add(prendas.formatted(Formatting.DARK_GRAY));
+        switch (eje) {
+            // MANGA es el mismo molde para remera Y calientabrazos; CUELLO es exclusivo de remera.
+            case MANGA -> PrendaLore.molde(tooltip, "manga", PrendaLore.Maquina.MODELADORA, "remera", "calientabrazos");
+            case CUELLO -> PrendaLore.molde(tooltip, "cuello", PrendaLore.Maquina.MODELADORA, "remera");
+        }
         tooltip.add(Text.translatable("femclothes.sublimadora.molde.ayuda").formatted(Formatting.DARK_GRAY));
     }
 }

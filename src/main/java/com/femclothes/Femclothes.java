@@ -144,7 +144,6 @@ public class Femclothes implements ModInitializer {
             entries.add(FemclothesItems.PATTERN_VICHY);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_DE_CORTE);
             // Moldes de la Sublimadora (manga y cuello por valor).
-            entries.add(com.femclothes.sublimadora.ModItems.MOLDE_MANGA);
             entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_REDONDO);
             entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_V);
             for (var m : com.femclothes.sublimadora.ModItems.MOLDES_MASCARA) entries.add(m);

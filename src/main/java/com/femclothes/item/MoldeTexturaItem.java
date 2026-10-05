@@ -24,6 +24,7 @@ public class MoldeTexturaItem extends Item {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+        PrendaLore.molde(tooltip, "textura", PrendaLore.Maquina.ESTILADO, "todas");
         tooltip.add(Text.translatable("femclothes.textura_tela.molde.tooltip").formatted(Formatting.GRAY));
     }
 }

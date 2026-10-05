@@ -36,8 +36,7 @@ public class MoldeCapaItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        tooltip.add(Text.translatable("femclothes.categoria.molde").formatted(Formatting.GOLD));
-        tooltip.add(PrendaLore.seUsaEn("capa").formatted(Formatting.DARK_GRAY));
+        PrendaLore.molde(tooltip, "capa", PrendaLore.Maquina.MODELADORA, "capa");
         tooltip.add(Text.translatable("femclothes.sublimadora.molde.ayuda").formatted(Formatting.DARK_GRAY));
     }
 }

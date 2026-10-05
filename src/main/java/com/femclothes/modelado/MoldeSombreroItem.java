@@ -43,8 +43,7 @@ public class MoldeSombreroItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        tooltip.add(Text.translatable("femclothes.categoria.molde").formatted(Formatting.GOLD));
-        tooltip.add(PrendaLore.seUsaEn("sombrero").formatted(Formatting.DARK_GRAY));
+        PrendaLore.molde(tooltip, "sombrero", PrendaLore.Maquina.MODELADORA, "sombrero");
         tooltip.add(Text.translatable("femclothes.sublimadora.molde.ayuda").formatted(Formatting.DARK_GRAY));
     }
 }

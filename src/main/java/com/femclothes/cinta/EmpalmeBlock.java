@@ -40,7 +40,7 @@ public class EmpalmeBlock extends BlockWithEntity {
     public static final BooleanProperty POWERED = Properties.POWERED;
 
     private static final MapCodec<EmpalmeBlock> CODEC = createCodec(EmpalmeBlock::new);
-    private static final VoxelShape FORMA = Block.createCuboidShape(0, 0, 0, 16, 8, 16);
+    private static final VoxelShape FORMA = Block.createCuboidShape(0, 0, 0, 16, 6, 16);
 
     public EmpalmeBlock(Settings settings) {
         super(settings);

@@ -83,12 +83,11 @@ public class ClothingPatternItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        tooltip.add(Text.translatable("femclothes.categoria.patron").formatted(Formatting.AQUA));
-        // Las 5 prendas del mod aceptan PATRON (a pedido, 2026-09-18:
-        // "todas las prendas compatibles con los patrones" — ver
-        // PrendasDelMod.regionesDe, antes solo remera/medias).
-        tooltip.add(PrendaLore.seUsaEn("remera", "pantalon", "medias", "calientabrazos", "pollera")
-                .formatted(Formatting.DARK_GRAY));
+        // Los de dibujo (corazones, estrellas, lunares, vichy) son "Motivo"; las rayas siguen siendo "Patrón".
+        String id = net.minecraft.registry.Registries.ITEM.getId(this).getPath();
+        boolean motivo = id.contains("corazones") || id.contains("estrellas") || id.contains("lunares") || id.contains("vichy");
+        PrendaLore.molde(tooltip, motivo ? "motivo" : "patron", PrendaLore.Maquina.TINTES,
+                "remera", "pantalon", "medias", "calientabrazos", "pollera");
         tooltip.add(Text.translatable("femclothes.pattern.tooltip.ayuda").formatted(Formatting.DARK_GRAY));
     }
 }

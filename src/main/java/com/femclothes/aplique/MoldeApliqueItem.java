@@ -1,5 +1,6 @@
 package com.femclothes.aplique;
 
+import com.femclothes.item.PrendaLore;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
@@ -25,6 +26,7 @@ public class MoldeApliqueItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
+        PrendaLore.molde(tooltip, "aplique", PrendaLore.Maquina.ESTILADO, "todas");
         tooltip.add(Text.translatable("femclothes.aplique.molde.tooltip").formatted(Formatting.GRAY));
     }
 }

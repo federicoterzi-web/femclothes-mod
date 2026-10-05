@@ -57,8 +57,7 @@ public class MoldeRangoItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        tooltip.add(Text.translatable("femclothes.categoria.molde").formatted(Formatting.GOLD));
-        tooltip.add(PrendaLore.seUsaEn("pantalon", "medias", "calientabrazos", "remera").formatted(Formatting.DARK_GRAY));
+        PrendaLore.molde(tooltip, "rango", PrendaLore.Maquina.MODELADORA, "remera", "pantalon", "medias", "calientabrazos", "pollera", "capa");
         tooltip.add(Text.translatable("femclothes.molde_rango.nivel", rango.nivel(), 2 * rango.nivel()).formatted(Formatting.DARK_GRAY));
         tooltip.add(Text.translatable("femclothes.sublimadora.molde.ayuda").formatted(Formatting.DARK_GRAY));
     }
