@@ -50,6 +50,14 @@ public class EstilistaGeoModel extends GeoModel<EstilistaBlockEntity> {
                 be.vistaPreviaPersistente(), be.getPos());
     }
 
+    private void indicador(String hueso, int valor) {
+        GeoBone b = getAnimationProcessor().getBone(hueso);
+        if (b == null) return;
+        float nivel = valor / (float) EstilistaBlockEntity.TOPE_CONTADOR;
+        b.setScaleX(Math.max(0.001f, nivel));
+        b.setHidden(nivel <= 0.001f);
+    }
+
     static Identifier atlas(EstilistaBlockEntity be) {
         return com.femclothes.util.MaquinaCreativa.textura(TEX, com.femclothes.util.MaquinaCreativa.es(be));
     }
@@ -69,6 +77,9 @@ public class EstilistaGeoModel extends GeoModel<EstilistaBlockEntity> {
             progreso.setScaleX(Math.max(0.001f, nivel * FACTOR_PROGRESO));
             progreso.setHidden(nivel <= 0.001f);
         }
+        // Indicadores de insumos en el frente (2026-10-05): barritas de hilo y cuero que se vacían con el contador.
+        indicador("hilo", be.hilo());
+        indicador("cuero", be.cuero());
         // La prenda real la dibuja la capa; los juguetes del pórtico solo se ven mientras trabaja.
         boolean trabajando = be.estado() == EstilistaBlockEntity.Estado.PROCESANDO;
         for (String h : HUESOS_DE_PRENDA) {

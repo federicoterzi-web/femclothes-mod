@@ -47,7 +47,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     public static final int SLOT_PRENDA = 0, SLOT_SALIDA = 1, SLOT_BUZON = 2, SLOT_ALMACEN = 3, ALMACEN = 18,
             TAMANO = SLOT_ALMACEN + ALMACEN;
     /** Cuánto rinde cada ítem (2026-10-05, "rinde más por ítem") y cuánto aguanta cada contador. */
-    public static final int APLIQUES_POR_HILO = 4, CORREAS_POR_CUERO = 2, TOPE_CONTADOR = 256;
+    public static final int APLIQUES_POR_HILO = 4, CORREAS_POR_CUERO = 2, TOPE_CONTADOR = 64;
     /** Cuántos diseños (uno por tipo de prenda) guarda la máquina. */
     public static final int MAX_DISENOS = 32;
     /** Lo que dura el trabajo del pórtico: los 13 s de la animación. */
@@ -591,8 +591,8 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         estado = Estado.values()[Math.max(0, Math.min(Estado.values().length - 1, nbt.getInt("estado")))];
         progreso = nbt.getInt("progreso");
         deCadena = nbt.getBoolean("de_cadena");
-        hilo = nbt.getInt("hilo");
-        cuero = nbt.getInt("cuero");
+        hilo = Math.min(TOPE_CONTADOR, nbt.getInt("hilo"));
+        cuero = Math.min(TOPE_CONTADOR, nbt.getInt("cuero"));
         disenos.clear();
         if (nbt.contains("disenos")) Inventories.readNbt(nbt.getCompound("disenos"), disenos, registries);
         if (nbt.contains("editor")) editor.read(nbt.getCompound("editor"), registries);

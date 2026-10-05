@@ -15,6 +15,7 @@ import os
 from PIL import Image
 
 RAIZ = os.path.join(os.path.dirname(__file__), "..")
+TEXEL_HILO, TEXEL_CUERO = (101, 60), (102, 60)   # indicadores del frente (2026-10-05, "algun indicador visible en el frente")
 TEXEL_LILA = (100, 60)          # libre en la franja de la pantalla; color de Tema.LILA
 RES = os.path.join(RAIZ, "src", "main", "resources", "assets", "femclothes")
 NUEVO = os.path.join(RAIZ, "assets_nuevos_prueba", "estilista")
@@ -115,6 +116,20 @@ def main():
         b["parent"] = b.get("parent") or "root"
         huesos.append(b)
 
+    # Dos barritas en el frente, encima de los LED: hilo (crema) y cuero (marrón); el cliente las escala con los contadores.
+    prog = next(b for b in huesos if b["name"] == "progress")
+    for nombre, y0, texel in (("hilo", 8.15, TEXEL_HILO), ("cuero", 8.55, TEXEL_CUERO)):
+        b = copy.deepcopy(prog)
+        b["name"] = nombre
+        b["pivot"] = [1.0409, y0 + 0.15, -8.78]
+        c = b["cubes"][0]
+        c["origin"] = [1.0409, y0, -8.9]
+        c["size"] = [3.6, 0.3, 0.24]
+        for cara in c["uv"].values():
+            cara["uv"] = [texel[0], texel[1]]
+            cara["uv_size"] = [0.3, 0.3]
+        huesos.append(b)
+
     out = copy.deepcopy(S)
     g = out["minecraft:geometry"][0]
     g["description"]["identifier"] = "geometry.estilista"
@@ -156,6 +171,8 @@ def main():
     atlas.paste(a, (0, 0))
     atlas.paste(b, (0, DESPLAZAR_V))
     atlas.putpixel(TEXEL_LILA, (0xD6, 0xAA, 0xE8, 255))
+    atlas.putpixel(TEXEL_HILO, (0xE8, 0xDC, 0xC8, 255))
+    atlas.putpixel(TEXEL_CUERO, (0x8B, 0x5A, 0x2B, 255))
     atlas.save(os.path.join(RES, "textures", "block", "estilista_atlas.png"))
     print("huesos:", [x["name"] for x in huesos])
     print("cubos de la base:", len(base["cubes"]))
