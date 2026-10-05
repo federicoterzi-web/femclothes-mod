@@ -801,5 +801,18 @@
   "femclothes.banda.parte.2": "Borde",
   "femclothes.banda.parte.3": "Herraje",
   "femclothes.slot.torso.cinto": "Cintos. Van encima de la ropa, a la altura de la cintura. Se les pueden poner colgantes (apliques) en la Mesa de estilado.",
-  "femclothes.slot.head.choker": "Chokers. Van en la base del cuello. Se les pueden poner colgantes (apliques) en la Mesa de estilado."
+  "femclothes.slot.head.choker": "Chokers. Van en la base del cuello. Se les pueden poner colgantes (apliques) en la Mesa de estilado.",
+  "femclothes.modelado.categoria.banda": "Banda",
+  "femclothes.prenda.banda": "Banda",
+  "femclothes.modelado.rol.zona_banda": "Zona",
+  "femclothes.modelado.rol.ancho_banda": "Ancho",
+  "femclothes.modelado.rol.herraje_banda": "Herraje",
+  "item.femclothes.molde_banda_zona_cintura": "Molde de Banda: Cintura",
+  "item.femclothes.molde_banda_zona_cuello": "Molde de Banda: Cuello",
+  "item.femclothes.molde_banda_ancho_fino": "Molde de Banda: Ancho fino",
+  "item.femclothes.molde_banda_ancho_medio": "Molde de Banda: Ancho medio",
+  "item.femclothes.molde_banda_ancho_ancho": "Molde de Banda: Ancho grande",
+  "item.femclothes.molde_banda_herraje_ninguno": "Molde de Banda: Sin herraje",
+  "item.femclothes.molde_banda_herraje_placa": "Molde de Banda: Herraje placa",
+  "item.femclothes.molde_banda_herraje_aro": "Molde de Banda: Herraje aro"
 }

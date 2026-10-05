@@ -187,6 +187,23 @@ public final class PrendaModelado {
             }
         }
 
+        // Banda (2026-10-05): zona, ancho y herraje.
+        if (out.getItem() instanceof com.femclothes.item.BandaItem && combo.pollera().isPresent()) {
+            var p = combo.pollera().get();
+            if (p.bandaZona().isPresent()) {
+                com.femclothes.item.BandaItem.setZona(out, p.bandaZona().get());
+                cambio = true;
+            }
+            if (p.bandaAncho().isPresent()) {
+                com.femclothes.item.BandaItem.setAncho(out, p.bandaAncho().get());
+                cambio = true;
+            }
+            if (p.bandaHerraje().isPresent()) {
+                com.femclothes.item.BandaItem.setHerraje(out, p.bandaHerraje().get());
+                cambio = true;
+            }
+        }
+
         return cambio ? out : prenda;
     }
 

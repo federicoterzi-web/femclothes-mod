@@ -121,7 +121,7 @@ def linea(base, desde, hasta, color):
     base.alpha_composite(capa.resize(base.size, Image.LANCZOS))
 
 
-def main():
+def main(nombre="esquema_sombrero.png"):
     rnd = random.Random(11)
     im = Image.open(os.path.join(GUI, "esquema_tintes_pollera.png")).convert("RGBA")
     capa_src = Image.open(os.path.join(GUI, "esquema_tintes_capa.png")).convert("RGBA")
@@ -148,7 +148,7 @@ def main():
         borde = (x0 + m.width, centro[1]) if lado == "izq" else (x0, centro[1])
         linea(im, borde, objetivo, color)
         im.paste(punto, (objetivo[0] - 12, objetivo[1] - 12), mascara)
-    im.convert("RGB").quantize(colors=256, method=Image.MEDIANCUT).save(os.path.join(GUI, "esquema_sombrero.png"), optimize=True)
+    im.convert("RGB").quantize(colors=256, method=Image.MEDIANCUT).save(os.path.join(GUI, nombre), optimize=True)
     out = [(rol, round(c[0] / 4 - 8), round(c[1] / 4 - 8) + ESQUEMA_Y) for rol, _, c, _ in PINES]
     print("PIN_POS", ", ".join(f"{{{x}, {y}}}" for _, x, y in out), "#", " ".join(r for r, _, _ in out))
     print("PIN_BTN", ", ".join(f"{{{x + 17}, {y - 1}}}" for _, x, y in out))

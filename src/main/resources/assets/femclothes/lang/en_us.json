@@ -801,5 +801,18 @@
   "femclothes.banda.parte.2": "Edge",
   "femclothes.banda.parte.3": "Hardware",
   "femclothes.slot.torso.cinto": "Belts. Worn over clothes at the waist. You can hang pendants (appliqués) on them in the Styling Table.",
-  "femclothes.slot.head.choker": "Chokers. Worn at the base of the neck. You can hang pendants (appliqués) on them in the Styling Table."
+  "femclothes.slot.head.choker": "Chokers. Worn at the base of the neck. You can hang pendants (appliqués) on them in the Styling Table.",
+  "femclothes.modelado.categoria.banda": "Band",
+  "femclothes.prenda.banda": "Band",
+  "femclothes.modelado.rol.zona_banda": "Zone",
+  "femclothes.modelado.rol.ancho_banda": "Width",
+  "femclothes.modelado.rol.herraje_banda": "Hardware",
+  "item.femclothes.molde_banda_zona_cintura": "Band Template: Waist",
+  "item.femclothes.molde_banda_zona_cuello": "Band Template: Neck",
+  "item.femclothes.molde_banda_ancho_fino": "Band Template: Thin",
+  "item.femclothes.molde_banda_ancho_medio": "Band Template: Medium",
+  "item.femclothes.molde_banda_ancho_ancho": "Band Template: Wide",
+  "item.femclothes.molde_banda_herraje_ninguno": "Band Template: No hardware",
+  "item.femclothes.molde_banda_herraje_placa": "Band Template: Plate hardware",
+  "item.femclothes.molde_banda_herraje_aro": "Band Template: Ring hardware"
 }

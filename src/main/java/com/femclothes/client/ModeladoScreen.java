@@ -65,6 +65,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
             Identifier.of("femclothes", "textures/gui/container/esquema_pollera.png"),
             Identifier.of("femclothes", "textures/gui/container/esquema_capa.png"),
             Identifier.of("femclothes", "textures/gui/container/esquema_sombrero.png"),
+            Identifier.of("femclothes", "textures/gui/container/esquema_banda.png"),
     };
     /** Cuadros de la chincheta: 0 sin fijar (aguja a la vista), 1 a mitad de clavarse, 2 fijada (sin aguja). */
     private static final Identifier[] TEXTURE_CHINCHETA = {
@@ -515,7 +516,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
 
         ItemStack enConstruccion = this.handler.be.previsualizar();
         List<ItemStack> prendas = new ArrayList<>(GarmentFeatureRenderer.equipadas(jugador));
-        boolean esSombrero = enConstruccion.getItem() instanceof com.femclothes.item.SombreroBrujaItem;
+        boolean esSombrero = com.femclothes.render.AccesorioRenderer.es(enConstruccion);
         if (!enConstruccion.isEmpty() && !esSombrero) {
             prendas.removeIf(s -> s.getItem().getClass() == enConstruccion.getItem().getClass());
             prendas.add(enConstruccion);

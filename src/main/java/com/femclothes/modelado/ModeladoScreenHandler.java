@@ -47,6 +47,8 @@ public class ModeladoScreenHandler extends ScreenHandler {
             {{190, 100}, {48, 128}, {175, 54}, {48, 56}, {48, 89}, {190, 132}, {190, 76}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             // Sombrero (2026-10-05): Ala, Punta — sobre esquema_sombrero.png (tools/generar_esquema_sombrero.py).
             {{43, 110}, {182, 58}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
+            // Banda (2026-10-05): Zona, Ancho, Herraje — sobre esquema_banda.png (tools/generar_esquema_banda.py).
+            {{43, 110}, {182, 58}, {179, 91}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
     };
 
     /**
@@ -63,6 +65,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
             {{70, 54}, {56, 133}, {56, 94}, {198, 65}, {198, 90}, {198, 117}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             {{207, 99}, {65, 127}, {192, 53}, {65, 55}, {65, 88}, {207, 131}, {207, 75}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             {{60, 109}, {199, 57}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
+            {{60, 109}, {199, 57}, {196, 90}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
     };
 
     /** Slots grandes de prenda base / resultado (coordenadas del slot 16x16; el marco de 32x32 se hornea en la textura). */

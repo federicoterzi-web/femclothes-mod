@@ -129,6 +129,24 @@ public final class ModeladoMod {
     public static final MoldeSombreroItem MOLDE_SOMBRERO_PUNTA_DOBLADA = new MoldeSombreroItem(new Item.Settings().maxCount(1),
             MoldeSombreroItem.Tipo.PUNTA_DOBLADA);
 
+    // ── moldes de la banda (2026-10-05, "correas y cintos") ──
+    public static final MoldeBandaItem MOLDE_BANDA_ZONA_CINTURA = new MoldeBandaItem(new Item.Settings().maxCount(1),
+            MoldeBandaItem.Tipo.ZONA_CINTURA);
+    public static final MoldeBandaItem MOLDE_BANDA_ZONA_CUELLO = new MoldeBandaItem(new Item.Settings().maxCount(1),
+            MoldeBandaItem.Tipo.ZONA_CUELLO);
+    public static final MoldeBandaItem MOLDE_BANDA_ANCHO_FINO = new MoldeBandaItem(new Item.Settings().maxCount(1),
+            MoldeBandaItem.Tipo.ANCHO_FINO);
+    public static final MoldeBandaItem MOLDE_BANDA_ANCHO_MEDIO = new MoldeBandaItem(new Item.Settings().maxCount(1),
+            MoldeBandaItem.Tipo.ANCHO_MEDIO);
+    public static final MoldeBandaItem MOLDE_BANDA_ANCHO_ANCHO = new MoldeBandaItem(new Item.Settings().maxCount(1),
+            MoldeBandaItem.Tipo.ANCHO_ANCHO);
+    public static final MoldeBandaItem MOLDE_BANDA_HERRAJE_NINGUNO = new MoldeBandaItem(new Item.Settings().maxCount(1),
+            MoldeBandaItem.Tipo.HERRAJE_NINGUNO);
+    public static final MoldeBandaItem MOLDE_BANDA_HERRAJE_PLACA = new MoldeBandaItem(new Item.Settings().maxCount(1),
+            MoldeBandaItem.Tipo.HERRAJE_PLACA);
+    public static final MoldeBandaItem MOLDE_BANDA_HERRAJE_ARO = new MoldeBandaItem(new Item.Settings().maxCount(1),
+            MoldeBandaItem.Tipo.HERRAJE_ARO);
+
     public static void register() {
         Identifier bloqueId = Identifier.of(Femclothes.MOD_ID, "modelado");
         Registry.register(Registries.BLOCK, bloqueId, MODELADO_BLOCK);
@@ -179,6 +197,14 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_sombrero_ala_corta"), MOLDE_SOMBRERO_ALA_CORTA);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_sombrero_punta_recta"), MOLDE_SOMBRERO_PUNTA_RECTA);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_sombrero_punta_doblada"), MOLDE_SOMBRERO_PUNTA_DOBLADA);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_banda_zona_cintura"), MOLDE_BANDA_ZONA_CINTURA);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_banda_zona_cuello"), MOLDE_BANDA_ZONA_CUELLO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_banda_ancho_fino"), MOLDE_BANDA_ANCHO_FINO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_banda_ancho_medio"), MOLDE_BANDA_ANCHO_MEDIO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_banda_ancho_ancho"), MOLDE_BANDA_ANCHO_ANCHO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_banda_herraje_ninguno"), MOLDE_BANDA_HERRAJE_NINGUNO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_banda_herraje_placa"), MOLDE_BANDA_HERRAJE_PLACA);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_banda_herraje_aro"), MOLDE_BANDA_HERRAJE_ARO);
 
         // "Guardar diseño" con nombre (2026-09-27): el nombre viaja como paquete propio, ver GuardarDisenoPayload.
         PayloadTypeRegistry.playC2S().register(GuardarDisenoPayload.ID, GuardarDisenoPayload.CODEC);
