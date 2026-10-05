@@ -22,7 +22,7 @@ from pathlib import Path
 from PIL import Image
 
 CARPETA = Path(__file__).resolve().parent.parent / "src/main/resources/assets/femclothes/textures/block"
-ATLAS = ["garment_shaper_atlas", "dye_station_atlas", "sublimator_atlas", "styling_table_atlas"]
+ATLAS = ["garment_shaper_atlas", "dye_station_atlas", "sublimator_atlas", "styling_table_atlas", "estilista_atlas"]
 
 
 def recolorear(r, g, b, x, y):

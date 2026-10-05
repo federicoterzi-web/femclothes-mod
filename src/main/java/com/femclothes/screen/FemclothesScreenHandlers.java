@@ -78,4 +78,13 @@ public final class FemclothesScreenHandlers {
     public static final ScreenHandlerType<com.femclothes.ropa.RopaScreenHandler> ROPA = Registry.register(
             Registries.SCREEN_HANDLER, Identifier.of("femclothes", "ropa"),
             new ScreenHandlerType<>(com.femclothes.ropa.RopaScreenHandler::new, FeatureSet.empty()));
+
+    /** Pantalla de la Estilista automática (2026-10-05). */
+    public static final net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<
+            com.femclothes.estilista.EstilistaScreenHandler, net.minecraft.util.math.BlockPos> ESTILISTA = Registry.register(
+            Registries.SCREEN_HANDLER,
+            Identifier.of("femclothes", "estilista"),
+            new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<>(
+                    (syncId, inv, pos) -> com.femclothes.estilista.EstilistaScreenHandler.deCliente(syncId, inv, pos),
+                    net.minecraft.util.math.BlockPos.PACKET_CODEC));
 }

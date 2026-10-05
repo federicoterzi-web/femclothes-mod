@@ -35,6 +35,7 @@ public class Femclothes implements ModInitializer {
         com.femclothes.ropa.RedRopa.init();
         FemclothesScreenHandlers.init();
         com.femclothes.modelado.ModeladoMod.register();
+        com.femclothes.estilista.EstilistaMod.register();
         com.femclothes.tinturas.TinturasMod.register();
         com.femclothes.guardarropas.GuardarropasMod.register();
         com.femclothes.maniqui.ManiquiMod.register();
@@ -64,6 +65,7 @@ public class Femclothes implements ModInitializer {
             .entries((contexto, entries) -> {
             // Máquinas primero.
             entries.add(com.femclothes.modelado.ModeladoMod.MODELADO_BLOCK_ITEM);
+            entries.add(com.femclothes.estilista.EstilistaMod.ESTILISTA_ITEM);
             entries.add(com.femclothes.tinturas.TinturasMod.TINTURAS_BLOCK_ITEM);
             entries.add(com.femclothes.sublimadora.ModBlocks.SUBLIMADORA_ITEM);
             entries.add(com.femclothes.guardarropas.GuardarropasMod.GUARDARROPAS_BLOCK_ITEM);
@@ -73,6 +75,7 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.cinta.CintaMod.EMPALME_ITEM);
             // Máquinas creativas (2026-10-01): sin espera ni insumos, cargadas al colocarlas.
             entries.add(com.femclothes.modelado.ModeladoMod.MODELADO_CREATIVA_ITEM);
+            entries.add(com.femclothes.estilista.EstilistaMod.ESTILISTA_CREATIVA_ITEM);
             entries.add(com.femclothes.tinturas.TinturasMod.TINTURAS_CREATIVA_ITEM);
             entries.add(com.femclothes.sublimadora.ModBlocks.SUBLIMADORA_CREATIVA_ITEM);
             entries.add(com.femclothes.estilado.EstiladoMod.ESTILADO_CREATIVA_ITEM);

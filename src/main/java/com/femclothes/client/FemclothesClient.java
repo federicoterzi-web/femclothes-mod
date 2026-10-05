@@ -27,6 +27,7 @@ public class FemclothesClient implements ClientModInitializer {
         HandledScreens.register(FemclothesScreenHandlers.GUARDARROPAS, GuardarropasScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.MANIQUI, ManiquiScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.ROPA, RopaScreen::new);
+        HandledScreens.register(FemclothesScreenHandlers.ESTILISTA, EstilistaScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.ESTILADO, EstiladoScreen::new);
 
         // Los 3 bloques del zip "Bloque de sublimadora Minecraft" (2026-09-30):
@@ -59,6 +60,8 @@ public class FemclothesClient implements ClientModInitializer {
         net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(
                 com.femclothes.modelado.ModeladoMod.MODELADO_BLOCK_ENTITY,
                 ctx -> new com.femclothes.modelado.ModeladoRenderer());
+        net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(
+                com.femclothes.estilista.EstilistaMod.ESTILISTA_BLOCK_ENTITY, ctx -> new com.femclothes.estilista.EstilistaRenderer());
         // garment_shaper_atlas.png tiene alfa (huecos reales entre piezas del
         // modelo) — sin cutout el recorte se rellena y queda un cuadrado.
         net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(
