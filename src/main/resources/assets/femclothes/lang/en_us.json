@@ -770,5 +770,13 @@
   "femclothes.estilado.tooltip.modo_color": "Switch between placing appliques and painting the hat's 3 zones with the scrap's colors",
   "femclothes.estilado.tooltip.color_zona": "Copies this scrap color to this zone of the hat (the scrap is not used up)",
   "femclothes.estilado.tooltip.color_entero": "Copies the scrap's 3 colors to the hat's 3 zones",
-  "femclothes.estilado.ayuda_color": "Click the brim, cone or band of the hat: it takes the color %s (change it with the buttons)"
+  "femclothes.estilado.ayuda_color": "Click the brim, cone or band of the hat: it takes the color %s (change it with the buttons)",
+  "femclothes.modelado.categoria.sombrero": "Hat",
+  "femclothes.prenda.sombrero": "Hat",
+  "femclothes.modelado.rol.ala_sombrero": "Brim",
+  "femclothes.modelado.rol.punta_sombrero": "Tip",
+  "item.femclothes.molde_sombrero_ala_ancha": "Hat Template: Wide brim",
+  "item.femclothes.molde_sombrero_ala_corta": "Hat Template: Short brim",
+  "item.femclothes.molde_sombrero_punta_recta": "Hat Template: Straight tip",
+  "item.femclothes.molde_sombrero_punta_doblada": "Hat Template: Bent tip"
 }

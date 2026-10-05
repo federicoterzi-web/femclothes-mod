@@ -174,6 +174,19 @@ public final class PrendaModelado {
             }
         }
 
+        // Sombrero de bruja (2026-10-05): ala y punta.
+        if (out.getItem() instanceof com.femclothes.item.SombreroBrujaItem && combo.pollera().isPresent()) {
+            var p = combo.pollera().get();
+            if (p.sombreroAla().isPresent()) {
+                com.femclothes.item.SombreroBrujaItem.setAla(out, p.sombreroAla().get());
+                cambio = true;
+            }
+            if (p.sombreroPunta().isPresent()) {
+                com.femclothes.item.SombreroBrujaItem.setPunta(out, p.sombreroPunta().get());
+                cambio = true;
+            }
+        }
+
         return cambio ? out : prenda;
     }
 

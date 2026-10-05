@@ -119,6 +119,16 @@ public final class ModeladoMod {
     public static final MoldeCapaItem MOLDE_CAPA_SIN_CUELLO = new MoldeCapaItem(new Item.Settings().maxCount(1),
             MoldeCapaItem.Tipo.SIN_CUELLO);
 
+    // ── moldes del sombrero de bruja (2026-10-05, "segunda tanda del sombrero") ──
+    public static final MoldeSombreroItem MOLDE_SOMBRERO_ALA_ANCHA = new MoldeSombreroItem(new Item.Settings().maxCount(1),
+            MoldeSombreroItem.Tipo.ALA_ANCHA);
+    public static final MoldeSombreroItem MOLDE_SOMBRERO_ALA_CORTA = new MoldeSombreroItem(new Item.Settings().maxCount(1),
+            MoldeSombreroItem.Tipo.ALA_CORTA);
+    public static final MoldeSombreroItem MOLDE_SOMBRERO_PUNTA_RECTA = new MoldeSombreroItem(new Item.Settings().maxCount(1),
+            MoldeSombreroItem.Tipo.PUNTA_RECTA);
+    public static final MoldeSombreroItem MOLDE_SOMBRERO_PUNTA_DOBLADA = new MoldeSombreroItem(new Item.Settings().maxCount(1),
+            MoldeSombreroItem.Tipo.PUNTA_DOBLADA);
+
     public static void register() {
         Identifier bloqueId = Identifier.of(Femclothes.MOD_ID, "modelado");
         Registry.register(Registries.BLOCK, bloqueId, MODELADO_BLOCK);
@@ -165,6 +175,10 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_sin_capucha"), MOLDE_CAPA_SIN_CAPUCHA);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_cuello_alto"), MOLDE_CAPA_CUELLO_ALTO);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_sin_cuello"), MOLDE_CAPA_SIN_CUELLO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_sombrero_ala_ancha"), MOLDE_SOMBRERO_ALA_ANCHA);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_sombrero_ala_corta"), MOLDE_SOMBRERO_ALA_CORTA);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_sombrero_punta_recta"), MOLDE_SOMBRERO_PUNTA_RECTA);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_sombrero_punta_doblada"), MOLDE_SOMBRERO_PUNTA_DOBLADA);
 
         // "Guardar diseño" con nombre (2026-09-27): el nombre viaja como paquete propio, ver GuardarDisenoPayload.
         PayloadTypeRegistry.playC2S().register(GuardarDisenoPayload.ID, GuardarDisenoPayload.CODEC);

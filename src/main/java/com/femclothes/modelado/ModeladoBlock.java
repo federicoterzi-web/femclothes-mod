@@ -108,7 +108,7 @@ public class ModeladoBlock extends BlockWithEntity {
                                               PlayerEntity player, Hand hand, net.minecraft.util.hit.BlockHitResult hit) {
         if (!(world.getBlockEntity(pos) instanceof ModeladoBlockEntity be)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
 
-        boolean esPrenda = FemclothesDye.isClothing(stack);
+        boolean esPrenda = ModeladoBlockEntity.esPrendaModelable(stack);
         boolean esMolde = ModeladoBlockEntity.esMolde(stack);
         if (!esPrenda && !esMolde) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
 
