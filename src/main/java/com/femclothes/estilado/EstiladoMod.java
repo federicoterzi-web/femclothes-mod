@@ -60,6 +60,28 @@ public final class EstiladoMod {
                     }
                 }));
 
+        // Correas libres (2026-10-05): dos clicks, la valida el servidor.
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S()
+                .register(PonerCorreaPayload.ID, PonerCorreaPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(PonerCorreaPayload.ID,
+                (payload, context) -> context.server().execute(() -> {
+                    var partes = com.femclothes.garment.Parte.values();
+                    var caras = net.minecraft.util.math.Direction.values();
+                    var modos = com.femclothes.correa.ModoCorrea.values();
+                    if (payload.parte() < 0 || payload.parte() >= partes.length
+                            || payload.caraDesde() < 0 || payload.caraDesde() >= caras.length
+                            || payload.caraHasta() < 0 || payload.caraHasta() >= caras.length
+                            || payload.modo() < 0 || payload.modo() >= modos.length) return;
+                    if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof EstiladoBlockEntity be
+                            && be.canPlayerUse(context.player())) {
+                        float[] d = payload.desde(), h = payload.hasta();
+                        be.ponerCorrea(partes[payload.parte()],
+                                new com.femclothes.correa.Correa.Punto(d[0], d[1], d[2], caras[payload.caraDesde()]),
+                                new com.femclothes.correa.Correa.Punto(h[0], h[1], h[2], caras[payload.caraHasta()]),
+                                modos[payload.modo()], payload.ancho());
+                    }
+                }));
+
         // Panel lateral: colocación, oscilación y blandura (2026-10-04).
         net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S()
                 .register(AjustarApliquePayload.ID, AjustarApliquePayload.CODEC);

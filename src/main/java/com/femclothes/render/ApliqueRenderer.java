@@ -84,13 +84,16 @@ public final class ApliqueRenderer {
     public static void dibujar(ItemStack item, float dil, BipedEntityModel<?> biped, MatrixStack matrices,
                                VertexConsumerProvider vertexConsumers, int luz) {
         List<Aplique> apliques = item.get(FemclothesComponents.APLIQUES);
-        if (apliques == null || apliques.isEmpty()) return;
         // El marco del cuerpo (antes de la pose de cada parte): a él pertenecen los desplazamientos de la tela blanda.
         Matrix3f marco = new Matrix3f(matrices.peek().getNormalMatrix());
-        for (int i = 0; i < apliques.size(); i++) {
-            Aplique a = apliques.get(i);
-            if (a.superficie() == Aplique.Superficie.CAJA) dibujarUno(a, i, apliques, dil, biped, matrices, vertexConsumers, luz, marco);
+        if (apliques != null) {
+            for (int i = 0; i < apliques.size(); i++) {
+                Aplique a = apliques.get(i);
+                if (a.superficie() == Aplique.Superficie.CAJA) dibujarUno(a, i, apliques, dil, biped, matrices, vertexConsumers, luz, marco);
+            }
         }
+        // Correas libres (2026-10-05): comparten el marco y la tela blanda de los apliques.
+        CorreaRenderer.dibujar(item, dil, biped, matrices, vertexConsumers, luz, marco);
     }
 
     /**

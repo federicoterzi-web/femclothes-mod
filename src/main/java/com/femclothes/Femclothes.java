@@ -112,6 +112,11 @@ public class Femclothes implements ModInitializer {
             entries.add(FemclothesItems.SOMBRERO_BRUJA);
             // Banda (2026-10-05): un cinto y un choker de fábrica, hasta que lleguen los moldes de la Modeladora.
             entries.add(FemclothesItems.BANDA);
+            entries.add(FemclothesItems.MOLDE_CORREA_LISA);
+            entries.add(FemclothesItems.MOLDE_CORREA_CADENA);
+            entries.add(FemclothesItems.MOLDE_CORREA_CADENA_FINA);
+            entries.add(FemclothesItems.MOLDE_CORREA_OJALILLOS);
+            entries.add(FemclothesItems.MOLDE_CORREA_CORDON);
             net.minecraft.item.ItemStack choker = new net.minecraft.item.ItemStack(FemclothesItems.BANDA);
             com.femclothes.item.BandaItem.setZona(choker, com.femclothes.item.BandaZona.CUELLO);
             com.femclothes.item.BandaItem.setAncho(choker, com.femclothes.item.BandaAncho.FINO);

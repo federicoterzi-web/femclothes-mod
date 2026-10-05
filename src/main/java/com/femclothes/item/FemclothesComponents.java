@@ -516,6 +516,14 @@ public final class FemclothesComponents {
                     .packetCodec(PacketCodecs.registryCodec(com.femclothes.aplique.Aplique.CODEC.listOf()))
                     .build());
 
+    /** Correas libres puestas en una prenda o wearable (2026-10-05) — ver {@code correa/Correa}. */
+    public static final ComponentType<java.util.List<com.femclothes.correa.Correa>> CORREAS = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "correas"),
+            ComponentType.<java.util.List<com.femclothes.correa.Correa>>builder()
+                    .codec(com.femclothes.correa.Correa.CODEC.listOf())
+                    .packetCodec(PacketCodecs.registryCodec(com.femclothes.correa.Correa.CODEC.listOf()))
+                    .build());
+
     /** Los 3 colores de zona (RGB) de un retazo de aplique (2026-10-01). */
     /**
      * Volumen propio de la tela (2026-10-01, relieve) — ver {@link TexturaTela}.

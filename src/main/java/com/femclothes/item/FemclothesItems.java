@@ -76,6 +76,18 @@ public final class FemclothesItems {
     /** Banda: cinto o choker según su zona (2026-10-05), slots {@code torso/cinto} y {@code head/choker}. */
     public static final BandaItem BANDA = register("banda", new BandaItem(new Item.Settings().maxCount(1)));
 
+    // Moldes de correa (2026-10-05, Mesa de estilado): el estilo de la correa que se pone; no se gastan.
+    public static final com.femclothes.correa.MoldeCorreaItem MOLDE_CORREA_LISA = register("molde_correa_lisa",
+            new com.femclothes.correa.MoldeCorreaItem(new Item.Settings().maxCount(1), com.femclothes.correa.EstiloCorrea.LISA));
+    public static final com.femclothes.correa.MoldeCorreaItem MOLDE_CORREA_CADENA = register("molde_correa_cadena",
+            new com.femclothes.correa.MoldeCorreaItem(new Item.Settings().maxCount(1), com.femclothes.correa.EstiloCorrea.CADENA));
+    public static final com.femclothes.correa.MoldeCorreaItem MOLDE_CORREA_CADENA_FINA = register("molde_correa_cadena_fina",
+            new com.femclothes.correa.MoldeCorreaItem(new Item.Settings().maxCount(1), com.femclothes.correa.EstiloCorrea.CADENA_FINA));
+    public static final com.femclothes.correa.MoldeCorreaItem MOLDE_CORREA_OJALILLOS = register("molde_correa_ojalillos",
+            new com.femclothes.correa.MoldeCorreaItem(new Item.Settings().maxCount(1), com.femclothes.correa.EstiloCorrea.OJALILLOS));
+    public static final com.femclothes.correa.MoldeCorreaItem MOLDE_CORREA_CORDON = register("molde_correa_cordon",
+            new com.femclothes.correa.MoldeCorreaItem(new Item.Settings().maxCount(1), com.femclothes.correa.EstiloCorrea.CORDON));
+
     // Apliques (2026-10-01, Mesa de estilado): moldes que no se gastan y el retazo con los colores.
     public static final com.femclothes.aplique.MoldeApliqueItem MOLDE_APLIQUE_MONO = register("molde_aplique_mono",
             new com.femclothes.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.femclothes.aplique.ModeloAplique.MONO));

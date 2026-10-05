@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "femclothes:item/molde_correa_lisa"
+  }
+}

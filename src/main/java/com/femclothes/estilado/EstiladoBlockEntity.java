@@ -75,6 +75,8 @@ public class EstiladoBlockEntity extends BlockEntity
     public static final int BTN_COLOR_BASE = 300, BTN_COLOR_ENTERO = 320;
     /** {@code BTN_PATRON_BASE + zona}: pasa la zona del sombrero al siguiente dibujo (liso, rayas, lunares...) — 2026-10-05, patrones por zona. */
     public static final int BTN_PATRON_BASE = 330;
+    /** Quita la última correa libre de la prenda (2026-10-05, "correas libres"). */
+    public static final int BTN_CORREA_QUITAR = 360;
     public static final int BTN_SELECCIONAR_BASE = 100;        // + 0..11 (antes 0..5: chocaba con el resto al subir a 12 apliques)
     public static final int BTN_GIRO = 10, BTN_GIRO_ATRAS = 11;
     public static final int BTN_ESCALA = 12, BTN_ESCALA_ATRAS = 13;
@@ -343,6 +345,17 @@ public class EstiladoBlockEntity extends BlockEntity
     public boolean onButtonClick(int id) {
         if (id == BTN_TEXTURA) return alternarTextura();
         if (id == BTN_SIGUIENTE_MOLDE) return siguienteMolde();
+        if (id == BTN_CORREA_QUITAR) {
+            ItemStack prenda = items.get(SLOT_PRENDA);
+            List<com.femclothes.correa.Correa> l = correas();
+            if (prenda.isEmpty() || l.isEmpty()) return false;
+            l = new ArrayList<>(l);
+            l.remove(l.size() - 1);
+            if (l.isEmpty()) prenda.remove(FemclothesComponents.CORREAS);
+            else prenda.set(FemclothesComponents.CORREAS, List.copyOf(l));
+            markDirty();
+            return true;
+        }
         if (id >= BTN_PATRON_BASE && id < BTN_PATRON_BASE + 3) {
             ItemStack prenda = items.get(SLOT_PRENDA);
             if (!(prenda.getItem() instanceof com.femclothes.item.ZonasTenibles z)) return false;
@@ -431,6 +444,48 @@ public class EstiladoBlockEntity extends BlockEntity
         return null;
     }
 
+    /** Las correas libres de la prenda de la Mesa. */
+    public List<com.femclothes.correa.Correa> correas() {
+        List<com.femclothes.correa.Correa> l = items.get(SLOT_PRENDA).get(FemclothesComponents.CORREAS);
+        return l == null ? List.of() : l;
+    }
+
+    /**
+     * Pone una correa libre (2026-10-05, "correas libres"): los dos puntos son sobre la caja sin inflar de {@code parte}
+     * (px, espacio local de la parte), el estilo sale del molde de correa de su slot y los colores del retazo (si hay;
+     * no se gasta, "cuánto gasta lo vemos más adelante"). Solo sobre prendas y wearables con caja de cuerpo: no
+     * sobre el sombrero ni la banda (que dibujan sus propias cajas) ni la malla de la pollera y la capa.
+     */
+    public boolean ponerCorrea(com.femclothes.garment.Parte parte, com.femclothes.correa.Correa.Punto desde,
+                               com.femclothes.correa.Correa.Punto hasta, com.femclothes.correa.ModoCorrea modo, float ancho) {
+        ItemStack prenda = items.get(SLOT_PRENDA), molde = items.get(SLOT_MOLDE);
+        if (prenda.isEmpty() || !admite(prenda) || prenda.getItem() instanceof com.femclothes.item.ZonasTenibles
+                || prenda.getItem() instanceof com.femclothes.item.PolleraItem
+                || prenda.getItem() instanceof com.femclothes.item.CapaItem
+                || !(molde.getItem() instanceof com.femclothes.correa.MoldeCorreaItem m)) return false;
+        float[] v = {desde.x(), desde.y(), desde.z(), hasta.x(), hasta.y(), hasta.z(), ancho};
+        for (float f : v) if (!Float.isFinite(f)) return false;
+        List<com.femclothes.correa.Correa> actuales = new ArrayList<>(correas());
+        if (actuales.size() >= com.femclothes.correa.Correa.MAXIMO_POR_PRENDA) return false;
+        // Una correa de menos de 1 px no se ve: se rechaza.
+        double largo = Math.sqrt((desde.x() - hasta.x()) * (desde.x() - hasta.x()) + (desde.y() - hasta.y()) * (desde.y() - hasta.y())
+                + (desde.z() - hasta.z()) * (desde.z() - hasta.z()));
+        if (largo < 1.0) return false;
+        List<Integer> fuente = coloresDeLaFuente();
+        List<Integer> colores = fuente != null ? List.of(fuente.get(0), fuente.get(1), fuente.get(2))
+                : com.femclothes.correa.Correa.DE_FABRICA;
+        actuales.add(new com.femclothes.correa.Correa(parte, limitar(desde), limitar(hasta), m.estilo, modo, ancho, colores,
+                BLANDURA_INICIAL));
+        prenda.set(FemclothesComponents.CORREAS, List.copyOf(actuales));
+        markDirty();
+        return true;
+    }
+
+    private static com.femclothes.correa.Correa.Punto limitar(com.femclothes.correa.Correa.Punto p) {
+        return new com.femclothes.correa.Correa.Punto(MathHelper.clamp(p.x(), -24, 24), MathHelper.clamp(p.y(), -24, 24),
+                MathHelper.clamp(p.z(), -24, 24), p.cara());
+    }
+
     private boolean colorearSombrero(int id) {
         ItemStack prenda = items.get(SLOT_PRENDA);
         List<Integer> fuente = coloresDeLaFuente();
@@ -462,7 +517,8 @@ public class EstiladoBlockEntity extends BlockEntity
     private static List<net.minecraft.item.Item> moldes() {
         List<net.minecraft.item.Item> lista = new ArrayList<>();
         for (net.minecraft.item.Item item : net.minecraft.registry.Registries.ITEM) {
-            if (item instanceof MoldeApliqueItem || item instanceof com.femclothes.item.MoldeTexturaItem) lista.add(item);
+            if (item instanceof MoldeApliqueItem || item instanceof com.femclothes.item.MoldeTexturaItem
+                    || item instanceof com.femclothes.correa.MoldeCorreaItem) lista.add(item);
         }
         return lista;
     }
@@ -557,6 +613,7 @@ public class EstiladoBlockEntity extends BlockEntity
             case SLOT_PRENDA -> admite(stack);
             case SLOT_MOLDE -> stack.getItem() instanceof MoldeApliqueItem
                     || stack.getItem() instanceof com.femclothes.aplique.MoldeApliquePersonalizadoItem
+                    || stack.getItem() instanceof com.femclothes.correa.MoldeCorreaItem
                     || stack.getItem() instanceof com.femclothes.item.MoldeTexturaItem;
             case SLOT_RETAZO -> stack.getItem() instanceof RetazoApliqueItem
                     || stack.getItem() instanceof com.femclothes.item.MuestraColorItem;
