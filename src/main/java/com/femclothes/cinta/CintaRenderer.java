@@ -98,6 +98,11 @@ public class CintaRenderer implements BlockEntityRenderer<CintaBlockEntity> {
         matrices.push();
         matrices.translate(x, y + 0.12f, z);
         matrices.scale(0.5f, 0.5f, 0.5f);
+        // Acostados (2026-10-05, "que todos los items en la conveyor junction y belt aparezcan acostados"): los ítems
+        // planos se tumban sobre la banda; los bloques ya apoyan por su base.
+        if (!(stack.getItem() instanceof net.minecraft.item.BlockItem)) {
+            matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_X.rotationDegrees(90f));
+        }
         net.minecraft.client.MinecraftClient.getInstance().getItemRenderer().renderItem(stack,
                 net.minecraft.client.render.model.json.ModelTransformationMode.GROUND, luz, overlay, matrices, buffers, mundo, 0);
         matrices.pop();
