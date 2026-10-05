@@ -814,10 +814,10 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                 if (item instanceof MoldeCapaItem m && m.tipo.esCuello()) c = comboDeMoldeCapa(item);
             }
             case ALA_SOMBRERO -> {
-                if (item instanceof MoldeSombreroItem m && m.esAla()) c = comboDeMoldeSombrero(item);
+                if (item instanceof MoldeSombreroItem m && m.tipo.esAla()) c = comboDeMoldeSombrero(item);
             }
             case PUNTA_SOMBRERO -> {
-                if (item instanceof MoldeSombreroItem m && m.esPunta()) c = comboDeMoldeSombrero(item);
+                if (item instanceof MoldeSombreroItem m && m.tipo.esPunta()) c = comboDeMoldeSombrero(item);
             }
             case BOTA_IZQ, BOTA_DER -> {
                 if (item instanceof MoldeRangoItem m) c = ComboCorte.pantalonSuperior(pantalonDeRango(m.rango), lado);
@@ -847,7 +847,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
     @Nullable
     private static ComboCorte comboDeMoldeSombrero(Item item) {
         if (!(item instanceof MoldeSombreroItem m)) return null;
-        return m.esAla() ? ComboCorte.sombreroAla(m.ala) : ComboCorte.sombreroPunta(m.punta);
+        return m.tipo.esAla() ? ComboCorte.sombreroAla(m.tipo.ala) : ComboCorte.sombreroPunta(m.tipo.punta);
     }
 
     /** El corte de un {@link MoldeCapaItem} (o del molde de rango, como largo de capa), o null. */
