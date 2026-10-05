@@ -95,7 +95,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
             case PROCESANDO -> {
                 be.progreso++;
                 if (be.progreso % 20 == 0) be.sincronizar();
-                if (be.progreso >= com.femclothes.util.MaquinaCreativa.duracion(be, TICKS_PROCESO)) {
+                if (be.progreso >= TICKS_PROCESO) { // 2026-10-05, "no se movio para nada el brazo": la demo dura siempre los 13 s, también en la creativa
                     be.items.set(SLOT_SALIDA, be.items.get(SLOT_PRENDA));
                     be.items.set(SLOT_PRENDA, ItemStack.EMPTY);
                     be.estado = Estado.LISTO;

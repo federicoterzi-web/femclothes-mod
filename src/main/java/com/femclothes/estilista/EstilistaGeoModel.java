@@ -69,7 +69,7 @@ public class EstilistaGeoModel extends GeoModel<EstilistaBlockEntity> {
             GeoBone b = getAnimationProcessor().getBone(h);
             if (b == null) continue;
             if (h.equals("garment")) b.setHidden(true);
-            else if (!trabajando) b.setHidden(true);
+            else b.setHidden(!trabajando);
         }
     }
 }
