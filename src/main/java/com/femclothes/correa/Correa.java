@@ -17,9 +17,10 @@ import java.util.List;
  * @param ancho   ancho de la tira en px (1..4)
  * @param colores banda, borde y herraje (RGB)
  * @param blandura 0..1: cuánto se mueve la correa colgante con el movimiento
+ * @param largo   px de cadena de las correas que cuelgan (ANCLADA: lo que cuelga; COLGADA: la longitud entre los dos puntos)
  */
 public record Correa(Parte parte, Punto desde, Punto hasta, EstiloCorrea estilo, ModoCorrea modo, float ancho,
-                     List<Integer> colores, float blandura, Superficie superficie) {
+                     List<Integer> colores, float blandura, Superficie superficie, float largo) {
 
     /**
      * Sobre qué va (2026-10-05, "superame esos limites"): la caja de la parte del cuerpo o las cajas del sombrero y la
@@ -35,6 +36,8 @@ public record Correa(Parte parte, Punto desde, Punto hasta, EstiloCorrea estilo,
 
     public static final int MAXIMO_POR_PRENDA = 8;
     public static final float ANCHO_MIN = 1f, ANCHO_MAX = 4f;
+    /** Largo de la cadena que cuelga (2026-10-06, "ademas de ancho deberia poder agregarsele largo"): de 2 a 32 px de a 2. */
+    public static final float LARGO_MIN = 2f, LARGO_MAX = 32f, LARGO_PASO = 2f, LARGO_INICIAL = 8f;
     public static final List<Integer> DE_FABRICA = List.of(0x5A3A24, 0x8A6240, 0xC9A24A);
 
     /** Un punto de la superficie de la caja y la cara (normal) donde está. */
@@ -57,21 +60,30 @@ public record Correa(Parte parte, Punto desde, Punto hasta, EstiloCorrea estilo,
             Codec.INT.listOf().fieldOf("colores").forGetter(Correa::colores),
             Codec.FLOAT.fieldOf("blandura").forGetter(Correa::blandura),
             StringIdentifiable.createCodec(Superficie::values).optionalFieldOf("superficie", Superficie.CAJA)
-                    .forGetter(Correa::superficie)
+                    .forGetter(Correa::superficie),
+            Codec.FLOAT.optionalFieldOf("largo", LARGO_INICIAL).forGetter(Correa::largo)
     ).apply(i, Correa::new));
 
     public Correa(Parte parte, Punto desde, Punto hasta, EstiloCorrea estilo, ModoCorrea modo, float ancho,
                   List<Integer> colores, float blandura) {
-        this(parte, desde, hasta, estilo, modo, ancho, colores, blandura, Superficie.CAJA);
+        this(parte, desde, hasta, estilo, modo, ancho, colores, blandura, Superficie.CAJA, LARGO_INICIAL);
     }
 
-    public Correa conColores(List<Integer> c) { return new Correa(parte, desde, hasta, estilo, modo, ancho, c, blandura, superficie); }
+    public Correa(Parte parte, Punto desde, Punto hasta, EstiloCorrea estilo, ModoCorrea modo, float ancho,
+                  List<Integer> colores, float blandura, Superficie superficie) {
+        this(parte, desde, hasta, estilo, modo, ancho, colores, blandura, superficie, LARGO_INICIAL);
+    }
 
-    public Correa conModo(ModoCorrea m) { return new Correa(parte, desde, hasta, estilo, m, ancho, colores, blandura, superficie); }
+    public Correa conColores(List<Integer> c) { return new Correa(parte, desde, hasta, estilo, modo, ancho, c, blandura, superficie, largo); }
 
-    public Correa conAncho(float a) { return new Correa(parte, desde, hasta, estilo, modo, a, colores, blandura, superficie); }
+    public Correa conModo(ModoCorrea m) { return new Correa(parte, desde, hasta, estilo, m, ancho, colores, blandura, superficie, largo); }
+
+    public Correa conAncho(float a) { return new Correa(parte, desde, hasta, estilo, modo, a, colores, blandura, superficie, largo); }
+
+    public Correa conLargo(float l) { return new Correa(parte, desde, hasta, estilo, modo, ancho, colores, blandura, superficie, l); }
 
     public Correa {
+        largo = Math.max(LARGO_MIN, Math.min(LARGO_MAX, Float.isFinite(largo) ? largo : LARGO_INICIAL));
         if (colores == null || colores.size() < 3) colores = DE_FABRICA;
         ancho = Math.max(ANCHO_MIN, Math.min(ANCHO_MAX, ancho));
         blandura = Math.max(0f, Math.min(1f, blandura));

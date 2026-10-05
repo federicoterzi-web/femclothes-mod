@@ -84,6 +84,9 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     private boolean modoCorrea = false;
     private com.femclothes.correa.ModoCorrea correaModo = com.femclothes.correa.ModoCorrea.PEGADA;
     private int correaAncho = 2;
+    /** Largo de la cadena que cuelga (px, 2..32 de a 2): 2026-10-06, "ademas de ancho deberia poder agregarsele largo". */
+    private int correaLargo = (int) com.femclothes.correa.Correa.LARGO_INICIAL;
+    private ButtonWidget btnCorreaLargo, btnCorreaLargoMenos, btnCorreaLargoMas;
     @Nullable
     private Toque correaInicio = null;
     private ButtonWidget btnModoCorrea, btnCorreaModo, btnCorreaAncho, btnCorreaQuitar, btnCorreaColor;
@@ -166,17 +169,21 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                         if (correaSel >= 0 && correaSel < l.size()) {
                             correaModo = l.get(correaSel).modo();
                             correaAncho = Math.round(l.get(correaSel).ancho());
+                            correaLargo = Math.round(l.get(correaSel).largo());
                         }
                     });
         }
         btnCorreaModo = boton(X_DER, 88, 80, Text.empty(), "femclothes.correa.tooltip.modo", () -> {
             correaModo = correaModo.siguiente();
-            if (correaSel >= 0) clickBoton(EstiladoBlockEntity.BTN_CORREA_MODO_BASE + correaSel * 2 + correaModo.ordinal());
+            if (correaSel >= 0) clickBoton(EstiladoBlockEntity.BTN_CORREA_MODO_BASE + correaSel * 4 + correaModo.ordinal());
         });
         btnCorreaAncho = boton(X_DER + 82, 88, 80, Text.empty(), "femclothes.correa.tooltip.ancho", () -> {
             correaAncho = correaAncho % 4 + 1;
             if (correaSel >= 0) clickBoton(EstiladoBlockEntity.BTN_CORREA_ANCHO_BASE + correaSel * 4 + (correaAncho - 1));
         });
+        btnCorreaLargoMenos = boton(X_DER, 128, 14, Text.literal("−"), "femclothes.correa.tooltip.largo", () -> cambiarLargo(-1));
+        btnCorreaLargo = boton(X_DER + 15, 128, 64, Text.empty(), "femclothes.correa.tooltip.largo", () -> cambiarLargo(1));
+        btnCorreaLargoMas = boton(X_DER + 80, 128, 14, Text.literal("+"), "femclothes.correa.tooltip.largo", () -> cambiarLargo(1));
         btnCorreaQuitar = boton(X_DER, 110, 80, Text.empty(), "femclothes.correa.tooltip.quitar", () -> {
             if (correaInicio != null) {
                 correaInicio = null;
@@ -939,7 +946,14 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         return new Toque(pieza.parte(), p[0], p[1], p[2], cara, tMax);
     }
 
-    /** Un click de correa (2026-10-05): el 1.º fija el inicio y el 2.º manda la correa al servidor. */
+    /** Más o menos largo (de a 2 px, de 2 a 32); con una correa elegida se lo manda a esa. */
+    private void cambiarLargo(int dir) {
+        int min = (int) com.femclothes.correa.Correa.LARGO_MIN, max = (int) com.femclothes.correa.Correa.LARGO_MAX, paso = (int) com.femclothes.correa.Correa.LARGO_PASO;
+        correaLargo = Math.max(min, Math.min(max, correaLargo + dir * paso));
+        if (correaSel >= 0) clickBoton(EstiladoBlockEntity.BTN_CORREA_LARGO_BASE + correaSel * 16 + (correaLargo / paso - 1));
+    }
+
+    /** Un click de correa (2026-10-05): el 1.º fija el inicio y el 2.º manda la correa al servidor (la anclada, solo uno). */
     private void clickCorrea(double mx, double my) {
         EstiladoBlockEntity be = handler.be;
         Toque t = tocarPrenda(mx, my);
@@ -949,6 +963,12 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
             aviso = Text.translatable("femclothes.correa.aviso.lleno");
         } else if (t == null || t.superficie() == Aplique.Superficie.APLIQUE) {
             aviso = Text.translatable("femclothes.estilado.aviso.fuera");
+        } else if (!correaModo.dosPuntos()) {
+            // Anclada: un solo click y cuelga hacia abajo.
+            aviso = null;
+            ClientPlayNetworking.send(new com.femclothes.estilado.PonerCorreaPayload(be.getPos(), t.parte().ordinal(),
+                    new float[] {t.x(), t.y(), t.z()}, t.cara().ordinal(), new float[] {t.x(), t.y(), t.z()}, t.cara().ordinal(),
+                    correaModo.ordinal(), correaAncho, t.superficie().ordinal(), correaLargo));
         } else if (correaInicio == null) {
             aviso = null;
             correaInicio = t;
@@ -960,7 +980,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
             ClientPlayNetworking.send(new com.femclothes.estilado.PonerCorreaPayload(be.getPos(), t.parte().ordinal(),
                     new float[] {correaInicio.x(), correaInicio.y(), correaInicio.z()}, correaInicio.cara().ordinal(),
                     new float[] {t.x(), t.y(), t.z()}, t.cara().ordinal(), correaModo.ordinal(), correaAncho,
-                    t.superficie().ordinal()));
+                    t.superficie().ordinal(), correaLargo));
             correaInicio = null;
         }
     }
@@ -1086,6 +1106,11 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         btnModoCorrea.visible = admiteCorrea;
         btnModoCorrea.setMessage(Text.translatable(modoCorrea ? "femclothes.correa.modo_correa.apliques" : "femclothes.correa.modo_correa.correas"));
         btnCorreaModo.visible = btnCorreaAncho.visible = btnCorreaQuitar.visible = btnCorreaColor.visible = modoCorrea;
+        btnCorreaLargo.visible = btnCorreaLargoMenos.visible = btnCorreaLargoMas.visible = modoCorrea;
+        // El largo solo vale para las que cuelgan (de la elegida, si hay una).
+        var modoDelLargo = correaSel >= 0 && correaSel < be.correas().size() ? be.correas().get(correaSel).modo() : correaModo;
+        btnCorreaLargo.active = btnCorreaLargoMenos.active = btnCorreaLargoMas.active = modoDelLargo.usaLargo();
+        btnCorreaLargo.setMessage(Text.translatable("femclothes.correa.boton.largo", correaLargo));
         int nCorreas = be.correas().size();
         if (correaSel >= nCorreas) correaSel = -1;
         for (int i = 0; i < btnCorreaLista.length; i++) {
@@ -1209,7 +1234,8 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         }
         java.util.List<Integer> fuenteAyuda = modoColor ? handler.be.coloresDeLaFuente() : null;
         Text ayuda = aviso != null ? aviso
-                : modoCorrea ? Text.translatable(correaInicio == null ? "femclothes.correa.ayuda.inicio" : "femclothes.correa.ayuda.fin")
+                : modoCorrea ? Text.translatable(!correaModo.dosPuntos() ? "femclothes.correa.ayuda.anclada"
+                        : correaInicio == null ? "femclothes.correa.ayuda.inicio" : "femclothes.correa.ayuda.fin")
                 : modoColor ? Text.translatable("femclothes.estilado.ayuda_color",
                         Text.literal("■").styled(st -> st.withColor(fuenteAyuda == null ? 0x808080 : fuenteAyuda.get(colorActivo))))
                 : Text.translatable("femclothes.estilado.ayuda");

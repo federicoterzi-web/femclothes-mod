@@ -77,9 +77,12 @@ public class EstiladoBlockEntity extends BlockEntity
     public static final int BTN_PATRON_BASE = 330;
     /** Quita la última correa libre de la prenda (2026-10-05, "correas libres"). */
     public static final int BTN_CORREA_QUITAR = 360;
-    /** Por índice de correa (0..7): quitar, recolorear con el retazo, modo (+ i*2 + modo) y ancho (+ i*4 + ancho-1). */
-    public static final int BTN_CORREA_QUITAR_BASE = 480, BTN_CORREA_COLOREAR_BASE = 490,
-            BTN_CORREA_MODO_BASE = 500, BTN_CORREA_ANCHO_BASE = 520;
+    /**
+     * Por índice de correa (0..7): quitar, recolorear con el retazo, ancho (+ i*4 + ancho-1) y, desde que hay 4 modos y
+     * el largo (2026-10-06), modo (+ i*4 + modo) y largo (+ i*16 + paso, paso = largo/2 - 1).
+     */
+    public static final int BTN_CORREA_QUITAR_BASE = 480, BTN_CORREA_COLOREAR_BASE = 490, BTN_CORREA_ANCHO_BASE = 520,
+            BTN_CORREA_MODO_BASE = 700, BTN_CORREA_LARGO_BASE = 760;
     public static final int BTN_SELECCIONAR_BASE = 100;        // + 0..11 (antes 0..5: chocaba con el resto al subir a 12 apliques)
     public static final int BTN_GIRO = 10, BTN_GIRO_ATRAS = 11;
     public static final int BTN_ESCALA = 12, BTN_ESCALA_ATRAS = 13;
@@ -384,21 +387,30 @@ public class EstiladoBlockEntity extends BlockEntity
             guardarCorreas(l);
             return true;
         }
-        if ((id >= BTN_CORREA_COLOREAR_BASE && id < BTN_CORREA_COLOREAR_BASE + 8)
-                || (id >= BTN_CORREA_MODO_BASE && id < BTN_CORREA_MODO_BASE + 16)
-                || (id >= BTN_CORREA_ANCHO_BASE && id < BTN_CORREA_ANCHO_BASE + 32)) {
+        boolean esColorear = id >= BTN_CORREA_COLOREAR_BASE && id < BTN_CORREA_COLOREAR_BASE + 8;
+        boolean esAncho = id >= BTN_CORREA_ANCHO_BASE && id < BTN_CORREA_ANCHO_BASE + 32;
+        boolean esModo = id >= BTN_CORREA_MODO_BASE && id < BTN_CORREA_MODO_BASE + 32;
+        boolean esLargo = id >= BTN_CORREA_LARGO_BASE && id < BTN_CORREA_LARGO_BASE + 128;
+        if (esColorear || esAncho || esModo || esLargo) {
             List<com.femclothes.correa.Correa> l = new ArrayList<>(correas());
-            int k;
-            if (id >= BTN_CORREA_ANCHO_BASE) k = (id - BTN_CORREA_ANCHO_BASE) / 4;
-            else if (id >= BTN_CORREA_MODO_BASE) k = (id - BTN_CORREA_MODO_BASE) / 2;
-            else if (id >= BTN_CORREA_COLOREAR_BASE) k = id - BTN_CORREA_COLOREAR_BASE;
-            else return false;
+            int k = esAncho ? (id - BTN_CORREA_ANCHO_BASE) / 4 : esModo ? (id - BTN_CORREA_MODO_BASE) / 4
+                    : esLargo ? (id - BTN_CORREA_LARGO_BASE) / 16 : id - BTN_CORREA_COLOREAR_BASE;
             if (k < 0 || k >= l.size()) return false;
             com.femclothes.correa.Correa c = l.get(k);
-            if (id >= BTN_CORREA_ANCHO_BASE) {
+            if (esAncho) {
                 c = c.conAncho(1 + (id - BTN_CORREA_ANCHO_BASE) % 4);
-            } else if (id >= BTN_CORREA_MODO_BASE) {
-                c = c.conModo(com.femclothes.correa.ModoCorrea.values()[(id - BTN_CORREA_MODO_BASE) % 2]);
+            } else if (esModo) {
+                var modos = com.femclothes.correa.ModoCorrea.values();
+                int m = (id - BTN_CORREA_MODO_BASE) % 4;
+                if (m >= modos.length) return false;
+                c = c.conModo(modos[m]);
+                // Pasar a ANCLADA deja un solo punto: el 2.º coincide con el 1.º.
+                if (modos[m] == com.femclothes.correa.ModoCorrea.ANCLADA) {
+                    c = new com.femclothes.correa.Correa(c.parte(), c.desde(), c.desde(), c.estilo(), c.modo(), c.ancho(), c.colores(),
+                            c.blandura(), c.superficie(), c.largo());
+                }
+            } else if (esLargo) {
+                c = c.conLargo(com.femclothes.correa.Correa.LARGO_PASO * (1 + (id - BTN_CORREA_LARGO_BASE) % 16));
             } else {
                 // Recolorear con el retazo (o la muestra) del slot, sin gastarlo.
                 List<Integer> fuente = coloresDeLaFuente();
@@ -511,7 +523,7 @@ public class EstiladoBlockEntity extends BlockEntity
      */
     public boolean ponerCorrea(com.femclothes.garment.Parte parte, com.femclothes.correa.Correa.Punto desde,
                                com.femclothes.correa.Correa.Punto hasta, com.femclothes.correa.ModoCorrea modo, float ancho,
-                               com.femclothes.correa.Correa.Superficie superficie) {
+                               com.femclothes.correa.Correa.Superficie superficie, float largo) {
         ItemStack prenda = items.get(SLOT_PRENDA), molde = items.get(SLOT_MOLDE);
         if (prenda.isEmpty() || !admite(prenda) || !(molde.getItem() instanceof com.femclothes.correa.MoldeCorreaItem m)) return false;
         // La superficie tiene que ser la de la prenda: la malla de la pollera o de la capa, o las cajas (cuerpo, sombrero, banda).
@@ -522,7 +534,9 @@ public class EstiladoBlockEntity extends BlockEntity
             case CAPA -> { if (!capa) return false; }
             default -> { if (pollera || capa) return false; }
         }
-        float[] v = {desde.x(), desde.y(), desde.z(), hasta.x(), hasta.y(), hasta.z(), ancho};
+        // Anclada: un solo punto (el 2.º es el mismo).
+        if (modo == com.femclothes.correa.ModoCorrea.ANCLADA) hasta = desde;
+        float[] v = {desde.x(), desde.y(), desde.z(), hasta.x(), hasta.y(), hasta.z(), ancho, largo};
         for (float f : v) if (!Float.isFinite(f)) return false;
         List<com.femclothes.correa.Correa> actuales = new ArrayList<>(correas());
         if (actuales.size() >= com.femclothes.correa.Correa.MAXIMO_POR_PRENDA) return false;
@@ -536,13 +550,13 @@ public class EstiladoBlockEntity extends BlockEntity
             hasta = limitar(hasta);
         }
         // Una correa de menos de 1 px no se ve: se rechaza.
-        double largo = Math.sqrt((desde.x() - hasta.x()) * (desde.x() - hasta.x()) + (desde.y() - hasta.y()) * (desde.y() - hasta.y())
+        double dist = Math.sqrt((desde.x() - hasta.x()) * (desde.x() - hasta.x()) + (desde.y() - hasta.y()) * (desde.y() - hasta.y())
                 + (desde.z() - hasta.z()) * (desde.z() - hasta.z()));
-        if (largo < 1.0) return false;
+        if (dist < 1.0 && modo.dosPuntos()) return false;
         List<Integer> fuente = coloresDeLaFuente();
         List<Integer> colores = fuente != null ? List.of(fuente.get(0), fuente.get(1), fuente.get(2))
                 : com.femclothes.correa.Correa.DE_FABRICA;
-        actuales.add(new com.femclothes.correa.Correa(parte, desde, hasta, m.estilo, modo, ancho, colores, BLANDURA_INICIAL, superficie));
+        actuales.add(new com.femclothes.correa.Correa(parte, desde, hasta, m.estilo, modo, ancho, colores, BLANDURA_INICIAL, superficie, largo));
         guardarCorreas(actuales);
         return true;
     }

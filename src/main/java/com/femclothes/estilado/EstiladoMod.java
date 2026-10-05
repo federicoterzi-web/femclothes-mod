@@ -80,7 +80,7 @@ public final class EstiladoMod {
                                 new com.femclothes.correa.Correa.Punto(d[0], d[1], d[2], caras[payload.caraDesde()]),
                                 new com.femclothes.correa.Correa.Punto(h[0], h[1], h[2], caras[payload.caraHasta()]),
                                 modos[payload.modo()], payload.ancho(),
-                                com.femclothes.correa.Correa.Superficie.values()[payload.superficie()]);
+                                com.femclothes.correa.Correa.Superficie.values()[payload.superficie()], payload.largo());
                     }
                 }));
 

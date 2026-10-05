@@ -36,6 +36,10 @@ import java.util.Map;
  *       prenda), así da la vuelta por las aristas; entre caras opuestas pasa por una tercera.</li>
  *   <li>COLGANTE: solo el 1.º punto la sujeta; el resto cuelga en la dirección del 2.º con tela blanda (la inercia de
  *       {@link FisicaApliques}), sin entrar en la caja.</li>
+ *   <li>ANCLADA (2026-10-06, "un solo punto y que cuelgue con la gravedad"): un punto y {@code largo} px de cadena que
+ *       cuelgan hacia abajo, con un vaivén por la inercia, apoyándose en el cuerpo sin atravesarlo.</li>
+ *   <li>COLGADA ("la cadena cuelgue"): dos puntos y {@code largo} px de cadena (mínimo la distancia): si sobra, cuelga en
+ *       curva con la gravedad entre los dos.</li>
  * </ul>
  */
 public final class CorreaRenderer {
@@ -151,10 +155,22 @@ public final class CorreaRenderer {
         matrices.push();
         parte.rotate(matrices);
         List<Nodo> camino;
+        Matrix3f normalLocal = new Matrix3f(matrices.peek().getNormalMatrix());
         if (c.modo() == ModoCorrea.PEGADA) {
             camino = rutaPegada(a, c.desde().cara(), b, c.hasta().cara(), sup);
+        } else if (c.modo().usaLargo()) {
+            // Gravedad e inercia, del marco del cuerpo al de esta parte (las dos son rotaciones: la inversa es la transpuesta).
+            Matrix3f aLocal = new Matrix3f(normalLocal).transpose().mul(marco);
+            Vector3f g = aLocal.transform(new Vector3f(0, 1, 0)).normalize();       // en el espacio del modelo +Y es hacia abajo
+            Vector3f inclinacion = inclinacion(c.blandura(), aLocal);
+            Vector3f hacia = new Vector3f(c.desde().cara().getOffsetX(), c.desde().cara().getOffsetY(), c.desde().cara().getOffsetZ());
+            List<Vector3f> curva = c.modo() == ModoCorrea.ANCLADA
+                    ? curvaAnclada(a, c.largo(), g, inclinacion)
+                    : curvaColgada(a, b, c.largo(), g, inclinacion, hacia);
+            camino = new ArrayList<>();
+            for (Vector3f q : curva) camino.add(sup.proyectar(q, false));
         } else {
-            camino = rutaColgante(a, b, sup, c.blandura(), new Matrix3f(matrices.peek().getNormalMatrix()), marco);
+            camino = rutaColgante(a, b, sup, c.blandura(), normalLocal, marco);
         }
         camino = remuestrear(camino, pasoDe(c, c.ancho()));
         if (camino.size() >= 2) emitir(c, camino, c.ancho(), espesor, matrices.peek(), vcp, luz);
@@ -189,6 +205,25 @@ public final class CorreaRenderer {
                     if (u == null) continue;
                     camino.add(new Nodo(new Vector3f(u.pos()).add(new Vector3f(u.normal()).mul(fuera / 16f)).mul(16f), new Vector3f(u.normal())));
                 }
+            } else if (a != null && c.modo().usaLargo()) {
+                // Anclada / colgada sobre la tela (2026-10-06): la gravedad y la inercia en el marco de la malla.
+                Vector3f pa = new Vector3f(a.pos()).add(new Vector3f(a.normal()).mul(fuera / 16f)).mul(16f);
+                Vector3f g = marco.transform(new Vector3f(0, 1, 0)).normalize();
+                Vector3f incl = new Vector3f();
+                FisicaApliques.Desplazamiento dd = FisicaApliques.actual;
+                if (dd != null && c.blandura() > 0f) {
+                    incl = marco.transform(new Vector3f(dd.blando())).mul(8f * c.blandura());
+                    if (incl.length() > 5f) incl.normalize(5f);
+                    incl.div(5f);
+                }
+                List<Vector3f> curva;
+                if (c.modo() == ModoCorrea.ANCLADA || b == null) {
+                    curva = curvaAnclada(pa, c.largo() * s, g, incl);
+                } else {
+                    Vector3f pb = new Vector3f(b.pos()).add(new Vector3f(b.normal()).mul(fuera / 16f)).mul(16f);
+                    curva = curvaColgada(pa, pb, c.largo() * s, g, incl, a.normal());
+                }
+                for (Vector3f q : curva) camino.add(new Nodo(q, new Vector3f(a.normal())));
             } else if (a != null) {
                 Vector3f pa = new Vector3f(a.pos()).add(new Vector3f(a.normal()).mul(fuera / 16f)).mul(16f);
                 Vector3f pb = b != null ? new Vector3f(b.pos()).add(new Vector3f(b.normal()).mul(fuera / 16f)).mul(16f)
@@ -273,6 +308,88 @@ public final class CorreaRenderer {
             out.add(sup.proyectar(p, false));
         }
         return out;
+    }
+
+    /** El vaivén por la inercia como una inclinación (módulo hasta 1) que se suma a la gravedad. */
+    private static Vector3f inclinacion(float blandura, Matrix3f aLocal) {
+        Vector3f v = new Vector3f();
+        FisicaApliques.Desplazamiento d = FisicaApliques.actual;
+        if (d != null && blandura > 0f) {
+            v = aLocal.transform(new Vector3f(d.blando())).mul(8f * blandura);
+            if (v.length() > 5f) v.normalize(5f);
+            v.div(5f);
+        }
+        return v;
+    }
+
+    /**
+     * ANCLADA: {@code largo} px de cadena desde {@code a} hacia abajo ({@code g}); cada tramo se inclina un poco más con
+     * la inercia, así la cadena se curva como un péndulo y mantiene su largo.
+     */
+    private static List<Vector3f> curvaAnclada(Vector3f a, float largo, Vector3f g, Vector3f inclinacion) {
+        final int k = 16;
+        List<Vector3f> out = new ArrayList<>();
+        Vector3f p = new Vector3f(a);
+        out.add(new Vector3f(p));
+        for (int i = 1; i <= k; i++) {
+            float s = i / (float) k;
+            Vector3f dir = new Vector3f(g).add(new Vector3f(inclinacion).mul(s)).normalize();
+            p.add(dir.mul(largo / k));
+            out.add(new Vector3f(p));
+        }
+        return out;
+    }
+
+    /**
+     * COLGADA: una parábola de {@code largo} px entre {@code a} y {@code b} que cuelga hacia la gravedad (si la cuerda
+     * va casi en vertical, hacia afuera de la cara del primer punto). El largo mínimo es la distancia: tensa, sin curva.
+     */
+    private static List<Vector3f> curvaColgada(Vector3f a, Vector3f b, float largo, Vector3f g, Vector3f inclinacion, Vector3f afuera) {
+        Vector3f c = new Vector3f(b).sub(a);
+        float dist = c.length();
+        if (dist < 1e-3f) return curvaAnclada(a, largo, g, inclinacion);
+        Vector3f ch = new Vector3f(c).div(dist);
+        Vector3f gp = new Vector3f(g).sub(new Vector3f(ch).mul(g.dot(ch)));
+        float glen = gp.length();
+        Vector3f dirSag = new Vector3f(gp);
+        if (glen > 1e-4f) dirSag.div(glen);
+        if (glen < 0.25f) {
+            Vector3f o = new Vector3f(afuera).sub(new Vector3f(ch).mul(afuera.dot(ch)));
+            if (o.lengthSquared() < 1e-6f) o = Math.abs(ch.y) < 0.9f ? new Vector3f(0, -1, 0) : new Vector3f(0, 0, -1);
+            o.sub(new Vector3f(ch).mul(o.dot(ch))).normalize();
+            dirSag = new Vector3f(gp).add(o.mul(1f - glen * 4f)).normalize();
+        }
+        float total = Math.max(largo, dist);
+        // La flecha h de la parábola con ese largo de arco (por bisección: la fórmula chica falla con cuerdas muy flojas).
+        float lo = 0f, hi = Math.max(dist, total);
+        for (int it = 0; it < 24; it++) {
+            float h = (lo + hi) / 2f;
+            if (largoParabola(dist, h) < total) lo = h; else hi = h;
+        }
+        float h = total <= dist * 1.0005f ? 0f : (lo + hi) / 2f;
+        final int k = 20;
+        List<Vector3f> out = new ArrayList<>();
+        for (int i = 0; i <= k; i++) {
+            float t = i / (float) k;
+            float comba = 4f * t * (1f - t);
+            Vector3f p = new Vector3f(a).add(new Vector3f(c).mul(t))
+                    .add(new Vector3f(dirSag).mul(h * comba))
+                    .add(new Vector3f(inclinacion).mul(comba * Math.min(h + 1f, 4f)));
+            out.add(p);
+        }
+        return out;
+    }
+
+    private static float largoParabola(float dist, float h) {
+        final int m = 24;
+        float suma = 0f, yAnt = 0f;
+        for (int i = 1; i <= m; i++) {
+            float t = i / (float) m;
+            float y = 4f * h * t * (1f - t);
+            suma += (float) Math.hypot(dist / m, y - yAnt);
+            yAnt = y;
+        }
+        return suma;
     }
 
     /**
@@ -371,7 +488,7 @@ public final class CorreaRenderer {
                 // Las puntas (aglets): una caja de herraje en cada extremo.
                 VertexConsumer vm = vcp.getBuffer(RenderLayer.getEntityCutoutNoCull(SombreroRenderer.textura(herraje, SombreroPatron.LISO)));
                 for (int i : new int[] {0, n - 1}) {
-                    if (i == 0 && c.modo() == ModoCorrea.COLGANTE) continue;     // el de arriba está sujeto
+                    if (i == 0 && (c.modo() == ModoCorrea.COLGANTE || c.modo() == ModoCorrea.ANCLADA)) continue;     // el de arriba está sujeto
                     Vector3f dir = new Vector3f(t[i]).mul(i == 0 ? -1f : 1f);
                     Vector3f centro = new Vector3f(nodos.get(i).pos()).add(new Vector3f(dir).mul(0.7f));
                     caja(vm, e, luz, centro, t[i], bb[i], nn[i], 0.9f, wc * 0.65f, wc * 0.65f);
