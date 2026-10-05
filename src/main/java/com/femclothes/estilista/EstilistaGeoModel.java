@@ -54,7 +54,7 @@ public class EstilistaGeoModel extends GeoModel<EstilistaBlockEntity> {
         GeoBone b = getAnimationProcessor().getBone(hueso);
         if (b == null) return;
         float nivel = valor / (float) EstilistaBlockEntity.TOPE_CONTADOR;
-        b.setScaleX(Math.max(0.001f, nivel));
+        b.setScaleY(Math.max(0.001f, nivel));
         b.setHidden(nivel <= 0.001f);
     }
 
@@ -77,7 +77,7 @@ public class EstilistaGeoModel extends GeoModel<EstilistaBlockEntity> {
             progreso.setScaleX(Math.max(0.001f, nivel * FACTOR_PROGRESO));
             progreso.setHidden(nivel <= 0.001f);
         }
-        // Indicadores de insumos en el frente (2026-10-05): barritas de hilo y cuero que se vacían con el contador.
+        // Indicadores de insumos en el frente (2026-10-05): dos barras verticales grandes, de hilo y de cuero, que bajan con el contador.
         indicador("hilo", be.hilo());
         indicador("cuero", be.cuero());
         // La prenda real la dibuja la capa; los juguetes del pórtico solo se ven mientras trabaja.

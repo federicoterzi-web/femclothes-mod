@@ -280,6 +280,9 @@ public class ModeladoScreenHandler extends ScreenHandler {
                 if (!this.insertItem(stack, INV_START, this.slots.size(), true)) {
                     return ItemStack.EMPTY;
                 }
+            } else if (stack.isOf(net.minecraft.item.Items.SHEARS)) {
+                // Las tijeras al casillero invisible (2026-10-05).
+                if (!be.cargarTijera(stack)) return ItemStack.EMPTY;
             } else {
                 ModeladoBlockEntity.Categoria catExclusiva = ModeladoBlockEntity.categoriaExclusivaDe(stack);
                 if (catExclusiva != null && catExclusiva == be.categoria()) {

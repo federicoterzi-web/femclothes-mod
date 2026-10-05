@@ -108,6 +108,13 @@ public class ModeladoBlock extends BlockWithEntity {
                                               PlayerEntity player, Hand hand, net.minecraft.util.hit.BlockHitResult hit) {
         if (!(world.getBlockEntity(pos) instanceof ModeladoBlockEntity be)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
 
+        if (stack.isOf(net.minecraft.item.Items.SHEARS)) {
+            // Tijeras a mano (2026-10-05): van al casillero invisible; con una ya puesta no entran.
+            if (world.isClient) return ItemActionResult.SUCCESS;
+            if (!be.cargarTijera(player.isCreative() ? stack.copy() : stack)) return ItemActionResult.FAIL;
+            world.playSound(null, pos, SoundEvents.ITEM_ARMOR_EQUIP_IRON.value(), SoundCategory.BLOCKS, 0.8f, 1.2f);
+            return ItemActionResult.SUCCESS;
+        }
         boolean esPrenda = ModeladoBlockEntity.esPrendaModelable(stack);
         boolean esMolde = ModeladoBlockEntity.esMolde(stack);
         if (!esPrenda && !esMolde) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
@@ -163,6 +170,12 @@ public class ModeladoBlock extends BlockWithEntity {
         if (world.isClient) return ActionResult.SUCCESS;
         if (!(world.getBlockEntity(pos) instanceof ModeladoBlockEntity be)) return ActionResult.PASS;
 
+        // Agachado y con la mano vacía, la tijera vuelve al jugador (2026-10-05).
+        if (player.isSneaking() && !be.tijera().isEmpty() && be.estado() != ModeladoBlockEntity.Estado.PROCESANDO) {
+            player.getInventory().offerOrDrop(be.sacarTijera());
+            world.playSound(null, pos, SoundEvents.UI_LOOM_TAKE_RESULT, SoundCategory.BLOCKS, 1.0f, 1.2f);
+            return ActionResult.SUCCESS;
+        }
         ItemStack salida = be.getStack(ModeladoBlockEntity.SALIDA);
         if (!salida.isEmpty()) {
             player.getInventory().offerOrDrop(salida.copy());

@@ -78,7 +78,10 @@ public class ModeladoGeoModel extends GeoModel<ModeladoBlockEntity> {
         // La VISTA PREVIA (con las fijadas ya aplicadas), no la prenda
         // cruda del slot — a pedido (2026-09-21, "que muestre el preview
         // del setting de la ultima prenda seteada").
-        return com.femclothes.render.PantallaMaquina.con(com.femclothes.util.MaquinaCreativa.textura(TEX, com.femclothes.util.MaquinaCreativa.es(be)), com.femclothes.render.PantallaMaquina.PANEL_128, be.vistaPreviaPersistente(), be.getPos());
+        Identifier id = com.femclothes.render.PantallaMaquina.con(com.femclothes.util.MaquinaCreativa.textura(TEX, com.femclothes.util.MaquinaCreativa.es(be)), com.femclothes.render.PantallaMaquina.PANEL_128, be.vistaPreviaPersistente(), be.getPos());
+        // La pantallita de la tijera (2026-10-05): la creativa no usa tijera, así que no la muestra.
+        com.femclothes.render.PantallaTijera.pintar(id, be.getPos(), !be.tijera().isEmpty(), be.durabilidadTijera());
+        return id;
     }
 
     @Override public Identifier getAnimationResource(ModeladoBlockEntity be) { return ANIM; }

@@ -88,7 +88,7 @@ def main():
 
     huesos = []
     for b in gs["bones"]:
-        if b["name"] in ("guillotine", "needle", "REMERA", "PANTALON", "CALIENTABRAZOS", "MEDIAS"):
+        if b["name"] in ("guillotine", "needle", "REMERA", "PANTALON", "CALIENTABRAZOS", "MEDIAS", "tijera"):
             continue                                      # lo de arriba de la Modeladora lo reemplaza la tapa
         b = copy.deepcopy(b)
         if b["name"] == "base":
@@ -116,19 +116,21 @@ def main():
         b["parent"] = b.get("parent") or "root"
         huesos.append(b)
 
-    # Dos barritas en el frente, encima de los LED: hilo (crema) y cuero (marrón); el cliente las escala con los contadores.
-    prog = next(b for b in huesos if b["name"] == "progress")
-    for nombre, y0, texel in (("hilo", 8.15, TEXEL_HILO), ("cuero", 8.55, TEXEL_CUERO)):
-        b = copy.deepcopy(prog)
-        b["name"] = nombre
-        b["pivot"] = [1.0409, y0 + 0.15, -8.78]
-        c = b["cubes"][0]
-        c["origin"] = [1.0409, y0, -8.9]
-        c["size"] = [3.6, 0.3, 0.24]
-        for cara in c["uv"].values():
-            cara["uv"] = [texel[0], texel[1]]
-            cara["uv_size"] = [0.3, 0.3]
-        huesos.append(b)
+    # Dos indicadores verticales grandes de insumos (2026-10-05, "dos indicadores verticales grandes de los insumos"): hilo
+    # (crema) y cuero (marrón) en el hueco del panel donde estaban los tres cubos decorativos, sobre una pista gris; el
+    # cliente los escala en Y desde abajo con el contador.
+    for nombre, x0, texel in (("hilo", 1.55, TEXEL_HILO), ("cuero", 3.55, TEXEL_CUERO)):
+        base["cubes"].append({
+            "origin": [x0 - 0.12, 5.18, -8.86], "size": [1.34, 3.34, 0.1],
+            "uv": {cara: {"uv": [126, 1], "uv_size": [0.3, 0.3]} for cara in ("north", "south", "east", "west", "up", "down")},
+        })
+        huesos.append({
+            "name": nombre, "parent": "root", "pivot": [x0 + 0.55, 5.3, -8.78],
+            "cubes": [{
+                "origin": [x0, 5.3, -8.9], "size": [1.1, 3.1, 0.24],
+                "uv": {cara: {"uv": [texel[0], texel[1]], "uv_size": [0.3, 0.3]} for cara in ("north", "south", "east", "west", "up", "down")},
+            }],
+        })
 
     out = copy.deepcopy(S)
     g = out["minecraft:geometry"][0]

@@ -227,6 +227,54 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
     /** 15s a 20 ticks — a pedido (2026-09-21, "que cada maquina tome su tiempo... 15 la modeladora"). */
     public static final int TICKS_PROCESO = 300;
 
+    /**
+     * La tijera (2026-10-05, "a la modeladora le vamos a poner un insumo... una tijera... una barra verde su durabilidad"):
+     * un casillero INVISIBLE después del último del inventario. Son las tijeras de vanilla; cada Modelar gasta 1 uso y
+     * sin tijera no arranca. Se carga a mano sobre el bloque, con shift-click en la GUI o por tolva/cinta; la
+     * Modeladora creativa ni la necesita ni la gasta.
+     */
+    public static final int SLOT_TIJERA = TAMANO;
+    private ItemStack tijera = ItemStack.EMPTY;
+
+    public ItemStack tijera() { return tijera; }
+
+    /** ¿Hay con qué cortar? La creativa siempre. */
+    public boolean tijeraOk() {
+        return com.femclothes.util.MaquinaCreativa.es(this) || (!tijera.isEmpty() && tijera.isOf(net.minecraft.item.Items.SHEARS));
+    }
+
+    /** Lo que le queda a la tijera, de 0 a 1 (para la barra verde de la pantallita). */
+    public float durabilidadTijera() {
+        if (tijera.isEmpty() || tijera.getMaxDamage() <= 0) return tijera.isEmpty() ? 0f : 1f;
+        return 1f - tijera.getDamage() / (float) tijera.getMaxDamage();
+    }
+
+    /** Pone una tijera (de a una) si el casillero está libre; le saca una al {@code pila}. */
+    public boolean cargarTijera(ItemStack pila) {
+        if (!tijera.isEmpty() || !pila.isOf(net.minecraft.item.Items.SHEARS)) return false;
+        tijera = pila.copyWithCount(1);
+        pila.decrement(1);
+        sincronizar();
+        return true;
+    }
+
+    /** La tijera sale del casillero (para devolverla al jugador). */
+    public ItemStack sacarTijera() {
+        ItemStack r = tijera;
+        tijera = ItemStack.EMPTY;
+        if (!r.isEmpty()) sincronizar();
+        return r;
+    }
+
+    private void avisarSinTijera() {
+        if (world == null || world.isClient) return;
+        for (var jugador : world.getPlayers()) {
+            if (jugador.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 100.0) {
+                jugador.sendMessage(net.minecraft.text.Text.translatable("femclothes.modelado.sin_tijera"), true);
+            }
+        }
+    }
+
     public enum Estado { REPOSO, PROCESANDO, LISTO }
 
     /**
@@ -550,6 +598,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         // PROCESANDO y quedaba "encendida" de adorno — ventilador y
         // partículas prendidos, config bloqueada, sin trabajar.
         if (!hayFijadas() || !items.get(SALIDA).isEmpty()) return;
+        if (!tijeraOk()) { avisarSinTijera(); return; }     // sin tijera no corta
         encendida = true;
         // Mismo bug que las transiciones de tick() (ver #sincronizar): sin
         // esto, "en_marcha" (el ventilador) nunca se enteraba del lado
@@ -559,7 +608,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
 
     /** ¿Tiene sentido apretar Modelar? Apagada, con prenda en la Entrada, algo fijado y la Salida libre. */
     public boolean puedeModelar() {
-        return !encendida && !items.get(PRENDA).isEmpty() && items.get(SALIDA).isEmpty() && hayFijadas();
+        return !encendida && !items.get(PRENDA).isEmpty() && items.get(SALIDA).isEmpty() && hayFijadas() && tijeraOk();
     }
 
     public Estado estado() { return estado; }
@@ -1264,11 +1313,20 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                 boolean prendaOk = !be.items.get(PRENDA).isEmpty();
                 boolean salidaOk = be.items.get(SALIDA).isEmpty();
                 boolean fijadaOk = be.fijadasPorCategoria.values().stream().anyMatch(l -> !l.isEmpty());
-                if (be.encendida && prendaOk && salidaOk && fijadaOk) {
+                if (be.encendida && prendaOk && salidaOk && fijadaOk && be.tijeraOk()) {
                     be.estado = Estado.PROCESANDO;
                     be.progreso = 0;
+                    // Cada Modelar gasta un uso de la tijera (2026-10-05); la creativa no gasta.
+                    if (!com.femclothes.util.MaquinaCreativa.es(be) && world instanceof ServerWorld sw) {
+                        be.tijera.damage(1, sw, null, item -> { });
+                        if (be.tijera.isEmpty()) {
+                            be.tijera = ItemStack.EMPTY;
+                            be.sonar(SoundEvents.ENTITY_ITEM_BREAK, 0.8f, 1.0f);
+                        }
+                    }
                     be.sincronizar();
-                } else if (be.encendida && (!prendaOk || !fijadaOk)) {
+                } else if (be.encendida && (!prendaOk || !fijadaOk || !be.tijeraOk())) {
+                    if (prendaOk && fijadaOk) be.avisarSinTijera();
                     // Prendida sin nada que hacer (mundos guardados con el
                     // bug de arriba, o sacaron la prenda por una tolva):
                     // se apaga sola en vez de quedar trabada.
@@ -1407,19 +1465,20 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
     // ── Inventory ────────────────────────────────────────────────────
 
     @Override
-    public int size() { return TAMANO; }
+    public int size() { return TAMANO + 1; }
 
     @Override
     public boolean isEmpty() {
         for (ItemStack s : items) if (!s.isEmpty()) return false;
-        return true;
+        return tijera.isEmpty();
     }
 
     @Override
-    public ItemStack getStack(int slot) { return items.get(slot); }
+    public ItemStack getStack(int slot) { return slot == SLOT_TIJERA ? tijera : items.get(slot); }
 
     @Override
     public ItemStack removeStack(int slot, int amount) {
+        if (slot == SLOT_TIJERA) return sacarTijera();
         ItemStack antes = items.get(slot).copy();
         ItemStack r = Inventories.splitStack(items, slot, amount);
         if (!r.isEmpty()) {
@@ -1432,6 +1491,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
 
     @Override
     public ItemStack removeStack(int slot) {
+        if (slot == SLOT_TIJERA) return sacarTijera();
         ItemStack antes = items.get(slot).copy();
         ItemStack r = Inventories.removeStack(items, slot);
         if ((slot == PRENDA || slot == SALIDA) && !antes.isEmpty()) sincronizar();
@@ -1441,6 +1501,11 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
 
     @Override
     public void setStack(int slot, ItemStack stack) {
+        if (slot == SLOT_TIJERA) {
+            tijera = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1);
+            sincronizar();
+            return;
+        }
         int pin = pinDeSlot(slot);
         ItemStack antesPin = pin >= 0 ? items.get(slot).copy() : ItemStack.EMPTY;
         items.set(slot, stack);
@@ -1483,6 +1548,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
 
     @Override
     public boolean isValid(int slot, ItemStack stack) {
+        if (slot == SLOT_TIJERA) return tijera.isEmpty() && stack.isOf(net.minecraft.item.Items.SHEARS);
         if (encendida) return false; // apagada para tocar el inventario, salvo la prenda física (ver ModeladoBlock)
         if (slot == SALIDA) return false;
         if (slot == PRENDA) return esPrendaModelable(stack);
@@ -1569,7 +1635,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
     public int[] getAvailableSlots(net.minecraft.util.math.Direction side) {
         // También por la IZQUIERDA (2026-10-04, "poder cargarles prendas por la izquierda"):
         // es la cara donde empalma la salida de la máquina de al lado.
-        return side == net.minecraft.util.math.Direction.UP || side == ladoIzquierdo() ? new int[]{PRENDA} : new int[0];
+        if (side == net.minecraft.util.math.Direction.UP || side == ladoIzquierdo()) return new int[]{PRENDA};
+        // Las tijeras entran por cualquier otro lado menos abajo (2026-10-05).
+        return side == net.minecraft.util.math.Direction.DOWN ? new int[0] : new int[]{SLOT_TIJERA};
     }
 
     @Override
@@ -1609,7 +1677,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
     }
 
     @Override
-    public void clear() { items.clear(); }
+    public void clear() { items.clear(); tijera = ItemStack.EMPTY; }
 
     // ── persistencia ─────────────────────────────────────────────────
 
@@ -1625,6 +1693,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         DefaultedList<ItemStack> nuevos = DefaultedList.ofSize(TAMANO - TAMANO_VIEJO, ItemStack.EMPTY);
         Inventories.readNbt(nbt.getCompound("pollera_items"), nuevos, lookup);
         for (int i = 0; i < nuevos.size(); i++) items.set(TAMANO_VIEJO + i, nuevos.get(i));
+        tijera = nbt.contains("tijera") ? ItemStack.fromNbtOrEmpty(lookup, nbt.getCompound("tijera")) : ItemStack.EMPTY;
         encendida = nbt.getBoolean("encendida");
         estado = Estado.values()[nbt.getInt("estado")];
         progreso = nbt.getInt("progreso");
@@ -1692,6 +1761,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         NbtCompound polleraNbt = new NbtCompound();
         Inventories.writeNbt(polleraNbt, nuevos, lookup);
         nbt.put("pollera_items", polleraNbt);
+        if (!tijera.isEmpty()) nbt.put("tijera", tijera.encode(lookup));
         nbt.putBoolean("encendida", encendida);
         nbt.putInt("estado", estado.ordinal());
         nbt.putInt("progreso", progreso);

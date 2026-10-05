@@ -181,6 +181,7 @@
   "femclothes.ropa.inventario": "Inventory",
   "block.femclothes.estilista": "Automatic Stylist",
   "block.femclothes.estilista_creativa": "Creative Automatic Stylist",
+  "femclothes.modelado.sin_tijera": "The Garment Shaper needs shears",
   "femclothes.estilista.aplicar": "Apply ▶",
   "femclothes.estilista.fijar": "Set",
   "femclothes.estilista.borrar": "Delete",
