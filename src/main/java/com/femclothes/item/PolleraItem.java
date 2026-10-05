@@ -44,11 +44,37 @@ public class PolleraItem extends ClothingTrinketItem {
         else stack.set(FemclothesComponents.POLLERA_FORMA, forma);
     }
 
+    /** Volado del borde de abajo (2026-10-05), o null. */
+    @org.jetbrains.annotations.Nullable
+    public static PolleraVolado voladoRuedo(ItemStack stack) {
+        return stack.get(FemclothesComponents.POLLERA_VOLADO_RUEDO);
+    }
+
+    @org.jetbrains.annotations.Nullable
+    public static PolleraVolado voladoTodo(ItemStack stack) {
+        return stack.get(FemclothesComponents.POLLERA_VOLADO_TODO);
+    }
+
+    public static void setVoladoRuedo(ItemStack stack, @org.jetbrains.annotations.Nullable PolleraVolado v) {
+        if (v == null) stack.remove(FemclothesComponents.POLLERA_VOLADO_RUEDO);
+        else stack.set(FemclothesComponents.POLLERA_VOLADO_RUEDO, v);
+    }
+
+    public static void setVoladoTodo(ItemStack stack, @org.jetbrains.annotations.Nullable PolleraVolado v) {
+        if (v == null) stack.remove(FemclothesComponents.POLLERA_VOLADO_TODO);
+        else stack.set(FemclothesComponents.POLLERA_VOLADO_TODO, v);
+    }
+
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
         tooltip.add(Text.translatable("femclothes.pollera.tooltip",
                 Text.translatable(forma(stack).traduccion()), Text.translatable(largo(stack).traduccion()))
+                .formatted(Formatting.GRAY));
+        PolleraVolado ruedo = voladoRuedo(stack), todo = voladoTodo(stack);
+        if (ruedo != null) tooltip.add(Text.translatable("femclothes.pollera.tooltip.volado_ruedo", Text.translatable(ruedo.traduccion()))
+                .formatted(Formatting.GRAY));
+        if (todo != null) tooltip.add(Text.translatable("femclothes.pollera.tooltip.volado_todo", Text.translatable(todo.traduccion()))
                 .formatted(Formatting.GRAY));
     }
 }

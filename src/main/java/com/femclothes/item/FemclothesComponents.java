@@ -461,6 +461,20 @@ public final class FemclothesComponents {
                     .packetCodec(PacketCodecs.indexed(i -> PolleraLargo.values()[i], Enum::ordinal))
                     .build());
 
+    /** Volado del borde de abajo / de toda la pollera (2026-10-05); ausente = sin volado. */
+    public static final ComponentType<PolleraVolado> POLLERA_VOLADO_RUEDO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "pollera_volado_ruedo"),
+            ComponentType.<PolleraVolado>builder()
+                    .codec(StringIdentifiable.createCodec(PolleraVolado::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PolleraVolado.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<PolleraVolado> POLLERA_VOLADO_TODO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "pollera_volado_todo"),
+            ComponentType.<PolleraVolado>builder()
+                    .codec(StringIdentifiable.createCodec(PolleraVolado::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PolleraVolado.values()[i], Enum::ordinal))
+                    .build());
+
     /** Forma de la pollera (§{@link PolleraForma}); ausente = CAMPANA. */
     public static final ComponentType<PolleraForma> POLLERA_FORMA = Registry.register(
             Registries.DATA_COMPONENT_TYPE,

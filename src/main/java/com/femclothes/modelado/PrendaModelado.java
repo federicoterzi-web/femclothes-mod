@@ -187,6 +187,19 @@ public final class PrendaModelado {
             }
         }
 
+        // Volados de la pollera (2026-10-05): del borde de abajo y de toda la pollera.
+        if (out.getItem() instanceof com.femclothes.item.PolleraItem && combo.pollera().isPresent()) {
+            var p = combo.pollera().get();
+            if (p.voladoRuedo().isPresent()) {
+                com.femclothes.item.PolleraItem.setVoladoRuedo(out, p.voladoRuedo().get());
+                cambio = true;
+            }
+            if (p.voladoTodo().isPresent()) {
+                com.femclothes.item.PolleraItem.setVoladoTodo(out, p.voladoTodo().get());
+                cambio = true;
+            }
+        }
+
         // Banda (2026-10-05): zona, ancho y herraje.
         if (out.getItem() instanceof com.femclothes.item.BandaItem && combo.pollera().isPresent()) {
             var p = combo.pollera().get();

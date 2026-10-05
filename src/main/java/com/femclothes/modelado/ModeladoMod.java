@@ -129,6 +129,19 @@ public final class ModeladoMod {
     public static final MoldeSombreroItem MOLDE_SOMBRERO_PUNTA_DOBLADA = new MoldeSombreroItem(new Item.Settings().maxCount(1),
             MoldeSombreroItem.Tipo.PUNTA_DOBLADA);
 
+    // ── moldes de volado de la pollera (2026-10-05) ──
+    public static final MoldeVoladoItem MOLDE_VOLADO_RECTO = new MoldeVoladoItem(new Item.Settings().maxCount(1),
+            com.femclothes.item.PolleraVolado.RECTO);
+    public static final MoldeVoladoItem MOLDE_VOLADO_CIRCULAR = new MoldeVoladoItem(new Item.Settings().maxCount(1),
+            com.femclothes.item.PolleraVolado.CIRCULAR);
+    // Moldes de las formas nuevas de la pollera (2026-10-05).
+    public static final MoldePolleraItem MOLDE_POLLERA_TUBO = new MoldePolleraItem(new Item.Settings().maxCount(1),
+            com.femclothes.item.PolleraForma.TUBO);
+    public static final MoldePolleraItem MOLDE_POLLERA_GLOBO = new MoldePolleraItem(new Item.Settings().maxCount(1),
+            com.femclothes.item.PolleraForma.GLOBO);
+    public static final MoldePolleraItem MOLDE_POLLERA_CIRCULAR = new MoldePolleraItem(new Item.Settings().maxCount(1),
+            com.femclothes.item.PolleraForma.CIRCULAR);
+
     // ── moldes de la banda (2026-10-05, "correas y cintos") ──
     public static final MoldeBandaItem MOLDE_BANDA_ZONA_CINTURA = new MoldeBandaItem(new Item.Settings().maxCount(1),
             MoldeBandaItem.Tipo.ZONA_CINTURA);
@@ -186,6 +199,11 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_red_arnes_bandas"), MOLDE_RED_ARNES_BANDAS);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_pollera_campana"), MOLDE_POLLERA_CAMPANA);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_pollera_tableada"), MOLDE_POLLERA_TABLEADA);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_pollera_tubo"), MOLDE_POLLERA_TUBO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_pollera_globo"), MOLDE_POLLERA_GLOBO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_pollera_circular"), MOLDE_POLLERA_CIRCULAR);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_volado_recto"), MOLDE_VOLADO_RECTO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_volado_circular"), MOLDE_VOLADO_CIRCULAR);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_ruedo_recto"), MOLDE_CAPA_RUEDO_RECTO);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_ruedo_redondeado"), MOLDE_CAPA_RUEDO_REDONDEADO);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_ruedo_cola"), MOLDE_CAPA_RUEDO_COLA);

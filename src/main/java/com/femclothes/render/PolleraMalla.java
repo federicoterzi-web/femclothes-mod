@@ -2,6 +2,7 @@ package com.femclothes.render;
 
 import com.femclothes.item.PolleraForma;
 import com.femclothes.item.PolleraLargo;
+import com.femclothes.item.PolleraVolado;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.model.ModelPart;
@@ -53,7 +54,8 @@ public final class PolleraMalla {
 
     private static final float Y_CINTURA = 9f;
     private static final int COLUMNAS = 48;
-    private static final int FILAS = 10;
+    /** 24 filas (2026-10-05, volados): tres filas de volado necesitan resolución para que se lea el borde de cada una. */
+    private static final int FILAS = 24;
     private static final int TABLAS = 12;
     /** Largo del perímetro de la caja del torso en la textura (4+8+4+8). */
     private static final float PERIMETRO = 24f;
@@ -108,7 +110,7 @@ public final class PolleraMalla {
     public static void dibujar(MatrixStack matrices, VertexConsumer vc, int luz, PolleraForma forma,
                                PolleraLargo largo, float dil, @Nullable Piernas piernas,
                                CapaMalla.Movimiento mov, float twirl) {
-        dibujar(matrices, vc, luz, forma, largo, dil, piernas, mov, twirl, 0f, 0f);
+        dibujar(matrices, vc, luz, forma, largo, null, null, dil, piernas, mov, twirl, 0f, 0f);
     }
 
     /**
@@ -116,7 +118,8 @@ public final class PolleraMalla {
      * @param inclinacion el {@code pitch} del torso (agachado ~0.5): la tela cuelga igual hacia abajo
      */
     public static void dibujar(MatrixStack matrices, VertexConsumer vc, int luz, PolleraForma forma,
-                               PolleraLargo largo, float dil, @Nullable Piernas piernas,
+                               PolleraLargo largo, @Nullable PolleraVolado voladoRuedo, @Nullable PolleraVolado voladoTodo,
+                               float dil, @Nullable Piernas piernas,
                                CapaMalla.Movimiento mov, float twirl, float cola, float inclinacion) {
         float[][][] p = new float[FILAS + 1][COLUMNAS + 1][];
         float l = largo.pixeles;
@@ -124,8 +127,6 @@ public final class PolleraMalla {
         // que pasar por fuera de las esquinas del torso.
         float holgura = Math.max(dil, 0.25f);
         float a0 = 4f + holgura + 0.1f, b0 = 2f + holgura + 0.1f;
-        float vueloX = 0.8f + 0.18f * l, vueloZ = 1.2f + 0.26f * l;
-        boolean tableada = forma == PolleraForma.TABLEADA;
         // Cuánto se mueve el ruedo (en px, a t = 1): hacia atrás con la
         // velocidad, de costado con el giro, y cuánto se abre al caer.
         float atras = l * 0.5f * Math.min(1f, mov.atras() / 80f);
@@ -133,6 +134,9 @@ public final class PolleraMalla {
         float abrir = mov.vertical() > 0f ? 0.6f * Math.min(1f, mov.vertical() / 20f)
                 : -0.12f * Math.min(1f, -mov.vertical() / 6f);
         float giro = 0.18f * mov.paso() / 32f;
+        // Cuánto se mueve según la forma (2026-10-05): el tubo casi no vuela, el globo un poco menos que la campana
+        // y la circular más.
+        float movimiento = movimientoDe(forma);
         // Twirl (2026-09-30, "que se abran y giren"): la campana se abre casi
         // horizontal a mitad de la vuelta y el ruedo queda atrasado respecto
         // del giro del cuerpo (la tela arrastra). Vale también en rígida.
@@ -142,6 +146,10 @@ public final class PolleraMalla {
             giro += 0.7f * fuerza;
             atras *= 1f - fuerza;
         }
+        atras *= movimiento;
+        costado *= movimiento;
+        abrir *= movimiento;
+        giro *= movimiento;
 
         // La tela sale del perfil QUIETO (no del que se mueve): así el dibujo
         // no "nada" sobre la pollera cuando la tela se balancea.
@@ -151,7 +159,7 @@ public final class PolleraMalla {
             float y = Y_CINTURA + t * l;
             float peso = (float) Math.pow(t, 1.6);
             float cosG = (float) Math.cos(giro * t), sinG = (float) Math.sin(giro * t);
-            float[][] anillo = anillo(t, a0, b0, vueloX, vueloZ, l, abrir, tableada);
+            float[][] anillo = anillo(t, a0, b0, l, abrir, forma, voladoRuedo, voladoTodo);
             for (int c = 0; c <= COLUMNAS; c++) {
                 float x = anillo[c][0], z = anillo[c][1];
                 // Vaivén del paso: la tela se retuerce un poco alrededor del eje del cuerpo.
@@ -217,15 +225,15 @@ public final class PolleraMalla {
      * o del frente/espalda. Lo usa la tela de encima (el hoodie, 2026-10-02,
      * "el hoodie se abre por fuera") para pasar por fuera de la pollera.
      */
-    public static float holguraEn(PolleraForma forma, PolleraLargo largo, float dil, float y) {
+    public static float holguraEn(PolleraForma forma, PolleraLargo largo, @Nullable PolleraVolado voladoRuedo,
+                                  @Nullable PolleraVolado voladoTodo, float dil, float y) {
         float l = largo.pixeles;
         if (y <= Y_CINTURA || y > Y_CINTURA + l + 0.5f) return -1f;
         float t = Math.min(1f, (y - Y_CINTURA) / l);
         float holgura = Math.max(dil, 0.25f);
         float a0 = 4f + holgura + 0.1f, b0 = 2f + holgura + 0.1f;
-        float vueloX = 0.8f + 0.18f * l, vueloZ = 1.2f + 0.26f * l;
         float max = 0f;
-        for (float[] q : anillo(t, a0, b0, vueloX, vueloZ, l, 0f, forma == PolleraForma.TABLEADA)) {
+        for (float[] q : anillo(t, a0, b0, l, 0f, forma, voladoRuedo, voladoTodo)) {
             max = Math.max(max, Math.max(Math.abs(q[0]) - 4f, Math.abs(q[1]) - 2f));
         }
         return max;
@@ -261,14 +269,45 @@ public final class PolleraMalla {
      * tableada, el zigzag de las tablas. Columna 0 y {@link #COLUMNAS} son
      * el mismo punto (la costura).
      */
-    private static float[][] anillo(float t, float a0, float b0, float vueloX, float vueloZ, float l,
-                                    float abrir, boolean tableada) {
-        float curva = (float) Math.pow(t, 1.15);
+    private static float[][] anillo(float t, float a0, float b0, float l, float abrir, PolleraForma forma,
+                                    @Nullable PolleraVolado voladoRuedo, @Nullable PolleraVolado voladoTodo) {
+        boolean tableada = forma == PolleraForma.TABLEADA;
         float peso = (float) Math.pow(t, 1.6);
-        float a = (a0 + vueloX * curva) * (1f + abrir * peso), b = (b0 + vueloZ * curva) * (1f + abrir * peso);
-        // De caja (12, casi recta: la cintura tapa las esquinas del torso
-        // ahora que no hay cinto, 2026-10-01) a casi elipse (2.4) en el ruedo.
-        float n = 2.4f + 9.6f * (1f - t) * (1f - t);
+        float rx, rz;      // cuánto se abre la tela del torso al ruedo, en cada eje
+        float n;           // exponente de la superelipse de la sección
+        switch (forma) {
+            case TUBO -> {
+                // Recta (2026-10-05, "pollera de tubo"): casi sin vuelo, sección de caja redondeada todo el largo.
+                rx = (0.25f + 0.04f * l) * t;
+                rz = (0.3f + 0.05f * l) * t;
+                n = 5f + 5f * (1f - t) * (1f - t);
+            }
+            case GLOBO -> {
+                // Abombada (2026-10-05, "pollera de globo"): ancha en el medio y cerrada en el ruedo.
+                float panza = (float) Math.sin(Math.PI * Math.pow(Math.min(1f, t * 1.04f), 0.8));
+                rx = (1.3f + 0.2f * l) * panza + 0.3f * t;
+                rz = (1.9f + 0.28f * l) * panza + 0.4f * t;
+                n = 2.6f + 6f * (1f - t) * (1f - t);
+            }
+            case CIRCULAR -> {
+                // De círculo completo (2026-10-05, "pollera circular"): se abre ya desde la cadera.
+                float curva = (float) Math.pow(t, 0.9);
+                rx = (1.4f + 0.31f * l) * curva;
+                rz = (2.0f + 0.44f * l) * curva;
+                n = 2.2f + 5f * (1f - t) * (1f - t);
+            }
+            default -> {
+                float curva = (float) Math.pow(t, 1.15);
+                rx = (0.8f + 0.18f * l) * curva;
+                rz = (1.2f + 0.26f * l) * curva;
+                // De caja (12, casi recta: la cintura tapa las esquinas del torso
+                // ahora que no hay cinto, 2026-10-01) a casi elipse (2.4) en el ruedo.
+                n = 2.4f + 9.6f * (1f - t) * (1f - t);
+            }
+        }
+        // Volados (2026-10-05): cada fila de volado nace pegada y se abre hacia su borde de abajo, con ondas.
+        float[] vol = volado(t, voladoRuedo, voladoTodo);
+        float a = (a0 + rx) * (1f + abrir * peso) + vol[0], b = (b0 + rz) * (1f + abrir * peso) + vol[0];
         float[][] out = new float[COLUMNAS + 1][];
         // Columnas a igual largo de arco, con el centro del frente en COL_FRENTE (2026-10-04, "es literal un corte
         // en la tela, no enganchan las dos partes"): espaciadas por el perímetro de la caja (s parejo), la vuelta
@@ -306,9 +345,59 @@ public final class PolleraMalla {
                     z += nz / len * amp * tri;
                 }
             }
+            if (vol[1] > 1e-4f) {
+                // Ondas del volado: radiales, vol[2] por vuelta (más chicas y apretadas en el recto).
+                float onda = (float) Math.sin(2.0 * Math.PI * vol[2] * c / COLUMNAS) * vol[1];
+                float nx = x / (a * a), nz = z / (b * b);
+                float len = (float) Math.sqrt(nx * nx + nz * nz);
+                if (len > 1e-4f) {
+                    x += nx / len * onda;
+                    z += nz / len * onda;
+                }
+            }
             out[c] = new float[]{x, z};
         }
         return out;
+    }
+
+    /** Cuánto se mueve la tela de cada forma respecto de la campana (2026-10-05). */
+    private static float movimientoDe(PolleraForma forma) {
+        return switch (forma) {
+            case TUBO -> 0.25f;
+            case GLOBO -> 0.6f;
+            case CIRCULAR -> 1.25f;
+            default -> 1f;
+        };
+    }
+
+    /**
+     * Los volados a la altura {@code t} (0 = cintura, 1 = ruedo): {radio extra, amplitud de las ondas, ondas por
+     * vuelta} (2026-10-05, "dos moldes de volado, uno recto y uno circular... borde inferior o toda la pollera").
+     * Solo el del ruedo: una fila en el último tercio. El de toda la pollera: tres filas parejas; si hay los dos, el
+     * del ruedo manda en la última fila. Cada fila arranca pegada a la tela de arriba (0,3 px) y se abre hasta su
+     * borde; la fila de abajo vuelve a arrancar pegada, así queda el escalón de un volado sobre el otro.
+     */
+    private static float[] volado(float t, @Nullable PolleraVolado ruedo, @Nullable PolleraVolado todo) {
+        PolleraVolado tipo;
+        float t0, t1;
+        if (todo != null) {
+            int fila = Math.min(2, (int) (t * 3f));
+            t0 = fila / 3f;
+            t1 = (fila + 1) / 3f;
+            tipo = fila == 2 && ruedo != null ? ruedo : todo;
+        } else if (ruedo != null && t >= 0.68f) {
+            t0 = 0.68f;
+            t1 = 1f;
+            tipo = ruedo;
+        } else {
+            return new float[]{0f, 0f, 0f};
+        }
+        if (t <= 0f) return new float[]{0f, 0f, 0f};
+        float s = Math.min(1f, (t - t0) / (t1 - t0));
+        float abrir = tipo == PolleraVolado.CIRCULAR ? 2.4f : 0.9f;
+        float amp = tipo == PolleraVolado.CIRCULAR ? 0.8f : 0.3f;
+        float ondas = tipo == PolleraVolado.CIRCULAR ? 6f : 16f;
+        return new float[]{0.3f + abrir * (float) Math.pow(s, 1.25), amp * s, ondas};
     }
 
     /**
@@ -361,6 +450,7 @@ public final class PolleraMalla {
 
     private static final java.util.Map<String, Perfil> PERFILES = new java.util.HashMap<>();
 
+    /** Siempre de la pollera lisa (sin volados): las UV de la tela no cambian con ellos. */
     public static Perfil perfil(PolleraForma forma, PolleraLargo largo) {
         return PERFILES.computeIfAbsent(forma + "|" + largo, k -> calcularPerfil(forma, largo));
     }
@@ -369,10 +459,8 @@ public final class PolleraMalla {
         Perfil pf = new Perfil();
         float l = largo.pixeles;
         float a0 = 4.35f, b0 = 2.35f;
-        float vueloX = 0.8f + 0.18f * l, vueloZ = 1.2f + 0.26f * l;
-        boolean tableada = forma == PolleraForma.TABLEADA;
         float[][][] anillos = new float[FILAS + 1][][];
-        for (int f = 0; f <= FILAS; f++) anillos[f] = anillo(f / (float) FILAS, a0, b0, vueloX, vueloZ, l, 0f, tableada);
+        for (int f = 0; f <= FILAS; f++) anillos[f] = anillo(f / (float) FILAS, a0, b0, l, 0f, forma, null, null);
 
         // u: largo recorrido sobre cada anillo, con el centro del frente
         // clavado en u 24 y el de la espalda en u 36 (cada mitad de la vuelta

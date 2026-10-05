@@ -29,6 +29,9 @@ POLLERA = {
         ("MAT1", "der", (756, 150), (542, 186)),
         ("MAT2", None, (756, 253), None),
         ("MAT3", "der", (756, 358), (612, 350)),
+        # Volados (2026-10-05): el del borde de abajo y el de toda la pollera.
+        ("VOLADO_INF", "der", (770, 462), (615, 440)),
+        ("VOLADO_TOT", "izq", (100, 165), (375, 205)),
     ],
 }
 CAPA = {

@@ -315,6 +315,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         List<com.femclothes.aplique.Aplique> apliques = ApliqueRenderer.apliquesEn(stack, com.femclothes.aplique.Aplique.Superficie.POLLERA);
         MallaCapturada malla = grabar("pollera", !apliques.isEmpty() || CorreaRenderer.hayEn(stack, com.femclothes.correa.Correa.Superficie.POLLERA), () -> PolleraMalla.dibujar(matrices, buffer, luz,
                 com.femclothes.item.PolleraItem.forma(stack), com.femclothes.item.PolleraItem.largo(stack),
+                com.femclothes.item.PolleraItem.voladoRuedo(stack), com.femclothes.item.PolleraItem.voladoTodo(stack),
                 dilatacion, new PolleraMalla.Piernas(biped.body, biped.rightLeg, biped.leftLeg), mov,
                 twirl, cola, delJugador.pitch));
         matrices.pop();
@@ -621,6 +622,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         ItemStack s = polleraPuesta;
         if (s == null) return -1F;
         return PolleraMalla.holguraEn(com.femclothes.item.PolleraItem.forma(s), com.femclothes.item.PolleraItem.largo(s),
+                com.femclothes.item.PolleraItem.voladoRuedo(s), com.femclothes.item.PolleraItem.voladoTodo(s),
                 Math.max(0F, com.femclothes.item.Calce.dilatacionEfectiva(s)), y);
     }
 

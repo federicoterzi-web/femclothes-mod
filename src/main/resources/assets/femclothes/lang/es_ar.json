@@ -846,5 +846,20 @@
   "femclothes.correa.boton.recolorear": "Recolorear",
   "femclothes.correa.boton.quitar_sel": "Quitar #%s",
   "femclothes.correa.tooltip.lista": "Elegí una correa de la prenda: Modo y Ancho la cambian, Recolorear le pasa los colores del retazo y Quitar la saca",
-  "femclothes.correa.tooltip.recolorear": "Le pasa a la correa elegida los 3 colores del retazo (no se gasta)"
+  "femclothes.correa.tooltip.recolorear": "Le pasa a la correa elegida los 3 colores del retazo (no se gasta)",
+  "femclothes.pollera.forma.tubo": "Tubo",
+  "femclothes.pollera.forma.globo": "Globo",
+  "femclothes.pollera.forma.circular": "Circular",
+  "item.femclothes.molde_pollera_tubo": "Molde de Pollera: Tubo",
+  "item.femclothes.molde_pollera_globo": "Molde de Pollera: Globo",
+  "item.femclothes.molde_pollera_circular": "Molde de Pollera: Circular",
+  "item.femclothes.molde_volado_recto": "Molde de Volado: Recto",
+  "item.femclothes.molde_volado_circular": "Molde de Volado: Circular",
+  "femclothes.pollera.volado.recto": "recto",
+  "femclothes.pollera.volado.circular": "circular",
+  "femclothes.pollera.tooltip.volado_ruedo": "Volado en el ruedo: %s",
+  "femclothes.pollera.tooltip.volado_todo": "Volados en toda la pollera: %s",
+  "femclothes.pollera.molde_volado.ayuda": "Va en el pin Volado inferior (solo el ruedo) o Volado total (tres filas) de la Pollera.",
+  "femclothes.modelado.rol.volado_inferior": "Volado inf.",
+  "femclothes.modelado.rol.volado_total": "Volado total"
 }

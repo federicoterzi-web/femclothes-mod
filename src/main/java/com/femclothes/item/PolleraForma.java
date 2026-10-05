@@ -10,7 +10,14 @@ import net.minecraft.util.StringIdentifiable;
  */
 public enum PolleraForma implements StringIdentifiable {
     CAMPANA("campana"),
-    TABLEADA("tableada");
+    TABLEADA("tableada"),
+    // Tres formas más (2026-10-05, "vamos a agregar tres polleras": tubo, globo y circular); al FINAL.
+    /** Recta o lápiz: pegada a la cadera, casi sin vuelo ni movimiento. */
+    TUBO("tubo"),
+    /** Abombada: ancha en el medio y cerrada en el ruedo. */
+    GLOBO("globo"),
+    /** De círculo completo: mucho vuelo y se abre en el twirl. */
+    CIRCULAR("circular");
 
     public final String clave;
 
