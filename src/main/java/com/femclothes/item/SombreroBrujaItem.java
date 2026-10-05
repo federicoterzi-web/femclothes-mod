@@ -16,7 +16,7 @@ import java.util.List;
  * cono y cinta, en {@code femclothes:colores_sombrero}), un ala (ancha/corta) y una punta (recta/doblada) y la
  * dibuja {@link com.femclothes.render.SombreroRenderer}; la punta se mece con la tela blanda de los apliques.
  */
-public class SombreroBrujaItem extends TrinketItem {
+public class SombreroBrujaItem extends TrinketItem implements ZonasTenibles {
 
     /** Blanco de fábrica (2026-10-05, "sale blanco de fabrica"): igual que el retazo sin teñir; los colores se ponen en la Mesa de estilado. */
     public static final List<Integer> DE_FABRICA = List.of(0xF2F2F6, 0xF2F2F6, 0xF2F2F6);
@@ -76,6 +76,13 @@ public class SombreroBrujaItem extends TrinketItem {
         stack.set(FemclothesComponents.COLORES_SOMBRERO, List.of(ala, cono, cinta));
         return stack;
     }
+
+    @Override public List<Integer> coloresDe(ItemStack stack) { return colores(stack); }
+    @Override public ItemStack conColoresDe(ItemStack stack, int a, int b, int c) { return conColores(stack, a, b, c); }
+    @Override public List<SombreroPatron> patronesDe(ItemStack stack) { return patrones(stack); }
+    @Override public ItemStack conPatronDe(ItemStack stack, int zona, SombreroPatron patron) { return conPatron(stack, zona, patron); }
+    @Override public String claveZona(ItemStack stack, int i) { return "femclothes.sombrero.zona." + (i + 1); }
+    @Override public com.femclothes.garment.Parte marco(ItemStack stack) { return com.femclothes.garment.Parte.CABEZA; }
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {

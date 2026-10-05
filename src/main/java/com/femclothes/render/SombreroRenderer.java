@@ -117,7 +117,7 @@ public final class SombreroRenderer {
     // ── geometría ─────────────────────────────────────────────────────────
     private static final Map<String, ModelPart> CACHE = new HashMap<>();
 
-    private static ModelPart.Cuboid caja(float x, float y, float z, float sx, float sy, float sz) {
+    static ModelPart.Cuboid caja(float x, float y, float z, float sx, float sy, float sz) {
         return new ModelPart.Cuboid(0, 0, x, y, z, sx, sy, sz, 0, 0, 0, false, TEX, TEX, TODAS);
     }
 
@@ -187,7 +187,7 @@ public final class SombreroRenderer {
     // ── textura lisa por color ────────────────────────────────────────────
     private static final Map<Integer, Identifier> TEXTURAS = new HashMap<>();
 
-    private static Identifier textura(int rgb, SombreroPatron patron) {
+    static Identifier textura(int rgb, SombreroPatron patron) {
         int key = rgb & 0xFFFFFF;
         int clave = key | (patron.ordinal() << 24);
         Identifier id = TEXTURAS.get(clave);

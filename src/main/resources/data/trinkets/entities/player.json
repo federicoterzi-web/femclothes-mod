@@ -9,6 +9,8 @@
     "torso/prenda",
     "espalda/capa",
     "torso/chaqueta",
-    "head/sombrero"
+    "head/sombrero",
+    "torso/cinto",
+    "head/choker"
   ]
 }

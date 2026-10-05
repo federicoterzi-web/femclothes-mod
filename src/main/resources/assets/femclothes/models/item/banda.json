@@ -1,0 +1,7 @@
+{
+  "_comment": "Ícono plano de la banda (2026-10-05), dibujado por tools/generar_icono_banda.py.",
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "femclothes:item/banda"
+  }
+}

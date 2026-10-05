@@ -73,6 +73,9 @@ public final class FemclothesItems {
     public static final SombreroBrujaItem SOMBRERO_BRUJA = register("sombrero_bruja",
             new SombreroBrujaItem(new Item.Settings().maxCount(1)));
 
+    /** Banda: cinto o choker según su zona (2026-10-05), slots {@code torso/cinto} y {@code head/choker}. */
+    public static final BandaItem BANDA = register("banda", new BandaItem(new Item.Settings().maxCount(1)));
+
     // Apliques (2026-10-01, Mesa de estilado): moldes que no se gastan y el retazo con los colores.
     public static final com.femclothes.aplique.MoldeApliqueItem MOLDE_APLIQUE_MONO = register("molde_aplique_mono",
             new com.femclothes.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.femclothes.aplique.ModeloAplique.MONO));

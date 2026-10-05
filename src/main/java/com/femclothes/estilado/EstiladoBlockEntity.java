@@ -190,7 +190,7 @@ public class EstiladoBlockEntity extends BlockEntity
                 z = MathHelper.clamp(z, -24, 24);
             }
             default -> {
-                if (prenda.getItem() instanceof com.femclothes.item.SombreroBrujaItem) {
+                if (prenda.getItem() instanceof com.femclothes.item.ZonasTenibles) {
                     // Sobre el ala o el cono (2026-10-05): el punto es de una caja del sombrero en el marco de la cabeza (y
                     // negativo = arriba), así que el rango llega hasta la punta y el borde del ala ancha.
                     x = MathHelper.clamp(x, -11, 11);
@@ -345,10 +345,9 @@ public class EstiladoBlockEntity extends BlockEntity
         if (id == BTN_SIGUIENTE_MOLDE) return siguienteMolde();
         if (id >= BTN_PATRON_BASE && id < BTN_PATRON_BASE + 3) {
             ItemStack prenda = items.get(SLOT_PRENDA);
-            if (!(prenda.getItem() instanceof com.femclothes.item.SombreroBrujaItem)) return false;
+            if (!(prenda.getItem() instanceof com.femclothes.item.ZonasTenibles z)) return false;
             int zona = id - BTN_PATRON_BASE;
-            com.femclothes.item.SombreroBrujaItem.conPatron(prenda, zona,
-                    com.femclothes.item.SombreroBrujaItem.patrones(prenda).get(zona).siguiente());
+            z.conPatronDe(prenda, zona, z.patronesDe(prenda).get(zona).siguiente());
             markDirty();
             return true;
         }
@@ -435,8 +434,8 @@ public class EstiladoBlockEntity extends BlockEntity
     private boolean colorearSombrero(int id) {
         ItemStack prenda = items.get(SLOT_PRENDA);
         List<Integer> fuente = coloresDeLaFuente();
-        if (!(prenda.getItem() instanceof com.femclothes.item.SombreroBrujaItem) || fuente == null) return false;
-        List<Integer> actuales = com.femclothes.item.SombreroBrujaItem.colores(prenda);
+        if (!(prenda.getItem() instanceof com.femclothes.item.ZonasTenibles z) || fuente == null) return false;
+        List<Integer> actuales = z.coloresDe(prenda);
         int[] nuevos = {actuales.get(0), actuales.get(1), actuales.get(2)};
         if (id == BTN_COLOR_ENTERO) {
             for (int i = 0; i < 3; i++) nuevos[i] = fuente.get(i);
@@ -445,7 +444,7 @@ public class EstiladoBlockEntity extends BlockEntity
             if (zona > 2 || color > 2) return false;
             nuevos[zona] = fuente.get(color);
         }
-        com.femclothes.item.SombreroBrujaItem.conColores(prenda, nuevos[0], nuevos[1], nuevos[2]);
+        z.conColoresDe(prenda, nuevos[0], nuevos[1], nuevos[2]);
         markDirty();
         return true;
     }

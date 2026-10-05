@@ -147,7 +147,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         // Apliques de armaduras y wearables de cualquier mod (2026-10-02).
         dibujarApliquesDeVestibles(entidad, biped, matrices, vertexConsumers, luz);
         // Sombrero de bruja (2026-10-04): no es una prenda de cuerpo, se dibuja siempre que esté puesto.
-        dibujarSombrero(entidad, biped, matrices, vertexConsumers, luz);
+        dibujarSombrero(entidad, biped, matrices, vertexConsumers, luz, holguraDeCinto(prendas));
         if (prendas.isEmpty() && !cuerpoEntero) {
             dibujarBustoEnLaSkin(entidad, biped, matrices, vertexConsumers, luz);
             com.femclothes.render.relieve.BustoRender.actual = null;
@@ -446,27 +446,36 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             for (var par : c.getAllEquipped()) {
                 ItemStack puesto = par.getRight();
                 // Los del sombrero los dibuja SombreroRenderer (también en la vista previa y el Maniquí).
-                if (puesto.isEmpty() || Garments.esPrenda(puesto) || puesto.getItem() instanceof com.femclothes.item.SombreroBrujaItem) continue;
+                if (puesto.isEmpty() || Garments.esPrenda(puesto) || AccesorioRenderer.es(puesto)) continue;
                 ApliqueRenderer.dibujar(puesto, ApliqueRenderer.dilatacionDeSlot(null), biped, matrices, vertexConsumers, luz);
             }
         });
     }
 
-    /** El sombrero de bruja puesto en su slot de Trinkets, si hay (2026-10-04). */
+    /**
+     * Los accesorios de cajas puestos en sus slots de Trinkets (2026-10-04 el sombrero de bruja; 2026-10-05 la banda:
+     * cinto y choker). {@code sombreroOverride} (el nombre quedó del sombrero) es el que muestra la Mesa de estilado,
+     * el Guardarropas y la Modeladora aunque no esté puesto.
+     */
     private static void dibujarSombrero(LivingEntity entidad, BipedEntityModel<?> biped, MatrixStack matrices,
-                                        VertexConsumerProvider vertexConsumers, int luz) {
+                                        VertexConsumerProvider vertexConsumers, int luz, float dil) {
         if (sombreroOverride != null) {
-            SombreroRenderer.dibujar(sombreroOverride, biped, matrices, vertexConsumers, luz);
+            AccesorioRenderer.dibujar(sombreroOverride, biped, matrices, vertexConsumers, luz, dil);
             return;
         }
         TrinketsApi.getTrinketComponent(entidad).ifPresent(c -> {
             for (var par : c.getAllEquipped()) {
                 ItemStack puesto = par.getRight();
-                if (puesto.getItem() instanceof com.femclothes.item.SombreroBrujaItem) {
-                    SombreroRenderer.dibujar(puesto, biped, matrices, vertexConsumers, luz);
-                }
+                if (AccesorioRenderer.es(puesto)) AccesorioRenderer.dibujar(puesto, biped, matrices, vertexConsumers, luz, dil);
             }
         });
+    }
+
+    /** Cuánto sale del torso la ropa en la cintura (2026-10-05): el cinto va por encima, sin hundirse en un hoodie oversize. */
+    private static float holguraDeCinto(List<ItemStack> prendas) {
+        float m = 0f;
+        for (ItemStack p : prendas) m = Math.max(m, com.femclothes.item.Calce.dilatacionEfectiva(p));
+        return Math.max(BandaRenderer.DIL_MESA, m * 1.4f + 0.25f);
     }
 
     /** ¿Hay un hoodie (chaqueta con capucha) entre las prendas? */

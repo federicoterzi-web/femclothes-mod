@@ -1,0 +1,27 @@
+package com.femclothes.item;
+
+import com.femclothes.garment.Parte;
+import net.minecraft.item.ItemStack;
+
+import java.util.List;
+
+/**
+ * Un ítem puesto con 3 zonas que se pintan y se dibujan en la Mesa de estilado (2026-10-05): el sombrero de bruja
+ * (ala, cono, cinta) y la banda (banda, borde, herraje). Los dos se dibujan con cajas en el marco de una parte del
+ * cuerpo ({@link #marco}) y llevan sus propios apliques.
+ */
+public interface ZonasTenibles {
+    List<Integer> coloresDe(ItemStack stack);
+
+    ItemStack conColoresDe(ItemStack stack, int a, int b, int c);
+
+    List<SombreroPatron> patronesDe(ItemStack stack);
+
+    ItemStack conPatronDe(ItemStack stack, int zona, SombreroPatron patron);
+
+    /** Clave de traducción del nombre de la zona {@code i} (0..2). */
+    String claveZona(ItemStack stack, int i);
+
+    /** La parte del cuerpo en cuyo marco se dibujan sus cajas. */
+    Parte marco(ItemStack stack);
+}

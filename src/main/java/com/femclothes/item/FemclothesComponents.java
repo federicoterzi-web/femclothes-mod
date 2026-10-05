@@ -553,6 +553,38 @@ public final class FemclothesComponents {
                     .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
                     .build());
 
+    /** Banda (2026-10-05, cintos y chokers): zona, ancho, herraje, colores y dibujo de sus 3 partes. */
+    public static final ComponentType<BandaZona> BANDA_ZONA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "banda_zona"),
+            ComponentType.<BandaZona>builder()
+                    .codec(StringIdentifiable.createCodec(BandaZona::values))
+                    .packetCodec(PacketCodecs.indexed(i -> BandaZona.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<BandaAncho> BANDA_ANCHO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "banda_ancho"),
+            ComponentType.<BandaAncho>builder()
+                    .codec(StringIdentifiable.createCodec(BandaAncho::values))
+                    .packetCodec(PacketCodecs.indexed(i -> BandaAncho.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<BandaHerraje> BANDA_HERRAJE = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "banda_herraje"),
+            ComponentType.<BandaHerraje>builder()
+                    .codec(StringIdentifiable.createCodec(BandaHerraje::values))
+                    .packetCodec(PacketCodecs.indexed(i -> BandaHerraje.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<java.util.List<Integer>> COLORES_BANDA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "colores_banda"),
+            ComponentType.<java.util.List<Integer>>builder()
+                    .codec(com.mojang.serialization.Codec.INT.listOf())
+                    .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
+                    .build());
+    public static final ComponentType<java.util.List<Integer>> PATRONES_BANDA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "patrones_banda"),
+            ComponentType.<java.util.List<Integer>>builder()
+                    .codec(com.mojang.serialization.Codec.INT.listOf())
+                    .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
+                    .build());
+
     /** Dibujo de cada zona del sombrero (2026-10-05): ordinales de {@link SombreroPatron}, ala/cono/cinta. */
     public static final ComponentType<java.util.List<Integer>> PATRONES_SOMBRERO = Registry.register(
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "patrones_sombrero"),

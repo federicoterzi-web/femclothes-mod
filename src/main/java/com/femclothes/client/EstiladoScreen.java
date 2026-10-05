@@ -535,7 +535,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         for (int i = 0; i < antes.length; i++) antes[i] = armadura.get(i);
         net.minecraft.entity.EquipmentSlot slot = delMod ? null : slotDe(prenda);
         // El sombrero de bruja no está en los Trinkets del jugador: se dibuja de mentira (2026-10-05).
-        GarmentFeatureRenderer.sombreroOverride = prenda.getItem() instanceof com.femclothes.item.SombreroBrujaItem ? prenda : null;
+        GarmentFeatureRenderer.sombreroOverride = com.femclothes.render.AccesorioRenderer.es(prenda) ? prenda : null;
         try {
             if (slot != null && slot.getType() == net.minecraft.entity.EquipmentSlot.Type.HUMANOID_ARMOR) {
                 armadura.set(slot.getEntitySlotId(), prenda);
@@ -593,9 +593,9 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
      */
     private int zonaDelSombrero(double mx, double my) {
         ItemStack prenda = handler.be.getStack(EstiladoBlockEntity.SLOT_PRENDA);
-        Matrix4f m = poses.get(Parte.CABEZA);
-        if (!(prenda.getItem() instanceof com.femclothes.item.SombreroBrujaItem) || m == null
-                || Math.abs(m.determinant()) < 1e-12f) return -1;
+        if (!(prenda.getItem() instanceof com.femclothes.item.ZonasTenibles zt)) return -1;
+        Matrix4f m = poses.get(zt.marco(prenda));
+        if (m == null || Math.abs(m.determinant()) < 1e-12f) return -1;
         Matrix4f inversa = new Matrix4f(m).invert();
         final float Z = 10000f;
         Vector3f p0 = inversa.transformPosition(new Vector3f((float) mx, (float) my, -Z));
@@ -604,7 +604,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         float[] d = { p1.x - p0.x, p1.y - p0.y, p1.z - p0.z };
         int mejor = -1;
         float mejorT = -Float.MAX_VALUE;
-        for (com.femclothes.render.SombreroRenderer.Caja c : com.femclothes.render.SombreroRenderer.cajas(prenda)) {
+        for (com.femclothes.render.SombreroRenderer.Caja c : com.femclothes.render.AccesorioRenderer.cajas(prenda)) {
             float tMin = -Float.MAX_VALUE, tMax = Float.MAX_VALUE;
             boolean fuera = false;
             for (int i = 0; i < 3 && !fuera; i++) {
@@ -721,7 +721,8 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
      */
     @Nullable
     private Toque tocarSombrero(double mx, double my, ItemStack prenda) {
-        Matrix4f m = poses.get(Parte.CABEZA);
+        Parte marco = ((com.femclothes.item.ZonasTenibles) prenda.getItem()).marco(prenda);
+        Matrix4f m = poses.get(marco);
         if (m == null || Math.abs(m.determinant()) < 1e-12f) return null;
         Matrix4f inversa = new Matrix4f(m).invert();
         final float Z = 10000f;
@@ -730,7 +731,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         float[] o = { p0.x, p0.y, p0.z };
         float[] d = { p1.x - p0.x, p1.y - p0.y, p1.z - p0.z };
         Toque mejor = null;
-        for (com.femclothes.render.SombreroRenderer.Caja c : com.femclothes.render.SombreroRenderer.cajas(prenda)) {
+        for (com.femclothes.render.SombreroRenderer.Caja c : com.femclothes.render.AccesorioRenderer.cajas(prenda)) {
             float tMin = -Float.MAX_VALUE, tMax = Float.MAX_VALUE;
             int eje = -1;
             float signo = 0;
@@ -757,7 +758,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 p[i] = i == eje ? (signo > 0 ? mx2 : mn) : Math.max(mn, Math.min(mx2, p[i]));
             }
             Direction cara = Direction.getFacing(eje == 0 ? signo : 0, eje == 1 ? signo : 0, eje == 2 ? signo : 0);
-            Toque t = new Toque(Parte.CABEZA, p[0] * 16f, p[1] * 16f, p[2] * 16f, cara, tMax);
+            Toque t = new Toque(marco, p[0] * 16f, p[1] * 16f, p[2] * 16f, cara, tMax);
             if (mejor == null || t.profundidad() > mejor.profundidad()) mejor = t;
         }
         return mejor;
@@ -768,7 +769,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         ItemStack prenda = handler.be.getStack(EstiladoBlockEntity.SLOT_PRENDA);
         PlayerEntity jugador = MinecraftClient.getInstance().player;
         if (prenda.isEmpty() || jugador == null || poses.isEmpty()) return null;
-        if (prenda.getItem() instanceof com.femclothes.item.SombreroBrujaItem) return tocarSombrero(mx, my, prenda);
+        if (prenda.getItem() instanceof com.femclothes.item.ZonasTenibles) return tocarSombrero(mx, my, prenda);
         boolean slim = MinecraftClient.getInstance().player.getSkinTextures().model() == SkinTextures.Model.SLIM;
         // Pollera y capa (2026-10-02, "no registran click on garment"): contra su malla, por UV.
         Aplique.Superficie malla = prenda.getItem() instanceof com.femclothes.item.PolleraItem ? Aplique.Superficie.POLLERA
@@ -980,7 +981,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         boolean hay = sel >= 0 && sel < apliques.size();
         // Sombrero de bruja en la prenda (2026-10-05): colorear o poner apliques.
         ItemStack enPrenda = be.getStack(EstiladoBlockEntity.SLOT_PRENDA);
-        boolean sombrero = enPrenda.getItem() instanceof com.femclothes.item.SombreroBrujaItem;
+        boolean sombrero = enPrenda.getItem() instanceof com.femclothes.item.ZonasTenibles;
         if (!sombrero) modoColor = false;
         btnModoColor.visible = sombrero;
         btnModoColor.setMessage(Text.translatable(modoColor ? "femclothes.estilado.modo_color.apliques"
@@ -1000,8 +1001,8 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         btnColorEntero.active = fuente != null;
         for (int z = 0; z < 3; z++) {
             btnPatronZona[z].visible = modoColor;
-            if (sombrero) btnPatronZona[z].setMessage(Text.translatable(
-                    com.femclothes.item.SombreroBrujaItem.patrones(enPrenda).get(z).traduccion()));
+            if (enPrenda.getItem() instanceof com.femclothes.item.ZonasTenibles zt) btnPatronZona[z].setMessage(Text.translatable(
+                    zt.patronesDe(enPrenda).get(z).traduccion()));
         }
         btnGiro.active = btnEscala.active = btnQuitar.active = hay;
         actualizarPanel(hay ? apliques.get(sel) : null);
@@ -1042,7 +1043,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
             if (zona >= 0) {
                 context.fill(mouseX - 3, mouseY, mouseX + 4, mouseY + 1, 0xFFFFFFFF);
                 context.fill(mouseX, mouseY - 3, mouseX + 1, mouseY + 4, 0xFFFFFFFF);
-                context.drawTooltip(this.textRenderer, Text.translatable("femclothes.sombrero.zona." + (zona + 1)), mouseX, mouseY);
+                context.drawTooltip(this.textRenderer, Text.translatable(com.femclothes.item.BandaItem.class.isInstance(handler.be.getStack(EstiladoBlockEntity.SLOT_PRENDA).getItem()) ? "femclothes.banda.parte." + (zona + 1) : "femclothes.sombrero.zona." + (zona + 1)), mouseX, mouseY);
             }
         } else if (!modoColor && dentroDeVista(mouseX, mouseY) && tocar(mouseX, mouseY) != null) {
             context.fill(mouseX - 3, mouseY, mouseX + 4, mouseY + 1, 0xFFFFFFFF);
@@ -1067,7 +1068,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 Aplique.MAXIMO_POR_PRENDA), X_DER + (creativa() ? 102 : 80), EstiladoScreenHandler.Y_SLOTS + 4, EstiloPergamino.TEXTO, false);
         if (modoColor) {
             for (int z = 0; z < 3; z++) {
-                context.drawText(this.textRenderer, Text.translatable("femclothes.sombrero.zona." + (z + 1)),
+                context.drawText(this.textRenderer, Text.translatable(handler.be.getStack(EstiladoBlockEntity.SLOT_PRENDA).getItem() instanceof com.femclothes.item.BandaItem ? "femclothes.banda.parte." + (z + 1) : "femclothes.sombrero.zona." + (z + 1)),
                         X_DER, 66 + z * 22 + 4, EstiloPergamino.TEXTO, false);
             }
             if (handler.be.coloresDeLaFuente() == null) {
