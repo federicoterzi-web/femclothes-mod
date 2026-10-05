@@ -30,7 +30,13 @@ public class EstiladoScreenHandler extends ScreenHandler {
     }
 
     public EstiladoScreenHandler(int syncId, PlayerInventory playerInventory, EstiladoBlockEntity be) {
-        super(FemclothesScreenHandlers.ESTILADO, syncId);
+        this(FemclothesScreenHandlers.ESTILADO, syncId, playerInventory, be);
+    }
+
+    /** Con otro tipo de pantalla: la Estilista reusa estos slots (2026-10-05). */
+    protected EstiladoScreenHandler(net.minecraft.screen.ScreenHandlerType<?> tipo, int syncId, PlayerInventory playerInventory,
+                                    EstiladoBlockEntity be) {
+        super(tipo, syncId);
         this.be = be;
         // Slot anónimo con canInsert → isValid (trampa conocida, CLAUDE.md).
         for (int i = 0; i < EstiladoBlockEntity.SLOT_BIBLIOTECA; i++) {
@@ -42,7 +48,7 @@ public class EstiladoScreenHandler extends ScreenHandler {
                 /** El slot de objeto es solo de la Mesa creativa (2026-10-04). */
                 @Override
                 public boolean isEnabled() {
-                    return indice != EstiladoBlockEntity.SLOT_OBJETO || com.femclothes.util.MaquinaCreativa.es(be);
+                    return indice != EstiladoBlockEntity.SLOT_OBJETO || be.creativa();
                 }
             });
         }

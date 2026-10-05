@@ -53,7 +53,7 @@ public final class EstiladoMod {
                     if (payload.parte() < 0 || payload.parte() >= partes.length
                             || payload.cara() < 0 || payload.cara() >= caras.length
                             || payload.superficie() < 0 || payload.superficie() >= superficies.length) return;
-                    if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof EstiladoBlockEntity be
+                    if (EstiladoBlockEntity.en(context.player().getWorld(), payload.pos()) instanceof EstiladoBlockEntity be
                             && be.canPlayerUse(context.player())) {
                         be.poner(partes[payload.parte()], payload.x(), payload.y(), payload.z(), caras[payload.cara()],
                                 superficies[payload.superficie()], payload.padre());
@@ -73,7 +73,7 @@ public final class EstiladoMod {
                             || payload.caraHasta() < 0 || payload.caraHasta() >= caras.length
                             || payload.modo() < 0 || payload.modo() >= modos.length
                             || payload.superficie() < 0 || payload.superficie() >= com.femclothes.correa.Correa.Superficie.values().length) return;
-                    if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof EstiladoBlockEntity be
+                    if (EstiladoBlockEntity.en(context.player().getWorld(), payload.pos()) instanceof EstiladoBlockEntity be
                             && be.canPlayerUse(context.player())) {
                         float[] d = payload.desde(), h = payload.hasta();
                         be.ponerCorrea(partes[payload.parte()],
@@ -89,7 +89,7 @@ public final class EstiladoMod {
                 .register(AjustarApliquePayload.ID, AjustarApliquePayload.CODEC);
         net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(AjustarApliquePayload.ID,
                 (payload, context) -> context.server().execute(() -> {
-                    if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof EstiladoBlockEntity be
+                    if (EstiladoBlockEntity.en(context.player().getWorld(), payload.pos()) instanceof EstiladoBlockEntity be
                             && be.canPlayerUse(context.player())) {
                         be.ajustar(payload.indice(), payload.colocacion(), payload.oscilacion(), payload.blandura());
                     }
@@ -100,7 +100,7 @@ public final class EstiladoMod {
                 .register(CrearMoldePayload.ID, CrearMoldePayload.CODEC);
         net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(CrearMoldePayload.ID,
                 (payload, context) -> context.server().execute(() -> {
-                    if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof EstiladoBlockEntity be
+                    if (EstiladoBlockEntity.en(context.player().getWorld(), payload.pos()) instanceof EstiladoBlockEntity be
                             && be.canPlayerUse(context.player())) {
                         be.crearMolde(context.player(), payload.nombre());
                     }

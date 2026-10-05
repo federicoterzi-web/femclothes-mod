@@ -116,6 +116,33 @@ public class EstiladoBlockEntity extends BlockEntity
         super(EstiladoMod.ESTILADO_BLOCK_ENTITY, pos, state);
     }
 
+    /**
+     * La Estilista automática (2026-10-05, etapa 3: "no quiero perder el tamaño del visualizador") usa una Mesa interna
+     * como editor de la prenda de muestra: no está en el mundo, vive dentro de la máquina y la pantalla es la misma.
+     * Edita gratis (el costo real —hilo y cuero— se paga al aplicar el diseño a cada prenda).
+     */
+    @Nullable
+    private com.femclothes.estilista.EstilistaBlockEntity anfitrion;
+
+    public void anfitrionar(com.femclothes.estilista.EstilistaBlockEntity host) { this.anfitrion = host; }
+
+    /** ¿Es una Mesa/editor creativo? (la de la Estilista creativa también). */
+    public boolean creativa() {
+        return com.femclothes.util.MaquinaCreativa.es(anfitrion != null ? anfitrion : this);
+    }
+
+    /** ¿Edita sin gastar ni devolver insumos? */
+    public boolean gratis() { return anfitrion != null || creativa(); }
+
+    /** La Mesa que atiende ese punto: la del bloque o, si ahí hay una Estilista, su editor interno. */
+    @Nullable
+    public static EstiladoBlockEntity en(net.minecraft.world.World mundo, BlockPos pos) {
+        BlockEntity be = mundo.getBlockEntity(pos);
+        if (be instanceof EstiladoBlockEntity e) return e;
+        if (be instanceof com.femclothes.estilista.EstilistaBlockEntity h) return h.editor();
+        return null;
+    }
+
     public int seleccionado() { return seleccionado; }
 
     public List<Aplique> apliques() {
@@ -155,7 +182,7 @@ public class EstiladoBlockEntity extends BlockEntity
         ItemStack prenda = items.get(SLOT_PRENDA), molde = items.get(SLOT_MOLDE), retazo = items.get(SLOT_RETAZO);
         ItemStack objeto = items.get(SLOT_OBJETO);
         // Mesa creativa (2026-10-01): el retazo no hace falta ni se gasta (sin retazo, sale blanco).
-        boolean gratis = com.femclothes.util.MaquinaCreativa.es(this);
+        boolean gratis = gratis();
         // Con un objeto en su slot (2026-10-04), el aplique es ese objeto y el molde no cuenta; la muestra de
         // color en el slot del retazo lo tiñe (opcional).
         boolean esObjeto = !objeto.isEmpty() && gratis;       // el slot de objeto es solo de la Mesa creativa
@@ -277,11 +304,11 @@ public class EstiladoBlockEntity extends BlockEntity
         if (a.objeto() != null) {
             // Vuelve el objeto y la muestra, tal cual. Si el aplique se puso en la Mesa creativa o salió de un molde
             // (marcado "de molde") no se gastó nada: no se devuelve nada, si no se duplicarían.
-            if (!com.femclothes.util.MaquinaCreativa.es(this) && !a.objeto().deMolde()) {
+            if (!gratis() && !a.objeto().deMolde()) {
                 jugador.getInventory().offerOrDrop(a.objeto().item().copy());
                 if (!a.objeto().muestra().isEmpty()) jugador.getInventory().offerOrDrop(a.objeto().muestra().copy());
             }
-        } else {
+        } else if (anfitrion == null) {                // el editor de la Estilista no gasta retazos: no hay nada que devolver
             ItemStack retazo = RetazoApliqueItem.conColores(new ItemStack(FemclothesItems.RETAZO_APLIQUE),
                     a.color(0), a.color(1), a.color(2));
             jugador.getInventory().offerOrDrop(retazo);
@@ -295,7 +322,7 @@ public class EstiladoBlockEntity extends BlockEntity
      */
     public void crearMolde(PlayerEntity jugador, String nombre) {
         List<Aplique> actuales = apliques();
-        if (!com.femclothes.util.MaquinaCreativa.es(this) || seleccionado < 0 || seleccionado >= actuales.size()) return;
+        if (!creativa() || seleccionado < 0 || seleccionado >= actuales.size()) return;
         Aplique a = actuales.get(seleccionado);
         Aplique plantilla = new Aplique(a.modelo(), Parte.TORSO, 0f, 0f, 0f, Direction.NORTH, a.giro(), a.escala(),
                 RetazoApliqueItem.BLANCO, Aplique.Superficie.CAJA, a.blandura(),
@@ -331,12 +358,12 @@ public class EstiladoBlockEntity extends BlockEntity
 
     /** Una copia del molde {@code i} de la biblioteca (solo la Mesa creativa), o vacío. */
     public ItemStack copiaDeBiblioteca(int i) {
-        if (!com.femclothes.util.MaquinaCreativa.es(this) || i < 0 || i >= BIBLIOTECA) return ItemStack.EMPTY;
+        if (!creativa() || i < 0 || i >= BIBLIOTECA) return ItemStack.EMPTY;
         return items.get(SLOT_BIBLIOTECA + i).copy();
     }
 
     public boolean borrarDeBiblioteca(int i) {
-        if (!com.femclothes.util.MaquinaCreativa.es(this) || i < 0 || i >= BIBLIOTECA) return false;
+        if (!creativa() || i < 0 || i >= BIBLIOTECA) return false;
         if (items.get(SLOT_BIBLIOTECA + i).isEmpty()) return false;
         // Se corre la lista para que no queden huecos en el medio.
         for (int k = SLOT_BIBLIOTECA + i; k < TAMANO - 1; k++) items.set(k, items.get(k + 1));
@@ -445,7 +472,7 @@ public class EstiladoBlockEntity extends BlockEntity
         if (indice < 0 || indice >= actuales.size() || !Float.isFinite(blandura)) return false;
         Aplique a = actuales.get(indice);
         // En la Mesa normal solo se toca la blandura (la colocación y el movimiento son de la creativa).
-        if (!com.femclothes.util.MaquinaCreativa.es(this)) {
+        if (!creativa()) {
             colocacion = a.colocacion();
             oscilacion = a.oscilacion();
         }
@@ -570,7 +597,7 @@ public class EstiladoBlockEntity extends BlockEntity
     }
 
     private boolean siguienteMolde() {
-        if (!com.femclothes.util.MaquinaCreativa.es(this)) return false;
+        if (!creativa()) return false;
         List<net.minecraft.item.Item> lista = moldes();
         if (lista.isEmpty()) return false;
         int i = lista.indexOf(items.get(SLOT_MOLDE).getItem());
@@ -663,7 +690,7 @@ public class EstiladoBlockEntity extends BlockEntity
                     || stack.getItem() instanceof com.femclothes.item.MoldeTexturaItem;
             case SLOT_RETAZO -> stack.getItem() instanceof RetazoApliqueItem
                     || stack.getItem() instanceof com.femclothes.item.MuestraColorItem;
-            case SLOT_OBJETO -> com.femclothes.util.MaquinaCreativa.es(this) && ObjetoAplique.admite(stack);
+            case SLOT_OBJETO -> creativa() && ObjetoAplique.admite(stack);
             default -> false;
         };
     }
@@ -682,11 +709,13 @@ public class EstiladoBlockEntity extends BlockEntity
     @Override
     public void markDirty() {
         super.markDirty();
+        if (anfitrion != null) { anfitrion.sincronizarEditor(); return; }
         if (world != null && !world.isClient) world.updateListeners(pos, getCachedState(), getCachedState(), 3);
     }
 
     @Override
     public boolean canPlayerUse(PlayerEntity player) {
+        if (anfitrion != null) return anfitrion.canPlayerUse(player);
         return world != null && world.getBlockEntity(pos) == this
                 && player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64.0;
     }

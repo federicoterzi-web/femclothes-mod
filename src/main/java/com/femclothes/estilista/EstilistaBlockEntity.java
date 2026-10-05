@@ -45,7 +45,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     /** Lo que dura el trabajo del pórtico: los 13 s de la animación. */
     public static final int TICKS_PROCESO = 260;
     /** Botones: aplicar el diseño a la prenda de la entrada, fijar esa prenda como muestra, olvidar el diseño de su tipo. */
-    public static final int BTN_APLICAR = 0, BTN_FIJAR = 1, BTN_BORRAR = 2;
+    public static final int BTN_APLICAR = 600, BTN_FIJAR = 601, BTN_BORRAR = 602;
 
     /** Lo que sale de intentar aplicar el diseño: ver {@link #planear}. */
     public enum Resultado { OK, SIN_DISENO, FALTA }
@@ -77,9 +77,28 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     /** Un diseño por tipo de prenda: el ítem de la muestra con solo lo que se copia (apliques, correas, colores). */
     private final DefaultedList<ItemStack> disenos = DefaultedList.ofSize(MAX_DISENOS, ItemStack.EMPTY);
 
+    /**
+     * El editor (2026-10-05, etapa 3: "no quiero perder el tamaño del visualizador"): una Mesa de estilado interna, fuera
+     * del mundo, cuya prenda es la MUESTRA del diseño. La pantalla y los clicks de la vista 3D son los de la Mesa.
+     */
+    private final EstiladoBlockEntity editor;
+
     public EstilistaBlockEntity(BlockPos pos, BlockState state) {
         super(EstilistaMod.ESTILISTA_BLOCK_ENTITY, pos, state);
+        editor = new EstiladoBlockEntity(pos, com.femclothes.estilado.EstiladoMod.ESTILADO_BLOCK.getDefaultState());
+        editor.anfitrionar(this);
     }
+
+    public EstiladoBlockEntity editor() { return editor; }
+
+    @Override
+    public void setWorld(World world) {
+        super.setWorld(world);
+        editor.setWorld(world);
+    }
+
+    /** Lo llama el editor cuando cambia algo: se guarda y se manda al cliente con el resto de la máquina. */
+    public void sincronizarEditor() { sincronizar(); }
 
     // ── estado visible ──
 
@@ -236,9 +255,15 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         return Resultado.OK;
     }
 
-    /** Fija la prenda de la entrada como muestra del diseño de su tipo (reemplaza al anterior). Sale por la derecha como terminada. */
+    /**
+     * Fija como diseño de su tipo la prenda de muestra del editor (o, si no hay, la de la entrada). La muestra del editor
+     * queda ahí para seguir editándola; la de la entrada sale por la derecha como terminada.
+     */
     private boolean fijar(PlayerEntity jugador) {
-        ItemStack muestra = items.get(SLOT_PRENDA);
+        ItemStack delEditor = editor.getStack(EstiladoBlockEntity.SLOT_PRENDA);
+        boolean usaEditor = !delEditor.isEmpty();
+        ItemStack muestra = usaEditor ? delEditor : items.get(SLOT_PRENDA);
+        if (muestra.isEmpty()) return false;
         ItemStack proto = new ItemStack(muestra.getItem());
         copiarDiseno(muestra, proto);
         boolean hayAlgo = false;
@@ -258,9 +283,11 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
             return false;
         }
         disenos.set(donde, proto);
-        items.set(SLOT_SALIDA, muestra);
-        items.set(SLOT_PRENDA, ItemStack.EMPTY);
-        estado = Estado.LISTO;
+        if (!usaEditor) {
+            items.set(SLOT_SALIDA, muestra);
+            items.set(SLOT_PRENDA, ItemStack.EMPTY);
+            estado = Estado.LISTO;
+        }
         sincronizar();
         jugador.sendMessage(Text.translatable("femclothes.estilista.fijado", apliquesDe(proto), correasDe(proto)), true);
         return true;
@@ -315,33 +342,30 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
 
     /** Botones de la pantalla (los atiende el handler porque necesitan al jugador para avisarle). */
     public boolean onButtonClick(PlayerEntity jugador, int id) {
-        if (estado != Estado.REPOSO || items.get(SLOT_PRENDA).isEmpty() || !items.get(SLOT_SALIDA).isEmpty()) return false;
-        ItemStack prenda = items.get(SLOT_PRENDA);
-        switch (id) {
-            case BTN_APLICAR -> {
-                Resultado r = iniciar();
-                switch (r) {
-                    case SIN_DISENO -> jugador.sendMessage(Text.translatable("femclothes.estilista.sin_diseno"), true);
-                    case FALTA -> jugador.sendMessage(Text.translatable("femclothes.estilista.falta", faltaParaLaEntrada().getName()), true);
-                    default -> { }
+        if (id == BTN_FIJAR) return fijar(jugador);
+        if (id == BTN_BORRAR) {
+            // El tipo de la prenda de la entrada o, si no hay, el de la muestra del editor.
+            ItemStack ref = !items.get(SLOT_PRENDA).isEmpty() ? items.get(SLOT_PRENDA) : editor.getStack(EstiladoBlockEntity.SLOT_PRENDA);
+            for (int i = 0; i < MAX_DISENOS; i++) {
+                if (!ref.isEmpty() && !disenos.get(i).isEmpty() && disenos.get(i).getItem() == ref.getItem()) {
+                    disenos.set(i, ItemStack.EMPTY);
+                    sincronizar();
+                    jugador.sendMessage(Text.translatable("femclothes.estilista.borrado"), true);
+                    return true;
                 }
-                return r == Resultado.OK;
             }
-            case BTN_FIJAR -> { return fijar(jugador); }
-            case BTN_BORRAR -> {
-                for (int i = 0; i < MAX_DISENOS; i++) {
-                    if (!disenos.get(i).isEmpty() && disenos.get(i).getItem() == prenda.getItem()) {
-                        disenos.set(i, ItemStack.EMPTY);
-                        sincronizar();
-                        jugador.sendMessage(Text.translatable("femclothes.estilista.borrado"), true);
-                        return true;
-                    }
-                }
-                jugador.sendMessage(Text.translatable("femclothes.estilista.sin_diseno"), true);
-                return false;
-            }
-            default -> { return false; }
+            jugador.sendMessage(Text.translatable("femclothes.estilista.sin_diseno"), true);
+            return false;
         }
+        if (id != BTN_APLICAR) return false;
+        if (estado != Estado.REPOSO || items.get(SLOT_PRENDA).isEmpty() || !items.get(SLOT_SALIDA).isEmpty()) return false;
+        Resultado r = iniciar();
+        switch (r) {
+            case SIN_DISENO -> jugador.sendMessage(Text.translatable("femclothes.estilista.sin_diseno"), true);
+            case FALTA -> jugador.sendMessage(Text.translatable("femclothes.estilista.falta", faltaParaLaEntrada().getName()), true);
+            default -> { }
+        }
+        return r == Resultado.OK;
     }
 
     /** Los pistones del pórtico: un chasquido en cada recorrido de la animación (el reloj del cliente va a la par, a ojo). */
@@ -476,7 +500,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     public void clear() { items.clear(); }
 
     @Override
-    public void cargarCreativa() {}
+    public void cargarCreativa() { editor.cargarCreativa(); }
 
     // ── pantalla ──
 
@@ -509,6 +533,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         NbtCompound d = new NbtCompound();
         Inventories.writeNbt(d, disenos, registries);
         nbt.put("disenos", d);
+        nbt.put("editor", editor.createNbt(registries));
     }
 
     @Override
@@ -520,6 +545,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         deCadena = nbt.getBoolean("de_cadena");
         disenos.clear();
         if (nbt.contains("disenos")) Inventories.readNbt(nbt.getCompound("disenos"), disenos, registries);
+        if (nbt.contains("editor")) editor.read(nbt.getCompound("editor"), registries);
     }
 
     @Override

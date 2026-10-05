@@ -27,7 +27,8 @@ public class FemclothesClient implements ClientModInitializer {
         HandledScreens.register(FemclothesScreenHandlers.GUARDARROPAS, GuardarropasScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.MANIQUI, ManiquiScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.ROPA, RopaScreen::new);
-        HandledScreens.register(FemclothesScreenHandlers.ESTILISTA, EstilistaScreen::new);
+        HandledScreens.<com.femclothes.estilado.EstiladoScreenHandler, EstilistaScreen>register(FemclothesScreenHandlers.ESTILISTA,
+                (h, inv, titulo) -> new EstilistaScreen((com.femclothes.estilista.EstilistaScreenHandler) h, inv, titulo));
         HandledScreens.register(FemclothesScreenHandlers.ESTILADO, EstiladoScreen::new);
 
         // Los 3 bloques del zip "Bloque de sublimadora Minecraft" (2026-09-30):

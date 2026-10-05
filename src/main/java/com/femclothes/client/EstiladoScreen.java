@@ -222,7 +222,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         // Mesa creativa (2026-10-01): elegir cualquier molde sin tenerlo.
         ButtonWidget moldeCreativo = boton(X_DER + 98, 44, 64, Text.translatable("femclothes.estilado.siguiente_molde"),
                 "femclothes.estilado.tooltip.siguiente_molde", () -> clickBoton(EstiladoBlockEntity.BTN_SIGUIENTE_MOLDE));
-        moldeCreativo.visible = com.femclothes.util.MaquinaCreativa.es(handler.be);
+        moldeCreativo.visible = handler.be.creativa();
         crearPanel();
     }
 
@@ -253,7 +253,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
 
     /** La Mesa creativa tiene el slot de objeto, el panel lateral y la fábrica de moldes; la normal, no. */
     private boolean creativa() {
-        return com.femclothes.util.MaquinaCreativa.es(handler.be);
+        return handler.be.creativa();
     }
     private final ButtonWidget[] btnCaras = new ButtonWidget[6];
     private final List<SliderAjuste> slidersColocacion = new java.util.ArrayList<>();
@@ -1007,7 +1007,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 else if (!objeto && be.getStack(EstiladoBlockEntity.SLOT_MOLDE).isEmpty()) aviso = Text.translatable("femclothes.estilado.aviso.molde");
                 else if (!objeto && !(be.getStack(EstiladoBlockEntity.SLOT_RETAZO).getItem() instanceof com.femclothes.aplique.RetazoApliqueItem)
                         && !(plantillaDeObjeto(be.getStack(EstiladoBlockEntity.SLOT_MOLDE)))
-                        && !com.femclothes.util.MaquinaCreativa.es(be)) aviso = Text.translatable("femclothes.estilado.aviso.retazo");
+                        && !be.creativa()) aviso = Text.translatable("femclothes.estilado.aviso.retazo");
                 else if (be.apliques().size() >= Aplique.MAXIMO_POR_PRENDA) aviso = Text.translatable("femclothes.estilado.aviso.lleno");
                 else if (t == null) aviso = Text.translatable("femclothes.estilado.aviso.fuera");
                 else {
