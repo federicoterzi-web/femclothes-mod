@@ -1244,6 +1244,8 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
 
     public static void tick(net.minecraft.world.World world, BlockPos pos, net.minecraft.block.BlockState state, ModeladoBlockEntity be) {
         if (world.isClient) return;
+        // Con señal de redstone la máquina se detiene del todo (2026-10-05).
+        if (com.femclothes.util.Redstone.pausada(world, pos)) return;
         // Luz del LED (2026-09-29, "hace que las luces de las maquinas iluminen").
         com.femclothes.util.LuzMaquina.actualizar(world, pos, state,
                 be.estado == Estado.PROCESANDO || be.estado == Estado.LISTO);
@@ -1572,6 +1574,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
 
     @Override
     public boolean canInsert(int slot, ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.util.math.Direction dir) {
+        if (dir != null && com.femclothes.util.Redstone.pausada(this)) return false;   // con señal, nada entra por automatización
         return isValid(slot, stack);
     }
 

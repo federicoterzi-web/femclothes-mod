@@ -41,6 +41,8 @@ public class CintaBlock extends BlockWithEntity {
 
     public static final DirectionProperty FACING = Properties.HORIZONTAL_FACING;
     public static final EnumProperty<Forma> FORMA = EnumProperty.of("forma", Forma.class);
+    /** Con señal de redstone (2026-10-05): la cinta se ve parada y no mueve nada. */
+    public static final net.minecraft.state.property.BooleanProperty POWERED = Properties.POWERED;
 
     /**
      * Cómo entra la prenda: de frente, doblando desde el costado izquierdo/derecho, o por una rampa que entrega un
@@ -62,7 +64,8 @@ public class CintaBlock extends BlockWithEntity {
 
     public CintaBlock(Settings settings) {
         super(settings);
-        setDefaultState(getStateManager().getDefaultState().with(FACING, Direction.NORTH).with(FORMA, Forma.RECTA));
+        setDefaultState(getStateManager().getDefaultState().with(FACING, Direction.NORTH).with(FORMA, Forma.RECTA)
+                .with(POWERED, false));
     }
 
     @Override
@@ -70,7 +73,7 @@ public class CintaBlock extends BlockWithEntity {
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(FACING, FORMA);
+        builder.add(FACING, FORMA, POWERED);
     }
 
     @Override
@@ -116,7 +119,8 @@ public class CintaBlock extends BlockWithEntity {
     @Nullable
     public BlockState getPlacementState(ItemPlacementContext ctx) {
         Direction frente = ctx.getHorizontalPlayerFacing();
-        return getDefaultState().with(FACING, frente).with(FORMA, calcularForma(ctx.getWorld(), ctx.getBlockPos(), frente));
+        return getDefaultState().with(FACING, frente).with(FORMA, calcularForma(ctx.getWorld(), ctx.getBlockPos(), frente))
+                .with(POWERED, ctx.getWorld().isReceivingRedstonePower(ctx.getBlockPos()));
     }
 
     @Override
@@ -126,10 +130,24 @@ public class CintaBlock extends BlockWithEntity {
         return forma == state.get(FORMA) ? state : state.with(FORMA, forma);
     }
 
-    /** Una cinta o una de las máquinas: lo que puede recibir una prenda por esta cara. */
+    /** Cambió la señal de redstone: se actualiza el estado (y con él el modelo parado/en marcha). */
+    @Override
+    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
+        if (world.isClient) return;
+        boolean senal = world.isReceivingRedstonePower(pos);
+        if (senal != state.get(POWERED)) world.setBlockState(pos, state.with(POWERED, senal), Block.NOTIFY_LISTENERS);
+    }
+
+    /** Vuelve a mirar el entorno: cambia la forma (curva, rampa) si hace falta. Lo llama la cinta cada tanto. */
+    public static void recalcular(World mundo, BlockPos pos, BlockState estado) {
+        Forma f = calcularForma(mundo, pos, estado.get(FACING));
+        if (f != estado.get(FORMA)) mundo.setBlockState(pos, estado.with(FORMA, f), Block.NOTIFY_ALL);
+    }
+
+    /** Una cinta, un empalme o una de las máquinas: lo que puede recibir una prenda por esta cara. */
     private static boolean recibe(BlockView mundo, BlockPos pos) {
         BlockEntity be = mundo.getBlockEntity(pos);
-        return be instanceof CintaBlockEntity || be instanceof ConSalida;
+        return be instanceof CintaBlockEntity || be instanceof EmpalmeBlockEntity || be instanceof ConSalida;
     }
 
     /**
@@ -161,6 +179,8 @@ public class CintaBlock extends BlockWithEntity {
         if (estado.getBlock() instanceof CintaBlock) {
             // Una rampa de subida a mi altura entrega un nivel más arriba, no a mí (la de bajada sí: su punta baja queda a mi altura).
             if (estado.get(FACING) == haciaMi && estado.get(FORMA) != Forma.RAMPA_SUBE) return true;
+        } else if (estado.getBlock() instanceof EmpalmeBlock) {
+            if (estado.get(EmpalmeBlock.FACING) == haciaMi) return true;
         } else if (mundo.getBlockEntity(vecino) instanceof ConSalida maquina && maquina.ladoSalida() == haciaMi) {
             return true;
         }
@@ -193,16 +213,37 @@ public class CintaBlock extends BlockWithEntity {
         if (!world.isClient) refrescarVecinas(world, pos);
     }
 
-    /** Con la mano vacía, la cinta vuelve a mirar su entorno (por si se puso una máquina después y la rampa no se enteró). */
+    /**
+     * Click derecho (2026-10-05, "que se pueda sacar las cosas cliqueando en la cinta y poner cosas asi"): con la mano
+     * vacía saca lo que lleva; con un ítem lo pone si está libre. Un bloque en la mano sin agacharse sigue
+     * poniéndose como bloque (para poder construir al lado); agachado, pone el ítem igual.
+     */
+    @Override
+    protected net.minecraft.util.ItemActionResult onUseWithItem(net.minecraft.item.ItemStack stack, BlockState state, World world,
+            BlockPos pos, net.minecraft.entity.player.PlayerEntity player, net.minecraft.util.Hand hand,
+            net.minecraft.util.hit.BlockHitResult hit) {
+        if (stack.isEmpty()) return net.minecraft.util.ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        if (!player.isSneaking() && stack.getItem() instanceof net.minecraft.item.BlockItem) {
+            return net.minecraft.util.ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        if (!(world.getBlockEntity(pos) instanceof CintaBlockEntity be) || !be.carga().isEmpty()) {
+            return net.minecraft.util.ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        if (!world.isClient) {
+            be.setStack(0, stack);
+            if (!player.isCreative()) stack.decrement(1);
+        }
+        return net.minecraft.util.ItemActionResult.SUCCESS;
+    }
+
     @Override
     protected net.minecraft.util.ActionResult onUse(BlockState state, World world, BlockPos pos,
                                                     net.minecraft.entity.player.PlayerEntity player,
                                                     net.minecraft.util.hit.BlockHitResult hit) {
-        if (!player.getMainHandStack().isEmpty()) return net.minecraft.util.ActionResult.PASS;
-        if (!world.isClient) {
-            Forma f = calcularForma(world, pos, state.get(FACING));
-            if (f != state.get(FORMA)) world.setBlockState(pos, state.with(FORMA, f), Block.NOTIFY_ALL);
+        if (!(world.getBlockEntity(pos) instanceof CintaBlockEntity be) || be.carga().isEmpty()) {
+            return net.minecraft.util.ActionResult.PASS;
         }
+        if (!world.isClient) player.getInventory().offerOrDrop(be.removeStack(0));
         return net.minecraft.util.ActionResult.SUCCESS;
     }
 

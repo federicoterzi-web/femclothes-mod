@@ -48,6 +48,10 @@ public class FemclothesClient implements ClientModInitializer {
                 com.femclothes.cinta.CintaMod.CINTA_BLOCK_ENTITY, com.femclothes.cinta.CintaRenderer::new);
         net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(
                 com.femclothes.cinta.CintaMod.CINTA_BLOCK, net.minecraft.client.render.RenderLayer.getCutout());
+        net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(
+                com.femclothes.cinta.CintaMod.EMPALME_BLOCK_ENTITY, com.femclothes.cinta.EmpalmeRenderer::new);
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(
+                com.femclothes.cinta.CintaMod.EMPALME_BLOCK, net.minecraft.client.render.RenderLayer.getCutout());
 
         // El render de la Mesa de Modelado lo hace GeckoLib desde el block
         // entity (modelo garment_shaper) — mismo patrón que la sublimadora.

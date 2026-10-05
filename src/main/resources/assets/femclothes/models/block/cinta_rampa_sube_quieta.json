@@ -1,7 +1,7 @@
 {
   "textures": {
     "marco": "femclothes:block/cinta_marco",
-    "banda": "femclothes:block/cinta_banda",
+    "banda": "femclothes:block/cinta_banda_quieta",
     "particle": "femclothes:block/cinta_marco"
   },
   "elements": [

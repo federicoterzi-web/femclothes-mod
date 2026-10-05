@@ -731,6 +731,7 @@
   "femclothes.sublimadora.cuello.corazon": "corazón",
   "femclothes.estilado.panel.nombre": "Nombre del molde",
   "block.femclothes.cinta": "Cinta transportadora",
+  "block.femclothes.empalme": "Empalme de cintas",
   "femclothes.modelado.creativa.sin_lugar": "La Modeladora creativa no tuvo lugar para %s molde(s): %s. Hay que agrandar el almacén.",
   "femclothes.candado.cerrado": "Candado: cerrado",
   "femclothes.candado.abierto": "Candado: abierto",

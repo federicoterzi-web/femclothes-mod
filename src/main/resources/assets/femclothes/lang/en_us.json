@@ -731,6 +731,7 @@
   "femclothes.sublimadora.cuello.corazon": "sweetheart",
   "femclothes.estilado.panel.nombre": "Mould name",
   "block.femclothes.cinta": "Conveyor belt",
+  "block.femclothes.empalme": "Conveyor junction",
   "femclothes.modelado.creativa.sin_lugar": "The creative Shaper had no room for %s mold(s): %s. The storage needs to be bigger.",
   "femclothes.candado.cerrado": "Lock: closed",
   "femclothes.candado.abierto": "Lock: open",

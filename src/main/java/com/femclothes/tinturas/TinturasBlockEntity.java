@@ -619,6 +619,8 @@ public class TinturasBlockEntity extends BlockEntity
      * tocar en vez de quedar trabada para siempre.
      */
     public static void tick(net.minecraft.world.World world, BlockPos pos, BlockState state, TinturasBlockEntity be) {
+        // Con señal de redstone la máquina se detiene del todo (2026-10-05).
+        if (!world.isClient && com.femclothes.util.Redstone.pausada(world, pos)) return;
         if (!world.isClient && !be.salida.isEmpty()) be.empujarSalida();
         // Luz del LED (2026-09-29, "hace que las luces de las maquinas iluminen"):
         // mismo criterio que TinturasGeoModel#coloresLed.
@@ -1803,6 +1805,7 @@ public class TinturasBlockEntity extends BlockEntity
 
     @Override
     public boolean canInsert(int slot, ItemStack stack, @Nullable Direction dir) {
+        if (dir != null && com.femclothes.util.Redstone.pausada(this)) return false;   // con señal, nada entra por automatización
         return isValid(slot, stack);
     }
 

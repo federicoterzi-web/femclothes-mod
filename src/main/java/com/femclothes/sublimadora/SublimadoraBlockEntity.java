@@ -326,6 +326,8 @@ public class SublimadoraBlockEntity extends BlockEntity
         // El avance del prensado lo lleva el SERVIDOR; el cliente solo dibuja
         // lo que le sincroniza el NBT.
         if (world.isClient) return;
+        // Con señal de redstone la máquina se detiene del todo (2026-10-05).
+        if (com.femclothes.util.Redstone.pausada(world, pos)) return;
 
         // Luz del LED (2026-09-29, "hace que las luces de las maquinas iluminen").
         com.femclothes.util.LuzMaquina.actualizar(world, pos, state,
@@ -1008,6 +1010,7 @@ public class SublimadoraBlockEntity extends BlockEntity
 
     @Override
     public boolean canInsert(int slot, ItemStack stack, @org.jetbrains.annotations.Nullable Direction dir) {
+        if (dir != null && com.femclothes.util.Redstone.pausada(this)) return false;   // con señal, nada entra por automatización
         return isValid(slot, stack);
     }
 

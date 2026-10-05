@@ -1,6 +1,5 @@
 package com.femclothes.cinta;
 
-import com.femclothes.item.FemclothesDye;
 import com.femclothes.util.InventarioUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -28,6 +27,8 @@ public class CintaBlockEntity extends BlockEntity implements SidedInventory {
 
     private ItemStack carga = ItemStack.EMPTY;
     private long llegada;
+    /** Hora del mundo en que la señal de redstone la congeló, o -1 (2026-10-05, "dejan de circular items con señal de redstone"). */
+    private long pausadoDesde = -1;
 
     public CintaBlockEntity(BlockPos pos, BlockState state) {
         super(CintaMod.CINTA_BLOCK_ENTITY, pos, state);
@@ -37,12 +38,32 @@ public class CintaBlockEntity extends BlockEntity implements SidedInventory {
 
     public long llegada() { return llegada; }
 
+    /** La hora (con el cuarto de tick) que cuenta para el avance: la de la pausa si está congelada, la del mundo si no. */
+    public float tiempoEfectivo(float tickDelta) {
+        if (pausadoDesde >= 0) return pausadoDesde;
+        return world == null ? 0f : world.getTime() + tickDelta;
+    }
+
     public static int ticksDe(BlockState estado) {
         return estado.get(CintaBlock.FORMA).esCurva() ? TICKS_CURVA : TICKS_RECTA;   // la rampa va a la misma velocidad de banda
     }
 
     /** Servidor: cuando la prenda llegó al final, la empuja al inventario de enfrente (si no puede, espera). */
     public static void tick(World world, BlockPos pos, BlockState state, CintaBlockEntity be) {
+        // La forma se vuelve a mirar sola cada tanto (2026-10-05, "el recalculado que se haga automatico al updatear
+        // bloques cercanos"): una máquina o una cinta puesta en diagonal después no avisa por actualización de vecinos.
+        if ((world.getTime() + pos.asLong()) % 20 == 0) CintaBlock.recalcular(world, pos, state);
+        // Señal de redstone: la prenda se congela donde está y al soltarse sigue desde ahí.
+        boolean pausada = state.get(CintaBlock.POWERED);
+        if (pausada && be.pausadoDesde < 0) {
+            be.pausadoDesde = world.getTime();
+            be.sincronizar();
+        } else if (!pausada && be.pausadoDesde >= 0) {
+            be.llegada += world.getTime() - be.pausadoDesde;
+            be.pausadoDesde = -1;
+            be.sincronizar();
+        }
+        if (pausada) return;
         if (be.carga.isEmpty()) return;
         if (world.getTime() - be.llegada < ticksDe(state)) return;
         Direction frente = state.get(CintaBlock.FACING);
@@ -97,6 +118,7 @@ public class CintaBlockEntity extends BlockEntity implements SidedInventory {
     public void setStack(int slot, ItemStack stack) {
         carga = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1);
         llegada = world != null ? world.getTime() : 0;
+        pausadoDesde = getCachedState().get(CintaBlock.POWERED) && world != null ? world.getTime() : -1;
         sincronizar();
     }
 
@@ -108,7 +130,8 @@ public class CintaBlockEntity extends BlockEntity implements SidedInventory {
 
     @Override
     public boolean isValid(int slot, ItemStack stack) {
-        return carga.isEmpty() && FemclothesDye.isClothing(stack);
+        // Cualquier ítem (2026-10-05, "que no solo transporte ropa"); lleva de a uno.
+        return carga.isEmpty() && !stack.isEmpty();
     }
 
     @Override
@@ -120,7 +143,8 @@ public class CintaBlockEntity extends BlockEntity implements SidedInventory {
 
     @Override
     public boolean canInsert(int slot, ItemStack stack, @Nullable Direction dir) {
-        return isValid(slot, stack);
+        // Congelada por redstone, no recibe nada por automatización.
+        return !getCachedState().get(CintaBlock.POWERED) && isValid(slot, stack);
     }
 
     @Override
@@ -133,6 +157,7 @@ public class CintaBlockEntity extends BlockEntity implements SidedInventory {
         super.writeNbt(nbt, registries);
         if (!carga.isEmpty()) nbt.put("Carga", carga.encode(registries));
         nbt.putLong("Llegada", llegada);
+        nbt.putLong("PausadoDesde", pausadoDesde);
     }
 
     @Override
@@ -140,6 +165,7 @@ public class CintaBlockEntity extends BlockEntity implements SidedInventory {
         super.readNbt(nbt, registries);
         carga = nbt.contains("Carga") ? ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Carga")) : ItemStack.EMPTY;
         llegada = nbt.getLong("Llegada");
+        pausadoDesde = nbt.contains("PausadoDesde") ? nbt.getLong("PausadoDesde") : -1;
     }
 
     @Override

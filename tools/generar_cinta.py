@@ -87,15 +87,45 @@ def banda_curva(nombre, espejo):
     img.save(os.path.join(TEX, nombre))
 
 
+def quietas():
+    """Las bandas SIN animación (2026-10-05, "el conveyor belt y las maquinas dejan de circular items cuando reciben
+    senal de redstone"): el primer cuadro de cada banda, para el estado powered (la cinta se ve parada)."""
+    for nombre in ("cinta_banda", "cinta_curva_izq", "cinta_curva_der"):
+        img = Image.open(os.path.join(TEX, nombre + ".png")).convert("RGBA")
+        img.crop((0, 0, 16, 16)).save(os.path.join(TEX, nombre + "_quieta.png"))
+
+
 def mcmeta(nombre):
     with open(os.path.join(TEX, nombre + ".mcmeta"), "w") as f:
         json.dump({"animation": {"frametime": 1, "interpolate": False}}, f, indent=2)
 
 
 def caja(desde, hasta, cara="#marco"):
+    """Caja con la textura de {cara} en las 6 caras. Si sobresale del bloque (la rampa llega a 22 px de alto, 2026-10-05,
+    "fijate bien el borde que se construye por encima del bloque... tiene planos transparentes"), los UV por defecto
+    de Minecraft salen de las coordenadas y se pasan de 16: leen afuera de la textura, o sea transparente. Ahí se
+    ponen UV explícitos (los mismos del modelo por defecto) corriendo el tramo de arriba para que termine en 16."""
+    x1, y1, z1 = desde
+    x2, y2, z2 = hasta
+    if max(desde + hasta) <= 16 and min(desde + hasta) >= 0:
+        return {
+            "from": desde, "to": hasta,
+            "faces": {lado: {"texture": cara} for lado in ("north", "south", "east", "west", "up", "down")},
+        }
+    if y2 > 16:
+        y1, y2 = max(0.0, y1 - (y2 - 16)), 16.0
+    r = lambda v: round(v, 3)
+    uv = {
+        "north": [16 - x2, 16 - y2, 16 - x1, 16 - y1],
+        "south": [x1, 16 - y2, x2, 16 - y1],
+        "west": [z1, 16 - y2, z2, 16 - y1],
+        "east": [16 - z2, 16 - y2, 16 - z1, 16 - y1],
+        "up": [x1, z1, x2, z2],
+        "down": [x1, 16 - z2, x2, 16 - z1],
+    }
     return {
         "from": desde, "to": hasta,
-        "faces": {lado: {"texture": cara} for lado in ("north", "south", "east", "west", "up", "down")},
+        "faces": {lado: {"texture": cara, "uv": [r(v) for v in uv[lado]]} for lado in uv},
     }
 
 
@@ -106,9 +136,9 @@ def plano_banda(textura):
     }
 
 
-def modelo_recta():
+def modelo_recta(q=""):
     return {
-        "textures": {"marco": "femclothes:block/cinta_marco", "banda": "femclothes:block/cinta_banda",
+        "textures": {"marco": "femclothes:block/cinta_marco", "banda": "femclothes:block/cinta_banda" + q,
                      "particle": "femclothes:block/cinta_marco"},
         "elements": [
             caja([0, 0, 0], [16, 4, 16]),
@@ -119,7 +149,7 @@ def modelo_recta():
     }
 
 
-def modelo_curva(espejo):
+def modelo_curva(espejo, q=""):
     nombre = "cinta_curva_der" if espejo else "cinta_curva_izq"
     elementos = [caja([0, 0, 0], [16, 4, 16])]
 
@@ -138,8 +168,8 @@ def modelo_curva(espejo):
             continue
         xs = x_(c, c + 1)
         elementos.append(caja([xs[0], 4, round(z_in, 2)], [xs[1], 6, round(z_out, 2)]))
-    return nombre, {
-        "textures": {"marco": "femclothes:block/cinta_marco", "banda": f"femclothes:block/{nombre}",
+    return nombre + q, {
+        "textures": {"marco": "femclothes:block/cinta_marco", "banda": f"femclothes:block/{nombre}{q}",
                      "particle": "femclothes:block/cinta_marco"},
         "elements": elementos + [plano_banda("#banda")],
     }
@@ -155,7 +185,7 @@ def plano_rampa(textura, y_centro, angulo):
     }
 
 
-def modelo_rampa(sube):
+def modelo_rampa(sube, q=""):
     """Rampa de un bloque. Mira al norte: entra por el sur y sale por el norte, al nivel de la banda del bloque
     siguiente. Sube: de 4,05 px a 20,05 px. Baja (2026-10-04, "se superpone la rampa sobre el bloque de abajo"): va
     en el nivel de abajo, de 20,05 px (atrás, a la altura de la cinta que le entrega) a 4,05 px: nunca se mete
@@ -177,7 +207,23 @@ def modelo_rampa(sube):
             elementos.append(caja([x0, techo, z0], [x1, alto, z0 + 1]))
     elementos.append(plano_rampa("#banda", 12.05, 45 * signo))
     return {
-        "textures": {"marco": "femclothes:block/cinta_marco", "banda": "femclothes:block/cinta_banda",
+        "textures": {"marco": "femclothes:block/cinta_marco", "banda": "femclothes:block/cinta_banda" + q,
+                     "particle": "femclothes:block/cinta_marco"},
+        "elements": elementos,
+    }
+
+
+def modelo_empalme(q=""):
+    """Empalme (2026-10-05, "un empalme que una hasta tres entradas laterales... una superior de tolva y una salida"):
+    una losa con la banda arriba y cuatro postes en las esquinas, abierta por los costados y por atrás (entradas) y por
+    el frente (salida, -Z). La tolva carga por arriba."""
+    elementos = [caja([0, 0, 0], [16, 4, 16])]
+    for x0 in (0, 14):
+        for z0 in (0, 14):
+            elementos.append(caja([x0, 4, z0], [x0 + 2, 8, z0 + 2]))
+    elementos.append(plano_banda("#banda"))
+    return {
+        "textures": {"marco": "femclothes:block/cinta_marco", "banda": "femclothes:block/cinta_banda" + q,
                      "particle": "femclothes:block/cinta_marco"},
         "elements": elementos,
     }
@@ -197,26 +243,40 @@ def main():
     for nombre, espejo in (("cinta_curva_izq.png", False), ("cinta_curva_der.png", True)):
         banda_curva(nombre, espejo)
         mcmeta(nombre)
+    quietas()
 
-    escribir(os.path.join(MOD, "cinta_recta.json"), modelo_recta())
-    for espejo in (False, True):
-        nombre, datos = modelo_curva(espejo)
-        escribir(os.path.join(MOD, nombre + ".json"), datos)
-
-    escribir(os.path.join(MOD, "cinta_rampa_sube.json"), modelo_rampa(True))
-    escribir(os.path.join(MOD, "cinta_rampa_baja.json"), modelo_rampa(False))
+    for q in ("", "_quieta"):
+        escribir(os.path.join(MOD, "cinta_recta" + q + ".json"), modelo_recta(q))
+        for espejo in (False, True):
+            nombre, datos = modelo_curva(espejo, q)
+            escribir(os.path.join(MOD, nombre + ".json"), datos)
+        escribir(os.path.join(MOD, "cinta_rampa_sube" + q + ".json"), modelo_rampa(True, q))
+        escribir(os.path.join(MOD, "cinta_rampa_baja" + q + ".json"), modelo_rampa(False, q))
+        escribir(os.path.join(MOD, "empalme" + q + ".json"), modelo_empalme(q))
 
     giros = {"north": 0, "east": 90, "south": 180, "west": 270}
     variantes = {}
     for forma, modelo in (("recta", "cinta_recta"), ("curva_izq", "cinta_curva_izq"), ("curva_der", "cinta_curva_der"),
                            ("rampa_sube", "cinta_rampa_sube"), ("rampa_baja", "cinta_rampa_baja")):
         for lado, y in giros.items():
-            v = {"model": f"femclothes:block/{modelo}"}
-            if y:
-                v["y"] = y
-            variantes[f"facing={lado},forma={forma}"] = v
+            for powered, q in (("false", ""), ("true", "_quieta")):
+                v = {"model": f"femclothes:block/{modelo}{q}"}
+                if y:
+                    v["y"] = y
+                variantes[f"facing={lado},forma={forma},powered={powered}"] = v
     escribir(os.path.join(ESTADOS, "cinta.json"), {"variants": variantes})
     escribir(os.path.join(ITEM, "cinta.json"), {"parent": "femclothes:block/cinta_recta"})
+
+    # El empalme: la salida es el frente (-Z en el modelo), así que se gira igual que la cinta.
+    variantes = {}
+    for lado, y in giros.items():
+        for powered, q in (("false", ""), ("true", "_quieta")):
+            v = {"model": f"femclothes:block/empalme{q}"}
+            if y:
+                v["y"] = y
+            variantes[f"facing={lado},powered={powered}"] = v
+    escribir(os.path.join(ESTADOS, "empalme.json"), {"variants": variantes})
+    escribir(os.path.join(ITEM, "empalme.json"), {"parent": "femclothes:block/empalme"})
 
 
 if __name__ == "__main__":

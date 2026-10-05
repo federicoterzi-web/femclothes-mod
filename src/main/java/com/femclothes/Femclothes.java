@@ -68,6 +68,7 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.maniqui.ManiquiMod.MANIQUI_BLOCK_ITEM);
             entries.add(com.femclothes.estilado.EstiladoMod.ESTILADO_BLOCK_ITEM);
             entries.add(com.femclothes.cinta.CintaMod.CINTA_ITEM);
+            entries.add(com.femclothes.cinta.CintaMod.EMPALME_ITEM);
             // Máquinas creativas (2026-10-01): sin espera ni insumos, cargadas al colocarlas.
             entries.add(com.femclothes.modelado.ModeladoMod.MODELADO_CREATIVA_ITEM);
             entries.add(com.femclothes.tinturas.TinturasMod.TINTURAS_CREATIVA_ITEM);

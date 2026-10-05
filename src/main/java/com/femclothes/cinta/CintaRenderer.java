@@ -34,11 +34,10 @@ public class CintaRenderer implements BlockEntityRenderer<CintaBlockEntity> {
         ItemStack stack = be.carga();
         if (stack.isEmpty() || be.getWorld() == null) return;
         Identifier icono = IconoPrenda.de(stack);
-        if (icono == null) return;
 
         var estado = be.getCachedState();
         CintaBlock.Forma forma = estado.get(CintaBlock.FORMA);
-        float t = (be.getWorld().getTime() + tickDelta - be.llegada()) / CintaBlockEntity.ticksDe(estado);
+        float t = (be.tiempoEfectivo(tickDelta) - be.llegada()) / CintaBlockEntity.ticksDe(estado);
         t = Math.max(0f, Math.min(1f, t));
 
         // Posición y rumbo en el marco "mira al norte" centrado en el bloque. En las rampas la banda sube/baja
@@ -68,6 +67,12 @@ public class CintaRenderer implements BlockEntityRenderer<CintaBlockEntity> {
         matrices.translate(0.5, 0, 0.5);
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-giroBloque));
 
+        if (icono == null) {
+            // Cualquier otro ítem (2026-10-05, "que no solo transporte ropa"): dibujado plano sobre la banda.
+            dibujarItem(stack, be.getWorld(), matrices, buffers, luz, overlay, px, ALTO + py, pz);
+            matrices.pop();
+            return;
+        }
         // Arriba de la prenda = hacia donde avanza; su derecha = ese rumbo girado 90° en sentido horario.
         float rx = -tz, rz = tx;
         // Rumbo unitario en 3D y normal = derecha × rumbo.
@@ -84,6 +89,17 @@ public class CintaRenderer implements BlockEntityRenderer<CintaBlockEntity> {
         vertice(vc, e, px - rx * MEDIO - fx * MEDIO, cy - fy * MEDIO, pz - rz * MEDIO - fz * MEDIO, 0, 1, luz, nx, ny, nz);
         vertice(vc, e, px + rx * MEDIO - fx * MEDIO, cy - fy * MEDIO, pz + rz * MEDIO - fz * MEDIO, 1, 1, luz, nx, ny, nz);
         vertice(vc, e, px + rx * MEDIO + fx * MEDIO, cy + fy * MEDIO, pz + rz * MEDIO + fz * MEDIO, 1, 0, luz, nx, ny, nz);
+        matrices.pop();
+    }
+
+    /** Un ítem cualquiera apoyado en (x, y, z) del marco actual, como los ítems tirados al piso pero quieto. */
+    static void dibujarItem(ItemStack stack, net.minecraft.world.World mundo, MatrixStack matrices,
+                            VertexConsumerProvider buffers, int luz, int overlay, float x, float y, float z) {
+        matrices.push();
+        matrices.translate(x, y + 0.12f, z);
+        matrices.scale(0.5f, 0.5f, 0.5f);
+        net.minecraft.client.MinecraftClient.getInstance().getItemRenderer().renderItem(stack,
+                net.minecraft.client.render.model.json.ModelTransformationMode.GROUND, luz, overlay, matrices, buffers, mundo, 0);
         matrices.pop();
     }
 
