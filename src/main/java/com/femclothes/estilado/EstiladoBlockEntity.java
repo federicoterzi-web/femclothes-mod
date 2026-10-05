@@ -66,6 +66,13 @@ public class EstiladoBlockEntity extends BlockEntity
     /** Botones de la lista de la biblioteca: dar una copia y borrar, uno por fila. */
     public static final int BTN_BIBLIO_DAR_BASE = 200, BTN_BIBLIO_BORRAR_BASE = 240;
 
+    /**
+     * Colorear el sombrero de bruja (2026-10-05, "que se le apliquen los colores en la mesa de estilado sobre todo si
+     * tiene tres areas"): {@code BTN_COLOR_BASE + zona*4 + color} pasa el color {@code color} (0..2) del retazo a la
+     * zona {@code zona} (0 ala, 1 cono, 2 cinta); {@code BTN_COLOR_ENTERO} pasa los 3 colores del retazo a las 3 zonas.
+     * No se gasta el retazo.
+     */
+    public static final int BTN_COLOR_BASE = 300, BTN_COLOR_ENTERO = 320;
     public static final int BTN_SELECCIONAR_BASE = 100;        // + 0..11 (antes 0..5: chocaba con el resto al subir a 12 apliques)
     public static final int BTN_GIRO = 10, BTN_GIRO_ATRAS = 11;
     public static final int BTN_ESCALA = 12, BTN_ESCALA_ATRAS = 13;
@@ -326,6 +333,7 @@ public class EstiladoBlockEntity extends BlockEntity
     public boolean onButtonClick(int id) {
         if (id == BTN_TEXTURA) return alternarTextura();
         if (id == BTN_SIGUIENTE_MOLDE) return siguienteMolde();
+        if (id >= BTN_COLOR_BASE && id <= BTN_COLOR_ENTERO) return colorearSombrero(id);
         List<Aplique> actuales = new ArrayList<>(apliques());
         if (id >= BTN_SELECCIONAR_BASE && id < BTN_SELECCIONAR_BASE + Aplique.MAXIMO_POR_PRENDA) {
             int i = id - BTN_SELECCIONAR_BASE;
@@ -388,6 +396,38 @@ public class EstiladoBlockEntity extends BlockEntity
         actuales.set(indice, a.conColocacion(colocacion).conOscilacion(oscilacion)
                 .conBlandura(MathHelper.clamp(blandura, 0f, 1f)));
         guardarApliques(actuales);
+        return true;
+    }
+
+    /** Los 3 colores que ofrece lo que hay en el slot del retazo (el retazo, o una muestra de color repetida), o null. */
+    @org.jetbrains.annotations.Nullable
+    public List<Integer> coloresDeLaFuente() {
+        ItemStack fuente = items.get(SLOT_RETAZO);
+        if (fuente.getItem() instanceof RetazoApliqueItem) return RetazoApliqueItem.colores(fuente);
+        if (fuente.getItem() instanceof com.femclothes.item.MuestraColorItem) {
+            int[] m = com.femclothes.item.MuestraColorItem.mezcla(fuente);
+            if (m == null) return null;
+            int rgb = com.femclothes.item.MuestraColorItem.rgb(m);
+            return List.of(rgb, rgb, rgb);
+        }
+        return null;
+    }
+
+    private boolean colorearSombrero(int id) {
+        ItemStack prenda = items.get(SLOT_PRENDA);
+        List<Integer> fuente = coloresDeLaFuente();
+        if (!(prenda.getItem() instanceof com.femclothes.item.SombreroBrujaItem) || fuente == null) return false;
+        List<Integer> actuales = com.femclothes.item.SombreroBrujaItem.colores(prenda);
+        int[] nuevos = {actuales.get(0), actuales.get(1), actuales.get(2)};
+        if (id == BTN_COLOR_ENTERO) {
+            for (int i = 0; i < 3; i++) nuevos[i] = fuente.get(i);
+        } else {
+            int zona = (id - BTN_COLOR_BASE) / 4, color = (id - BTN_COLOR_BASE) % 4;
+            if (zona > 2 || color > 2) return false;
+            nuevos[zona] = fuente.get(color);
+        }
+        com.femclothes.item.SombreroBrujaItem.conColores(prenda, nuevos[0], nuevos[1], nuevos[2]);
+        markDirty();
         return true;
     }
 

@@ -72,6 +72,9 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
      */
     @Nullable
     public static List<ItemStack> previewOverride;
+    /** El sombrero de bruja de la vista previa de la Mesa de estilado (2026-10-05), que no está en los Trinkets del jugador. */
+    @Nullable
+    public static ItemStack sombreroOverride;
 
     /**
      * Click en la vista 3D de la Mesa de estilado (2026-10-01): si no es null,
@@ -451,6 +454,10 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     /** El sombrero de bruja puesto en su slot de Trinkets, si hay (2026-10-04). */
     private static void dibujarSombrero(LivingEntity entidad, BipedEntityModel<?> biped, MatrixStack matrices,
                                         VertexConsumerProvider vertexConsumers, int luz) {
+        if (sombreroOverride != null) {
+            SombreroRenderer.dibujar(sombreroOverride, biped, matrices, vertexConsumers, luz);
+            return;
+        }
         TrinketsApi.getTrinketComponent(entidad).ifPresent(c -> {
             for (var par : c.getAllEquipped()) {
                 ItemStack puesto = par.getRight();

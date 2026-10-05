@@ -18,8 +18,8 @@ import java.util.List;
  */
 public class SombreroBrujaItem extends TrinketItem {
 
-    /** Violeta casi negro para el ala y el cono, y la cinta en un violeta más vivo. */
-    public static final List<Integer> DE_FABRICA = List.of(0x2B1E3D, 0x2B1E3D, 0x8E44AD);
+    /** Blanco de fábrica (2026-10-05, "sale blanco de fabrica"): igual que el retazo sin teñir; los colores se ponen en la Mesa de estilado. */
+    public static final List<Integer> DE_FABRICA = List.of(0xF2F2F6, 0xF2F2F6, 0xF2F2F6);
 
     public SombreroBrujaItem(Settings settings) {
         super(settings);

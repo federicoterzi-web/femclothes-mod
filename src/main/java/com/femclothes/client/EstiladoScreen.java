@@ -71,6 +71,16 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     private ButtonWidget btnGiro, btnEscala, btnQuitar, btnSacudir;
     /** Controles del aplique de objeto (2026-10-04): arriba de la vista, solo con uno elegido. */
     private ButtonWidget btnObjModo, btnObjVariante;
+    /**
+     * Colorear el sombrero de bruja (2026-10-05, "que se le apliquen los colores en la mesa de estilado sobre todo si
+     * tiene tres areas"): con un sombrero en la prenda hay un botón que cambia los controles de apliques por 3 filas
+     * (ala, cono, cinta) con un botón por cada color del retazo, y "retazo entero".
+     */
+    private boolean modoColor = false;
+    private ButtonWidget btnModoColor, btnColorEntero;
+    private final ButtonWidget[][] btnColorZona = new ButtonWidget[3][3];
+    /** Los controles de apliques que se esconden mientras se colorea. */
+    private final List<ButtonWidget> grupoAplique = new java.util.ArrayList<>();
 
 
     public EstiladoScreen(EstiladoScreenHandler handler, PlayerInventory inventory, Text title) {
@@ -102,15 +112,19 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
             int id = EstiladoBlockEntity.BTN_SELECCIONAR_BASE + i;
             btnApliques[i] = boton(X_DER + Math.round(i * 13.5f), 66, 13, Text.literal(Integer.toString(i + 1)),
                     "femclothes.estilado.tooltip.aplique", () -> clickBoton(id));
+            grupoAplique.add(btnApliques[i]);
         }
-        boton(X_DER, 88, 14, Text.literal("<"), "femclothes.estilado.tooltip.giro", () -> clickBoton(EstiladoBlockEntity.BTN_GIRO_ATRAS));
+        grupoAplique.add(boton(X_DER, 88, 14, Text.literal("<"), "femclothes.estilado.tooltip.giro", () -> clickBoton(EstiladoBlockEntity.BTN_GIRO_ATRAS)));
         btnGiro = boton(X_DER + 15, 88, 64, Text.empty(), "femclothes.estilado.tooltip.giro", () -> clickBoton(EstiladoBlockEntity.BTN_GIRO));
-        boton(X_DER + 80, 88, 14, Text.literal(">"), "femclothes.estilado.tooltip.giro", () -> clickBoton(EstiladoBlockEntity.BTN_GIRO));
-        boton(X_DER, 108, 14, Text.literal("<"), "femclothes.estilado.tooltip.escala", () -> clickBoton(EstiladoBlockEntity.BTN_ESCALA_ATRAS));
+        grupoAplique.add(btnGiro);
+        grupoAplique.add(boton(X_DER + 80, 88, 14, Text.literal(">"), "femclothes.estilado.tooltip.giro", () -> clickBoton(EstiladoBlockEntity.BTN_GIRO)));
+        grupoAplique.add(boton(X_DER, 108, 14, Text.literal("<"), "femclothes.estilado.tooltip.escala", () -> clickBoton(EstiladoBlockEntity.BTN_ESCALA_ATRAS)));
         btnEscala = boton(X_DER + 15, 108, 64, Text.empty(), "femclothes.estilado.tooltip.escala", () -> clickBoton(EstiladoBlockEntity.BTN_ESCALA));
-        boton(X_DER + 80, 108, 14, Text.literal(">"), "femclothes.estilado.tooltip.escala", () -> clickBoton(EstiladoBlockEntity.BTN_ESCALA));
+        grupoAplique.add(btnEscala);
+        grupoAplique.add(boton(X_DER + 80, 108, 14, Text.literal(">"), "femclothes.estilado.tooltip.escala", () -> clickBoton(EstiladoBlockEntity.BTN_ESCALA)));
         btnQuitar = boton(X_DER + 98, 88, 64, Text.translatable("femclothes.estilado.quitar"),
                 "femclothes.estilado.tooltip.quitar", () -> clickBoton(EstiladoBlockEntity.BTN_QUITAR));
+        grupoAplique.add(btnQuitar);
         boton(X_DER + 98, 108, 31, Text.literal("⟲"), "femclothes.estilado.tooltip.vista",
                 () -> anguloVista = Math.floorMod(Math.round(anguloVista) - 45, 360));
         boton(X_DER + 131, 108, 31, Text.literal("⟳"), "femclothes.estilado.tooltip.vista",
@@ -118,6 +132,19 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         // Textura de tela (2026-10-01, relieve): con un Molde de textura en el slot del molde.
         btnTextura = boton(X_DER, 132, 96, Text.empty(), "femclothes.estilado.tooltip.textura",
                 () -> clickBoton(EstiladoBlockEntity.BTN_TEXTURA));
+        grupoAplique.add(btnTextura);
+        // Colorear el sombrero (2026-10-05): modo, 3 filas (ala, cono, cinta) x 3 colores del retazo, y retazo entero.
+        btnModoColor = boton(X_DER, 150, 96, Text.empty(), "femclothes.estilado.tooltip.modo_color",
+                () -> modoColor = !modoColor);
+        for (int z = 0; z < 3; z++) {
+            for (int c = 0; c < 3; c++) {
+                int id = EstiladoBlockEntity.BTN_COLOR_BASE + z * 4 + c;
+                btnColorZona[z][c] = boton(X_DER + 46 + c * 17, 66 + z * 22, 15, Text.literal("■"),
+                        "femclothes.estilado.tooltip.color_zona", () -> clickBoton(id));
+            }
+        }
+        btnColorEntero = boton(X_DER, 132, 96, Text.translatable("femclothes.estilado.color.entero"),
+                "femclothes.estilado.tooltip.color_entero", () -> clickBoton(EstiladoBlockEntity.BTN_COLOR_ENTERO));
         // Sacudir (2026-10-04, "boton de sacudir... alternar mover el muñeco"): prende y apaga el vaivén.
         btnSacudir = boton(X_DER + 98, 132, 64, Text.empty(), "femclothes.estilado.tooltip.sacudir",
                 () -> sacudiendo = !sacudiendo);
@@ -495,6 +522,8 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         ItemStack[] antes = new ItemStack[armadura.size()];
         for (int i = 0; i < antes.length; i++) antes[i] = armadura.get(i);
         net.minecraft.entity.EquipmentSlot slot = delMod ? null : slotDe(prenda);
+        // El sombrero de bruja no está en los Trinkets del jugador: se dibuja de mentira (2026-10-05).
+        GarmentFeatureRenderer.sombreroOverride = prenda.getItem() instanceof com.femclothes.item.SombreroBrujaItem ? prenda : null;
         try {
             if (slot != null && slot.getType() == net.minecraft.entity.EquipmentSlot.Type.HUMANOID_ARMOR) {
                 armadura.set(slot.getEntitySlotId(), prenda);
@@ -506,6 +535,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         } finally {
             com.femclothes.render.FisicaApliques.modoVistaPrevia = com.femclothes.render.FisicaApliques.Modo.QUIETO;
             GarmentFeatureRenderer.previewOverride = null;
+            GarmentFeatureRenderer.sombreroOverride = null;
             GarmentFeatureRenderer.capturaPoses = null;
             ApliqueRenderer.capturaApliques = null;
             GarmentFeatureRenderer.capturaMallas = null;
@@ -763,6 +793,10 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 arrastrando = true;
                 return true;
             }
+            if (button == 0 && modoColor) {
+                // Colorear el sombrero: el click en la vista no pone apliques (2026-10-05).
+                return true;
+            }
             if (button == 0) {
                 Toque t = tocar(mx, my);
                 EstiladoBlockEntity be = handler.be;
@@ -836,6 +870,26 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
             btnApliques[i].setMessage(Text.literal(i == sel ? "[" + (i + 1) + "]" : Integer.toString(i + 1)));
         }
         boolean hay = sel >= 0 && sel < apliques.size();
+        // Sombrero de bruja en la prenda (2026-10-05): colorear o poner apliques.
+        ItemStack enPrenda = be.getStack(EstiladoBlockEntity.SLOT_PRENDA);
+        boolean sombrero = enPrenda.getItem() instanceof com.femclothes.item.SombreroBrujaItem;
+        if (!sombrero) modoColor = false;
+        btnModoColor.visible = sombrero;
+        btnModoColor.setMessage(Text.translatable(modoColor ? "femclothes.estilado.modo_color.apliques"
+                : "femclothes.estilado.modo_color.colorear"));
+        for (ButtonWidget b : grupoAplique) b.visible = !modoColor;
+        java.util.List<Integer> fuente = be.coloresDeLaFuente();
+        for (int z = 0; z < 3; z++) {
+            for (int c = 0; c < 3; c++) {
+                ButtonWidget b = btnColorZona[z][c];
+                b.visible = modoColor;
+                b.active = fuente != null;
+                int rgb = fuente == null ? 0x808080 : fuente.get(c);
+                b.setMessage(Text.literal("■").styled(st -> st.withColor(rgb)));
+            }
+        }
+        btnColorEntero.visible = modoColor;
+        btnColorEntero.active = fuente != null;
         btnGiro.active = btnEscala.active = btnQuitar.active = hay;
         actualizarPanel(hay ? apliques.get(sel) : null);
         com.femclothes.aplique.ObjetoAplique obj = hay ? apliques.get(sel).objeto() : null;
@@ -891,6 +945,16 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         }
         context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.apliques", handler.be.apliques().size(),
                 Aplique.MAXIMO_POR_PRENDA), X_DER + (creativa() ? 102 : 80), EstiladoScreenHandler.Y_SLOTS + 4, EstiloPergamino.TEXTO, false);
+        if (modoColor) {
+            for (int z = 0; z < 3; z++) {
+                context.drawText(this.textRenderer, Text.translatable("femclothes.sombrero.zona." + (z + 1)),
+                        X_DER, 66 + z * 22 + 4, EstiloPergamino.TEXTO, false);
+            }
+            if (handler.be.coloresDeLaFuente() == null) {
+                context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.color.sin_retazo"),
+                        X_DER, 154 + 16, 0xFFFF9090, false);
+            }
+        }
         Text ayuda = aviso != null ? aviso : Text.translatable("femclothes.estilado.ayuda");
         int color = aviso != null ? 0xFFFF9090 : 0xFFE8DCC8;
         for (var linea : this.textRenderer.wrapLines(ayuda, PX2 - PX1 - 12)) {

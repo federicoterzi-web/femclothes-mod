@@ -164,7 +164,7 @@ public class TinturasScreenHandler extends ScreenHandler {
 
     public static int[] posCasilla(TinturasBlockEntity.Categoria cat, int i) {
         if (cat == TinturasBlockEntity.Categoria.POLLERA || cat == TinturasBlockEntity.Categoria.CAPA
-                || cat == TinturasBlockEntity.Categoria.APLIQUE || cat == TinturasBlockEntity.Categoria.SOMBRERO) {
+                || cat == TinturasBlockEntity.Categoria.APLIQUE) {
             // Sobre el dibujo de esquema_tintes_<prenda>.png (2026-10-04, "adaptalos"): origen del ítem de 16x16
             // en px de GUI dentro del esquema de 240x136 (arranca en ESQUEMA_Y). Pollera: cintura, falda, ruedo.
             // Capa: exterior (izq.), forro (abajo der.), detalles (capucha, arriba der.).
@@ -181,7 +181,7 @@ public class TinturasScreenHandler extends ScreenHandler {
     /** Centro de la chincheta del cuadradito {@code i} (relativo al panel) — {@code PIN_BTN} de la Modeladora, o arriba a la derecha del slot en Pollera. */
     public static int[] posChincheta(TinturasBlockEntity.Categoria cat, int i) {
         if (cat == TinturasBlockEntity.Categoria.POLLERA || cat == TinturasBlockEntity.Categoria.CAPA
-                || cat == TinturasBlockEntity.Categoria.APLIQUE || cat == TinturasBlockEntity.Categoria.SOMBRERO) {
+                || cat == TinturasBlockEntity.Categoria.APLIQUE) {
             int[] s = posCasilla(cat, i);
             return new int[]{s[0] + 17, s[1] - 1};
         }

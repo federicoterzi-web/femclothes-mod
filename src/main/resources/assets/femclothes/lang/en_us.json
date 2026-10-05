@@ -754,7 +754,6 @@
   "femclothes.maniqui.emote.ninguno": "Emote: none",
   "femclothes.modelado.categoria.aplique": "Applique scrap",
   "item.femclothes.sombrero_bruja": "Witch Hat",
-  "femclothes.modelado.categoria.sombrero": "Witch hat",
   "femclothes.sombrero.tooltip": "%s brim, %s tip",
   "femclothes.sombrero.zona.1": "Brim",
   "femclothes.sombrero.zona.2": "Cone",
@@ -763,5 +762,12 @@
   "femclothes.sombrero.ala.corta": "short",
   "femclothes.sombrero.punta.recta": "straight",
   "femclothes.sombrero.punta.doblada": "bent",
-  "trinkets.slot.head.sombrero": "Hat"
+  "trinkets.slot.head.sombrero": "Hat",
+  "femclothes.estilado.modo_color.colorear": "Color the hat",
+  "femclothes.estilado.modo_color.apliques": "Back to appliques",
+  "femclothes.estilado.color.entero": "Whole scrap",
+  "femclothes.estilado.color.sin_retazo": "A scrap is missing",
+  "femclothes.estilado.tooltip.modo_color": "Switch between placing appliques and painting the hat's 3 zones with the scrap's colors",
+  "femclothes.estilado.tooltip.color_zona": "Copies this scrap color to this zone of the hat (the scrap is not used up)",
+  "femclothes.estilado.tooltip.color_entero": "Copies the scrap's 3 colors to the hat's 3 zones"
 }

@@ -754,7 +754,6 @@
   "femclothes.maniqui.emote.ninguno": "Emote: ninguno",
   "femclothes.modelado.categoria.aplique": "Retazo de aplique",
   "item.femclothes.sombrero_bruja": "Sombrero de Bruja",
-  "femclothes.modelado.categoria.sombrero": "Sombrero de bruja",
   "femclothes.sombrero.tooltip": "Ala %s, punta %s",
   "femclothes.sombrero.zona.1": "Ala",
   "femclothes.sombrero.zona.2": "Cono",
@@ -763,5 +762,12 @@
   "femclothes.sombrero.ala.corta": "corta",
   "femclothes.sombrero.punta.recta": "recta",
   "femclothes.sombrero.punta.doblada": "doblada",
-  "trinkets.slot.head.sombrero": "Sombrero"
+  "trinkets.slot.head.sombrero": "Sombrero",
+  "femclothes.estilado.modo_color.colorear": "Colorear sombrero",
+  "femclothes.estilado.modo_color.apliques": "Volver a apliques",
+  "femclothes.estilado.color.entero": "Retazo entero",
+  "femclothes.estilado.color.sin_retazo": "Falta el retazo",
+  "femclothes.estilado.tooltip.modo_color": "Cambia entre poner apliques y pintar las 3 zonas del sombrero con los colores del retazo",
+  "femclothes.estilado.tooltip.color_zona": "Pasa este color del retazo a esta zona del sombrero (no se gasta el retazo)",
+  "femclothes.estilado.tooltip.color_entero": "Pasa los 3 colores del retazo a las 3 zonas del sombrero"
 }

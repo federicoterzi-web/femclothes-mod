@@ -66,8 +66,6 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
             Identifier.of("femclothes", "textures/gui/container/esquema_tintes_capa.png"),
             // Retazo de aplique (2026-10-04, fase 4): provisoriamente el esquema de la capa (3 cuadraditos).
             Identifier.of("femclothes", "textures/gui/container/esquema_tintes_capa.png"),
-            // Sombrero de bruja (2026-10-04): también provisorio, el de la capa (3 cuadraditos).
-            Identifier.of("femclothes", "textures/gui/container/esquema_tintes_capa.png"),
     };
     private static final int ESQUEMA_Y = TinturasScreenHandler.ESQUEMA_Y;
     private static final int ESQUEMA_ANCHO = 240, ESQUEMA_ALTO = 136;
@@ -363,8 +361,7 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
         PlayerEntity jugador = client.player;
         if (jugador == null) return;
 
-        if (handler.be.categoria() == TinturasBlockEntity.Categoria.APLIQUE
-                || handler.be.categoria() == TinturasBlockEntity.Categoria.SOMBRERO) {
+        if (handler.be.categoria() == TinturasBlockEntity.Categoria.APLIQUE) {
             dibujarMuestrasRetazo(context, handler.be.prendaDeVistaPrevia(resaltada));
             return;
         }
@@ -396,16 +393,13 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
         m.scale(3f, 3f, 1f);
         context.drawItem(retazo, 0, 0);
         m.pop();
-        boolean sombrero = retazo.getItem() instanceof com.femclothes.item.SombreroBrujaItem;
-        List<Integer> colores = sombrero ? com.femclothes.item.SombreroBrujaItem.colores(retazo)
-                : com.femclothes.aplique.RetazoApliqueItem.colores(retazo);
+        List<Integer> colores = com.femclothes.aplique.RetazoApliqueItem.colores(retazo);
         int alto = Math.min(26, (h - 70) / 3);
         for (int i = 0; i < 3; i++) {
             int ty = y1 + 62 + i * (alto + 4);
             context.fill(x1 + 6, ty - 1, x2 - 6, ty + alto + 1, 0xFF2A180C);
             context.fill(x1 + 7, ty, x2 - 7, ty + alto, 0xFF000000 | colores.get(i));
-            context.drawText(this.textRenderer, sombrero ? Text.translatable("femclothes.sombrero.zona." + (i + 1))
-                            : Text.translatable("femclothes.aplique.zona", i + 1),
+            context.drawText(this.textRenderer, Text.translatable("femclothes.aplique.zona", i + 1),
                     x1 + 10, ty + alto / 2 - 4, 0xFFFFFFFF, true);
         }
     }
