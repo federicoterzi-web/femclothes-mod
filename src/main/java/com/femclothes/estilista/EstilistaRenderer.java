@@ -12,7 +12,7 @@ public class EstilistaRenderer extends GeoBlockRenderer<EstilistaBlockEntity> {
                 EstilistaGeoModel.leds(), EstilistaGeoModel::coloresLed));
         // La prenda cargada con su ícono real, acostada sobre la cama de la tapa (centro del hueso "garment").
         addRenderLayer(new PrendaEnMaquinaLayer<>(this, "garment", EstilistaBlockEntity::prendaVisible,
-                -1.6f, 11.95f, -0.5f, 10f, PrendaEnMaquinaLayer.Apoyo.ACOSTADA_FRENTE_MENOS_Z));
+                0.5f, 11.95f, -1.6f, 10f, PrendaEnMaquinaLayer.Apoyo.ACOSTADA_FRENTE_MENOS_Z));
         // La prenda terminada sobre la bandeja de salida (se desliza con el hueso "cargo").
         addRenderLayer(new PrendaEnMaquinaLayer<>(this, "cargo", EstilistaBlockEntity::salidaVisible,
                 5.6f, 5.08f, 0f, 2.4f, PrendaEnMaquinaLayer.Apoyo.ACOSTADA_FRENTE_MENOS_Z));

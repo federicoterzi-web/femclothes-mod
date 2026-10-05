@@ -47,6 +47,38 @@ def bajar_uv(cubo):
     return c
 
 
+# Giro de la tapa (2026-10-05, "que la parte de arriba el espacio mas vacio quede del lado de la pantallita y la barra
+# de progreso" → "pared al fondo"): 90° alrededor de Y, (x, z) → (-z, x): lo que estaba a +x (la pared maciza, del lado de
+# la bandeja) pasa a +z, el fondo; el pórtico, que corría de adelante hacia atrás, corre de lado a lado.
+CARA_GIRADA = {"south": "east", "west": "south", "north": "west", "east": "north"}   # cara nueva ← cara vieja
+
+
+def girar_cubo(c):
+    c = copy.deepcopy(c)
+    o, t = c["origin"], c["size"]
+    c["origin"] = [round(-(o[2] + t[2]), 4), o[1], o[0]]
+    c["size"] = [t[2], t[1], t[0]]
+    uv = c.get("uv")
+    if isinstance(uv, dict):
+        c["uv"] = {nueva: uv[vieja] for nueva, vieja in CARA_GIRADA.items() if vieja in uv}
+        for cara in ("up", "down"):
+            if cara in uv:
+                c["uv"][cara] = uv[cara]
+    return c
+
+
+def girar_punto(p):
+    return [round(-p[2], 4), p[1], p[0]]
+
+
+def girar_vector(v, escala=False):
+    if isinstance(v, list) and len(v) == 3 and all(isinstance(n, (int, float)) for n in v):
+        return [v[2], v[1], v[0]] if escala else [-v[2], v[1], v[0]]
+    if isinstance(v, dict):
+        return {k: girar_vector(x, escala) for k, x in v.items()}
+    return v
+
+
 def main():
     S = geo(os.path.join(RES, "geo", "garment_shaper.geo.json"))
     A = geo(os.path.join(NUEVO, "auto_styler.geo.json"))
@@ -65,7 +97,9 @@ def main():
         if b["name"] == "root":
             continue
         b = copy.deepcopy(b)
-        b["cubes"] = [bajar_uv(c) for c in b.get("cubes", [])]
+        b["cubes"] = [girar_cubo(bajar_uv(c)) for c in b.get("cubes", [])]
+        if "pivot" in b:
+            b["pivot"] = girar_punto(b["pivot"])
         if b["name"] == "base":
             base["cubes"].extend(b["cubes"])              # la tapa pasa a ser parte de la base
             continue
@@ -86,6 +120,11 @@ def main():
     # tapa y el ventilador en marcha de la Modeladora.
     AS = geo(os.path.join(RES, "animations", "garment_shaper.animation.json"))["animations"]
     AA = geo(os.path.join(NUEVO, "auto_styler.animation.json"))["animations"]
+    for anim in AA.values():                               # la tapa está girada: los recorridos también
+        for hueso in anim["bones"].values():
+            for canal, claves in hueso.items():
+                for t, v in list(claves.items()):
+                    claves[t] = girar_vector(v, escala=(canal == "scale"))
     trabajo = copy.deepcopy(AA["animation.auto_styler.trabajo"])
     largo = trabajo["animation_length"]
     trabajo["bones"]["cargo"] = {"position": {"0": [0, 0, 0], str(round(largo * 0.85, 2)): [0, 0, 0], str(largo): [4.4, 0, 0]}}
