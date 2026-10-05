@@ -190,6 +190,8 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         FORMA_POLLERA, LARGO_POLLERA,
         /** Volados de la pollera (2026-10-05): del borde de abajo y de toda la pollera (MoldeVoladoItem). */
         VOLADO_INFERIOR, VOLADO_TOTAL,
+        /** Borde decorativo del ruedo de la pollera (2026-10-05, MoldeBordeItem). */
+        BORDE_POLLERA,
         /** Capa (2026-09-29): largo (molde de rango), ruedo, capucha y cuello alto (MoldeCapaItem). */
         LARGO_CAPA, RUEDO_CAPA, CAPUCHA_CAPA, CUELLO_CAPA,
         /** Sombrero (2026-10-05): ala y punta (MoldeSombreroItem). */
@@ -209,7 +211,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                     Rol.PERS_IZQ3, Rol.PERS_DER1, Rol.PERS_DER2, Rol.PERS_DER3, Rol.NINGUNO},
             // Pollera (2026-09-29): Forma, Largo, Calce y los 3 materiales.
             {Rol.FORMA_POLLERA, Rol.LARGO_POLLERA, Rol.CALCE, Rol.MAT1, Rol.MAT2, Rol.MAT3,
-                    Rol.VOLADO_INFERIOR, Rol.VOLADO_TOTAL, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
+                    Rol.VOLADO_INFERIOR, Rol.VOLADO_TOTAL, Rol.BORDE_POLLERA, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
             // Capa (2026-09-29, "podemos agregar todo eso como patrones de corte?"):
             // Largo, Ruedo, Capucha, Cuello y los 3 materiales.
             {Rol.LARGO_CAPA, Rol.RUEDO_CAPA, Rol.CAPUCHA_CAPA, Rol.CUELLO_CAPA, Rol.MAT1, Rol.MAT2, Rol.MAT3,
@@ -375,7 +377,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                     || (item instanceof MoldeItem m && m.eje == MoldeItem.Eje.MANGA);
             case PANTALON, MEDIAS -> false;
             case CALIENTABRAZOS -> item instanceof MoldeItem m && m.eje == MoldeItem.Eje.MANGA;
-            case POLLERA -> item instanceof MoldePolleraItem || item instanceof MoldeVoladoItem;
+            case POLLERA -> item instanceof MoldePolleraItem || item instanceof MoldeVoladoItem || item instanceof MoldeBordeItem;
             case CAPA -> item instanceof MoldeCapaItem;
             case SOMBRERO -> item instanceof MoldeSombreroItem;
             case BANDA -> item instanceof MoldeBandaItem;
@@ -738,6 +740,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                     yield ComboCorte.polleraLargo(com.femclothes.item.PolleraLargo.valueOf(m.rango.name()));
                 if (activo.getItem() instanceof MoldePolleraItem m) yield ComboCorte.polleraForma(m.valor);
                 if (activo.getItem() instanceof MoldeVoladoItem m) yield ComboCorte.voladoRuedo(m.valor);
+                if (activo.getItem() instanceof MoldeBordeItem m) yield ComboCorte.polleraBorde(m.valor);
                 yield ComboCorte.VACIO;
             }
             case CAPA -> {
@@ -812,6 +815,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
             }
             case TIRO -> {
                 if (item instanceof MoldeRangoItem m) c = ComboCorte.tiro(tiroDeNivel(m.rango));
+            }
+            case BORDE_POLLERA -> {
+                if (item instanceof MoldeBordeItem m) c = ComboCorte.polleraBorde(m.valor);
             }
             case VOLADO_INFERIOR -> {
                 if (item instanceof MoldeVoladoItem m) c = ComboCorte.voladoRuedo(m.valor);
@@ -1589,7 +1595,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                 || item instanceof MoldeRangoItem
                 || item instanceof MoldeCalceItem || item instanceof MoldeRedItem
                 || item instanceof MoldeCuelloItem
-                || item instanceof MoldePolleraItem || item instanceof MoldeVoladoItem || item instanceof MoldeCapaItem || item instanceof MoldeSombreroItem
+                || item instanceof MoldePolleraItem || item instanceof MoldeVoladoItem || item instanceof MoldeBordeItem || item instanceof MoldeCapaItem || item instanceof MoldeSombreroItem
                 || item instanceof MoldeBandaItem;
     }
 

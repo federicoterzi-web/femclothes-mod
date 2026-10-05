@@ -78,6 +78,26 @@ def dibujo(tipo):
         pts = [(21, 36)] + borde_ondulado(21, 43, 51, 8, 1.4) + [(43, 36)]
         pol(d, k, [(21, 38), (43, 38)] + borde_ondulado(43, 21, 51, 8, 1.4, math.pi * 0), TELA)
         d.line([(21 * k, 38 * k), (43 * k, 38 * k)], fill=LINEA, width=k)
+    elif tipo.startswith("borde_"):
+        pol(d, k, [(24, 18), (40, 18), (42, 44), (22, 44)])
+        cintura(d, k, 24, 40, 18)
+        n = 4
+        if tipo == "borde_ondulado":
+            hem = [(20 + 24 * t, 48 + 2 * math.sin(2 * math.pi * n * t)) for t in [i / 32 for i in range(33)]]
+        elif tipo == "borde_festoneado":
+            hem = []
+            for i in range(n):
+                for j in range(9):
+                    f = j / 8
+                    hem.append((20 + 24 * (i + f) / n, 46 + 4 * math.sqrt(max(0, 1 - (2 * f - 1) ** 2))))
+        else:
+            hem = []
+            for i in range(n + 1):
+                hem.append((20 + 24 * i / n, 45))
+                if i < n:
+                    hem.append((20 + 24 * (i + 0.5) / n, 52))
+        pol(d, k, [(22, 44), (42, 44)] + hem[::-1] if tipo != "borde_pico" else [(22, 44), (42, 44)] + hem[::-1], TELA)
+        d.line([(22 * k, 44 * k), (42 * k, 44 * k)], fill=LINEA, width=k)
     else:  # volado circular
         pol(d, k, [(24, 20), (40, 20), (42, 38), (22, 38)])
         cintura(d, k, 24, 40, 20)
@@ -90,7 +110,8 @@ def dibujo(tipo):
 
 
 TIPOS = {"molde_pollera_tubo": "tubo", "molde_pollera_globo": "globo", "molde_pollera_circular": "circular",
-         "molde_volado_recto": "volado_recto", "molde_volado_circular": "volado_circular"}
+         "molde_volado_recto": "volado_recto", "molde_volado_circular": "volado_circular",
+         "molde_borde_ondulado": "borde_ondulado", "molde_borde_festoneado": "borde_festoneado", "molde_borde_pico": "borde_pico"}
 
 if __name__ == "__main__":
     for nombre, t in TIPOS.items():

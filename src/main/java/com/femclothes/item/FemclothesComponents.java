@@ -475,6 +475,14 @@ public final class FemclothesComponents {
                     .packetCodec(PacketCodecs.indexed(i -> PolleraVolado.values()[i], Enum::ordinal))
                     .build());
 
+    /** Borde decorativo del ruedo de la pollera (2026-10-05); ausente = recto. */
+    public static final ComponentType<PolleraBorde> POLLERA_BORDE = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "pollera_borde"),
+            ComponentType.<PolleraBorde>builder()
+                    .codec(StringIdentifiable.createCodec(PolleraBorde::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PolleraBorde.values()[i], Enum::ordinal))
+                    .build());
+
     /** Forma de la pollera (§{@link PolleraForma}); ausente = CAMPANA. */
     public static final ComponentType<PolleraForma> POLLERA_FORMA = Registry.register(
             Registries.DATA_COMPONENT_TYPE,

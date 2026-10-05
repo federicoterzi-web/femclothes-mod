@@ -142,6 +142,13 @@ public final class ModeladoMod {
     public static final MoldePolleraItem MOLDE_POLLERA_CIRCULAR = new MoldePolleraItem(new Item.Settings().maxCount(1),
             com.femclothes.item.PolleraForma.CIRCULAR);
 
+    public static final MoldeBordeItem MOLDE_BORDE_ONDULADO = new MoldeBordeItem(new Item.Settings().maxCount(1),
+            com.femclothes.item.PolleraBorde.ONDULADO);
+    public static final MoldeBordeItem MOLDE_BORDE_FESTONEADO = new MoldeBordeItem(new Item.Settings().maxCount(1),
+            com.femclothes.item.PolleraBorde.FESTONEADO);
+    public static final MoldeBordeItem MOLDE_BORDE_PICO = new MoldeBordeItem(new Item.Settings().maxCount(1),
+            com.femclothes.item.PolleraBorde.PICO);
+
     // ── moldes de la banda (2026-10-05, "correas y cintos") ──
     public static final MoldeBandaItem MOLDE_BANDA_ZONA_CINTURA = new MoldeBandaItem(new Item.Settings().maxCount(1),
             MoldeBandaItem.Tipo.ZONA_CINTURA);
@@ -204,6 +211,9 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_pollera_circular"), MOLDE_POLLERA_CIRCULAR);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_volado_recto"), MOLDE_VOLADO_RECTO);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_volado_circular"), MOLDE_VOLADO_CIRCULAR);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_borde_ondulado"), MOLDE_BORDE_ONDULADO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_borde_festoneado"), MOLDE_BORDE_FESTONEADO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_borde_pico"), MOLDE_BORDE_PICO);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_ruedo_recto"), MOLDE_CAPA_RUEDO_RECTO);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_ruedo_redondeado"), MOLDE_CAPA_RUEDO_REDONDEADO);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_capa_ruedo_cola"), MOLDE_CAPA_RUEDO_COLA);

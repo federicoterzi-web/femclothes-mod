@@ -32,6 +32,8 @@ POLLERA = {
         # Volados (2026-10-05): el del borde de abajo y el de toda la pollera.
         ("VOLADO_INF", "der", (770, 462), (615, 440)),
         ("VOLADO_TOT", "izq", (100, 165), (375, 205)),
+        # Custom (2026-10-05): el borde decorativo del ruedo, abajo a la izquierda del centro.
+        ("BORDE", "izq", (330, 466), (415, 452)),
     ],
 }
 CAPA = {

@@ -1,5 +1,6 @@
 package com.femclothes.render;
 
+import com.femclothes.item.PolleraBorde;
 import com.femclothes.item.PolleraForma;
 import com.femclothes.item.PolleraLargo;
 import com.femclothes.item.PolleraVolado;
@@ -110,7 +111,7 @@ public final class PolleraMalla {
     public static void dibujar(MatrixStack matrices, VertexConsumer vc, int luz, PolleraForma forma,
                                PolleraLargo largo, float dil, @Nullable Piernas piernas,
                                CapaMalla.Movimiento mov, float twirl) {
-        dibujar(matrices, vc, luz, forma, largo, null, null, dil, piernas, mov, twirl, 0f, 0f);
+        dibujar(matrices, vc, luz, forma, largo, null, null, null, dil, piernas, mov, twirl, 0f, 0f);
     }
 
     /**
@@ -119,7 +120,7 @@ public final class PolleraMalla {
      */
     public static void dibujar(MatrixStack matrices, VertexConsumer vc, int luz, PolleraForma forma,
                                PolleraLargo largo, @Nullable PolleraVolado voladoRuedo, @Nullable PolleraVolado voladoTodo,
-                               float dil, @Nullable Piernas piernas,
+                               @Nullable PolleraBorde borde, float dil, @Nullable Piernas piernas,
                                CapaMalla.Movimiento mov, float twirl, float cola, float inclinacion) {
         float[][][] p = new float[FILAS + 1][COLUMNAS + 1][];
         float l = largo.pixeles;
@@ -167,6 +168,11 @@ public final class PolleraMalla {
                 x = xg;
                 z = zg;
                 float yy = y;
+                // Borde decorativo del ruedo (2026-10-05): las filas de abajo bajan según el dibujo, más cuanto más abajo.
+                if (borde != null && t > 0.8f) {
+                    float w = (t - 0.8f) / 0.2f;
+                    yy += borde.baja(((c - COL_FRENTE + COLUMNAS) % COLUMNAS) / (float) COLUMNAS) * w * w;
+                }
                 // Inercia: el ruedo se queda atrás (+Z) y de costado; al irse
                 // para atrás/afuera también sube un poco (la tela no se estira).
                 float dz = atras * peso, dx = costado * peso;

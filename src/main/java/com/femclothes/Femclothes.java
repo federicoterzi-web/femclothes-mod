@@ -192,6 +192,9 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_POLLERA_CIRCULAR);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_VOLADO_RECTO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_VOLADO_CIRCULAR);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BORDE_ONDULADO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BORDE_FESTONEADO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BORDE_PICO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_RUEDO_RECTO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_RUEDO_REDONDEADO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_RUEDO_COLA);

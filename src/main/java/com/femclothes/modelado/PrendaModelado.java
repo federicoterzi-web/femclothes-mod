@@ -200,6 +200,13 @@ public final class PrendaModelado {
             }
         }
 
+        // Borde decorativo del ruedo de la pollera (2026-10-05).
+        if (out.getItem() instanceof com.femclothes.item.PolleraItem && combo.pollera().isPresent()
+                && combo.pollera().get().borde().isPresent()) {
+            com.femclothes.item.PolleraItem.setBorde(out, combo.pollera().get().borde().get());
+            cambio = true;
+        }
+
         // Banda (2026-10-05): zona, ancho y herraje.
         if (out.getItem() instanceof com.femclothes.item.BandaItem && combo.pollera().isPresent()) {
             var p = combo.pollera().get();

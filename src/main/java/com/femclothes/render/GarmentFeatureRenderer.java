@@ -316,7 +316,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         MallaCapturada malla = grabar("pollera", !apliques.isEmpty() || CorreaRenderer.hayEn(stack, com.femclothes.correa.Correa.Superficie.POLLERA), () -> PolleraMalla.dibujar(matrices, buffer, luz,
                 com.femclothes.item.PolleraItem.forma(stack), com.femclothes.item.PolleraItem.largo(stack),
                 com.femclothes.item.PolleraItem.voladoRuedo(stack), com.femclothes.item.PolleraItem.voladoTodo(stack),
-                dilatacion, new PolleraMalla.Piernas(biped.body, biped.rightLeg, biped.leftLeg), mov,
+                com.femclothes.item.PolleraItem.borde(stack), dilatacion, new PolleraMalla.Piernas(biped.body, biped.rightLeg, biped.leftLeg), mov,
                 twirl, cola, delJugador.pitch));
         matrices.pop();
         if (malla != null) { ApliqueRenderer.dibujarEnMalla(stack, com.femclothes.aplique.Aplique.Superficie.POLLERA, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix());

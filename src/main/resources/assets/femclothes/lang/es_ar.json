@@ -859,7 +859,16 @@
   "femclothes.pollera.volado.circular": "circular",
   "femclothes.pollera.tooltip.volado_ruedo": "Volado en el ruedo: %s",
   "femclothes.pollera.tooltip.volado_todo": "Volados en toda la pollera: %s",
-  "femclothes.pollera.molde_volado.ayuda": "Va en el pin Corte inferior (solo el ruedo) o en el pin Custom (tres filas en toda la pollera) de la Pollera.",
+  "femclothes.pollera.molde_volado.ayuda": "Va en el pin Corte inferior (solo el ruedo) o en el pin Toda la pollera (tres filas) de la Pollera.",
   "femclothes.modelado.rol.volado_inferior": "Corte inferior",
-  "femclothes.modelado.rol.volado_total": "Custom"
+  "femclothes.modelado.rol.volado_total": "Toda la pollera",
+  "femclothes.modelado.rol.borde_pollera": "Custom",
+  "femclothes.pollera.borde.ondulado": "ondulado",
+  "femclothes.pollera.borde.festoneado": "festoneado",
+  "femclothes.pollera.borde.pico": "con pico",
+  "femclothes.pollera.tooltip.borde": "Borde del ruedo: %s",
+  "femclothes.pollera.molde_borde.ayuda": "Va en el pin Custom de la Pollera: cambia el borde del ruedo.",
+  "item.femclothes.molde_borde_ondulado": "Molde de Borde: Ondulado",
+  "item.femclothes.molde_borde_festoneado": "Molde de Borde: Festoneado",
+  "item.femclothes.molde_borde_pico": "Molde de Borde: Con pico"
 }

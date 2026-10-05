@@ -859,7 +859,16 @@
   "femclothes.pollera.volado.circular": "circular",
   "femclothes.pollera.tooltip.volado_ruedo": "Hem flounce: %s",
   "femclothes.pollera.tooltip.volado_todo": "Flounces all over: %s",
-  "femclothes.pollera.molde_volado.ayuda": "Goes in the Skirt's Lower cut pin (hem only) or Custom pin (three tiers all over).",
+  "femclothes.pollera.molde_volado.ayuda": "Goes in the Skirt's Lower cut pin (hem only) or Whole skirt pin (three tiers).",
   "femclothes.modelado.rol.volado_inferior": "Lower cut",
-  "femclothes.modelado.rol.volado_total": "Custom"
+  "femclothes.modelado.rol.volado_total": "Whole skirt",
+  "femclothes.modelado.rol.borde_pollera": "Custom",
+  "femclothes.pollera.borde.ondulado": "wavy",
+  "femclothes.pollera.borde.festoneado": "scalloped",
+  "femclothes.pollera.borde.pico": "pointed",
+  "femclothes.pollera.tooltip.borde": "Hem edge: %s",
+  "femclothes.pollera.molde_borde.ayuda": "Goes in the Skirt's Custom pin: changes the hem edge.",
+  "item.femclothes.molde_borde_ondulado": "Edge Template: Wavy",
+  "item.femclothes.molde_borde_festoneado": "Edge Template: Scalloped",
+  "item.femclothes.molde_borde_pico": "Edge Template: Pointed"
 }
