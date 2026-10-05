@@ -38,6 +38,8 @@ public class RetazoApliqueItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
+        com.femclothes.item.PrendaLore.moldeEn(tooltip, "retazo", new com.femclothes.item.PrendaLore.Maquina[]{
+                com.femclothes.item.PrendaLore.Maquina.TINTES, com.femclothes.item.PrendaLore.Maquina.ESTILADO});
         List<Integer> c = colores(stack);
         for (int i = 0; i < 3; i++) tooltip.add(linea(i, c.get(i)));
         tooltip.add(Text.translatable("femclothes.aplique.retazo.tooltip").formatted(Formatting.DARK_GRAY));

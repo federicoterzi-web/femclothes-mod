@@ -17,6 +17,6 @@ public class EmpalmeRenderer implements BlockEntityRenderer<EmpalmeBlockEntity> 
         ItemStack stack = be.carga();
         if (stack.isEmpty() || be.getWorld() == null) return;
         // Las prendas van como en la cinta (el ícono se ve plano); el resto como ítem suelto.
-        CintaRenderer.dibujarItem(stack, be.getWorld(), matrices, buffers, luz, overlay, 0.5f, 4.2f / 16f, 0.5f);
+        CintaRenderer.dibujarItem(stack, be.getWorld(), matrices, buffers, luz, overlay, 0.5f, 4.5f / 16f, 0.5f);
     }
 }

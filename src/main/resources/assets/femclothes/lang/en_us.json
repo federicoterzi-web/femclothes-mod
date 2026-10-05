@@ -168,6 +168,8 @@
   "femclothes.tooltip.shift": "Shift: show all",
   "femclothes.tooltip.maquina": "Used in: %s",
   "femclothes.prenda.todas": "Any garment or accessory",
+  "femclothes.tipo.retazo": "Swatch",
+  "femclothes.tipo.muestra": "Colour sample",
   "femclothes.categoria.molde": "Template",
   "femclothes.categoria.patron": "Pattern",
   "femclothes.tooltip.se_usa_en": "Fits: %s",

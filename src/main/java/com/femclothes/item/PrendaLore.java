@@ -34,8 +34,25 @@ public final class PrendaLore {
         }
     }
 
+    /** Igual que {@link #molde} para un ítem que sirve en varias máquinas (retazo, muestra de color). */
+    public static void moldeEn(List<Text> tooltip, String tipo, Maquina[] maquinas, String... prendas) {
+        lineas(tooltip, tipo, prendas);
+        MutableText donde = Text.translatable("femclothes.tooltip.maquina", "").formatted(Formatting.GRAY);
+        for (int i = 0; i < maquinas.length; i++) {
+            if (i > 0) donde.append(Text.literal(", ").formatted(Formatting.GRAY));
+            donde.append(Text.translatable("block.femclothes." + maquinas[i].bloque).formatted(maquinas[i].color));
+        }
+        tooltip.add(donde);
+    }
+
     /** Líneas de abajo del nombre: tipo, prendas aplicables y máquina. */
     public static void molde(List<Text> tooltip, String tipo, Maquina maquina, String... prendas) {
+        lineas(tooltip, tipo, prendas);
+        tooltip.add(Text.translatable("femclothes.tooltip.maquina", Text.translatable("block.femclothes." + maquina.bloque))
+                .formatted(maquina.color));
+    }
+
+    private static void lineas(List<Text> tooltip, String tipo, String... prendas) {
         tooltip.add(Text.translatable("femclothes.tipo." + tipo).formatted(Formatting.GRAY));
         if (prendas.length > 0) {
             boolean completa = prendas.length <= 3 || shift();
@@ -49,8 +66,6 @@ public final class PrendaLore {
             tooltip.add(Text.translatable("femclothes.tooltip.prendas", lista.toString()).formatted(Formatting.DARK_GRAY));
             if (!completa) tooltip.add(Text.translatable("femclothes.tooltip.shift").formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
         }
-        tooltip.add(Text.translatable("femclothes.tooltip.maquina", Text.translatable("block.femclothes." + maquina.bloque))
-                .formatted(maquina.color));
     }
 
     /** Shift apretado; solo existe en el cliente (el servidor nunca arma tooltips). */

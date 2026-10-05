@@ -168,6 +168,8 @@
   "femclothes.tooltip.shift": "Shift: ver todas",
   "femclothes.tooltip.maquina": "Se usa en: %s",
   "femclothes.prenda.todas": "Cualquier prenda o accesorio",
+  "femclothes.tipo.retazo": "Retazo",
+  "femclothes.tipo.muestra": "Muestra de color",
   "femclothes.categoria.molde": "Molde",
   "femclothes.categoria.patron": "Patrón",
   "femclothes.tooltip.se_usa_en": "Se usa en: %s",

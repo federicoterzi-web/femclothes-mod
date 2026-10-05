@@ -24,7 +24,7 @@ public class CintaRenderer implements BlockEntityRenderer<CintaBlockEntity> {
     /** Mitad del lado del ícono, en bloques. */
     private static final float MEDIO = 0.3f;
     /** Altura de la banda (4,05 px) más un pelo. */
-    private static final float ALTO = 4.2f / 16f;
+    private static final float ALTO = 4.5f / 16f;
 
     public CintaRenderer(BlockEntityRendererFactory.Context ctx) {}
 

@@ -131,7 +131,7 @@ def caja(desde, hasta, cara="#marco"):
 
 def plano_banda(textura):
     return {
-        "from": [0, 4.05, 0], "to": [16, 4.05, 16],
+        "from": [0, 4.3, 0], "to": [16, 4.3, 16],
         "faces": {"up": {"uv": [0, 0, 16, 16], "texture": textura}},
     }
 
