@@ -8,11 +8,12 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.math.BlockPos;
 
-/** Pantalla de la Estilista (etapa 1): la prenda, la salida y el inventario. */
+/** Pantalla de la Estilista (provisoria): la prenda, la salida, los insumos (hilo, cuero y objetos) y el inventario. */
 public class EstilistaScreenHandler extends ScreenHandler {
 
-    public static final int X_PRENDA = 40, X_SALIDA = 120, Y_SLOTS = 40;
-    public static final int X_INV = 8, Y_INV = 120;
+    public static final int X_PRENDA = 26, X_SALIDA = 134, Y_SLOTS = 16;
+    public static final int X_INSUMOS = 8, Y_INSUMOS = 92;
+    public static final int X_INV = 8, Y_INV = 142;
 
     public final EstilistaBlockEntity be;
 
@@ -34,12 +35,18 @@ public class EstilistaScreenHandler extends ScreenHandler {
         addSlot(new Slot(be, EstilistaBlockEntity.SLOT_SALIDA, X_SALIDA, Y_SLOTS) {
             @Override public boolean canInsert(ItemStack stack) { return false; }
         });
+        for (int i = 0; i < EstilistaBlockEntity.INSUMOS; i++) {
+            int slot = EstilistaBlockEntity.SLOT_INSUMOS + i;
+            addSlot(new Slot(be, slot, X_INSUMOS + (i % 9) * 18, Y_INSUMOS + (i / 9) * 18) {
+                @Override public boolean canInsert(ItemStack stack) { return be.isValid(slot, stack); }
+            });
+        }
         for (int i = 0; i < 3; i++) for (int j = 0; j < 9; j++) addSlot(new Slot(inv, j + i * 9 + 9, X_INV + j * 18, Y_INV + i * 18));
         for (int i = 0; i < 9; i++) addSlot(new Slot(inv, i, X_INV + i * 18, Y_INV + 58));
     }
 
     @Override
-    public boolean onButtonClick(PlayerEntity player, int id) { return be.onButtonClick(id); }
+    public boolean onButtonClick(PlayerEntity player, int id) { return be.onButtonClick(player, id); }
 
     @Override
     public void onClosed(PlayerEntity player) {
@@ -58,7 +65,8 @@ public class EstilistaScreenHandler extends ScreenHandler {
         ItemStack copia = stack.copy();
         if (index < EstilistaBlockEntity.TAMANO) {
             if (!insertItem(stack, EstilistaBlockEntity.TAMANO, slots.size(), true)) return ItemStack.EMPTY;
-        } else if (!insertItem(stack, 0, 1, false)) {
+        } else if (!insertItem(stack, 0, 1, false)
+                && !insertItem(stack, EstilistaBlockEntity.SLOT_INSUMOS, EstilistaBlockEntity.TAMANO, false)) {
             return ItemStack.EMPTY;
         }
         if (stack.isEmpty()) s.setStack(ItemStack.EMPTY);

@@ -39,10 +39,27 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 public class EstilistaBlockEntity extends BlockEntity implements SidedInventory, com.femclothes.util.ConSalida,
         ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity, com.femclothes.util.MaquinaCreativa.Cargable {
 
-    public static final int SLOT_PRENDA = 0, SLOT_SALIDA = 1, TAMANO = 2;
+    public static final int SLOT_PRENDA = 0, SLOT_SALIDA = 1, SLOT_INSUMOS = 2, INSUMOS = 18, TAMANO = SLOT_INSUMOS + INSUMOS;
+    /** Cuántos diseños (uno por tipo de prenda) guarda la máquina. */
+    public static final int MAX_DISENOS = 32;
     /** Lo que dura el trabajo del pórtico: los 13 s de la animación. */
     public static final int TICKS_PROCESO = 260;
-    public static final int BTN_PROBAR = 0;
+    /** Botones: aplicar el diseño a la prenda de la entrada, fijar esa prenda como muestra, olvidar el diseño de su tipo. */
+    public static final int BTN_APLICAR = 0, BTN_FIJAR = 1, BTN_BORRAR = 2;
+
+    /** Lo que sale de intentar aplicar el diseño: ver {@link #planear}. */
+    public enum Resultado { OK, SIN_DISENO, FALTA }
+
+    /** Lo que copia un diseño de la prenda de muestra (lo demás de la prenda no se toca). */
+    private static final java.util.List<net.minecraft.component.ComponentType<?>> COMPONENTES_DE_DISENO = java.util.List.of(
+            com.femclothes.item.FemclothesComponents.APLIQUES, com.femclothes.item.FemclothesComponents.CORREAS,
+            com.femclothes.item.FemclothesComponents.TEXTURA_TELA,
+            com.femclothes.item.FemclothesComponents.COLORES_SOMBRERO, com.femclothes.item.FemclothesComponents.PATRONES_SOMBRERO,
+            com.femclothes.item.FemclothesComponents.COLORES_BANDA, com.femclothes.item.FemclothesComponents.PATRONES_BANDA);
+
+    /** Los tics del trabajo (de la animación `trabajo`) en que el pórtico arranca un recorrido: horizontal o de subida y bajada. */
+    private static final int[] TICS_HORIZONTAL = {0, 18, 42, 52, 70, 94, 104, 122, 146, 156, 174, 198};
+    private static final int[] TICS_VERTICAL = {10, 14, 31, 36, 62, 66, 83, 88, 114, 118, 135, 140, 166, 170, 187, 192};
 
     public enum Estado { REPOSO, PROCESANDO, LISTO }
 
@@ -55,6 +72,10 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     private int progreso;
     /** Cuántas pantallas hay abiertas: con alguna abierta no arranca nada solo. */
     private int guiAbiertas;
+    /** La prenda de la entrada llegó por la cadena (arranca sola apenas haya insumos) o la puso alguien a mano (espera los botones). */
+    private boolean deCadena;
+    /** Un diseño por tipo de prenda: el ítem de la muestra con solo lo que se copia (apliques, correas, colores). */
+    private final DefaultedList<ItemStack> disenos = DefaultedList.ofSize(MAX_DISENOS, ItemStack.EMPTY);
 
     public EstilistaBlockEntity(BlockPos pos, BlockState state) {
         super(EstilistaMod.ESTILISTA_BLOCK_ENTITY, pos, state);
@@ -80,8 +101,170 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
 
     public ItemStack salidaVisible() { return items.get(SLOT_SALIDA); }
 
-    /** ¿Hay un diseño fijado que aplicar? Etapa 2; hoy nunca. */
-    public boolean tieneDiseno() { return false; }
+    // ── diseños (etapa 2, 2026-10-05: "la primera que entre o la del input, vamos con 13 s, que gaste y recupere") ──
+
+    /** El diseño guardado para el tipo de esa prenda, o null. */
+    @Nullable
+    public ItemStack diseno(ItemStack prenda) {
+        if (prenda.isEmpty()) return null;
+        for (ItemStack d : disenos) if (!d.isEmpty() && d.getItem() == prenda.getItem()) return d;
+        return null;
+    }
+
+    public int cuantosDisenos() {
+        int n = 0;
+        for (ItemStack d : disenos) if (!d.isEmpty()) n++;
+        return n;
+    }
+
+    private static <T> void copiar(net.minecraft.component.ComponentType<T> tipo, ItemStack de, ItemStack a) {
+        T valor = de.get(tipo);
+        if (valor != null) a.set(tipo, valor);
+        else a.remove(tipo);
+    }
+
+    private static void copiarDiseno(ItemStack de, ItemStack a) {
+        for (net.minecraft.component.ComponentType<?> t : COMPONENTES_DE_DISENO) copiar(t, de, a);
+    }
+
+    private static int cuenta(ItemStack s, net.minecraft.component.ComponentType<? extends java.util.Collection<?>> t) {
+        java.util.Collection<?> c = s.get(t);
+        return c == null ? 0 : c.size();
+    }
+
+    public static int apliquesDe(ItemStack s) { return cuenta(s, com.femclothes.item.FemclothesComponents.APLIQUES); }
+    public static int correasDe(ItemStack s) { return cuenta(s, com.femclothes.item.FemclothesComponents.CORREAS); }
+
+    /** Lo que cuesta (y vuelve al quitarlo) lo que lleva una prenda: hilo por aplique, cuero por correa, y el objeto de un aplique de objeto. */
+    private static java.util.List<ItemStack> costoDe(ItemStack s) {
+        java.util.List<ItemStack> costo = new java.util.ArrayList<>();
+        java.util.List<com.femclothes.aplique.Aplique> apl = s.get(com.femclothes.item.FemclothesComponents.APLIQUES);
+        if (apl != null) {
+            for (com.femclothes.aplique.Aplique a : apl) {
+                costo.add(new ItemStack(net.minecraft.item.Items.STRING));
+                // Un objeto "de molde" no gastó nada al ponerse (ni vuelve).
+                if (a.objeto() != null && !a.objeto().deMolde()) {
+                    costo.add(a.objeto().item().copy());
+                    if (!a.objeto().muestra().isEmpty()) costo.add(a.objeto().muestra().copy());
+                }
+            }
+        }
+        int correas = correasDe(s);
+        if (correas > 0) costo.add(new ItemStack(net.minecraft.item.Items.LEATHER, correas));
+        return costo;
+    }
+
+    /** Existencias del almacén (o una copia para simular): pila por tipo de ítem + componentes. */
+    private static final class Existencias {
+        final java.util.List<ItemStack> pilas = new java.util.ArrayList<>();
+
+        void sumar(ItemStack s) {
+            if (s.isEmpty()) return;
+            for (ItemStack e : pilas) if (ItemStack.areItemsAndComponentsEqual(e, s)) { e.increment(s.getCount()); return; }
+            pilas.add(s.copy());
+        }
+
+        boolean sacar(ItemStack s) {
+            for (ItemStack e : pilas) {
+                if (ItemStack.areItemsAndComponentsEqual(e, s)) {
+                    if (e.getCount() < s.getCount()) return false;
+                    e.decrement(s.getCount());
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        Existencias copia() {
+            Existencias c = new Existencias();
+            for (ItemStack e : pilas) c.pilas.add(e.copy());
+            return c;
+        }
+    }
+
+    private Existencias existencias() {
+        Existencias e = new Existencias();
+        for (int i = SLOT_INSUMOS; i < TAMANO; i++) e.sumar(items.get(i));
+        return e;
+    }
+
+    private void escribirExistencias(Existencias e) {
+        for (int i = SLOT_INSUMOS; i < TAMANO; i++) items.set(i, ItemStack.EMPTY);
+        int slot = SLOT_INSUMOS;
+        for (ItemStack pila : e.pilas) {
+            ItemStack resto = pila.copy();
+            while (!resto.isEmpty()) {
+                ItemStack parte = resto.split(Math.min(resto.getCount(), Math.max(1, resto.getMaxCount())));
+                if (slot < TAMANO) items.set(slot++, parte);
+                else if (world != null) net.minecraft.block.Block.dropStack(world, pos.up(), parte);   // sin lugar: cae al piso
+            }
+        }
+    }
+
+    /** Resultado de simular aplicar el diseño a esa prenda: sin tocar nada. {@code falta} (si lo hay) es lo que no alcanza. */
+    public record Plan(Resultado resultado, @Nullable Existencias despues, ItemStack falta) {}
+
+    public Plan planear(ItemStack prenda) {
+        ItemStack d = diseno(prenda);
+        if (d == null) return new Plan(Resultado.SIN_DISENO, null, ItemStack.EMPTY);
+        if (com.femclothes.util.MaquinaCreativa.es(this)) return new Plan(Resultado.OK, null, ItemStack.EMPTY);
+        Existencias e = existencias();
+        for (ItemStack c : costoDe(prenda)) e.sumar(c);              // lo que la prenda ya traía vuelve al almacén
+        for (ItemStack c : costoDe(d)) {
+            if (!e.sacar(c)) return new Plan(Resultado.FALTA, null, c);
+        }
+        return new Plan(Resultado.OK, e, ItemStack.EMPTY);
+    }
+
+    /** Lo que falta para aplicar el diseño a la prenda de la entrada (para la pantalla), o vacío. */
+    public ItemStack faltaParaLaEntrada() {
+        Plan p = planear(items.get(SLOT_PRENDA));
+        return p.resultado() == Resultado.FALTA ? p.falta() : ItemStack.EMPTY;
+    }
+
+    /** Arranca el trabajo: gasta los insumos, devuelve los de lo que la prenda ya traía y le pone el diseño. */
+    public Resultado iniciar() {
+        ItemStack prenda = items.get(SLOT_PRENDA);
+        if (estado != Estado.REPOSO || prenda.isEmpty() || !items.get(SLOT_SALIDA).isEmpty()) return Resultado.SIN_DISENO;
+        Plan plan = planear(prenda);
+        if (plan.resultado() != Resultado.OK) return plan.resultado();
+        if (plan.despues() != null) escribirExistencias(plan.despues());
+        copiarDiseno(diseno(prenda), prenda);
+        estado = Estado.PROCESANDO;
+        progreso = 0;
+        sincronizar();
+        return Resultado.OK;
+    }
+
+    /** Fija la prenda de la entrada como muestra del diseño de su tipo (reemplaza al anterior). Sale por la derecha como terminada. */
+    private boolean fijar(PlayerEntity jugador) {
+        ItemStack muestra = items.get(SLOT_PRENDA);
+        ItemStack proto = new ItemStack(muestra.getItem());
+        copiarDiseno(muestra, proto);
+        boolean hayAlgo = false;
+        for (net.minecraft.component.ComponentType<?> t : COMPONENTES_DE_DISENO) hayAlgo |= proto.get(t) != null;
+        if (!hayAlgo) {
+            jugador.sendMessage(Text.translatable("femclothes.estilista.muestra_vacia"), true);
+            return false;
+        }
+        int libre = -1, propio = -1;
+        for (int i = 0; i < MAX_DISENOS; i++) {
+            if (disenos.get(i).isEmpty()) { if (libre < 0) libre = i; }
+            else if (disenos.get(i).getItem() == muestra.getItem()) propio = i;
+        }
+        int donde = propio >= 0 ? propio : libre;
+        if (donde < 0) {
+            jugador.sendMessage(Text.translatable("femclothes.estilista.sin_lugar"), true);
+            return false;
+        }
+        disenos.set(donde, proto);
+        items.set(SLOT_SALIDA, muestra);
+        items.set(SLOT_PRENDA, ItemStack.EMPTY);
+        estado = Estado.LISTO;
+        sincronizar();
+        jugador.sendMessage(Text.translatable("femclothes.estilista.fijado", apliquesDe(proto), correasDe(proto)), true);
+        return true;
+    }
 
     // ── animación + ticker ──
 
@@ -100,9 +283,16 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         if (com.femclothes.util.Redstone.pausada(world, pos)) return;
         com.femclothes.util.LuzMaquina.actualizar(world, pos, state, be.estado != Estado.REPOSO);
         switch (be.estado) {
-            case REPOSO -> { }
+            case REPOSO -> {
+                // Una prenda que llegó por la cadena espera los insumos que le falten y arranca sola.
+                if (be.deCadena && !be.items.get(SLOT_PRENDA).isEmpty() && be.items.get(SLOT_SALIDA).isEmpty()
+                        && world.getTime() % 20 == 0) {
+                    be.iniciar();
+                }
+            }
             case PROCESANDO -> {
                 be.progreso++;
+                be.sonidoDelPortico(world, pos);
                 if (be.progreso % 20 == 0) be.sincronizar();
                 if (be.progreso >= TICKS_PROCESO) { // 2026-10-05, "no se movio para nada el brazo": la demo dura siempre los 13 s, también en la creativa
                     be.items.set(SLOT_SALIDA, be.items.get(SLOT_PRENDA));
@@ -123,14 +313,45 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         }
     }
 
-    /** Etapa 1: arranca el trabajo con la prenda cargada (solo para ver el pórtico andar). */
-    public boolean onButtonClick(int id) {
-        if (id != BTN_PROBAR) return false;
+    /** Botones de la pantalla (los atiende el handler porque necesitan al jugador para avisarle). */
+    public boolean onButtonClick(PlayerEntity jugador, int id) {
         if (estado != Estado.REPOSO || items.get(SLOT_PRENDA).isEmpty() || !items.get(SLOT_SALIDA).isEmpty()) return false;
-        estado = Estado.PROCESANDO;
-        progreso = 0;
-        sincronizar();
-        return true;
+        ItemStack prenda = items.get(SLOT_PRENDA);
+        switch (id) {
+            case BTN_APLICAR -> {
+                Resultado r = iniciar();
+                switch (r) {
+                    case SIN_DISENO -> jugador.sendMessage(Text.translatable("femclothes.estilista.sin_diseno"), true);
+                    case FALTA -> jugador.sendMessage(Text.translatable("femclothes.estilista.falta", faltaParaLaEntrada().getName()), true);
+                    default -> { }
+                }
+                return r == Resultado.OK;
+            }
+            case BTN_FIJAR -> { return fijar(jugador); }
+            case BTN_BORRAR -> {
+                for (int i = 0; i < MAX_DISENOS; i++) {
+                    if (!disenos.get(i).isEmpty() && disenos.get(i).getItem() == prenda.getItem()) {
+                        disenos.set(i, ItemStack.EMPTY);
+                        sincronizar();
+                        jugador.sendMessage(Text.translatable("femclothes.estilista.borrado"), true);
+                        return true;
+                    }
+                }
+                jugador.sendMessage(Text.translatable("femclothes.estilista.sin_diseno"), true);
+                return false;
+            }
+            default -> { return false; }
+        }
+    }
+
+    /** Los pistones del pórtico: un chasquido en cada recorrido de la animación (el reloj del cliente va a la par, a ojo). */
+    private void sonidoDelPortico(World world, BlockPos pos) {
+        for (int t : TICS_HORIZONTAL) {
+            if (progreso == t) world.playSound(null, pos, SoundEvents.BLOCK_PISTON_CONTRACT, SoundCategory.BLOCKS, 0.25f, 1.9f);
+        }
+        for (int t : TICS_VERTICAL) {
+            if (progreso == t) world.playSound(null, pos, SoundEvents.BLOCK_PISTON_EXTEND, SoundCategory.BLOCKS, 0.3f, 1.6f);
+        }
     }
 
     public void alAbrirGui() { guiAbiertas++; }
@@ -161,7 +382,11 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
 
     @Override
     public int[] getAvailableSlots(Direction side) {
-        return side == Direction.UP || side == ladoIzquierdo() ? new int[]{SLOT_PRENDA} : new int[0];
+        if (side == Direction.UP || side == ladoIzquierdo()) return new int[]{SLOT_PRENDA};
+        if (side == ladoDerecho()) return new int[0];
+        int[] insumos = new int[INSUMOS];                      // por los otros lados entran el hilo, el cuero y los objetos
+        for (int i = 0; i < INSUMOS; i++) insumos[i] = SLOT_INSUMOS + i;
+        return insumos;
     }
 
     @Override
@@ -188,6 +413,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     @Override
     public ItemStack removeStack(int slot, int cantidad) {
         ItemStack r = Inventories.splitStack(items, slot, cantidad);
+        if (slot == SLOT_PRENDA && items.get(slot).isEmpty()) deCadena = false;
         if (!r.isEmpty()) sincronizar();
         return r;
     }
@@ -195,28 +421,47 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     @Override
     public ItemStack removeStack(int slot) {
         ItemStack r = Inventories.removeStack(items, slot);
+        if (slot == SLOT_PRENDA) deCadena = false;
         if (!r.isEmpty()) sincronizar();
         return r;
     }
 
     @Override
     public void setStack(int slot, ItemStack stack) {
-        // Una prenda que llega por la cadena y no tiene diseño que aplicar pasa de largo (como en las otras máquinas).
-        if (slot == SLOT_PRENDA && !stack.isEmpty() && InventarioUtil.enCadena && !tieneDiseno()
-                && items.get(SLOT_SALIDA).isEmpty() && estado == Estado.REPOSO) {
-            items.set(SLOT_SALIDA, stack.copyWithCount(1));
-            estado = Estado.LISTO;
+        if (slot != SLOT_PRENDA && slot != SLOT_SALIDA) {          // insumos: pilas normales
+            items.set(slot, stack);
             sincronizar();
             return;
         }
+        // Una prenda que llega por la cadena: con diseño para su tipo arranca sola (cuando haya insumos); sin diseño
+        // pasa de largo (como en las otras máquinas).
+        if (slot == SLOT_PRENDA && !stack.isEmpty() && InventarioUtil.enCadena
+                && items.get(SLOT_SALIDA).isEmpty() && estado == Estado.REPOSO) {
+            if (diseno(stack) == null) {
+                items.set(SLOT_SALIDA, stack.copyWithCount(1));
+                estado = Estado.LISTO;
+                sincronizar();
+                return;
+            }
+            items.set(SLOT_PRENDA, stack.copyWithCount(1));
+            deCadena = true;
+            iniciar();                                              // si faltan insumos queda esperando (el tick reintenta)
+            sincronizar();
+            return;
+        }
+        if (slot == SLOT_PRENDA) deCadena = false;
         items.set(slot, stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1));
         sincronizar();
     }
 
-    @Override public int getMaxCountPerStack() { return 1; }
+    @Override public int getMaxCountPerStack() { return 64; }
 
     @Override
     public boolean isValid(int slot, ItemStack stack) {
+        if (slot >= SLOT_INSUMOS) {
+            return !stack.isEmpty() && !com.femclothes.garment.Garments.esPrenda(stack)
+                    && com.femclothes.aplique.ObjetoAplique.admite(stack);
+        }
         return slot == SLOT_PRENDA && items.get(SLOT_PRENDA).isEmpty() && estado == Estado.REPOSO
                 && EstiladoBlockEntity.admite(stack);
     }
@@ -260,6 +505,10 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         Inventories.writeNbt(nbt, items, registries);
         nbt.putInt("estado", estado.ordinal());
         nbt.putInt("progreso", progreso);
+        nbt.putBoolean("de_cadena", deCadena);
+        NbtCompound d = new NbtCompound();
+        Inventories.writeNbt(d, disenos, registries);
+        nbt.put("disenos", d);
     }
 
     @Override
@@ -268,6 +517,9 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         Inventories.readNbt(nbt, items, registries);
         estado = Estado.values()[Math.max(0, Math.min(Estado.values().length - 1, nbt.getInt("estado")))];
         progreso = nbt.getInt("progreso");
+        deCadena = nbt.getBoolean("de_cadena");
+        disenos.clear();
+        if (nbt.contains("disenos")) Inventories.readNbt(nbt.getCompound("disenos"), disenos, registries);
     }
 
     @Override
