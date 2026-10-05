@@ -859,7 +859,7 @@
   "femclothes.pollera.volado.circular": "circular",
   "femclothes.pollera.tooltip.volado_ruedo": "Hem flounce: %s",
   "femclothes.pollera.tooltip.volado_todo": "Flounces all over: %s",
-  "femclothes.pollera.molde_volado.ayuda": "Goes in the Skirt's Hem flounce pin (hem only) or All flounces pin (three tiers).",
-  "femclothes.modelado.rol.volado_inferior": "Hem flounce",
-  "femclothes.modelado.rol.volado_total": "All flounces"
+  "femclothes.pollera.molde_volado.ayuda": "Goes in the Skirt's Lower cut pin (hem only) or Custom pin (three tiers all over).",
+  "femclothes.modelado.rol.volado_inferior": "Lower cut",
+  "femclothes.modelado.rol.volado_total": "Custom"
 }

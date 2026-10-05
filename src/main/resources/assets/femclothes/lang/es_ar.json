@@ -859,7 +859,7 @@
   "femclothes.pollera.volado.circular": "circular",
   "femclothes.pollera.tooltip.volado_ruedo": "Volado en el ruedo: %s",
   "femclothes.pollera.tooltip.volado_todo": "Volados en toda la pollera: %s",
-  "femclothes.pollera.molde_volado.ayuda": "Va en el pin Volado inferior (solo el ruedo) o Volado total (tres filas) de la Pollera.",
-  "femclothes.modelado.rol.volado_inferior": "Volado inf.",
-  "femclothes.modelado.rol.volado_total": "Volado total"
+  "femclothes.pollera.molde_volado.ayuda": "Va en el pin Corte inferior (solo el ruedo) o en el pin Custom (tres filas en toda la pollera) de la Pollera.",
+  "femclothes.modelado.rol.volado_inferior": "Corte inferior",
+  "femclothes.modelado.rol.volado_total": "Custom"
 }
