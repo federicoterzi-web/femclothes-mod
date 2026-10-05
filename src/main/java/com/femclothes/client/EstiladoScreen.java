@@ -77,6 +77,8 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
      * (ala, cono, cinta) con un botón por cada color del retazo, y "retazo entero".
      */
     private boolean modoColor = false;
+    /** El color del retazo (0..2) con el que pinta el click en la vista (2026-10-05): el último botón ■ apretado. */
+    private int colorActivo = 0;
     private ButtonWidget btnModoColor, btnColorEntero;
     private final ButtonWidget[][] btnColorZona = new ButtonWidget[3][3];
     /** Los controles de apliques que se esconden mientras se colorea. */
@@ -139,8 +141,12 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         for (int z = 0; z < 3; z++) {
             for (int c = 0; c < 3; c++) {
                 int id = EstiladoBlockEntity.BTN_COLOR_BASE + z * 4 + c;
+                final int color = c;
                 btnColorZona[z][c] = boton(X_DER + 46 + c * 17, 66 + z * 22, 15, Text.literal("■"),
-                        "femclothes.estilado.tooltip.color_zona", () -> clickBoton(id));
+                        "femclothes.estilado.tooltip.color_zona", () -> {
+                            colorActivo = color;
+                            clickBoton(id);
+                        });
             }
         }
         btnColorEntero = boton(X_DER, 132, 96, Text.translatable("femclothes.estilado.color.entero"),
@@ -574,6 +580,46 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         }
     }
 
+    /**
+     * La zona del sombrero (0 ala, 1 cono, 2 cinta) bajo el mouse, o -1 (2026-10-05, "click en la vista 3d"): el
+     * rayo del mouse contra las cajas del sombrero en el marco de la cabeza ({@link SombreroRenderer#cajas}); gana
+     * la superficie más cercana a quien mira (por donde sale el rayo, como en {@link #tocarApliques}).
+     */
+    private int zonaDelSombrero(double mx, double my) {
+        ItemStack prenda = handler.be.getStack(EstiladoBlockEntity.SLOT_PRENDA);
+        Matrix4f m = poses.get(Parte.CABEZA);
+        if (!(prenda.getItem() instanceof com.femclothes.item.SombreroBrujaItem) || m == null
+                || Math.abs(m.determinant()) < 1e-12f) return -1;
+        Matrix4f inversa = new Matrix4f(m).invert();
+        final float Z = 10000f;
+        Vector3f p0 = inversa.transformPosition(new Vector3f((float) mx, (float) my, -Z));
+        Vector3f p1 = inversa.transformPosition(new Vector3f((float) mx, (float) my, Z));
+        float[] o = { p0.x, p0.y, p0.z };
+        float[] d = { p1.x - p0.x, p1.y - p0.y, p1.z - p0.z };
+        int mejor = -1;
+        float mejorT = -Float.MAX_VALUE;
+        for (com.femclothes.render.SombreroRenderer.Caja c : com.femclothes.render.SombreroRenderer.cajas(prenda)) {
+            float tMin = -Float.MAX_VALUE, tMax = Float.MAX_VALUE;
+            boolean fuera = false;
+            for (int i = 0; i < 3 && !fuera; i++) {
+                float mn = c.min()[i] / 16f, mx2 = c.max()[i] / 16f;   // px del modelo a bloques
+                if (Math.abs(d[i]) < 1e-9f) {
+                    if (o[i] < mn || o[i] > mx2) fuera = true;
+                    continue;
+                }
+                float t1 = (mn - o[i]) / d[i], t2 = (mx2 - o[i]) / d[i];
+                tMin = Math.max(tMin, Math.min(t1, t2));
+                tMax = Math.min(tMax, Math.max(t1, t2));
+            }
+            if (fuera || tMin > tMax || tMax < 0 || tMax > 1) continue;
+            if (tMax > mejorT) {
+                mejorT = tMax;
+                mejor = c.zona();
+            }
+        }
+        return mejor;
+    }
+
     /** El slot de armadura (o de mano) de un ítem que se pone, o null. */
     @Nullable
     private static net.minecraft.entity.EquipmentSlot slotDe(ItemStack stack) {
@@ -794,7 +840,14 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 return true;
             }
             if (button == 0 && modoColor) {
-                // Colorear el sombrero: el click en la vista no pone apliques (2026-10-05).
+                // Colorear el sombrero (2026-10-05, "click en la vista 3d"): la zona clickeada toma el color activo.
+                int zona = zonaDelSombrero(mx, my);
+                if (handler.be.coloresDeLaFuente() == null) aviso = Text.translatable("femclothes.estilado.color.sin_retazo");
+                else if (zona < 0) aviso = Text.translatable("femclothes.estilado.aviso.fuera");
+                else {
+                    aviso = null;
+                    clickBoton(EstiladoBlockEntity.BTN_COLOR_BASE + zona * 4 + colorActivo);
+                }
                 return true;
             }
             if (button == 0) {
@@ -885,7 +938,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                 b.visible = modoColor;
                 b.active = fuente != null;
                 int rgb = fuente == null ? 0x808080 : fuente.get(c);
-                b.setMessage(Text.literal("■").styled(st -> st.withColor(rgb)));
+                b.setMessage(Text.literal(c == colorActivo ? "[■]" : "■").styled(st -> st.withColor(rgb)));
             }
         }
         btnColorEntero.visible = modoColor;
@@ -924,7 +977,14 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         super.render(context, mouseX, mouseY, delta);
         dibujarVista(context);
         // Mira: dónde caería el aplique.
-        if (dentroDeVista(mouseX, mouseY) && tocar(mouseX, mouseY) != null) {
+        if (modoColor && dentroDeVista(mouseX, mouseY)) {
+            int zona = zonaDelSombrero(mouseX, mouseY);
+            if (zona >= 0) {
+                context.fill(mouseX - 3, mouseY, mouseX + 4, mouseY + 1, 0xFFFFFFFF);
+                context.fill(mouseX, mouseY - 3, mouseX + 1, mouseY + 4, 0xFFFFFFFF);
+                context.drawTooltip(this.textRenderer, Text.translatable("femclothes.sombrero.zona." + (zona + 1)), mouseX, mouseY);
+            }
+        } else if (!modoColor && dentroDeVista(mouseX, mouseY) && tocar(mouseX, mouseY) != null) {
             context.fill(mouseX - 3, mouseY, mouseX + 4, mouseY + 1, 0xFFFFFFFF);
             context.fill(mouseX, mouseY - 3, mouseX + 1, mouseY + 4, 0xFFFFFFFF);
         }
@@ -955,7 +1015,11 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                         X_DER, 154 + 16, 0xFFFF9090, false);
             }
         }
-        Text ayuda = aviso != null ? aviso : Text.translatable("femclothes.estilado.ayuda");
+        java.util.List<Integer> fuenteAyuda = modoColor ? handler.be.coloresDeLaFuente() : null;
+        Text ayuda = aviso != null ? aviso
+                : modoColor ? Text.translatable("femclothes.estilado.ayuda_color",
+                        Text.literal("■").styled(st -> st.withColor(fuenteAyuda == null ? 0x808080 : fuenteAyuda.get(colorActivo))))
+                : Text.translatable("femclothes.estilado.ayuda");
         int color = aviso != null ? 0xFFFF9090 : 0xFFE8DCC8;
         for (var linea : this.textRenderer.wrapLines(ayuda, PX2 - PX1 - 12)) {
             context.drawText(this.textRenderer, linea, PX1 + 6, PY2 - 22, color, true);

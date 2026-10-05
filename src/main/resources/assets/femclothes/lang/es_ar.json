@@ -769,5 +769,6 @@
   "femclothes.estilado.color.sin_retazo": "Falta el retazo",
   "femclothes.estilado.tooltip.modo_color": "Cambia entre poner apliques y pintar las 3 zonas del sombrero con los colores del retazo",
   "femclothes.estilado.tooltip.color_zona": "Pasa este color del retazo a esta zona del sombrero (no se gasta el retazo)",
-  "femclothes.estilado.tooltip.color_entero": "Pasa los 3 colores del retazo a las 3 zonas del sombrero"
+  "femclothes.estilado.tooltip.color_entero": "Pasa los 3 colores del retazo a las 3 zonas del sombrero",
+  "femclothes.estilado.ayuda_color": "Click en el ala, el cono o la cinta del sombrero: la pinta con el color %s (cambialo con los botones)"
 }

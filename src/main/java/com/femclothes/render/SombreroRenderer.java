@@ -75,6 +75,36 @@ public final class SombreroRenderer {
                 biped.head, matrices, vertexConsumers, luz);
     }
 
+    /** Una caja del sombrero en el marco de la cabeza (px): para saber qué zona se clickea en la Mesa de estilado. */
+    public record Caja(int zona, float[] min, float[] max) {}
+
+    /**
+     * Las cajas de cada zona (0 ala, 1 cono con su punta, 2 cinta) tal como las dibuja {@link #dibujar}, con la punta
+     * recta (la inclinación y la tela blanda no se tienen en cuenta: alcanza para apuntar).
+     */
+    public static List<Caja> cajas(ItemStack sombrero) {
+        SombreroAla ala = SombreroBrujaItem.ala(sombrero);
+        float l = ala.lado;
+        List<Caja> out = new java.util.ArrayList<>();
+        out.add(new Caja(0, new float[] {-l / 2f, Y_ALA, -l / 2f}, new float[] {l / 2f, Y_ALA + GROSOR_ALA, l / 2f}));
+        float cinta = TRAMOS[0] + 0.4f;
+        out.add(new Caja(2, new float[] {-cinta / 2f, Y_ALA - 1.9f, -cinta / 2f}, new float[] {cinta / 2f, Y_ALA - 0.4f, cinta / 2f}));
+        float y = Y_ALA;
+        for (float s : TRAMOS) {
+            out.add(new Caja(1, new float[] {-s / 2f, y - ALTO_TRAMO, -s / 2f}, new float[] {s / 2f, y, s / 2f}));
+            y -= ALTO_TRAMO;
+        }
+        for (float s : PUNTA1) {
+            out.add(new Caja(1, new float[] {-s / 2f, y - ALTO_TRAMO, -s / 2f}, new float[] {s / 2f, y, s / 2f}));
+            y -= ALTO_TRAMO;
+        }
+        for (float s : PUNTA2) {
+            out.add(new Caja(1, new float[] {-s / 2f, y - ALTO_TRAMO, -s / 2f}, new float[] {s / 2f, y, s / 2f}));
+            y -= ALTO_TRAMO;
+        }
+        return out;
+    }
+
     private static float clamp(float v) {
         return Math.max(-TOPE, Math.min(TOPE, v));
     }
