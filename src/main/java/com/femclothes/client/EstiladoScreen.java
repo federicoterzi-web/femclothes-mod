@@ -86,7 +86,12 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     private int correaAncho = 2;
     @Nullable
     private Toque correaInicio = null;
-    private ButtonWidget btnModoCorrea, btnCorreaModo, btnCorreaAncho, btnCorreaQuitar;
+    private ButtonWidget btnModoCorrea, btnCorreaModo, btnCorreaAncho, btnCorreaQuitar, btnCorreaColor;
+    /** La lista de correas de la prenda (una por correa) y cuál está elegida (-1 = ninguna). */
+    private final ButtonWidget[] btnCorreaLista = new ButtonWidget[com.femclothes.correa.Correa.MAXIMO_POR_PRENDA];
+    private int correaSel = -1;
+    /** Dónde (pantalla) se hizo el primer click: la guía de las correas sobre malla, que no tienen un punto 3D. */
+    private float[] correaInicioPantalla = null;
     /** El color del retazo (0..2) con el que pinta el click en la vista (2026-10-05): el último botón ■ apretado. */
     private int colorActivo = 0;
     private ButtonWidget btnModoColor, btnColorEntero;
@@ -152,14 +157,40 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         // Correas libres (2026-10-05): modo, pegada/colgante, ancho y quitar.
         btnModoCorrea = boton(X_DER + 98, 150, 64, Text.empty(), "femclothes.correa.tooltip.modo_correa",
                 () -> { modoCorrea = !modoCorrea; modoColor = false; correaInicio = null; });
-        btnCorreaModo = boton(X_DER, 66, 162, Text.empty(), "femclothes.correa.tooltip.modo",
-                () -> correaModo = correaModo.siguiente());
-        btnCorreaAncho = boton(X_DER, 88, 162, Text.empty(), "femclothes.correa.tooltip.ancho",
-                () -> correaAncho = correaAncho % 4 + 1);
-        btnCorreaQuitar = boton(X_DER, 110, 162, Text.empty(), "femclothes.correa.tooltip.quitar", () -> {
-            if (correaInicio != null) correaInicio = null;
-            else clickBoton(EstiladoBlockEntity.BTN_CORREA_QUITAR);
+        for (int i = 0; i < btnCorreaLista.length; i++) {
+            final int idx = i;
+            btnCorreaLista[i] = boton(X_DER + i * 20, 66, 19, Text.literal(Integer.toString(i + 1)),
+                    "femclothes.correa.tooltip.lista", () -> {
+                        correaSel = correaSel == idx ? -1 : idx;
+                        var l = handler.be.correas();
+                        if (correaSel >= 0 && correaSel < l.size()) {
+                            correaModo = l.get(correaSel).modo();
+                            correaAncho = Math.round(l.get(correaSel).ancho());
+                        }
+                    });
+        }
+        btnCorreaModo = boton(X_DER, 88, 80, Text.empty(), "femclothes.correa.tooltip.modo", () -> {
+            correaModo = correaModo.siguiente();
+            if (correaSel >= 0) clickBoton(EstiladoBlockEntity.BTN_CORREA_MODO_BASE + correaSel * 2 + correaModo.ordinal());
         });
+        btnCorreaAncho = boton(X_DER + 82, 88, 80, Text.empty(), "femclothes.correa.tooltip.ancho", () -> {
+            correaAncho = correaAncho % 4 + 1;
+            if (correaSel >= 0) clickBoton(EstiladoBlockEntity.BTN_CORREA_ANCHO_BASE + correaSel * 4 + (correaAncho - 1));
+        });
+        btnCorreaQuitar = boton(X_DER, 110, 80, Text.empty(), "femclothes.correa.tooltip.quitar", () -> {
+            if (correaInicio != null) {
+                correaInicio = null;
+            } else if (correaSel >= 0) {
+                clickBoton(EstiladoBlockEntity.BTN_CORREA_QUITAR_BASE + correaSel);
+                correaSel = -1;
+            } else {
+                clickBoton(EstiladoBlockEntity.BTN_CORREA_QUITAR);
+            }
+        });
+        btnCorreaColor = boton(X_DER + 82, 110, 80, Text.translatable("femclothes.correa.boton.recolorear"),
+                "femclothes.correa.tooltip.recolorear", () -> {
+                    if (correaSel >= 0) clickBoton(EstiladoBlockEntity.BTN_CORREA_COLOREAR_BASE + correaSel);
+                });
         for (int z = 0; z < 3; z++) {
             for (int c = 0; c < 3; c++) {
                 int id = EstiladoBlockEntity.BTN_COLOR_BASE + z * 4 + c;
@@ -913,18 +944,20 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
             aviso = Text.translatable("femclothes.correa.aviso.molde");
         } else if (be.correas().size() >= com.femclothes.correa.Correa.MAXIMO_POR_PRENDA) {
             aviso = Text.translatable("femclothes.correa.aviso.lleno");
-        } else if (t == null || t.superficie() != Aplique.Superficie.CAJA) {
+        } else if (t == null || t.superficie() == Aplique.Superficie.APLIQUE) {
             aviso = Text.translatable("femclothes.estilado.aviso.fuera");
         } else if (correaInicio == null) {
             aviso = null;
             correaInicio = t;
-        } else if (t.parte() != correaInicio.parte()) {
+            correaInicioPantalla = new float[] {(float) mx, (float) my};
+        } else if (t.parte() != correaInicio.parte() || t.superficie() != correaInicio.superficie()) {
             aviso = Text.translatable("femclothes.correa.aviso.parte");
         } else {
             aviso = null;
             ClientPlayNetworking.send(new com.femclothes.estilado.PonerCorreaPayload(be.getPos(), t.parte().ordinal(),
                     new float[] {correaInicio.x(), correaInicio.y(), correaInicio.z()}, correaInicio.cara().ordinal(),
-                    new float[] {t.x(), t.y(), t.z()}, t.cara().ordinal(), correaModo.ordinal(), correaAncho));
+                    new float[] {t.x(), t.y(), t.z()}, t.cara().ordinal(), correaModo.ordinal(), correaAncho,
+                    t.superficie().ordinal()));
             correaInicio = null;
         }
     }
@@ -1045,17 +1078,23 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         btnModoColor.setMessage(Text.translatable(modoColor ? "femclothes.estilado.modo_color.apliques"
                 : "femclothes.estilado.modo_color.colorear"));
         // Correas libres: solo en prendas y wearables con caja de cuerpo (no el sombrero, la banda, la pollera ni la capa).
-        boolean admiteCorrea = !enPrenda.isEmpty() && !sombrero
-                && !(enPrenda.getItem() instanceof com.femclothes.item.PolleraItem)
-                && !(enPrenda.getItem() instanceof com.femclothes.item.CapaItem);
+        boolean admiteCorrea = !enPrenda.isEmpty();
         if (!admiteCorrea) { modoCorrea = false; correaInicio = null; }
         btnModoCorrea.visible = admiteCorrea;
         btnModoCorrea.setMessage(Text.translatable(modoCorrea ? "femclothes.correa.modo_correa.apliques" : "femclothes.correa.modo_correa.correas"));
-        btnCorreaModo.visible = btnCorreaAncho.visible = btnCorreaQuitar.visible = modoCorrea;
+        btnCorreaModo.visible = btnCorreaAncho.visible = btnCorreaQuitar.visible = btnCorreaColor.visible = modoCorrea;
+        int nCorreas = be.correas().size();
+        if (correaSel >= nCorreas) correaSel = -1;
+        for (int i = 0; i < btnCorreaLista.length; i++) {
+            btnCorreaLista[i].visible = modoCorrea;
+            btnCorreaLista[i].active = i < nCorreas;
+            btnCorreaLista[i].setMessage(Text.literal(i == correaSel ? "[" + (i + 1) + "]" : Integer.toString(i + 1)));
+        }
+        btnCorreaColor.active = correaSel >= 0 && be.coloresDeLaFuente() != null;
         btnCorreaModo.setMessage(Text.translatable("femclothes.correa.boton.modo", Text.translatable(correaModo.traduccion())));
         btnCorreaAncho.setMessage(Text.translatable("femclothes.correa.boton.ancho", correaAncho));
         btnCorreaQuitar.setMessage(Text.translatable(correaInicio != null ? "femclothes.correa.boton.cancelar"
-                : "femclothes.correa.boton.quitar", be.correas().size()));
+                : correaSel >= 0 ? "femclothes.correa.boton.quitar_sel" : "femclothes.correa.boton.quitar", correaSel >= 0 ? correaSel + 1 : be.correas().size()));
         btnCorreaQuitar.active = correaInicio != null || !be.correas().isEmpty();
         for (ButtonWidget b : grupoAplique) b.visible = !modoColor && !modoCorrea;
         java.util.List<Integer> fuente = be.coloresDeLaFuente();
@@ -1111,12 +1150,13 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         // Mira: dónde caería el aplique.
         if (modoCorrea && dentroDeVista(mouseX, mouseY)) {
             Toque t = tocarPrenda(mouseX, mouseY);
-            if (t != null && t.superficie() == Aplique.Superficie.CAJA) {
+            if (t != null && t.superficie() != Aplique.Superficie.APLIQUE) {
                 context.fill(mouseX - 3, mouseY, mouseX + 4, mouseY + 1, 0xFFFFFFFF);
                 context.fill(mouseX, mouseY - 3, mouseX + 1, mouseY + 4, 0xFFFFFFFF);
             }
             // El punto de inicio y una guía hasta el mouse.
-            float[] ini = correaInicio == null ? null : pantallaDe(correaInicio);
+            float[] ini = correaInicio == null ? null
+                    : correaInicio.superficie() == Aplique.Superficie.CAJA ? pantallaDe(correaInicio) : correaInicioPantalla;
             if (ini != null) {
                 int x0 = Math.round(ini[0]), y0 = Math.round(ini[1]);
                 context.fill(x0 - 2, y0 - 2, x0 + 3, y0 + 3, 0xFFFFD060);

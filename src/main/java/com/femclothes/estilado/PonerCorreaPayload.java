@@ -12,7 +12,7 @@ import net.minecraft.util.math.BlockPos;
  * (px, espacio local de la parte) con su cara, el modo (0 pegada, 1 colgante) y el ancho en px.
  */
 public record PonerCorreaPayload(BlockPos pos, int parte, float[] desde, int caraDesde, float[] hasta, int caraHasta,
-                                 int modo, float ancho) implements CustomPayload {
+                                 int modo, float ancho, int superficie) implements CustomPayload {
 
     public static final Id<PonerCorreaPayload> ID = new Id<>(Identifier.of(Femclothes.MOD_ID, "poner_correa"));
     public static final PacketCodec<RegistryByteBuf, PonerCorreaPayload> CODEC = PacketCodec.of(
@@ -25,11 +25,12 @@ public record PonerCorreaPayload(BlockPos pos, int parte, float[] desde, int car
                 buf.writeVarInt(p.caraHasta());
                 buf.writeVarInt(p.modo());
                 buf.writeFloat(p.ancho());
+                buf.writeVarInt(p.superficie());
             },
             buf -> new PonerCorreaPayload(buf.readBlockPos(), buf.readVarInt(),
                     new float[] {buf.readFloat(), buf.readFloat(), buf.readFloat()}, buf.readVarInt(),
                     new float[] {buf.readFloat(), buf.readFloat(), buf.readFloat()}, buf.readVarInt(),
-                    buf.readVarInt(), buf.readFloat()));
+                    buf.readVarInt(), buf.readFloat(), buf.readVarInt()));
 
     @Override
     public Id<? extends CustomPayload> getId() { return ID; }

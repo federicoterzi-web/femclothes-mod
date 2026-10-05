@@ -842,5 +842,9 @@
   "femclothes.correa.aviso.lleno": "This garment already has the maximum number of straps",
   "femclothes.correa.aviso.parte": "Both points must be on the same body part",
   "femclothes.correa.ayuda.inicio": "Click the garment: start of the strap",
-  "femclothes.correa.ayuda.fin": "Click the garment: end of the strap (the yellow guide shows the path)"
+  "femclothes.correa.ayuda.fin": "Click the garment: end of the strap (the yellow guide shows the path)",
+  "femclothes.correa.boton.recolorear": "Recolor",
+  "femclothes.correa.boton.quitar_sel": "Remove #%s",
+  "femclothes.correa.tooltip.lista": "Pick one of the garment's straps: Mode and Width change it, Recolor gives it the scrap's colors and Remove takes it off",
+  "femclothes.correa.tooltip.recolorear": "Gives the chosen strap the scrap's 3 colors (not consumed)"
 }

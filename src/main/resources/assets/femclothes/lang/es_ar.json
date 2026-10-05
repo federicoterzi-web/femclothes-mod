@@ -842,5 +842,9 @@
   "femclothes.correa.aviso.lleno": "La prenda ya tiene el máximo de correas",
   "femclothes.correa.aviso.parte": "Los dos puntos tienen que estar en la misma parte del cuerpo",
   "femclothes.correa.ayuda.inicio": "Click en la prenda: inicio de la correa",
-  "femclothes.correa.ayuda.fin": "Click en la prenda: fin de la correa (la guía amarilla muestra el camino)"
+  "femclothes.correa.ayuda.fin": "Click en la prenda: fin de la correa (la guía amarilla muestra el camino)",
+  "femclothes.correa.boton.recolorear": "Recolorear",
+  "femclothes.correa.boton.quitar_sel": "Quitar #%s",
+  "femclothes.correa.tooltip.lista": "Elegí una correa de la prenda: Modo y Ancho la cambian, Recolorear le pasa los colores del retazo y Quitar la saca",
+  "femclothes.correa.tooltip.recolorear": "Le pasa a la correa elegida los 3 colores del retazo (no se gasta)"
 }

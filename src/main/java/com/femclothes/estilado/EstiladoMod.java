@@ -71,14 +71,16 @@ public final class EstiladoMod {
                     if (payload.parte() < 0 || payload.parte() >= partes.length
                             || payload.caraDesde() < 0 || payload.caraDesde() >= caras.length
                             || payload.caraHasta() < 0 || payload.caraHasta() >= caras.length
-                            || payload.modo() < 0 || payload.modo() >= modos.length) return;
+                            || payload.modo() < 0 || payload.modo() >= modos.length
+                            || payload.superficie() < 0 || payload.superficie() >= com.femclothes.correa.Correa.Superficie.values().length) return;
                     if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof EstiladoBlockEntity be
                             && be.canPlayerUse(context.player())) {
                         float[] d = payload.desde(), h = payload.hasta();
                         be.ponerCorrea(partes[payload.parte()],
                                 new com.femclothes.correa.Correa.Punto(d[0], d[1], d[2], caras[payload.caraDesde()]),
                                 new com.femclothes.correa.Correa.Punto(h[0], h[1], h[2], caras[payload.caraHasta()]),
-                                modos[payload.modo()], payload.ancho());
+                                modos[payload.modo()], payload.ancho(),
+                                com.femclothes.correa.Correa.Superficie.values()[payload.superficie()]);
                     }
                 }));
 

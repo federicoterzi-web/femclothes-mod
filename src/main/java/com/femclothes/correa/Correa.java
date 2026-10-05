@@ -19,7 +19,19 @@ import java.util.List;
  * @param blandura 0..1: cuánto se mueve la correa colgante con el movimiento
  */
 public record Correa(Parte parte, Punto desde, Punto hasta, EstiloCorrea estilo, ModoCorrea modo, float ancho,
-                     List<Integer> colores, float blandura) {
+                     List<Integer> colores, float blandura, Superficie superficie) {
+
+    /**
+     * Sobre qué va (2026-10-05, "superame esos limites"): la caja de la parte del cuerpo o las cajas del sombrero y la
+     * banda ({@code CAJA}; x, y, z en px del marco de su parte), o la malla de la pollera o la capa (x, y = u, v de la
+     * tela en px de 64, como un aplique).
+     */
+    public enum Superficie implements StringIdentifiable {
+        CAJA, POLLERA, CAPA;
+
+        @Override
+        public String asString() { return name().toLowerCase(java.util.Locale.ROOT); }
+    }
 
     public static final int MAXIMO_POR_PRENDA = 8;
     public static final float ANCHO_MIN = 1f, ANCHO_MAX = 4f;
@@ -43,8 +55,21 @@ public record Correa(Parte parte, Punto desde, Punto hasta, EstiloCorrea estilo,
             StringIdentifiable.createCodec(ModoCorrea::values).fieldOf("modo").forGetter(Correa::modo),
             Codec.FLOAT.fieldOf("ancho").forGetter(Correa::ancho),
             Codec.INT.listOf().fieldOf("colores").forGetter(Correa::colores),
-            Codec.FLOAT.fieldOf("blandura").forGetter(Correa::blandura)
+            Codec.FLOAT.fieldOf("blandura").forGetter(Correa::blandura),
+            StringIdentifiable.createCodec(Superficie::values).optionalFieldOf("superficie", Superficie.CAJA)
+                    .forGetter(Correa::superficie)
     ).apply(i, Correa::new));
+
+    public Correa(Parte parte, Punto desde, Punto hasta, EstiloCorrea estilo, ModoCorrea modo, float ancho,
+                  List<Integer> colores, float blandura) {
+        this(parte, desde, hasta, estilo, modo, ancho, colores, blandura, Superficie.CAJA);
+    }
+
+    public Correa conColores(List<Integer> c) { return new Correa(parte, desde, hasta, estilo, modo, ancho, c, blandura, superficie); }
+
+    public Correa conModo(ModoCorrea m) { return new Correa(parte, desde, hasta, estilo, m, ancho, colores, blandura, superficie); }
+
+    public Correa conAncho(float a) { return new Correa(parte, desde, hasta, estilo, modo, a, colores, blandura, superficie); }
 
     public Correa {
         if (colores == null || colores.size() < 3) colores = DE_FABRICA;

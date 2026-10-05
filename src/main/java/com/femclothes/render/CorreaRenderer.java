@@ -44,50 +44,170 @@ public final class CorreaRenderer {
 
     private record Nodo(Vector3f pos, Vector3f normal) {}
 
-    /** Dibuja las correas de {@code item}; {@code marco} es la normal del cuerpo antes de la pose de cada parte. */
+    /** Una superficie de cajas (la de la parte del cuerpo, o las del sombrero y la banda) sobre la que se apoya la correa. */
+    private static final class Sup {
+        final List<float[]> mn = new ArrayList<>(), mx = new ArrayList<>();
+        final float[] bmn = {Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE}, bmx = {-Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE};
+
+        void agregar(float[] a, float[] b, float e) {
+            float[] lo = {a[0] - e, a[1] - e, a[2] - e}, hi = {b[0] + e, b[1] + e, b[2] + e};
+            mn.add(lo);
+            mx.add(hi);
+            for (int i = 0; i < 3; i++) {
+                bmn[i] = Math.min(bmn[i], lo[i]);
+                bmx[i] = Math.max(bmx[i], hi[i]);
+            }
+        }
+
+        /**
+         * Con una sola caja es la proyección de siempre. Con varias (sombrero, banda): lo más cercano entre las
+         * superficies de cada caja que no quede metido adentro de otra (el ala bajo el cono, por ejemplo).
+         */
+        Nodo proyectar(Vector3f p, boolean pegar) {
+            if (mn.size() == 1) return CorreaRenderer.proyectar(p, mn.get(0), mx.get(0), pegar);
+            Nodo mejorMovido = null, mejorLibre = null, cualquiera = null;
+            float dMovido = Float.MAX_VALUE, dLibre = Float.MAX_VALUE, dCualquiera = Float.MAX_VALUE;
+            for (int i = 0; i < mn.size(); i++) {
+                Nodo n = CorreaRenderer.proyectar(p, mn.get(i), mx.get(i), pegar);
+                float d = n.pos().distanceSquared(p);
+                if (d < dCualquiera) { dCualquiera = d; cualquiera = n; }
+                if (metidoEnOtra(n.pos(), i)) continue;
+                if (pegar || d > 1e-8f) {
+                    if (d < dMovido) { dMovido = d; mejorMovido = n; }
+                } else if (d < dLibre) {
+                    dLibre = d;
+                    mejorLibre = n;
+                }
+            }
+            if (mejorMovido != null) return mejorMovido;
+            return mejorLibre != null ? mejorLibre : cualquiera;
+        }
+
+        private boolean metidoEnOtra(Vector3f q, int propia) {
+            final float eps = 1e-3f;
+            for (int i = 0; i < mn.size(); i++) {
+                if (i == propia) continue;
+                boolean dentro = true;
+                for (int k = 0; k < 3; k++) if (q.get(k) <= mn.get(i)[k] + eps || q.get(k) >= mx.get(i)[k] - eps) dentro = false;
+                if (dentro) return true;
+            }
+            return false;
+        }
+    }
+
+    /** Dibuja las correas de {@code item} que van sobre cajas; {@code marco} es la normal del cuerpo antes de la pose de cada parte. */
     public static void dibujar(ItemStack item, float dil, BipedEntityModel<?> biped, MatrixStack matrices,
                                VertexConsumerProvider vertexConsumers, int luz, Matrix3f marco) {
         List<Correa> lista = item.get(FemclothesComponents.CORREAS);
         if (lista == null || lista.isEmpty()) return;
-        for (Correa c : lista) una(c, dil, biped, matrices, vertexConsumers, luz, marco);
+        for (Correa c : lista) if (c.superficie() == Correa.Superficie.CAJA) una(item, c, dil, biped, matrices, vertexConsumers, luz, marco);
     }
 
-    private static void una(Correa c, float dil, BipedEntityModel<?> biped, MatrixStack matrices,
-                            VertexConsumerProvider vcp, int luz, Matrix3f marco) {
-        ModelPart parte = CuerpoGeometria.delJugador(biped, c.parte());
-        if (!parte.visible || parte.cuboids.isEmpty()) return;
-        ModelPart.Cuboid cu = parte.cuboids.get(0);
-        float[] mn = {cu.minX, cu.minY, cu.minZ}, mx = {cu.maxX, cu.maxY, cu.maxZ};
+    /** ¿Tiene {@code item} correas sobre esa malla? (la malla solo se graba si hay algo que ubicar en ella) */
+    public static boolean hayEn(ItemStack item, Correa.Superficie sup) {
+        List<Correa> lista = item.get(FemclothesComponents.CORREAS);
+        if (lista == null) return false;
+        for (Correa c : lista) if (c.superficie() == sup) return true;
+        return false;
+    }
+
+    private static float espesorDe(Correa c) {
         float w = c.ancho();
-        float espesor = switch (c.estilo()) {
+        return switch (c.estilo()) {
             case LISA, OJALILLOS -> 0.3f;
             case CORDON -> Math.max(0.5f, w * 0.45f);
             case CADENA -> w * 0.9f;
             case CADENA_FINA -> Math.max(1f, w * 0.75f);
         };
-        float e = dil + 0.05f + espesor / 2f;
-        for (int i = 0; i < 3; i++) {
-            mn[i] -= e;
-            mx[i] += e;
-        }
-        Vector3f a = punto(c.desde(), e), b = punto(c.hasta(), e);
-        float paso = switch (c.estilo()) {
+    }
+
+    private static float pasoDe(Correa c, float w) {
+        return switch (c.estilo()) {
             case LISA, OJALILLOS -> Math.max(2f, 2f * w);
             case CADENA -> w * 1.5f;
             case CADENA_FINA -> Math.max(1f, w * 0.75f) * 1.05f;
             case CORDON -> 2f;
         };
+    }
+
+    private static void una(ItemStack item, Correa c, float dil, BipedEntityModel<?> biped, MatrixStack matrices,
+                            VertexConsumerProvider vcp, int luz, Matrix3f marco) {
+        ModelPart parte = CuerpoGeometria.delJugador(biped, c.parte());
+        if (!parte.visible) return;
+        float espesor = espesorDe(c);
+        float e = dil + 0.05f + espesor / 2f;
+        Sup sup = new Sup();
+        if (item.getItem() instanceof com.femclothes.item.ZonasTenibles) {
+            // Sombrero y banda: las cajas con las que ellos mismos se dibujan.
+            for (SombreroRenderer.Caja caja : AccesorioRenderer.cajas(item)) sup.agregar(caja.min(), caja.max(), 0.05f + espesor / 2f);
+        } else {
+            if (parte.cuboids.isEmpty()) return;
+            ModelPart.Cuboid cu = parte.cuboids.get(0);
+            sup.agregar(new float[] {cu.minX, cu.minY, cu.minZ}, new float[] {cu.maxX, cu.maxY, cu.maxZ}, e);
+        }
+        if (sup.mn.isEmpty()) return;
+        float ee = item.getItem() instanceof com.femclothes.item.ZonasTenibles ? 0.05f + espesor / 2f : e;
+        Vector3f a = punto(c.desde(), ee), b = punto(c.hasta(), ee);
         matrices.push();
         parte.rotate(matrices);
         List<Nodo> camino;
         if (c.modo() == ModoCorrea.PEGADA) {
-            camino = rutaPegada(a, c.desde().cara(), b, c.hasta().cara(), mn, mx);
+            camino = rutaPegada(a, c.desde().cara(), b, c.hasta().cara(), sup);
         } else {
-            camino = rutaColgante(a, b, mn, mx, c.blandura(), new Matrix3f(matrices.peek().getNormalMatrix()), marco);
+            camino = rutaColgante(a, b, sup, c.blandura(), new Matrix3f(matrices.peek().getNormalMatrix()), marco);
         }
-        camino = remuestrear(camino, paso);
-        if (camino.size() >= 2) emitir(c, camino, w, espesor, matrices.peek(), vcp, luz);
+        camino = remuestrear(camino, pasoDe(c, c.ancho()));
+        if (camino.size() >= 2) emitir(c, camino, c.ancho(), espesor, matrices.peek(), vcp, luz);
         matrices.pop();
+    }
+
+    /**
+     * Las correas que van sobre la malla de la pollera o la capa (2026-10-05, "superame esos limites"): los dos puntos
+     * son (u, v) de la tela y se ubican en la malla de este cuadro con {@link MallaCapturada#enUv}; la pegada sigue la
+     * tela entre los dos, la colgante sale del primero hacia el segundo con tela blanda.
+     */
+    public static void dibujarEnMalla(ItemStack item, Correa.Superficie sup, MallaCapturada malla,
+                                      VertexConsumerProvider vcp, int luz, Matrix3f marco) {
+        List<Correa> lista = item.get(FemclothesComponents.CORREAS);
+        if (lista == null || lista.isEmpty() || malla.vacia()) return;
+        float s = malla.escala();
+        MatrixStack ms = new MatrixStack();
+        for (Correa c : lista) {
+            if (c.superficie() != sup) continue;
+            float espesor = espesorDe(c) * s;
+            float w = c.ancho() * s;
+            float fuera = 0.05f * s + espesor / 2f;
+            List<Nodo> camino = new ArrayList<>();
+            MallaCapturada.Ubicacion a = malla.enUv(c.desde().x() / 64f, c.desde().y() / 64f);
+            MallaCapturada.Ubicacion b = malla.enUv(c.hasta().x() / 64f, c.hasta().y() / 64f);
+            if (c.modo() == ModoCorrea.PEGADA) {
+                final int n = 20;
+                for (int k = 0; k <= n; k++) {
+                    float t = k / (float) n;
+                    MallaCapturada.Ubicacion u = malla.enUv((c.desde().x() + (c.hasta().x() - c.desde().x()) * t) / 64f,
+                            (c.desde().y() + (c.hasta().y() - c.desde().y()) * t) / 64f);
+                    if (u == null) continue;
+                    camino.add(new Nodo(new Vector3f(u.pos()).add(new Vector3f(u.normal()).mul(fuera / 16f)).mul(16f), new Vector3f(u.normal())));
+                }
+            } else if (a != null) {
+                Vector3f pa = new Vector3f(a.pos()).add(new Vector3f(a.normal()).mul(fuera / 16f)).mul(16f);
+                Vector3f pb = b != null ? new Vector3f(b.pos()).add(new Vector3f(b.normal()).mul(fuera / 16f)).mul(16f)
+                        : new Vector3f(pa).add(new Vector3f(a.arriba()).mul(-8f * s));
+                Vector3f desp = new Vector3f();
+                FisicaApliques.Desplazamiento d = FisicaApliques.actual;
+                if (d != null && c.blandura() > 0f) {
+                    desp = marco.transform(new Vector3f(d.blando())).mul(8f * c.blandura() * s);
+                    if (desp.length() > 5f * s) desp.normalize(5f * s);
+                }
+                final int k = 12;
+                for (int i = 0; i <= k; i++) {
+                    float t = i / (float) k;
+                    camino.add(new Nodo(new Vector3f(pa).lerp(pb, t).add(new Vector3f(desp).mul(t * t)), new Vector3f(a.normal())));
+                }
+            }
+            camino = remuestrear(camino, pasoDe(c, c.ancho()) * s);
+            if (camino.size() >= 2) emitir(c, camino, w, espesor, ms.peek(), vcp, luz);
+        }
     }
 
     private static Vector3f punto(Correa.Punto p, float e) {
@@ -97,8 +217,9 @@ public final class CorreaRenderer {
 
     // ── caminos ──────────────────────────────────────────────────────────
 
-    private static List<Nodo> rutaPegada(Vector3f a, Direction ca, Vector3f b, Direction cb, float[] mn, float[] mx) {
+    private static List<Nodo> rutaPegada(Vector3f a, Direction ca, Vector3f b, Direction cb, Sup sup) {
         List<Nodo> out = new ArrayList<>();
+        float[] mn = sup.bmn, mx = sup.bmx;
         if (ca.getOpposite() == cb) {
             // Caras opuestas: por la tercera cara más corta (la recta pasaría por el medio de la caja).
             Vector3f medio = new Vector3f(a).add(b).mul(0.5f);
@@ -116,25 +237,25 @@ public final class CorreaRenderer {
                     mejorQ = q;
                 }
             }
-            tramo(out, a, mejorQ, mn, mx);
-            tramo(out, mejorQ, b, mn, mx);
+            tramo(out, a, mejorQ, sup);
+            tramo(out, mejorQ, b, sup);
         } else {
-            tramo(out, a, b, mn, mx);
+            tramo(out, a, b, sup);
         }
         return out;
     }
 
-    /** La recta de {@code a} a {@code b} muestreada y proyectada sobre la superficie de la caja. */
-    private static void tramo(List<Nodo> out, Vector3f a, Vector3f b, float[] mn, float[] mx) {
+    /** La recta de {@code a} a {@code b} muestreada y proyectada sobre la superficie. */
+    private static void tramo(List<Nodo> out, Vector3f a, Vector3f b, Sup sup) {
         final int n = 16;
         for (int k = 0; k <= n; k++) {
             if (k == 0 && !out.isEmpty()) continue;
             Vector3f p = new Vector3f(a).lerp(b, k / (float) n);
-            out.add(proyectar(p, mn, mx, true));
+            out.add(sup.proyectar(p, true));
         }
     }
 
-    private static List<Nodo> rutaColgante(Vector3f a, Vector3f b, float[] mn, float[] mx, float blandura,
+    private static List<Nodo> rutaColgante(Vector3f a, Vector3f b, Sup sup, float blandura,
                                            Matrix3f normalLocal, Matrix3f marco) {
         Vector3f desp = new Vector3f();
         FisicaApliques.Desplazamiento d = FisicaApliques.actual;
@@ -149,7 +270,7 @@ public final class CorreaRenderer {
         for (int i = 0; i <= k; i++) {
             float s = i / (float) k;
             Vector3f p = new Vector3f(a).lerp(b, s).add(new Vector3f(desp).mul(s * s));
-            out.add(proyectar(p, mn, mx, false));
+            out.add(sup.proyectar(p, false));
         }
         return out;
     }

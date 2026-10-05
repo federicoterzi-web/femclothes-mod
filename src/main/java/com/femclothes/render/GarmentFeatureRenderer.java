@@ -313,12 +313,13 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 : com.femclothes.render.relieve.BustoRender.actual.cola();
         // Apliques de la pollera (2026-10-02): anclados por UV a la malla de este cuadro.
         List<com.femclothes.aplique.Aplique> apliques = ApliqueRenderer.apliquesEn(stack, com.femclothes.aplique.Aplique.Superficie.POLLERA);
-        MallaCapturada malla = grabar("pollera", !apliques.isEmpty(), () -> PolleraMalla.dibujar(matrices, buffer, luz,
+        MallaCapturada malla = grabar("pollera", !apliques.isEmpty() || CorreaRenderer.hayEn(stack, com.femclothes.correa.Correa.Superficie.POLLERA), () -> PolleraMalla.dibujar(matrices, buffer, luz,
                 com.femclothes.item.PolleraItem.forma(stack), com.femclothes.item.PolleraItem.largo(stack),
                 dilatacion, new PolleraMalla.Piernas(biped.body, biped.rightLeg, biped.leftLeg), mov,
                 twirl, cola, delJugador.pitch));
         matrices.pop();
-        if (malla != null) ApliqueRenderer.dibujarEnMalla(stack, com.femclothes.aplique.Aplique.Superficie.POLLERA, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix());
+        if (malla != null) { ApliqueRenderer.dibujarEnMalla(stack, com.femclothes.aplique.Aplique.Superficie.POLLERA, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix());
+        CorreaRenderer.dibujarEnMalla(stack, com.femclothes.correa.Correa.Superficie.POLLERA, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix()); }
     }
 
     /**
@@ -407,7 +408,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         // Apliques de la capa (2026-10-02): anclados por UV a la malla de este cuadro.
         List<com.femclothes.aplique.Aplique> apliques = ApliqueRenderer.apliquesEn(stack, com.femclothes.aplique.Aplique.Superficie.CAPA);
         boolean hoodie = conHoodie(prendas);
-        MallaCapturada malla = grabar("capa", !apliques.isEmpty(), () -> {
+        MallaCapturada malla = grabar("capa", !apliques.isEmpty() || CorreaRenderer.hayEn(stack, com.femclothes.correa.Correa.Superficie.CAPA), () -> {
             matrices.push();
             matrices.translate(0f, sy / 16f, (sz + alejar) / 16f);
             CapaMalla.dibujarPano(matrices, buffer, luz, stack, CapaMalla.movimiento(jugador, tickDelta), agachado,
@@ -425,7 +426,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 matrices.pop();
             }
         });
-        if (malla != null) ApliqueRenderer.dibujarEnMalla(stack, com.femclothes.aplique.Aplique.Superficie.CAPA, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix());
+        if (malla != null) { ApliqueRenderer.dibujarEnMalla(stack, com.femclothes.aplique.Aplique.Superficie.CAPA, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix());
+        CorreaRenderer.dibujarEnMalla(stack, com.femclothes.correa.Correa.Superficie.CAPA, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix()); }
     }
 
     /**
