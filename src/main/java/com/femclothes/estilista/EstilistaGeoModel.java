@@ -45,6 +45,12 @@ public class EstilistaGeoModel extends GeoModel<EstilistaBlockEntity> {
 
     @Override
     public Identifier getTextureResource(EstilistaBlockEntity be) {
+        // Pantalla grande con la prenda, como la Modeladora y la Sublimadora (2026-10-05, "agrandar la pantalla como en las otras dos").
+        return com.femclothes.render.PantallaMaquina.con(atlas(be), com.femclothes.render.PantallaMaquina.PANEL_128,
+                be.vistaPreviaPersistente(), be.getPos());
+    }
+
+    static Identifier atlas(EstilistaBlockEntity be) {
         return com.femclothes.util.MaquinaCreativa.textura(TEX, com.femclothes.util.MaquinaCreativa.es(be));
     }
 

@@ -15,6 +15,7 @@ import os
 from PIL import Image
 
 RAIZ = os.path.join(os.path.dirname(__file__), "..")
+TEXEL_LILA = (100, 60)          # libre en la franja de la pantalla; color de Tema.LILA
 RES = os.path.join(RAIZ, "src", "main", "resources", "assets", "femclothes")
 NUEVO = os.path.join(RAIZ, "assets_nuevos_prueba", "estilista")
 CORTE = 10.3          # donde termina el cuerpo de la Modeladora y empieza la tapa (la base de la tapa está en 10.3)
@@ -93,6 +94,14 @@ def main():
             b["cubes"] = [c for c in (recortar_cubo(c) for c in b.get("cubes", [])) if c]
         huesos.append(b)
     base = next(b for b in huesos if b["name"] == "base")
+    # 2026-10-05, "sacarle una barrita abajo de la pantalla": la tira de la Modeladora bajo la pantalla se va.
+    base["cubes"] = [c for c in base["cubes"] if not (abs(c["origin"][0] + 6) < 0.01 and abs(c["origin"][1] - 4.69) < 0.01 and abs(c["size"][1] - 0.32) < 0.01)]
+    # 2026-10-05, "tintar la barra de progreso de lila": un texel propio (libre) en vez del naranja compartido.
+    for b in huesos:
+        if b["name"] == "progress":
+            for c in b["cubes"]:
+                for cara in c["uv"].values():
+                    cara["uv"] = [TEXEL_LILA[0], TEXEL_LILA[1]]
     for b in ga["bones"]:
         if b["name"] == "root":
             continue
@@ -125,6 +134,10 @@ def main():
             for canal, claves in hueso.items():
                 for t, v in list(claves.items()):
                     claves[t] = girar_vector(v, escala=(canal == "scale"))
+    for anim in AA.values():                               # GeckoLib espera los keyframes ordenados por tiempo
+        for hueso in anim["bones"].values():
+            for canal, claves in list(hueso.items()):
+                hueso[canal] = dict(sorted(claves.items(), key=lambda kv: float(kv[0])))
     trabajo = copy.deepcopy(AA["animation.auto_styler.trabajo"])
     largo = trabajo["animation_length"]
     trabajo["bones"]["cargo"] = {"position": {"0": [0, 0, 0], str(round(largo * 0.85, 2)): [0, 0, 0], str(largo): [4.4, 0, 0]}}
@@ -142,6 +155,7 @@ def main():
     atlas = Image.new("RGBA", (128, 256), (0, 0, 0, 0))
     atlas.paste(a, (0, 0))
     atlas.paste(b, (0, DESPLAZAR_V))
+    atlas.putpixel(TEXEL_LILA, (0xD6, 0xAA, 0xE8, 255))
     atlas.save(os.path.join(RES, "textures", "block", "estilista_atlas.png"))
     print("huesos:", [x["name"] for x in huesos])
     print("cubos de la base:", len(base["cubes"]))

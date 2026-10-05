@@ -69,6 +69,15 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         return !items.get(SLOT_PRENDA).isEmpty() ? items.get(SLOT_PRENDA) : items.get(SLOT_SALIDA);
     }
 
+    private ItemStack ultimaVistaPrevia = ItemStack.EMPTY;
+
+    /** La prenda de la pantallita: la última que hubo (salida o entrada), así no se apaga entre prendas. */
+    public ItemStack vistaPreviaPersistente() {
+        ItemStack actual = !items.get(SLOT_SALIDA).isEmpty() ? items.get(SLOT_SALIDA) : items.get(SLOT_PRENDA);
+        if (!actual.isEmpty()) ultimaVistaPrevia = actual;
+        return ultimaVistaPrevia;
+    }
+
     public ItemStack salidaVisible() { return items.get(SLOT_SALIDA); }
 
     /** ¿Hay un diseño fijado que aplicar? Etapa 2; hoy nunca. */
