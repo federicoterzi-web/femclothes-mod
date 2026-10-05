@@ -47,7 +47,7 @@ import java.util.Map;
 public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
 
     private static final Identifier TEXTURE = Identifier.of("femclothes", "textures/gui/container/estilado.png");
-    private static final int ANCHO = 384, ALTO = 256;
+    static final int ANCHO = 384, ALTO = 256;
     private static final int PX1 = 8, PY1 = 18, PX2 = 204, PY2 = 250;
     private static final int X_DER = EstiladoScreenHandler.X_DERECHA;
 
@@ -238,6 +238,9 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     private final ButtonWidget[] btnBiblioDar = new ButtonWidget[FILAS_BIBLIO], btnBiblioBorrar = new ButtonWidget[FILAS_BIBLIO];
     private ButtonWidget btnPaginaMoldes, btnBiblioAnt, btnBiblioSig;
     private int panelX;
+
+    /** Cuánto se corre a la derecha el panel de ajustes (la Estilista pone su panel de máquina primero). */
+    int panelExtra() { return 0; }
     private ButtonWidget btnPaginaColocacion, btnPaginaMovimiento, btnRestablecer, btnPivote, btnEje, btnCrearMolde;
     /** El slider de blandura de la Mesa normal (2026-10-04): como estaba antes del panel lateral. */
     private SliderAjuste sliderNormal;
@@ -384,7 +387,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
 
     private void crearPanel() {
         // A la derecha de la ventana; si no hay lugar, a la izquierda.
-        panelX = this.x + ANCHO + 4;
+        panelX = this.x + ANCHO + 4 + panelExtra();
         if (panelX + PW > this.width && this.x - PW - 4 >= 0) panelX = this.x - PW - 4;
         slidersColocacion.clear();
         slidersMovimiento.clear();

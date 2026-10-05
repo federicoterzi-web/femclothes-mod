@@ -83,6 +83,15 @@ public class EstilistaBlock extends BlockWithEntity {
     @Override
     protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos,
                                              PlayerEntity player, Hand hand, BlockHitResult hit) {
+        if (world.getBlockEntity(pos) instanceof EstilistaBlockEntity carga
+                && (stack.isOf(net.minecraft.item.Items.STRING) || stack.isOf(net.minecraft.item.Items.LEATHER))) {
+            // Hilo y cuero a mano (2026-10-05): van derecho a los contadores.
+            if (world.isClient) return ItemActionResult.SUCCESS;
+            int n = player.isCreative() ? 0 : carga.absorber(stack);
+            if (player.isCreative()) { ItemStack copia = stack.copy(); n = carga.absorber(copia); }
+            if (n > 0) world.playSound(null, pos, SoundEvents.ITEM_ARMOR_EQUIP_LEATHER.value(), SoundCategory.BLOCKS, 0.8f, 1.2f);
+            return n > 0 ? ItemActionResult.SUCCESS : ItemActionResult.FAIL;
+        }
         if (!(world.getBlockEntity(pos) instanceof EstilistaBlockEntity be) || !EstiladoBlockEntity.admite(stack)) {
             return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }

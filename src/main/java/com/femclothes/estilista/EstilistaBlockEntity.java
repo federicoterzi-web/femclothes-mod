@@ -39,13 +39,21 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 public class EstilistaBlockEntity extends BlockEntity implements SidedInventory, com.femclothes.util.ConSalida,
         ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity, com.femclothes.util.MaquinaCreativa.Cargable {
 
-    public static final int SLOT_PRENDA = 0, SLOT_SALIDA = 1, SLOT_INSUMOS = 2, INSUMOS = 18, TAMANO = SLOT_INSUMOS + INSUMOS;
+    /**
+     * El buzón (2026-10-05, "los insumos pueden cargar invisibles") es un casillero que nadie ve: lo que entra por
+     * tolva o cinta (hilo y cuero) se convierte al toque en los contadores. El almacén es visible: guarda plantillas,
+     * retazos y los objetos que gastan los apliques de objeto.
+     */
+    public static final int SLOT_PRENDA = 0, SLOT_SALIDA = 1, SLOT_BUZON = 2, SLOT_ALMACEN = 3, ALMACEN = 18,
+            TAMANO = SLOT_ALMACEN + ALMACEN;
+    /** Cuánto rinde cada ítem (2026-10-05, "rinde más por ítem") y cuánto aguanta cada contador. */
+    public static final int APLIQUES_POR_HILO = 4, CORREAS_POR_CUERO = 2, TOPE_CONTADOR = 256;
     /** Cuántos diseños (uno por tipo de prenda) guarda la máquina. */
     public static final int MAX_DISENOS = 32;
     /** Lo que dura el trabajo del pórtico: los 13 s de la animación. */
     public static final int TICKS_PROCESO = 260;
     /** Botones: aplicar el diseño a la prenda de la entrada, fijar esa prenda como muestra, olvidar el diseño de su tipo. */
-    public static final int BTN_APLICAR = 600, BTN_FIJAR = 601, BTN_BORRAR = 602;
+    public static final int BTN_APLICAR = 600, BTN_FIJAR = 601, BTN_BORRAR = 602, BTN_CARGAR_HILO = 603, BTN_CARGAR_CUERO = 604;
 
     /** Lo que sale de intentar aplicar el diseño: ver {@link #planear}. */
     public enum Resultado { OK, SIN_DISENO, FALTA }
@@ -74,6 +82,8 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     private int guiAbiertas;
     /** La prenda de la entrada llegó por la cadena (arranca sola apenas haya insumos) o la puso alguien a mano (espera los botones). */
     private boolean deCadena;
+    /** Los contadores: cuántos apliques y cuántas correas alcanzan con lo cargado (unidades, no ítems). */
+    private int hilo, cuero;
     /** Un diseño por tipo de prenda: el ítem de la muestra con solo lo que se copia (apliques, correas, colores). */
     private final DefaultedList<ItemStack> disenos = DefaultedList.ofSize(MAX_DISENOS, ItemStack.EMPTY);
 
@@ -154,13 +164,12 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     public static int apliquesDe(ItemStack s) { return cuenta(s, com.femclothes.item.FemclothesComponents.APLIQUES); }
     public static int correasDe(ItemStack s) { return cuenta(s, com.femclothes.item.FemclothesComponents.CORREAS); }
 
-    /** Lo que cuesta (y vuelve al quitarlo) lo que lleva una prenda: hilo por aplique, cuero por correa, y el objeto de un aplique de objeto. */
+    /** Los objetos que gasta (y devuelve al quitarlos) lo que lleva una prenda: el de cada aplique de objeto y su muestra. */
     private static java.util.List<ItemStack> costoDe(ItemStack s) {
         java.util.List<ItemStack> costo = new java.util.ArrayList<>();
         java.util.List<com.femclothes.aplique.Aplique> apl = s.get(com.femclothes.item.FemclothesComponents.APLIQUES);
         if (apl != null) {
             for (com.femclothes.aplique.Aplique a : apl) {
-                costo.add(new ItemStack(net.minecraft.item.Items.STRING));
                 // Un objeto "de molde" no gastó nada al ponerse (ni vuelve).
                 if (a.objeto() != null && !a.objeto().deMolde()) {
                     costo.add(a.objeto().item().copy());
@@ -168,9 +177,33 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
                 }
             }
         }
-        int correas = correasDe(s);
-        if (correas > 0) costo.add(new ItemStack(net.minecraft.item.Items.LEATHER, correas));
         return costo;
+    }
+
+    public int hilo() { return hilo; }
+    public int cuero() { return cuero; }
+
+    /** Carga hilo o cuero en los contadores con lo que haya en {@code pila} (se le restan los ítems usados); devuelve cuántos. */
+    public int absorber(ItemStack pila) {
+        boolean esHilo = pila.isOf(net.minecraft.item.Items.STRING), esCuero = pila.isOf(net.minecraft.item.Items.LEATHER);
+        if (!esHilo && !esCuero) return 0;
+        int porItem = esHilo ? APLIQUES_POR_HILO : CORREAS_POR_CUERO;
+        int actual = esHilo ? hilo : cuero;
+        int caben = Math.max(0, (TOPE_CONTADOR - actual) / porItem);
+        int n = Math.min(pila.getCount(), caben);
+        if (n <= 0) return 0;
+        pila.decrement(n);
+        if (esHilo) hilo += n * porItem; else cuero += n * porItem;
+        sincronizar();
+        return n;
+    }
+
+    /** Lo que quedó en el buzón se vuelca a los contadores apenas hay lugar. */
+    private void drenarBuzon() {
+        ItemStack b = items.get(SLOT_BUZON);
+        if (b.isEmpty()) return;
+        absorber(b);
+        if (b.isEmpty()) items.set(SLOT_BUZON, ItemStack.EMPTY);
     }
 
     /** Existencias del almacén (o una copia para simular): pila por tipo de ítem + componentes. */
@@ -203,13 +236,13 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
 
     private Existencias existencias() {
         Existencias e = new Existencias();
-        for (int i = SLOT_INSUMOS; i < TAMANO; i++) e.sumar(items.get(i));
+        for (int i = SLOT_ALMACEN; i < TAMANO; i++) e.sumar(items.get(i));
         return e;
     }
 
     private void escribirExistencias(Existencias e) {
-        for (int i = SLOT_INSUMOS; i < TAMANO; i++) items.set(i, ItemStack.EMPTY);
-        int slot = SLOT_INSUMOS;
+        for (int i = SLOT_ALMACEN; i < TAMANO; i++) items.set(i, ItemStack.EMPTY);
+        int slot = SLOT_ALMACEN;
         for (ItemStack pila : e.pilas) {
             ItemStack resto = pila.copy();
             while (!resto.isEmpty()) {
@@ -221,18 +254,25 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     }
 
     /** Resultado de simular aplicar el diseño a esa prenda: sin tocar nada. {@code falta} (si lo hay) es lo que no alcanza. */
-    public record Plan(Resultado resultado, @Nullable Existencias despues, ItemStack falta) {}
+    public record Plan(Resultado resultado, @Nullable Existencias despues, int hilo, int cuero, ItemStack falta) {}
 
     public Plan planear(ItemStack prenda) {
         ItemStack d = diseno(prenda);
-        if (d == null) return new Plan(Resultado.SIN_DISENO, null, ItemStack.EMPTY);
-        if (com.femclothes.util.MaquinaCreativa.es(this)) return new Plan(Resultado.OK, null, ItemStack.EMPTY);
+        if (d == null) return new Plan(Resultado.SIN_DISENO, null, hilo, cuero, ItemStack.EMPTY);
+        if (com.femclothes.util.MaquinaCreativa.es(this)) return new Plan(Resultado.OK, null, hilo, cuero, ItemStack.EMPTY);
+        // Lo que la prenda ya traía vuelve (hilo, cuero y objetos); después se paga el diseño nuevo.
+        int h = Math.min(TOPE_CONTADOR, hilo + apliquesDe(prenda)) - apliquesDe(d);
+        int c = Math.min(TOPE_CONTADOR, cuero + correasDe(prenda)) - correasDe(d);
+        if (h < 0) return new Plan(Resultado.FALTA, null, hilo, cuero,
+                new ItemStack(net.minecraft.item.Items.STRING, (-h + APLIQUES_POR_HILO - 1) / APLIQUES_POR_HILO));
+        if (c < 0) return new Plan(Resultado.FALTA, null, hilo, cuero,
+                new ItemStack(net.minecraft.item.Items.LEATHER, (-c + CORREAS_POR_CUERO - 1) / CORREAS_POR_CUERO));
         Existencias e = existencias();
-        for (ItemStack c : costoDe(prenda)) e.sumar(c);              // lo que la prenda ya traía vuelve al almacén
-        for (ItemStack c : costoDe(d)) {
-            if (!e.sacar(c)) return new Plan(Resultado.FALTA, null, c);
+        for (ItemStack o : costoDe(prenda)) e.sumar(o);
+        for (ItemStack o : costoDe(d)) {
+            if (!e.sacar(o)) return new Plan(Resultado.FALTA, null, hilo, cuero, o);
         }
-        return new Plan(Resultado.OK, e, ItemStack.EMPTY);
+        return new Plan(Resultado.OK, e, h, c, ItemStack.EMPTY);
     }
 
     /** Lo que falta para aplicar el diseño a la prenda de la entrada (para la pantalla), o vacío. */
@@ -247,7 +287,11 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         if (estado != Estado.REPOSO || prenda.isEmpty() || !items.get(SLOT_SALIDA).isEmpty()) return Resultado.SIN_DISENO;
         Plan plan = planear(prenda);
         if (plan.resultado() != Resultado.OK) return plan.resultado();
-        if (plan.despues() != null) escribirExistencias(plan.despues());
+        if (plan.despues() != null) {
+            escribirExistencias(plan.despues());
+            hilo = plan.hilo();
+            cuero = plan.cuero();
+        }
         copiarDiseno(diseno(prenda), prenda);
         estado = Estado.PROCESANDO;
         progreso = 0;
@@ -311,6 +355,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         com.femclothes.util.LuzMaquina.actualizar(world, pos, state, be.estado != Estado.REPOSO);
         switch (be.estado) {
             case REPOSO -> {
+                if (world.getTime() % 20 == 0) be.drenarBuzon();
                 // Una prenda que llegó por la cadena espera los insumos que le falten y arranca sola.
                 if (be.deCadena && !be.items.get(SLOT_PRENDA).isEmpty() && be.items.get(SLOT_SALIDA).isEmpty()
                         && world.getTime() % 20 == 0) {
@@ -408,9 +453,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     public int[] getAvailableSlots(Direction side) {
         if (side == Direction.UP || side == ladoIzquierdo()) return new int[]{SLOT_PRENDA};
         if (side == ladoDerecho()) return new int[0];
-        int[] insumos = new int[INSUMOS];                      // por los otros lados entran el hilo, el cuero y los objetos
-        for (int i = 0; i < INSUMOS; i++) insumos[i] = SLOT_INSUMOS + i;
-        return insumos;
+        return new int[]{SLOT_BUZON};                          // por los otros lados solo entra hilo y cuero (invisible)
     }
 
     @Override
@@ -452,8 +495,9 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
 
     @Override
     public void setStack(int slot, ItemStack stack) {
-        if (slot != SLOT_PRENDA && slot != SLOT_SALIDA) {          // insumos: pilas normales
+        if (slot != SLOT_PRENDA && slot != SLOT_SALIDA) {          // buzón y almacén: pilas normales
             items.set(slot, stack);
+            if (slot == SLOT_BUZON) drenarBuzon();
             sincronizar();
             return;
         }
@@ -482,8 +526,10 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
 
     @Override
     public boolean isValid(int slot, ItemStack stack) {
-        if (slot >= SLOT_INSUMOS) {
+        if (slot == SLOT_BUZON) return stack.isOf(net.minecraft.item.Items.STRING) || stack.isOf(net.minecraft.item.Items.LEATHER);
+        if (slot >= SLOT_ALMACEN) {
             return !stack.isEmpty() && !com.femclothes.garment.Garments.esPrenda(stack)
+                    && !stack.isOf(net.minecraft.item.Items.STRING) && !stack.isOf(net.minecraft.item.Items.LEATHER)
                     && com.femclothes.aplique.ObjetoAplique.admite(stack);
         }
         return slot == SLOT_PRENDA && items.get(SLOT_PRENDA).isEmpty() && estado == Estado.REPOSO
@@ -530,6 +576,8 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         nbt.putInt("estado", estado.ordinal());
         nbt.putInt("progreso", progreso);
         nbt.putBoolean("de_cadena", deCadena);
+        nbt.putInt("hilo", hilo);
+        nbt.putInt("cuero", cuero);
         NbtCompound d = new NbtCompound();
         Inventories.writeNbt(d, disenos, registries);
         nbt.put("disenos", d);
@@ -543,6 +591,8 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         estado = Estado.values()[Math.max(0, Math.min(Estado.values().length - 1, nbt.getInt("estado")))];
         progreso = nbt.getInt("progreso");
         deCadena = nbt.getBoolean("de_cadena");
+        hilo = nbt.getInt("hilo");
+        cuero = nbt.getInt("cuero");
         disenos.clear();
         if (nbt.contains("disenos")) Inventories.readNbt(nbt.getCompound("disenos"), disenos, registries);
         if (nbt.contains("editor")) editor.read(nbt.getCompound("editor"), registries);
