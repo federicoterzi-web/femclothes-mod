@@ -120,7 +120,7 @@ public class CintaBlock extends BlockWithEntity {
     public BlockState getPlacementState(ItemPlacementContext ctx) {
         Direction frente = ctx.getHorizontalPlayerFacing();
         return getDefaultState().with(FACING, frente).with(FORMA, calcularForma(ctx.getWorld(), ctx.getBlockPos(), frente))
-                .with(POWERED, ctx.getWorld().isReceivingRedstonePower(ctx.getBlockPos()));
+                .with(POWERED, CintaFisica.debePausar(ctx.getWorld(), ctx.getBlockPos()));
     }
 
     @Override
@@ -134,8 +134,15 @@ public class CintaBlock extends BlockWithEntity {
     @Override
     protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
         if (world.isClient) return;
-        boolean senal = world.isReceivingRedstonePower(pos);
-        if (senal != state.get(POWERED)) world.setBlockState(pos, state.with(POWERED, senal), Block.NOTIFY_LISTENERS);
+        // La señal se contagia a las cintas encadenadas hasta 8 de distancia (2026-10-06).
+        CintaFisica.refrescarCadena(world, pos);
+    }
+
+    /** Quien se sube es llevado (2026-10-06, "si el jugador se sube a un conveyor belt lo mueva"). */
+    @Override
+    public void onSteppedOn(World world, BlockPos pos, BlockState state, net.minecraft.entity.Entity entity) {
+        CintaFisica.empujar(world, pos, state, entity);
+        super.onSteppedOn(world, pos, state, entity);
     }
 
     /** Vuelve a mirar el entorno: cambia la forma (curva, rampa) si hace falta. Lo llama la cinta cada tanto. */
@@ -210,7 +217,7 @@ public class CintaBlock extends BlockWithEntity {
     public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable net.minecraft.entity.LivingEntity placer,
                          net.minecraft.item.ItemStack stack) {
         super.onPlaced(world, pos, state, placer, stack);
-        if (!world.isClient) refrescarVecinas(world, pos);
+        if (!world.isClient) { refrescarVecinas(world, pos); CintaFisica.refrescarCadena(world, pos); }
     }
 
     /**

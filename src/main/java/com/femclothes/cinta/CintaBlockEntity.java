@@ -52,7 +52,15 @@ public class CintaBlockEntity extends BlockEntity implements SidedInventory {
     public static void tick(World world, BlockPos pos, BlockState state, CintaBlockEntity be) {
         // La forma se vuelve a mirar sola cada tanto (2026-10-05, "el recalculado que se haga automatico al updatear
         // bloques cercanos"): una máquina o una cinta puesta en diagonal después no avisa por actualización de vecinos.
-        if ((world.getTime() + pos.asLong()) % 20 == 0) CintaBlock.recalcular(world, pos, state);
+        if ((world.getTime() + pos.asLong()) % 20 == 0) {
+            CintaBlock.recalcular(world, pos, state);
+            state = world.getBlockState(pos);
+            boolean debe = CintaFisica.debePausar(world, pos);   // por si se perdió un aviso de la cadena
+            if (debe != state.get(CintaBlock.POWERED)) {
+                state = state.with(CintaBlock.POWERED, debe);
+                world.setBlockState(pos, state, net.minecraft.block.Block.NOTIFY_LISTENERS);
+            }
+        }
         // Señal de redstone: la prenda se congela donde está y al soltarse sigue desde ahí.
         boolean pausada = state.get(CintaBlock.POWERED);
         if (pausada && be.pausadoDesde < 0) {

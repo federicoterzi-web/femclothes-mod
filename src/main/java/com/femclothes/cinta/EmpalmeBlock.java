@@ -60,14 +60,27 @@ public class EmpalmeBlock extends BlockWithEntity {
     @Nullable
     public BlockState getPlacementState(ItemPlacementContext ctx) {
         return getDefaultState().with(FACING, ctx.getHorizontalPlayerFacing())
-                .with(POWERED, ctx.getWorld().isReceivingRedstonePower(ctx.getBlockPos()));
+                .with(POWERED, CintaFisica.debePausar(ctx.getWorld(), ctx.getBlockPos()));
     }
 
     @Override
     protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
         if (world.isClient) return;
-        boolean senal = world.isReceivingRedstonePower(pos);
-        if (senal != state.get(POWERED)) world.setBlockState(pos, state.with(POWERED, senal), Block.NOTIFY_LISTENERS);
+        // La señal se contagia a las cintas encadenadas hasta 8 de distancia (2026-10-06).
+        CintaFisica.refrescarCadena(world, pos);
+    }
+
+    /** Quien se sube es llevado (2026-10-06, "si el jugador se sube a un conveyor belt lo mueva"). */
+    @Override
+    public void onSteppedOn(World world, BlockPos pos, BlockState state, net.minecraft.entity.Entity entity) {
+        CintaFisica.empujar(world, pos, state, entity);
+        super.onSteppedOn(world, pos, state, entity);
+    }
+
+    @Override
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable net.minecraft.entity.LivingEntity placer, ItemStack stack) {
+        super.onPlaced(world, pos, state, placer, stack);
+        if (!world.isClient) CintaFisica.refrescarCadena(world, pos);
     }
 
     /** Click derecho: saca lo que lleva o pone un ítem (igual que la cinta; un bloque en la mano sin agacharse se coloca). */
