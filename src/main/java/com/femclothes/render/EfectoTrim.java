@@ -149,8 +149,8 @@ public final class EfectoTrim {
             int a = Math.min((int) fase, c.hechos - 1);
             int b = (a + 1) % c.hechos;
             float t = fase - (int) fase;
-            repetir(real.getBuffer(RenderLayer.getEyes(c.ids[a])), 1f - t);
-            if (b != a) repetir(real.getBuffer(RenderLayer.getEyes(c.ids[b])), t);
+            repetir(real.getBuffer(RenderLayer.getEntityTranslucentEmissive(c.ids[a])), 1f - t);
+            if (b != a) repetir(real.getBuffer(RenderLayer.getEntityTranslucentEmissive(c.ids[b])), t);
         }
 
         private void repetir(VertexConsumer vc, float peso) {
@@ -297,6 +297,12 @@ public final class EfectoTrim {
 
     private static float suave(float h) { return h * h * (3 - 2 * h); }
 
+    /** ABGR con alfa: el efecto es una pintura emisiva con transparencia, no una suma de luz (de día, sumar luz sobre una tela clara no se ve). */
+    private static int rgba(float r, float g, float b, float a) {
+        int ai = Math.max(0, Math.min(255, Math.round(a)));
+        return (ai << 24) | (rgb(r, g, b) & 0x00FFFFFF);
+    }
+
     private static int pixel(Tipo tipo, float u, float v, float t, int cuadro) {
         switch (tipo) {
             case LAVA: {
@@ -304,17 +310,18 @@ public final class EfectoTrim {
                 float b = sen(TAU * (5 * v + 0.35f * sen(TAU * (2 * u - t))));
                 float c = sen(TAU * (3 * u + 3 * v + t));
                 float h = suave(Math.max(0f, Math.min(1f, (a + b + c) / 6f + 0.5f)));
-                // Corteza oscura → naranja → amarillo incandescente.
-                if (h < 0.5f) return rgb(60 + 390 * h, 8 + 164 * h, 0);
+                // Corteza oscura → naranja → amarillo incandescente, casi opaca.
+                if (h < 0.5f) return rgba(70 + 370 * h, 10 + 150 * h, 0, 235);
                 float k = (h - 0.5f) * 2f;
-                return rgb(255, 90 + 140 * k, 20 + 130 * k);
+                return rgba(255, 90 + 140 * k, 20 + 130 * k, 245);
             }
             case OCEANO: {
                 float s1 = sen(TAU * (3 * u + 0.25f * sen(TAU * (2 * v + t))));
                 float s2 = sen(TAU * (3 * v + 0.25f * sen(TAU * (2 * u - t))));
                 float c = 1f - Math.abs(s1 * s2);
                 float vena = c * c * c * c * c;
-                return rgb(0 + 150 * vena, 40 + 215 * vena, 70 + 165 * vena);
+                // Agua turquesa translúcida con venas de luz.
+                return rgba(10 + 140 * vena, 90 + 165 * vena, 120 + 135 * vena, 120 + 135 * vena);
             }
             case ESCULK: {
                 float n = 6f;
@@ -322,25 +329,25 @@ public final class EfectoTrim {
                 float fase = azar(cx, cy), fu = u * n - cx - 0.5f, fv = v * n - cy - 0.5f;
                 float blob = Math.max(0f, 1f - (float) Math.sqrt(fu * fu + fv * fv) * 2.2f);
                 float pulso = 0.5f + 0.5f * sen(TAU * (t + fase));
-                float i = 0.06f + blob * blob * pulso;
-                return rgb(40 * i, 235 * i, 245 * i);
+                float i = 0.10f + blob * blob * pulso * 1.3f;
+                return rgba(40, 235, 245, 255 * Math.min(1f, i));
             }
             case ENDER: {
                 float tono = 0.62f + 0.2f * sen(TAU * (u + v + t));   // entre cian, violeta y magenta
-                int fondo = hsv(tono, 0.75f, 0.42f);
+                int fondo = hsv(tono, 0.70f, 0.85f);
                 float n = 22f;
                 int cx = (int) (u * n), cy = (int) (v * n);
                 float e = azar(cx, cy);
+                float estrella = 0f;
                 if (e > 0.84f) {
                     float fu = u * n - cx - 0.5f, fv = v * n - cy - 0.5f;
                     float brillo = 0.5f + 0.5f * sen(TAU * (t * 2 + azar(cy, cx)));
-                    float estrella = Math.max(0f, 1f - (float) Math.sqrt(fu * fu + fv * fv) * 5f) * brillo;
-                    if (estrella > 0f) {
-                        float r = (fondo & 0xFF) + 255 * estrella, g = ((fondo >> 8) & 0xFF) + 255 * estrella, b = ((fondo >> 16) & 0xFF) + 255 * estrella;
-                        return rgb(r, g, b);
-                    }
+                    estrella = Math.max(0f, 1f - (float) Math.sqrt(fu * fu + fv * fv) * 5f) * brillo;
                 }
-                return fondo;
+                float r = (fondo & 0xFF) + (255 - (fondo & 0xFF)) * estrella;
+                float g = ((fondo >> 8) & 0xFF) + (255 - ((fondo >> 8) & 0xFF)) * estrella;
+                float b = ((fondo >> 16) & 0xFF) + (255 - ((fondo >> 16) & 0xFF)) * estrella;
+                return rgba(r, g, b, 150 + 105 * estrella);
             }
             case DESTELLO: {
                 float n = 34f;
@@ -353,15 +360,13 @@ public final class EfectoTrim {
                     float brillo = 0.5f + 0.5f * sen(TAU * (t + e * 13));
                     chispa = Math.max(0f, 1f - (float) Math.sqrt(fu * fu + fv * fv) * 3.2f) * brillo;
                 }
-                float i = suave + chispa;
-                return rgb(255 * i, 215 * i, 120 * i + 90 * chispa);
+                return rgba(255, 215 + 40 * chispa, 120 + 135 * chispa, 255 * Math.min(1f, suave * 1.4f + chispa));
             }
             case RAYO: {
                 float l = 1f - Math.abs(sen(TAU * (4 * u + 1.5f * sen(TAU * 3 * v))));
                 float fino = (float) Math.pow(l, 24);
                 float parpadeo = cuadro % 3 == 0 ? 1f : 0.2f;
-                float i = fino * parpadeo + 0.05f;
-                return rgb(150 * i, 190 * i, 255 * i);
+                return rgba(170, 205, 255, 30 + 225 * fino * parpadeo);
             }
             default: {   // METAL: un barrido de brillo en diagonal
                 float d = u * 0.7f + v * 0.7f - t;
@@ -370,8 +375,7 @@ public final class EfectoTrim {
                 float d2 = u * 0.7f + v * 0.7f - t + 0.5f;
                 d2 -= (float) Math.floor(d2);
                 float debil = Math.max(0f, 1f - Math.abs(d2 - 0.5f) * 14f) * 0.35f;
-                float i = banda * banda + debil + 0.04f;
-                return rgb(225 * i, 232 * i, 255 * i);
+                return rgba(235, 240, 255, 255 * Math.min(1f, banda * banda * 0.9f + debil));
             }
         }
     }

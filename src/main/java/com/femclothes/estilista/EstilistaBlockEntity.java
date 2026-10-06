@@ -337,6 +337,25 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         return true;
     }
 
+    /** Guarda como diseño de su tipo la muestra del editor si es del mismo tipo que {@code prenda} y lleva algo (sin avisos). */
+    private void fijarDeLaMuestraDelEditor(ItemStack prenda) {
+        ItemStack muestra = editor.getStack(EstiladoBlockEntity.SLOT_PRENDA);
+        if (muestra.isEmpty() || muestra.getItem() != prenda.getItem()) return;
+        ItemStack proto = new ItemStack(muestra.getItem());
+        copiarDiseno(muestra, proto);
+        boolean hayAlgo = false;
+        for (net.minecraft.component.ComponentType<?> t : COMPONENTES_DE_DISENO) hayAlgo |= proto.get(t) != null;
+        if (!hayAlgo) return;
+        int libre = -1;
+        for (int i = 0; i < MAX_DISENOS; i++) {
+            if (disenos.get(i).isEmpty()) { if (libre < 0) libre = i; }
+            else if (disenos.get(i).getItem() == muestra.getItem()) { libre = i; break; }
+        }
+        if (libre < 0) return;
+        disenos.set(libre, proto);
+        sincronizar();
+    }
+
     // ── animación + ticker ──
 
     @Override
@@ -404,6 +423,9 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         }
         if (id != BTN_APLICAR) return false;
         if (estado != Estado.REPOSO || items.get(SLOT_PRENDA).isEmpty() || !items.get(SLOT_SALIDA).isEmpty()) return false;
+        // Sin diseño fijado para este tipo, pero con una muestra del mismo tipo en el editor: se usa esa (2026-10-06,
+        // "cuando solo se aplica un finish no te deja activar la maquina"): no hace falta apretar Fijar antes.
+        if (diseno(items.get(SLOT_PRENDA)) == null) fijarDeLaMuestraDelEditor(items.get(SLOT_PRENDA));
         Resultado r = iniciar();
         switch (r) {
             case SIN_DISENO -> jugador.sendMessage(Text.translatable("femclothes.estilista.sin_diseno"), true);
