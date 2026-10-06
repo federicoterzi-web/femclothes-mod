@@ -933,8 +933,5 @@
   "femclothes.pollera.molde_borde.ayuda": "Va en el pin Custom de la Pollera: cambia el borde del ruedo.",
   "item.femclothes.molde_borde_ondulado": "Molde de Borde: Ondulado",
   "item.femclothes.molde_borde_festoneado": "Molde de Borde: Festoneado",
-  "item.femclothes.molde_borde_pico": "Molde de Borde: Con pico",
-  "femclothes.banner.sin_banner": "Tenés que tener un banner o un escudo en la mano principal.",
-  "femclothes.banner.puesta": "Foto puesta en el banner (a 16x).",
-  "femclothes.banner.quitada": "Foto sacada del banner."
+  "item.femclothes.molde_borde_pico": "Molde de Borde: Con pico"
 }

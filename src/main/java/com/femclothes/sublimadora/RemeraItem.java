@@ -29,6 +29,10 @@ public class RemeraItem extends Item {
      */
     @Nullable
     public static Estampa estampaDe(ItemStack stack, Estampa.Cara cara) {
+        // Un banner (2026-10-06, "sublimadoras a banners") lleva una sola foto, la del Frente.
+        if (stack.getItem() instanceof net.minecraft.item.BannerItem) {
+            return cara == Estampa.Cara.FRENTE ? stack.get(ModItems.BANNER_ESTAMPA) : null;
+        }
         Estampa estampa = stack.get(componente(cara));
         if (estampa != null) return estampa;
         if (cara == Estampa.Cara.FRENTE) {
@@ -121,6 +125,7 @@ public class RemeraItem extends Item {
     /** Copia la prenda con estas capas con máscara (hasta {@link CapaEstampa#MAXIMO}); vacía las saca. */
     public static ItemStack conCapas(ItemStack base, List<CapaEstampa> capas) {
         ItemStack out = base.copyWithCount(1);
+        if (base.getItem() instanceof net.minecraft.item.BannerItem) return out;   // el banner no lleva capas con máscara
         if (capas.isEmpty()) out.remove(ModItems.ESTAMPAS_CAPAS);
         else out.set(ModItems.ESTAMPAS_CAPAS, List.copyOf(capas.subList(0, Math.min(CapaEstampa.MAXIMO, capas.size()))));
         return out;
@@ -129,6 +134,10 @@ public class RemeraItem extends Item {
     /** Copia la remera con la estampa aplicada en esa cara. */
     public static ItemStack estampar(ItemStack base, Estampa.Cara cara, Estampa estampa) {
         ItemStack out = base.copyWithCount(1);
+        if (base.getItem() instanceof net.minecraft.item.BannerItem) {
+            if (cara == Estampa.Cara.FRENTE) out.set(ModItems.BANNER_ESTAMPA, estampa);   // 2026-10-06: sin espalda ni simetría
+            return out;
+        }
         out.set(componente(cara), estampa);
         return out;
     }

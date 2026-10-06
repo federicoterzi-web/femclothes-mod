@@ -268,7 +268,9 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
         PlayerEntity jugador = client.player;
         if (jugador == null) return;
 
-        ItemStack prenda = handler.be.prendaDeVistaPrevia(true);
+        ItemStack vista = handler.be.prendaDeVistaPrevia(true);
+        // El banner no se viste: se ve en el recuadro de la foto.
+        final ItemStack prenda = vista.getItem() instanceof net.minecraft.item.BannerItem ? ItemStack.EMPTY : vista;
         List<ItemStack> prendas = new ArrayList<>(GarmentFeatureRenderer.equipadas(jugador));
         if (!prenda.isEmpty()) {
             prendas.removeIf(s -> s.getItem().getClass() == prenda.getItem().getClass());
@@ -306,6 +308,8 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
         SublimadoraBlockEntity be = handler.be;
         ItemStack prenda = !be.getRemera().isEmpty() ? be.getRemera()
                 : !be.getSalida().isEmpty() ? be.getSalida() : new ItemStack(be.categoria());
+        // Un banner se ve con la foto puesta, a 16x, mientras se ajusta (2026-10-06).
+        if (prenda.getItem() instanceof net.minecraft.item.BannerItem) prenda = be.prendaDeVistaPrevia(true);
         for (int cara = 0; cara < 2; cara++) {
             int sx = FOTO_POS[cara][0], sy = FOTO_POS[cara][1];
             float cx = this.x + sx + 8, cy = this.y + sy + 8;
