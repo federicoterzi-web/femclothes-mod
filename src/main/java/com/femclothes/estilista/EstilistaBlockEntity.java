@@ -161,6 +161,25 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         return c == null ? 0 : c.size();
     }
 
+    /** Qué lleva un diseño, para los avisos y el panel (2026-10-06: "decia 0 straps 0 apliques" aunque tuviera un acabado). */
+    public static Text resumen(ItemStack d) {
+        net.minecraft.text.MutableText t = Text.translatable("femclothes.estilista.resumen_base", apliquesDe(d), correasDe(d));
+        net.minecraft.util.Identifier trim = d.get(com.femclothes.item.FemclothesComponents.ACABADO_TRIM);
+        if (trim != null) {
+            t.append(", ").append(Text.translatable("femclothes.acabado.tooltip", Text.translatable(
+                    "femclothes.efecto." + com.femclothes.render.EfectoTrim.tipoDe(trim).name().toLowerCase())));
+        }
+        com.femclothes.item.TexturaTela tx = d.get(com.femclothes.item.FemclothesComponents.TEXTURA_TELA);
+        if (tx != null && tx != com.femclothes.item.TexturaTela.LISA) {
+            t.append(", ").append(Text.translatable("femclothes.estilado.textura.actual", Text.translatable(tx.traduccion())));
+        }
+        if (d.get(com.femclothes.item.FemclothesComponents.COLORES_SOMBRERO) != null
+                || d.get(com.femclothes.item.FemclothesComponents.COLORES_BANDA) != null) {
+            t.append(", ").append(Text.translatable("femclothes.estilista.resumen_colores"));
+        }
+        return t;
+    }
+
     public static int apliquesDe(ItemStack s) { return cuenta(s, com.femclothes.item.FemclothesComponents.APLIQUES); }
     public static int correasDe(ItemStack s) { return cuenta(s, com.femclothes.item.FemclothesComponents.CORREAS); }
 
@@ -333,7 +352,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
             estado = Estado.LISTO;
         }
         sincronizar();
-        jugador.sendMessage(Text.translatable("femclothes.estilista.fijado", apliquesDe(proto), correasDe(proto)), true);
+        jugador.sendMessage(Text.translatable("femclothes.estilista.fijado", resumen(proto)), true);
         return true;
     }
 

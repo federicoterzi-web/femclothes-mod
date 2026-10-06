@@ -187,13 +187,13 @@
   "femclothes.estilista.borrar": "Borrar",
   "femclothes.estilista.muestra_vacia": "La prenda no lleva apliques, correas ni colores para fijar.",
   "femclothes.estilista.sin_lugar": "La máquina ya guarda demasiados diseños.",
-  "femclothes.estilista.fijado": "Diseño fijado: %s apliques, %s correas.",
+  "femclothes.estilista.fijado": "Diseño fijado: %s.",
   "femclothes.estilista.borrado": "Diseño borrado.",
   "femclothes.estilista.sin_diseno": "No hay diseño para este tipo de prenda.",
   "femclothes.estilista.falta": "Falta: %s",
   "femclothes.estilista.info_vacia": "Diseños guardados: %s",
   "femclothes.estilista.info_sin_diseno": "Sin diseño para este tipo",
-  "femclothes.estilista.info_diseno": "Diseño: %s apliques, %s correas",
+  "femclothes.estilista.info_diseno": "Diseño: %s",
   "femclothes.estilista.info_falta": "Falta %s × %s",
   "femclothes.estilista.tooltip.aplicar": "Aplicar el diseño de su tipo a la prenda de la entrada (hilo: 4 apliques por ítem, cuero: 2 correas por ítem)",
   "femclothes.estilista.tooltip.fijar": "Fijar la prenda de muestra (la del editor) como diseño de su tipo",
@@ -943,5 +943,7 @@
   "femclothes.efecto.destello": "Destellos",
   "femclothes.efecto.metal": "Brillo metálico",
   "femclothes.efecto.rayo": "Chispas",
-  "femclothes.acabado.tooltip": "Acabado: %s"
+  "femclothes.acabado.tooltip": "Acabado: %s",
+  "femclothes.estilista.resumen_base": "%s apliques, %s correas",
+  "femclothes.estilista.resumen_colores": "colores"
 }

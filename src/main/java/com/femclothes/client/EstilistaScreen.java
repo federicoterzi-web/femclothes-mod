@@ -97,7 +97,7 @@ public class EstilistaScreen extends EstiladoScreen {
         } else {
             ItemStack d = be.diseno(ref);
             info = d == null ? Text.translatable("femclothes.estilista.info_sin_diseno")
-                    : Text.translatable("femclothes.estilista.info_diseno", EstilistaBlockEntity.apliquesDe(d), EstilistaBlockEntity.correasDe(d));
+                    : Text.translatable("femclothes.estilista.info_diseno", EstilistaBlockEntity.resumen(d));
         }
         int y = py + 74;
         for (var linea : textRenderer.wrapLines(info, pw - 12)) { c.drawText(textRenderer, linea, px + 6, y, EstiloPergamino.TEXTO, false); y += 10; }
