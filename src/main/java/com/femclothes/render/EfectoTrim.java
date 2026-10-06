@@ -62,10 +62,17 @@ public final class EfectoTrim {
         };
     }
 
-    /** Cuántos cuadros tiene el bucle, su duración y el lado de cada uno. */
-    private static final int CUADROS = 8, PERIODO_MS = 3200, LADO = 256;
+    /** Cuántos cuadros tiene el bucle, su duración, el lado en que se calcula el efecto y cada cuánto se genera un cuadro. */
+    private static final int CUADROS = 8, PERIODO_MS = 2400, LADO = 256, ESPERA_MS = 20;
 
-    /** Lo que se dibuja con el acabado de {@code prenda}: el proveedor de siempre si no lleva ninguno. */
+    /**
+     * Lo que se dibuja con el acabado de {@code prenda}: el proveedor de siempre si no lleva ninguno.
+     *
+     * <p>2026-10-06, "se ve el tooltip pero no el efecto": la segunda capa emisiva (vértices anotados y repetidos
+     * después) no llegaba a verse en el mundo aunque sí en la vista previa. Ahora el efecto se mezcla EN la textura de
+     * la tela (un cuadro por vez, con la silueta y el dibujo de la tela de verdad) y la prenda se dibuja una sola vez,
+     * con esa textura y a máxima luz: usa el mismo camino que la tela sin acabado, que sí se ve en el mundo.
+     */
     public static VertexConsumerProvider envolver(@Nullable ItemStack prenda, VertexConsumerProvider real) {
         if (prenda == null) return real;
         Identifier patron = prenda.get(FemclothesComponents.ACABADO_TRIM);
@@ -83,119 +90,64 @@ public final class EfectoTrim {
 
         @Override
         public VertexConsumer getBuffer(RenderLayer capa) {
-            VertexConsumer normal = real.getBuffer(capa);
             Identifier base = ClothingTextureCache.ultimaTextura;
             ClothingTextureCache.ultimaTextura = null;   // vale para este pedido solamente
-            if (base == null) return normal;
-            // No se piden dos buffers a la vez: el proveedor inmediato cierra el anterior al cambiar de capa
-            // ("Not building!"). Se anotan los vértices y la capa de efecto se dibuja después, con volcarTodo().
-            Registro r = new Registro(normal, real, tipo, base);
-            REGISTROS.add(r);
-            return r;
+            if (base == null) return real.getBuffer(capa);
+            Identifier cuadro = cuadroActual(tipo, base);
+            if (cuadro == null) return real.getBuffer(capa);   // todavía no hay ninguno: se ve la tela sola
+            RenderLayer nueva = ClothingTextureCache.esTranslucida(base)
+                    ? RenderLayer.getEntityTranslucent(cuadro)
+                    : RenderLayer.getArmorCutoutNoCull(cuadro);
+            return new Brillante(real.getBuffer(nueva));
         }
     }
 
-    private static final java.util.List<Registro> REGISTROS = new java.util.ArrayList<>();
+    /** Todo igual, pero con la luz al máximo: el acabado brilla por sí solo. */
+    private static final class Brillante implements VertexConsumer {
+        private final VertexConsumer vc;
 
-    /** Dibuja las capas de efecto de todo lo anotado hasta ahora (cada pieza terminada, y después de las translúcidas). */
-    public static void volcarTodo() {
-        if (REGISTROS.isEmpty()) return;
-        java.util.List<Registro> lista = new java.util.ArrayList<>(REGISTROS);
-        REGISTROS.clear();
-        for (Registro r : lista) r.volcar();
-    }
+        Brillante(VertexConsumer vc) { this.vc = vc; }
 
-    /** Deja pasar todo al buffer normal y se acuerda de cada vértice para repetirlo en la capa de efecto. */
-    private static final class Registro implements VertexConsumer {
-        private final VertexConsumer normal;
-        private final VertexConsumerProvider real;
-        private final Tipo tipo;
-        private final Identifier base;
-        private float[] datos = new float[12 * 64];   // por vértice: x y z u v ou ov lu lv nx ny nz
-        private int n = 0;
-        private float x, y, z, u, v, nx, ny, nz;
-        private int ou, ov, lu, lv;
-
-        Registro(VertexConsumer normal, VertexConsumerProvider real, Tipo tipo, Identifier base) {
-            this.normal = normal;
-            this.real = real;
-            this.tipo = tipo;
-            this.base = base;
-        }
-
-        @Override public VertexConsumer vertex(float x, float y, float z) { normal.vertex(x, y, z); this.x = x; this.y = y; this.z = z; return this; }
-        @Override public VertexConsumer color(int r, int g, int b, int a) { normal.color(r, g, b, a); return this; }
-        @Override public VertexConsumer texture(float u, float v) { normal.texture(u, v); this.u = u; this.v = v; return this; }
-        @Override public VertexConsumer overlay(int u, int v) { normal.overlay(u, v); ou = u; ov = v; return this; }
-        @Override public VertexConsumer light(int u, int v) { normal.light(u, v); lu = u; lv = v; return this; }
-
-        @Override
-        public VertexConsumer normal(float nx, float ny, float nz) {
-            normal.normal(nx, ny, nz);
-            if ((n + 1) * 12 > datos.length) datos = java.util.Arrays.copyOf(datos, datos.length * 2);
-            int o = n * 12;
-            datos[o] = x; datos[o + 1] = y; datos[o + 2] = z; datos[o + 3] = u; datos[o + 4] = v;
-            datos[o + 5] = ou; datos[o + 6] = ov; datos[o + 7] = lu; datos[o + 8] = lv;
-            datos[o + 9] = nx; datos[o + 10] = ny; datos[o + 11] = nz;
-            n++;
-            return this;
-        }
-
-        void volcar() {
-            if (n == 0) return;
-            Cuadros c = cuadros(tipo, base);
-            if (c == null || c.hechos == 0) return;
-            float fase = (System.currentTimeMillis() % PERIODO_MS) / (float) PERIODO_MS * c.hechos;
-            int a = Math.min((int) fase, c.hechos - 1);
-            int b = (a + 1) % c.hechos;
-            float t = fase - (int) fase;
-            repetir(real.getBuffer(RenderLayer.getEntityTranslucentEmissive(c.ids[a])), 1f - t);
-            if (b != a) repetir(real.getBuffer(RenderLayer.getEntityTranslucentEmissive(c.ids[b])), t);
-        }
-
-        private void repetir(VertexConsumer vc, float peso) {
-            int alfa = Math.round(255 * peso);
-            if (alfa <= 0) return;
-            for (int i = 0; i < n; i++) {
-                int o = i * 12;
-                vc.vertex(datos[o], datos[o + 1], datos[o + 2]).color(255, 255, 255, alfa).texture(datos[o + 3], datos[o + 4])
-                        .overlay((int) datos[o + 5], (int) datos[o + 6]).light((int) datos[o + 7], (int) datos[o + 8])
-                        .normal(datos[o + 9], datos[o + 10], datos[o + 11]);
-            }
-        }
+        @Override public VertexConsumer vertex(float x, float y, float z) { vc.vertex(x, y, z); return this; }
+        @Override public VertexConsumer color(int r, int g, int b, int a) { vc.color(r, g, b, a); return this; }
+        @Override public VertexConsumer texture(float u, float v) { vc.texture(u, v); return this; }
+        @Override public VertexConsumer overlay(int u, int v) { vc.overlay(u, v); return this; }
+        @Override public VertexConsumer light(int u, int v) { vc.light(0xF0, 0xF0); return this; }
+        @Override public VertexConsumer normal(float x, float y, float z) { vc.normal(x, y, z); return this; }
     }
 
     // ── los cuadros de cada tela ─────────────────────────────────────────────
 
     private static final class Cuadros {
+        NativeImage base;                        // la tela tal cual; se suelta cuando están todos los cuadros
         final Tipo tipo;
-        final byte[] mascara;                    // LADO*LADO: 1 = es tela
         final Identifier[] ids = new Identifier[CUADROS];
-        final NativeImageBackedTexture[] texturas = new NativeImageBackedTexture[CUADROS];
         int hechos = 0;
 
-        Cuadros(Tipo tipo, byte[] mascara) { this.tipo = tipo; this.mascara = mascara; }
+        Cuadros(Tipo tipo, NativeImage base) { this.tipo = tipo; this.base = base; }
     }
 
-    private static final int MAXIMO_EN_CACHE = 8;
+    private static final int MAXIMO_EN_CACHE = 4;
     private static final Map<String, Cuadros> CACHE = new LinkedHashMap<>(16, 0.75f, true);
     private static final Map<String, Long> REINTENTO = new LinkedHashMap<>();
     private static int numero = 0;
+    private static long ultimaGeneracion = 0;
 
+    /** El cuadro del efecto que toca ahora (por el reloj real) sobre esa tela, o null si todavía no hay ninguno. */
     @Nullable
-    private static Cuadros cuadros(Tipo tipo, Identifier base) {
+    private static Identifier cuadroActual(Tipo tipo, Identifier base) {
         String clave = tipo.name() + "|" + base;
+        long ahora = System.currentTimeMillis();
         Cuadros c = CACHE.get(clave);
         if (c == null) {
-            long ahora = System.currentTimeMillis();
             Long luego = REINTENTO.get(clave);
             if (luego != null && ahora < luego) return null;
-            byte[] m = mascaraDe(base);
-            if (m == null) {
+            NativeImage img = EstampaTextures.leerTextura(base);
+            if (img == null) {
                 REINTENTO.put(clave, ahora + 500);
                 return null;
             }
-            c = new Cuadros(tipo, m);
+            c = new Cuadros(tipo, img);
             CACHE.put(clave, c);
             if (CACHE.size() > MAXIMO_EN_CACHE) {
                 var it = CACHE.entrySet().iterator();
@@ -204,58 +156,52 @@ public final class EfectoTrim {
                 liberar(viejo);
             }
         }
-        if (c.hechos < CUADROS) generarSiguiente(c);   // de a uno por dibujo
-        return c;
+        if (c.hechos < CUADROS && ahora - ultimaGeneracion >= ESPERA_MS) {   // de a uno por vez
+            ultimaGeneracion = ahora;
+            generarSiguiente(c);
+        }
+        if (c.hechos == 0) return null;
+        int a = (int) ((ahora % PERIODO_MS) / (float) PERIODO_MS * CUADROS);
+        return c.ids[Math.min(a, c.hechos - 1)];
     }
 
     private static void liberar(Cuadros c) {
         var tm = MinecraftClient.getInstance().getTextureManager();
         for (int i = 0; i < c.hechos; i++) tm.destroyTexture(c.ids[i]);
+        if (c.base != null) { c.base.close(); c.base = null; }
     }
 
-    /** Qué texeles de la tela lo son (alfa > 0), a {@link #LADO}. Null si la textura todavía no se puede leer. */
-    @Nullable
-    private static byte[] mascaraDe(Identifier base) {
-        NativeImage img = EstampaTextures.leerTextura(base);
-        if (img == null) return null;
-        try {
-            byte[] m = new byte[LADO * LADO];
-            int w = img.getWidth(), h = img.getHeight();
-            for (int y = 0; y < LADO; y++) {
-                for (int x = 0; x < LADO; x++) {
-                    // El bloque de texeles que cubre este: con que uno sea tela, lo es.
-                    int x0 = x * w / LADO, x1 = Math.max(x0 + 1, (x + 1) * w / LADO);
-                    int y0 = y * h / LADO, y1 = Math.max(y0 + 1, (y + 1) * h / LADO);
-                    boolean tela = false;
-                    for (int yy = y0; yy < y1 && !tela; yy++) {
-                        for (int xx = x0; xx < x1; xx++) {
-                            if (((img.getColor(Math.min(xx, w - 1), Math.min(yy, h - 1)) >>> 24) & 0xFF) > 8) { tela = true; break; }
-                        }
-                    }
-                    if (tela) m[y * LADO + x] = 1;
-                }
-            }
-            return m;
-        } finally {
-            img.close();
-        }
-    }
-
+    /** La tela con el efecto del cuadro {@code c.hechos} mezclado encima (solo donde hay tela). */
     private static void generarSiguiente(Cuadros c) {
         int i = c.hechos;
         float t = i / (float) CUADROS;
-        NativeImage img = new NativeImage(LADO, LADO, true);
+        int[] efecto = new int[LADO * LADO];
         for (int y = 0; y < LADO; y++) {
-            for (int x = 0; x < LADO; x++) {
-                int px = c.mascara[y * LADO + x] == 0 ? 0 : pixel(c.tipo, (x + 0.5f) / LADO, (y + 0.5f) / LADO, t, i);
+            for (int x = 0; x < LADO; x++) efecto[y * LADO + x] = pixel(c.tipo, (x + 0.5f) / LADO, (y + 0.5f) / LADO, t, i);
+        }
+        int w = c.base.getWidth(), h = c.base.getHeight();
+        NativeImage img = new NativeImage(w, h, true);
+        for (int y = 0; y < h; y++) {
+            int fy = Math.min(LADO - 1, y * LADO / h);
+            for (int x = 0; x < w; x++) {
+                int px = c.base.getColor(x, y);
+                int alfa = px >>> 24;
+                if (alfa > 0) {
+                    int e = efecto[fy * LADO + Math.min(LADO - 1, x * LADO / w)];
+                    int ea = e >>> 24;
+                    int r = ((px & 0xFF) * (255 - ea) + (e & 0xFF) * ea) / 255;
+                    int g = (((px >> 8) & 0xFF) * (255 - ea) + ((e >> 8) & 0xFF) * ea) / 255;
+                    int b = (((px >> 16) & 0xFF) * (255 - ea) + ((e >> 16) & 0xFF) * ea) / 255;
+                    px = (alfa << 24) | (b << 16) | (g << 8) | r;
+                }
                 img.setColor(x, y, px);
             }
         }
         NativeImageBackedTexture tex = new NativeImageBackedTexture(img);
-        c.texturas[i] = tex;
         c.ids[i] = MinecraftClient.getInstance().getTextureManager()
                 .registerDynamicTexture(Femclothes.MOD_ID + "_trim_" + (numero++), tex);
         c.hechos = i + 1;
+        if (c.hechos == CUADROS && c.base != null) { c.base.close(); c.base = null; }   // ya no hace falta
     }
 
     // ── los efectos (todos periódicos en u, v y t) ──────────────────────────
