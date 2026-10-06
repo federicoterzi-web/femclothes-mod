@@ -61,6 +61,11 @@ public class EstiladoScreenHandler extends ScreenHandler {
                 @Override public boolean isEnabled() { return false; }
             });
         }
+        // El material del acabado (2026-10-06): al lado de los otros casilleros.
+        addSlot(new Slot(be, EstiladoBlockEntity.SLOT_MATERIAL, X_DERECHA + 4 * 26, Y_SLOTS) {
+            @Override
+            public boolean canInsert(ItemStack stack) { return be.isValid(EstiladoBlockEntity.SLOT_MATERIAL, stack); }
+        });
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 9; j++) {
                 addSlot(new Slot(playerInventory, j + i * 9 + 9, X_DERECHA + j * 18, Y_INVENTARIO + i * 18));

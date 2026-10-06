@@ -62,6 +62,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     private static final java.util.List<net.minecraft.component.ComponentType<?>> COMPONENTES_DE_DISENO = java.util.List.of(
             com.femclothes.item.FemclothesComponents.APLIQUES, com.femclothes.item.FemclothesComponents.CORREAS,
             com.femclothes.item.FemclothesComponents.TEXTURA_TELA, com.femclothes.item.FemclothesComponents.ACABADO_TRIM,
+            com.femclothes.item.FemclothesComponents.ACABADO_MATERIAL,
             com.femclothes.item.FemclothesComponents.COLORES_SOMBRERO, com.femclothes.item.FemclothesComponents.PATRONES_SOMBRERO,
             com.femclothes.item.FemclothesComponents.COLORES_BANDA, com.femclothes.item.FemclothesComponents.PATRONES_BANDA);
 
@@ -168,6 +169,8 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         if (trim != null) {
             t.append(", ").append(Text.translatable("femclothes.acabado.tooltip", Text.translatable(
                     "femclothes.efecto." + com.femclothes.render.EfectoTrim.tipoDe(trim).name().toLowerCase())));
+            net.minecraft.util.Identifier mat = d.get(com.femclothes.item.FemclothesComponents.ACABADO_MATERIAL);
+            if (mat != null) t.append(" · ").append(Text.translatable("trim_material." + mat.getNamespace() + "." + mat.getPath()));
         }
         com.femclothes.item.TexturaTela tx = d.get(com.femclothes.item.FemclothesComponents.TEXTURA_TELA);
         if (tx != null && tx != com.femclothes.item.TexturaTela.LISA) {
@@ -195,6 +198,29 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
                     if (!a.objeto().muestra().isEmpty()) costo.add(a.objeto().muestra().copy());
                 }
             }
+        }
+        return costo;
+    }
+
+    /**
+     * Lo que gasta el acabado de un diseño sobre {@code prenda} (2026-10-06, "el material por separado, lo gastemos"):
+     * el molde de trim del patrón y el material, solo si cambian respecto de lo que la prenda ya lleva. No se devuelven
+     * al reemplazarlos ni al quitarlos (el molde se duplica y el material es un lingote).
+     */
+    private java.util.List<ItemStack> costoAcabado(ItemStack d, ItemStack prenda) {
+        java.util.List<ItemStack> costo = new java.util.ArrayList<>();
+        net.minecraft.util.Identifier patron = d.get(com.femclothes.item.FemclothesComponents.ACABADO_TRIM);
+        if (patron == null || world == null) return costo;
+        net.minecraft.util.Identifier material = d.get(com.femclothes.item.FemclothesComponents.ACABADO_MATERIAL);
+        boolean cambiaPatron = !patron.equals(prenda.get(com.femclothes.item.FemclothesComponents.ACABADO_TRIM));
+        var reg = world.getRegistryManager();
+        if (cambiaPatron) {
+            reg.getOptional(net.minecraft.registry.RegistryKeys.TRIM_PATTERN).flatMap(r -> r.getEntry(patron))
+                    .ifPresent(e -> costo.add(new ItemStack(e.value().templateItem())));
+        }
+        if (material != null && (cambiaPatron || !material.equals(prenda.get(com.femclothes.item.FemclothesComponents.ACABADO_MATERIAL)))) {
+            reg.getOptional(net.minecraft.registry.RegistryKeys.TRIM_MATERIAL).flatMap(r -> r.getEntry(material))
+                    .ifPresent(e -> costo.add(new ItemStack(e.value().ingredient())));
         }
         return costo;
     }
@@ -289,6 +315,9 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         Existencias e = existencias();
         for (ItemStack o : costoDe(prenda)) e.sumar(o);
         for (ItemStack o : costoDe(d)) {
+            if (!e.sacar(o)) return new Plan(Resultado.FALTA, null, hilo, cuero, o);
+        }
+        for (ItemStack o : costoAcabado(d, prenda)) {
             if (!e.sacar(o)) return new Plan(Resultado.FALTA, null, hilo, cuero, o);
         }
         return new Plan(Resultado.OK, e, h, c, ItemStack.EMPTY);

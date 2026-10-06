@@ -31,34 +31,36 @@ public final class EfectoTrim {
 
     private EfectoTrim() {}
 
-    /** Los efectos. Agregar valores nuevos al final. */
+    /**
+     * Un efecto por patrón de trim (2026-10-06, "18"): cada uno de los 18 de vanilla tiene el suyo; los de otros mods
+     * caen en {@link #METAL}. Agregar valores nuevos al final.
+     */
     public enum Tipo {
-        /** Lava en movimiento, brasas: Bastión y Fortaleza. */
-        LAVA,
-        /** Cáusticas del mar: Monumento y Naufragio. */
-        OCEANO,
-        /** Pulsos suaves de sculk y espectros: Ciudad ancestral, Silencio y Mansión. */
-        ESCULK,
-        /** Iridiscencia entre violeta, cian y magenta con estrellas: Ciudad del End y Fortaleza del End. */
-        ENDER,
-        /** Destellos de arena y de selva. */
-        DESTELLO,
-        /** Un barrido de brillo metálico: los demás. */
-        METAL,
-        /** Chispas eléctricas y remolinos: Cámaras de prueba. */
-        RAYO
+        SENTRY, DUNE, COAST, WILD, WARD, EYE, VEX, TIDE, SNOUT, RIB, SPIRE, WAYFINDER, SHAPER, SILENCE, RAISER, HOST,
+        FLOW, BOLT, METAL
     }
 
     /** El efecto de un patrón de trim (por el nombre del patrón; los desconocidos, de otros mods, son metálicos). */
     public static Tipo tipoDe(Identifier patron) {
-        return switch (patron.getPath()) {
-            case "snout", "rib" -> Tipo.LAVA;
-            case "tide", "coast" -> Tipo.OCEANO;
-            case "ward", "silence", "vex" -> Tipo.ESCULK;
-            case "spire", "eye" -> Tipo.ENDER;
-            case "dune", "wild" -> Tipo.DESTELLO;
-            case "bolt", "flow" -> Tipo.RAYO;
-            default -> Tipo.METAL;
+        for (Tipo t : Tipo.values()) if (t.name().equalsIgnoreCase(patron.getPath())) return t;
+        return Tipo.METAL;
+    }
+
+    /** El color base (RGB) de un material de trim de vanilla, o -1 si no se conoce (otro mod). */
+    public static int colorDeMaterial(@Nullable Identifier material) {
+        if (material == null) return -1;
+        return switch (material.getPath()) {
+            case "quartz" -> 0xE3D4C4;
+            case "iron" -> 0xECECEC;
+            case "netherite" -> 0x625859;
+            case "redstone" -> 0x971607;
+            case "copper" -> 0xB4684D;
+            case "gold" -> 0xDEB12D;
+            case "emerald" -> 0x11A036;
+            case "diamond" -> 0x6EECD2;
+            case "lapis" -> 0x416E97;
+            case "amethyst" -> 0x9A5CC6;
+            default -> -1;
         };
     }
 
@@ -76,16 +78,19 @@ public final class EfectoTrim {
     public static VertexConsumerProvider envolver(@Nullable ItemStack prenda, VertexConsumerProvider real) {
         if (prenda == null) return real;
         Identifier patron = prenda.get(FemclothesComponents.ACABADO_TRIM);
-        return patron == null ? real : new Proveedor(real, tipoDe(patron));
+        if (patron == null) return real;
+        return new Proveedor(real, tipoDe(patron), colorDeMaterial(prenda.get(FemclothesComponents.ACABADO_MATERIAL)));
     }
 
     private static final class Proveedor implements VertexConsumerProvider {
         private final VertexConsumerProvider real;
         private final Tipo tipo;
+        private final int material;
 
-        Proveedor(VertexConsumerProvider real, Tipo tipo) {
+        Proveedor(VertexConsumerProvider real, Tipo tipo, int material) {
             this.real = real;
             this.tipo = tipo;
+            this.material = material;
         }
 
         @Override
@@ -93,7 +98,7 @@ public final class EfectoTrim {
             Identifier base = ClothingTextureCache.ultimaTextura;
             ClothingTextureCache.ultimaTextura = null;   // vale para este pedido solamente
             if (base == null) return real.getBuffer(capa);
-            Identifier cuadro = cuadroActual(tipo, base);
+            Identifier cuadro = cuadroActual(tipo, material, base);
             if (cuadro == null) return real.getBuffer(capa);   // todavía no hay ninguno: se ve la tela sola
             RenderLayer nueva = ClothingTextureCache.esTranslucida(base)
                     ? RenderLayer.getEntityTranslucent(cuadro)
@@ -121,10 +126,11 @@ public final class EfectoTrim {
     private static final class Cuadros {
         NativeImage base;                        // la tela tal cual; se suelta cuando están todos los cuadros
         final Tipo tipo;
+        final int[][] paleta;
         final Identifier[] ids = new Identifier[CUADROS];
         int hechos = 0;
 
-        Cuadros(Tipo tipo, NativeImage base) { this.tipo = tipo; this.base = base; }
+        Cuadros(Tipo tipo, int[][] paleta, NativeImage base) { this.tipo = tipo; this.paleta = paleta; this.base = base; }
     }
 
     private static final int MAXIMO_EN_CACHE = 4;
@@ -135,8 +141,8 @@ public final class EfectoTrim {
 
     /** El cuadro del efecto que toca ahora (por el reloj real) sobre esa tela, o null si todavía no hay ninguno. */
     @Nullable
-    private static Identifier cuadroActual(Tipo tipo, Identifier base) {
-        String clave = tipo.name() + "|" + base;
+    private static Identifier cuadroActual(Tipo tipo, int material, Identifier base) {
+        String clave = tipo.name() + "|" + Integer.toHexString(material) + "|" + base;
         long ahora = System.currentTimeMillis();
         Cuadros c = CACHE.get(clave);
         if (c == null) {
@@ -147,7 +153,7 @@ public final class EfectoTrim {
                 REINTENTO.put(clave, ahora + 500);
                 return null;
             }
-            c = new Cuadros(tipo, img);
+            c = new Cuadros(tipo, paletaDe(tipo, material), img);
             CACHE.put(clave, c);
             if (CACHE.size() > MAXIMO_EN_CACHE) {
                 var it = CACHE.entrySet().iterator();
@@ -176,8 +182,11 @@ public final class EfectoTrim {
         int i = c.hechos;
         float t = i / (float) CUADROS;
         int[] efecto = new int[LADO * LADO];
+        float[] o = new float[3];
         for (int y = 0; y < LADO; y++) {
-            for (int x = 0; x < LADO; x++) efecto[y * LADO + x] = pixel(c.tipo, (x + 0.5f) / LADO, (y + 0.5f) / LADO, t, i);
+            for (int x = 0; x < LADO; x++) {
+                efecto[y * LADO + x] = pixel(c.tipo, c.paleta, (x + 0.5f) / LADO, (y + 0.5f) / LADO, t, i, o);
+            }
         }
         int w = c.base.getWidth(), h = c.base.getHeight();
         NativeImage img = new NativeImage(w, h, true);
@@ -204,11 +213,64 @@ public final class EfectoTrim {
         if (c.hechos == CUADROS && c.base != null) { c.base.close(); c.base = null; }   // ya no hace falta
     }
 
+    // ── paletas ───────────────────────────────────────────────────────────────
+
+    /** La rampa de color (oscuro, medio, claro) de cada efecto, en RGB. */
+    private static int[][] paletaDeFabrica(Tipo tipo) {
+        return switch (tipo) {
+            case SENTRY -> rampa(50, 60, 80, 140, 160, 190, 235, 245, 255);
+            case DUNE -> rampa(150, 105, 45, 225, 180, 95, 255, 240, 185);
+            case COAST -> rampa(15, 85, 120, 50, 165, 185, 235, 255, 255);
+            case WILD -> rampa(15, 65, 25, 55, 150, 45, 190, 255, 130);
+            case WARD -> rampa(10, 60, 70, 30, 170, 185, 120, 255, 245);
+            case EYE -> rampa(60, 20, 110, 130, 60, 200, 230, 170, 255);
+            case VEX -> rampa(120, 170, 200, 180, 220, 245, 240, 252, 255);
+            case TIDE -> rampa(5, 40, 90, 20, 110, 170, 120, 215, 235);
+            case SNOUT -> rampa(50, 5, 0, 230, 80, 10, 255, 235, 130);
+            case RIB -> rampa(45, 5, 5, 200, 40, 15, 255, 170, 60);
+            case SPIRE -> rampa(40, 190, 220, 130, 70, 210, 255, 120, 230);   // cian → violeta → magenta: iridiscente
+            case WAYFINDER -> rampa(90, 70, 30, 190, 155, 70, 255, 240, 170);
+            case SHAPER -> rampa(80, 40, 25, 200, 110, 60, 255, 215, 170);
+            case SILENCE -> rampa(3, 8, 16, 15, 45, 60, 120, 230, 240);
+            case RAISER -> rampa(80, 25, 10, 230, 120, 30, 255, 220, 120);
+            case HOST -> rampa(70, 40, 20, 215, 120, 50, 255, 225, 160);
+            case FLOW -> rampa(110, 170, 200, 200, 235, 250, 255, 255, 255);
+            case BOLT -> rampa(170, 90, 50, 110, 210, 190, 255, 255, 255);
+            default -> rampa(120, 130, 150, 220, 230, 245, 255, 255, 255);
+        };
+    }
+
+    private static int[][] rampa(int... v) {
+        return new int[][]{{v[0], v[1], v[2]}, {v[3], v[4], v[5]}, {v[6], v[7], v[8]}};
+    }
+
+    /** Con material (2026-10-06, "el material por separado, opcional"): la rampa sale del color del material. */
+    private static int[][] paletaDe(Tipo tipo, int material) {
+        if (material < 0) return paletaDeFabrica(tipo);
+        int r = (material >> 16) & 0xFF, g = (material >> 8) & 0xFF, b = material & 0xFF;
+        int[][] p = {
+                {Math.round(r * 0.35f), Math.round(g * 0.35f), Math.round(b * 0.35f)},
+                {r, g, b},
+                {Math.round(r + (255 - r) * 0.6f), Math.round(g + (255 - g) * 0.6f), Math.round(b + (255 - b) * 0.6f)}};
+        // La oscuridad del Silencio sigue siendo oscura: solo se tiñe.
+        if (tipo == Tipo.SILENCE) {
+            p[0] = new int[]{3, 6, 12};
+            p[1] = new int[]{Math.round(r * 0.18f), Math.round(g * 0.18f), Math.round(b * 0.18f)};
+        }
+        return p;
+    }
+
     // ── los efectos (todos periódicos en u, v y t) ──────────────────────────
 
     private static final float TAU = (float) (Math.PI * 2);
 
     private static float sen(float x) { return (float) Math.sin(x); }
+
+    private static float frac(float x) { return x - (float) Math.floor(x); }
+
+    private static float lim(float x) { return Math.max(0f, Math.min(1f, x)); }
+
+    private static float suave(float h) { h = lim(h); return h * h * (3 - 2 * h); }
 
     private static float azar(int a, int b) {
         int h = a * 374761393 + b * 668265263;
@@ -217,112 +279,231 @@ public final class EfectoTrim {
         return (h & 0xFFFFFF) / (float) 0x1000000;
     }
 
-    /** ABGR opaco. */
-    private static int rgb(float r, float g, float b) {
-        int ri = Math.max(0, Math.min(255, Math.round(r))), gi = Math.max(0, Math.min(255, Math.round(g))),
-                bi = Math.max(0, Math.min(255, Math.round(b)));
-        return 0xFF000000 | (bi << 16) | (gi << 8) | ri;
+    /** Ruido de valores suave, periódico: {@code n} celdas por vuelta en u y en v. */
+    private static float ruido(float u, float v, int n, int semilla) {
+        float x = frac(u) * n, y = frac(v) * n;
+        int x0 = (int) x, y0 = (int) y;
+        float fx = suave(x - x0), fy = suave(y - y0);
+        int x1 = (x0 + 1) % n, y1 = (y0 + 1) % n;
+        float a = azar(x0 + semilla * 31, y0), b = azar(x1 + semilla * 31, y0),
+                c = azar(x0 + semilla * 31, y1), d = azar(x1 + semilla * 31, y1);
+        return (a * (1 - fx) + b * fx) * (1 - fy) + (c * (1 - fx) + d * fx) * fy;
     }
 
-    private static int hsv(float h, float s, float v) {
-        h = h - (float) Math.floor(h);
-        float r, g, b;
-        float f6 = h * 6f;
-        int sector = (int) f6;
-        float f = f6 - sector, p = v * (1 - s), q = v * (1 - s * f), tt = v * (1 - s * (1 - f));
-        switch (sector % 6) {
-            case 0 -> { r = v; g = tt; b = p; }
-            case 1 -> { r = q; g = v; b = p; }
-            case 2 -> { r = p; g = v; b = tt; }
-            case 3 -> { r = p; g = q; b = v; }
-            case 4 -> { r = tt; g = p; b = v; }
-            default -> { r = v; g = p; b = q; }
+    private static int mezclar(int[] a, int[] b, float k, int canal) {
+        return Math.round(a[canal] + (b[canal] - a[canal]) * k);
+    }
+
+    /** ABGR con alfa: la rampa según {@code h}, aclarada hacia el blanco según {@code brillo}. */
+    private static int color(int[][] p, float h, float brillo, float alfa) {
+        h = lim(h);
+        int[] c = new int[3];
+        for (int k = 0; k < 3; k++) {
+            c[k] = h < 0.5f ? mezclar(p[0], p[1], h * 2f, k) : mezclar(p[1], p[2], (h - 0.5f) * 2f, k);
+            c[k] = Math.round(c[k] + (255 - c[k]) * lim(brillo));
         }
-        return rgb(r * 255, g * 255, b * 255);
+        int ai = Math.max(0, Math.min(255, Math.round(255 * lim(alfa))));
+        return (ai << 24) | (Math.min(255, c[2]) << 16) | (Math.min(255, c[1]) << 8) | Math.min(255, c[0]);
     }
 
-    private static float suave(float h) { return h * h * (3 - 2 * h); }
-
-    /** ABGR con alfa: el efecto es una pintura emisiva con transparencia, no una suma de luz (de día, sumar luz sobre una tela clara no se ve). */
-    private static int rgba(float r, float g, float b, float a) {
-        int ai = Math.max(0, Math.min(255, Math.round(a)));
-        return (ai << 24) | (rgb(r, g, b) & 0x00FFFFFF);
-    }
-
-    private static int pixel(Tipo tipo, float u, float v, float t, int cuadro) {
+    /** Un punto de un cuadro; {@code o} es un arreglo de trabajo ({@code h, alfa, brillo}). */
+    private static int pixel(Tipo tipo, int[][] p, float u, float v, float t, int cuadro, float[] o) {
+        float h = 0f, alfa = 0f, brillo = 0f;
         switch (tipo) {
-            case LAVA: {
-                float a = sen(TAU * (4 * u + 0.35f * sen(TAU * (3 * v + t))));
-                float b = sen(TAU * (5 * v + 0.35f * sen(TAU * (2 * u - t))));
-                float c = sen(TAU * (3 * u + 3 * v + t));
-                float h = suave(Math.max(0f, Math.min(1f, (a + b + c) / 6f + 0.5f)));
-                // Corteza oscura → naranja → amarillo incandescente, casi opaca.
-                if (h < 0.5f) return rgba(70 + 370 * h, 10 + 150 * h, 0, 235);
-                float k = (h - 0.5f) * 2f;
-                return rgba(255, 90 + 140 * k, 20 + 130 * k, 245);
+            case SENTRY -> {   // un barrido de acero frío en diagonal sobre líneas finas de escaneo
+                float banda = Math.max(0f, 1f - Math.abs(frac(u + v - t) - 0.5f) * 8f);
+                float linea = 0.5f + 0.5f * sen(TAU * v * 48);
+                h = banda * banda * 0.8f + 0.18f * linea;
+                alfa = 0.22f + 0.6f * banda;
+                brillo = banda * banda * 0.55f;
             }
-            case OCEANO: {
-                float s1 = sen(TAU * (3 * u + 0.25f * sen(TAU * (2 * v + t))));
-                float s2 = sen(TAU * (3 * v + 0.25f * sen(TAU * (2 * u - t))));
-                float c = 1f - Math.abs(s1 * s2);
-                float vena = c * c * c * c * c;
-                // Agua turquesa translúcida con venas de luz.
-                return rgba(10 + 140 * vena, 90 + 165 * vena, 120 + 135 * vena, 120 + 135 * vena);
+            case DUNE -> {   // ondas de arena empujadas por el viento y granos que centellean
+                float onda = 0.5f + 0.5f * sen(TAU * (4 * v + 2 * ruido(u, v, 4, 3) + t));
+                int cx = (int) (u * 40), cy = (int) (v * 40);
+                float e = azar(cx + 5, cy + 9);
+                float grano = e > 0.9f ? Math.max(0f, sen(TAU * (t + e * 7))) : 0f;
+                h = 0.25f + 0.6f * onda;
+                alfa = 0.5f + 0.15f * onda + 0.3f * grano;
+                brillo = grano * 0.8f;
             }
-            case ESCULK: {
+            case COAST -> {   // olas que suben y rompen en espuma
+                float w = sen(TAU * (3 * v + 0.3f * sen(TAU * 2 * u) - t));
+                float ola = suave(w * 1.3f);
+                float espuma = (float) Math.pow(Math.max(0f, w), 6);
+                h = 0.3f + 0.5f * ola;
+                alfa = 0.42f + 0.4f * ola;
+                brillo = espuma;
+            }
+            case WILD -> {   // venas de hoja y motas de luz de selva
+                float x = 3 * u + 1.2f * sen(TAU * (2 * v + t));
+                float vena = (float) Math.pow(1f - Math.abs(sen(TAU * x)), 6);
+                int cx = (int) (u * 30), cy = (int) (v * 30);
+                float e = azar(cx + 2, cy + 6);
+                float mota = e > 0.92f ? Math.max(0f, sen(TAU * (t + e * 5))) : 0f;
+                h = 0.3f + 0.7f * vena;
+                alfa = 0.38f + 0.5f * vena;
+                brillo = mota * 0.8f;
+            }
+            case WARD -> {   // pulsos lentos de sculk: un latido de manchas cian
                 float n = 6f;
                 int cx = (int) (u * n), cy = (int) (v * n);
                 float fase = azar(cx, cy), fu = u * n - cx - 0.5f, fv = v * n - cy - 0.5f;
                 float blob = Math.max(0f, 1f - (float) Math.sqrt(fu * fu + fv * fv) * 2.2f);
                 float pulso = 0.5f + 0.5f * sen(TAU * (t + fase));
                 float i = 0.10f + blob * blob * pulso * 1.3f;
-                return rgba(40, 235, 245, 255 * Math.min(1f, i));
+                h = lim(i);
+                alfa = i;
+                brillo = blob * blob * pulso * 0.3f;
             }
-            case ENDER: {
-                float tono = 0.62f + 0.2f * sen(TAU * (u + v + t));   // entre cian, violeta y magenta
-                int fondo = hsv(tono, 0.70f, 0.85f);
-                float n = 22f;
+            case EYE -> {   // ojos del End que parpadean sobre una bruma violeta
+                int n = 3;
+                int cx = (int) (u * n), cy = (int) (v * n);
+                float fu = u * n - cx - 0.5f, fv = v * n - cy - 0.5f;
+                float ciclo = frac(t + azar(cx, cy));
+                float apert = ciclo < 0.82f ? 1f : Math.abs(ciclo - 0.91f) / 0.09f;
+                float ex = fu / 0.44f, ey = fv / (0.06f + 0.2f * apert);
+                float ojo = ex * ex + ey * ey;
+                if (ojo < 1f) {
+                    float ir = (float) Math.sqrt((fu / 0.17f) * (fu / 0.17f) + (fv / (0.02f + 0.15f * apert)) * (fv / (0.02f + 0.15f * apert)));
+                    if (ir < 0.45f) { h = 0f; alfa = 1f; }
+                    else if (ir < 1f) { h = 0.55f; alfa = 0.95f; brillo = 0.15f; }
+                    else { h = 0.92f; alfa = 0.9f; brillo = 0.4f; }
+                } else {
+                    h = 0.35f + 0.1f * sen(TAU * (u + v + t));
+                    alfa = 0.32f;
+                }
+            }
+            case VEX -> {   // niebla espectral que sube
+                float n1 = ruido(u, v - t, 6, 5), n2 = ruido(u, v + t, 12, 8);
+                float n = lim(n1 * 0.7f + n2 * 0.3f);
+                h = n;
+                alfa = 0.9f * n * n;
+                brillo = n * n * 0.5f;
+            }
+            case TIDE -> {   // cáusticas profundas, de ondas largas
+                float s1 = sen(TAU * (2 * u + 0.25f * sen(TAU * (2 * v + t))));
+                float s2 = sen(TAU * (2 * v + 0.25f * sen(TAU * (2 * u - t))));
+                float vena = (float) Math.pow(1f - Math.abs(s1 * s2), 5);
+                h = 0.15f + 0.85f * vena;
+                alfa = 0.5f + 0.4f * vena;
+                brillo = vena * vena * 0.3f;
+            }
+            case SNOUT -> {   // magma: corteza oscura, naranja e incandescente
+                float a = sen(TAU * (4 * u + 0.35f * sen(TAU * (3 * v + t))));
+                float b = sen(TAU * (5 * v + 0.35f * sen(TAU * (2 * u - t))));
+                float c = sen(TAU * (3 * u + 3 * v + t));
+                h = suave((a + b + c) / 6f + 0.5f);
+                alfa = h < 0.5f ? 0.92f : 0.96f;
+            }
+            case RIB -> {   // brasas sueltas que se encienden y se apagan sobre una corteza quemada
+                int n = 18;
+                int cx = (int) (u * n), cy = (int) (v * n);
+                float e = azar(cx + 11, cy + 4);
+                float brasa = 0f;
+                if (e > 0.68f) {
+                    float fu = u * n - cx - 0.5f, fv = v * n - cy - 0.5f;
+                    float vida = frac(t + e * 7);
+                    float forma = Math.max(0f, 1f - (float) Math.sqrt(fu * fu + fv * fv) * 2.4f);
+                    brasa = forma * (1f - vida) * (1f - vida);
+                }
+                h = 0.12f + 0.88f * brasa;
+                alfa = 0.3f + 0.7f * brasa;
+                brillo = brasa * 0.5f;
+            }
+            case SPIRE -> {   // iridiscencia cian → violeta → magenta, con estrellas
+                h = 0.5f + 0.5f * sen(TAU * (u + v + t));
+                int n = 22;
                 int cx = (int) (u * n), cy = (int) (v * n);
                 float e = azar(cx, cy);
                 float estrella = 0f;
                 if (e > 0.84f) {
                     float fu = u * n - cx - 0.5f, fv = v * n - cy - 0.5f;
-                    float brillo = 0.5f + 0.5f * sen(TAU * (t * 2 + azar(cy, cx)));
-                    estrella = Math.max(0f, 1f - (float) Math.sqrt(fu * fu + fv * fv) * 5f) * brillo;
+                    float br = 0.5f + 0.5f * sen(TAU * (t * 2 + azar(cy, cx)));
+                    estrella = Math.max(0f, 1f - (float) Math.sqrt(fu * fu + fv * fv) * 5f) * br;
                 }
-                float r = (fondo & 0xFF) + (255 - (fondo & 0xFF)) * estrella;
-                float g = ((fondo >> 8) & 0xFF) + (255 - ((fondo >> 8) & 0xFF)) * estrella;
-                float b = ((fondo >> 16) & 0xFF) + (255 - ((fondo >> 16) & 0xFF)) * estrella;
-                return rgba(r, g, b, 150 + 105 * estrella);
+                alfa = 0.58f + 0.4f * estrella;
+                brillo = estrella;
             }
-            case DESTELLO: {
-                float n = 34f;
+            case WAYFINDER -> {   // un haz que gira como la aguja de una brújula
+                float dx = u - 0.5f, dy = v - 0.5f;
+                float ang = (float) Math.atan2(dy, dx) / TAU;
+                float cola = frac(ang - t);
+                float haz = (float) Math.pow(1f - cola, 4);
+                float anillo = 0.5f + 0.5f * sen(TAU * 8 * (float) Math.sqrt(dx * dx + dy * dy));
+                h = haz * 0.9f + 0.1f * anillo;
+                alfa = 0.2f + 0.7f * haz;
+                brillo = haz * haz * haz * 0.7f;
+            }
+            case SHAPER -> {   // líneas de cantera con un pulso de luz que las recorre
+                float fu = frac(u * 4), fv = frac(v * 4);
+                float d = Math.min(Math.min(fu, 1f - fu), Math.min(fv, 1f - fv));
+                float linea = Math.max(0f, 1f - d / 0.05f);
+                float pulso = Math.max(0f, 1f - frac(2 * u + 2 * v - t) * 3f);
+                h = 0.1f + linea * (0.3f + 0.7f * pulso);
+                alfa = 0.1f + 0.8f * linea;
+                brillo = linea * pulso * 0.7f;
+            }
+            case SILENCE -> {   // una oscuridad que absorbe la luz, con puntitos pálidos
+                float niebla = ruido(u, v, 5, 12);
+                alfa = 0.34f + 0.16f * sen(TAU * t) + 0.25f * niebla;
+                int n = 30;
                 int cx = (int) (u * n), cy = (int) (v * n);
-                float e = azar(cx + 7, cy + 3);
-                float suave = 0.10f + 0.08f * sen(TAU * (u * 2 + v + t));
-                float chispa = 0f;
-                if (e > 0.88f) {
+                float e = azar(cx + 3, cy + 17);
+                if (e > 0.94f) {
                     float fu = u * n - cx - 0.5f, fv = v * n - cy - 0.5f;
-                    float brillo = 0.5f + 0.5f * sen(TAU * (t + e * 13));
-                    chispa = Math.max(0f, 1f - (float) Math.sqrt(fu * fu + fv * fv) * 3.2f) * brillo;
+                    float punto = Math.max(0f, 1f - (float) Math.sqrt(fu * fu + fv * fv) * 3f);
+                    float pulso = 0.5f + 0.5f * sen(TAU * (t + e * 9));
+                    h = punto * pulso;
+                    alfa = Math.max(alfa, punto * (0.5f + 0.5f * pulso));
+                    brillo = punto * pulso;
                 }
-                return rgba(255, 215 + 40 * chispa, 120 + 135 * chispa, 255 * Math.min(1f, suave * 1.4f + chispa));
             }
-            case RAYO: {
-                float l = 1f - Math.abs(sen(TAU * (4 * u + 1.5f * sen(TAU * 3 * v))));
-                float fino = (float) Math.pow(l, 24);
-                float parpadeo = cuadro % 3 == 0 ? 1f : 0.2f;
-                return rgba(170, 205, 255, 30 + 225 * fino * parpadeo);
+            case RAISER -> {   // calor que asciende en columnas
+                float col = 0.5f + 0.5f * sen(TAU * (6 * u + 1.5f * ruido(u, v, 4, 9)));
+                float pluma = Math.max(0f, 1f - frac(3 * v + t) * 1.5f);
+                h = 0.25f * col + 0.75f * pluma * col;
+                alfa = 0.22f + 0.6f * pluma * col;
+                brillo = pluma * col * 0.5f;
             }
-            default: {   // METAL: un barrido de brillo en diagonal
-                float d = u * 0.7f + v * 0.7f - t;
-                d -= (float) Math.floor(d);
-                float banda = Math.max(0f, 1f - Math.abs(d - 0.5f) * 9f);
-                float d2 = u * 0.7f + v * 0.7f - t + 0.5f;
-                d2 -= (float) Math.floor(d2);
-                float debil = Math.max(0f, 1f - Math.abs(d2 - 0.5f) * 14f) * 0.35f;
-                return rgba(235, 240, 255, 255 * Math.min(1f, banda * banda * 0.9f + debil));
+            case HOST -> {   // runas de vasija que se encienden de a una
+                int n = 7;
+                int cx = (int) (u * n), cy = (int) (v * n);
+                float fu = u * n - cx - 0.5f, fv = v * n - cy - 0.5f;
+                float e = azar(cx, cy);
+                float pulso = (float) Math.pow(Math.max(0f, sen(TAU * (t + e))), 8);
+                boolean runa = (Math.abs(fu) < 0.07f && Math.abs(fv) < 0.3f) || (Math.abs(fv) < 0.07f && Math.abs(fu) < 0.3f)
+                        || (Math.abs(fu) < 0.07f && Math.abs(fv - 0.38f) < 0.07f);
+                if (runa) { h = 0.5f + 0.5f * pulso; alfa = 0.35f + 0.65f * pulso; brillo = pulso * 0.8f; }
+                else { h = 0.1f; alfa = 0.06f; }
+            }
+            case FLOW -> {   // remolinos de viento que giran
+                int n = 3;
+                int cx = (int) (u * n), cy = (int) (v * n);
+                float fu = u * n - cx - 0.5f, fv = v * n - cy - 0.5f;
+                float r = (float) Math.sqrt(fu * fu + fv * fv);
+                float ang = (float) Math.atan2(fv, fu) / TAU;
+                float espiral = 0.5f + 0.5f * sen(TAU * (2 * ang + 4 * r - t));
+                float borde = lim(1f - r * 2f);
+                h = espiral;
+                alfa = (0.18f + 0.62f * borde) * (0.4f + 0.6f * espiral);
+                brillo = (float) Math.pow(espiral, 6) * borde;
+            }
+            case BOLT -> {   // arcos eléctricos que parpadean
+                float x = 3 * v + 4.8f * (ruido(u, v, 10, 4) - 0.5f);
+                float fino = (float) Math.pow(1f - Math.abs(sen(TAU * x)), 20);
+                float parpadeo = cuadro % 3 == 0 ? 1f : 0.15f;
+                h = fino;
+                alfa = 0.05f + 0.9f * fino * parpadeo;
+                brillo = fino * parpadeo * 0.8f;
+            }
+            default -> {   // METAL: un barrido de brillo en diagonal
+                float banda = Math.max(0f, 1f - Math.abs(frac(u * 0.7f + v * 0.7f - t) - 0.5f) * 9f);
+                float debil = Math.max(0f, 1f - Math.abs(frac(u * 0.7f + v * 0.7f - t + 0.5f) - 0.5f) * 14f) * 0.35f;
+                h = banda * banda * 0.9f + debil;
+                alfa = h;
+                brillo = banda * banda * 0.5f;
             }
         }
+        return color(p, h, brillo, alfa);
     }
 }

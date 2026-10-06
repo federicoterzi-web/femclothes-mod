@@ -89,7 +89,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     private ButtonWidget btnCorreaLargo, btnCorreaLargoMenos, btnCorreaLargoMas;
     @Nullable
     private Toque correaInicio = null;
-    private ButtonWidget btnModoCorrea, btnCorreaModo, btnCorreaAncho, btnCorreaQuitar, btnCorreaColor;
+    private ButtonWidget btnCorreaModo, btnCorreaAncho, btnCorreaQuitar, btnCorreaColor;
     /** La lista de correas de la prenda (una por correa) y cuál está elegida (-1 = ninguna). */
     private final ButtonWidget[] btnCorreaLista = new ButtonWidget[com.femclothes.correa.Correa.MAXIMO_POR_PRENDA];
     private int correaSel = -1;
@@ -97,7 +97,13 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     private float[] correaInicioPantalla = null;
     /** El color del retazo (0..2) con el que pinta el click en la vista (2026-10-05): el último botón ■ apretado. */
     private int colorActivo = 0;
-    private ButtonWidget btnModoColor, btnColorEntero;
+    private ButtonWidget btnColorEntero;
+    /**
+     * Las tres pestañas (2026-10-06, "conceptualmente son tres cosas aplique correa acabado"): 0 = Aplique, 1 = Correa,
+     * 2 = Acabado (textura de tela, trim con material y, en el sombrero y las bandas, el color y dibujo de cada zona).
+     */
+    private int pestana = 0;
+    private final ButtonWidget[] btnPestana = new ButtonWidget[3];
     private final ButtonWidget[][] btnColorZona = new ButtonWidget[3][3];
     private final ButtonWidget[] btnPatronZona = new ButtonWidget[3];
     /** Los controles de apliques que se esconden mientras se colorea. */
@@ -151,15 +157,20 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         boton(X_DER + 131, 108, 31, Text.literal("⟳"), "femclothes.estilado.tooltip.vista",
                 () -> anguloVista = Math.floorMod(Math.round(anguloVista) + 45, 360));
         // Textura de tela (2026-10-01, relieve): con un Molde de textura en el slot del molde.
-        btnTextura = boton(X_DER, 132, 96, Text.empty(), "femclothes.estilado.tooltip.textura",
+        btnTextura = boton(X_DER, 66, 162, Text.empty(), "femclothes.estilado.tooltip.textura",
                 () -> clickBoton(EstiladoBlockEntity.BTN_TEXTURA));
-        grupoAplique.add(btnTextura);
-        // Colorear el sombrero (2026-10-05): modo, 3 filas (ala, cono, cinta) x 3 colores del retazo, y retazo entero.
-        btnModoColor = boton(X_DER, 150, 96, Text.empty(), "femclothes.estilado.tooltip.modo_color",
-                () -> { modoColor = !modoColor; modoCorrea = false; correaInicio = null; });
+        // Pestañas (2026-10-06): abajo de los controles, arriba del título del inventario.
+        for (int i = 0; i < btnPestana.length; i++) {
+            final int cual = i;
+            btnPestana[i] = new EstiloPergamino.BotonPergamino(this.x + X_DER + i * 54, this.y + 147, 54, 13, Text.empty(), b -> {
+                pestana = cual;
+                correaInicio = null;
+            });
+            btnPestana[i].setTooltip(Tooltip.of(Text.translatable("femclothes.estilado.tooltip.pestana." + i)));
+            this.addDrawableChild(btnPestana[i]);
+        }
+        // Colorear el sombrero (2026-10-05): 3 filas (ala, cono, cinta) x 3 colores del retazo, y retazo entero.
         // Correas libres (2026-10-05): modo, pegada/colgante, ancho y quitar.
-        btnModoCorrea = boton(X_DER + 98, 150, 64, Text.empty(), "femclothes.correa.tooltip.modo_correa",
-                () -> { modoCorrea = !modoCorrea; modoColor = false; correaInicio = null; });
         for (int i = 0; i < btnCorreaLista.length; i++) {
             final int idx = i;
             btnCorreaLista[i] = boton(X_DER + i * 20, 66, 19, Text.literal(Integer.toString(i + 1)),
@@ -227,7 +238,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         btnObjVariante = boton(PX1 + 64, by, 58, Text.empty(), "femclothes.estilado.tooltip.obj_variante",
                 () -> clickBoton(EstiladoBlockEntity.BTN_OBJ_VARIANTE));
         // Mesa creativa (2026-10-01): elegir cualquier molde sin tenerlo.
-        ButtonWidget moldeCreativo = boton(X_DER + 98, 44, 64, Text.translatable("femclothes.estilado.siguiente_molde"),
+        ButtonWidget moldeCreativo = boton(X_DER + 110, 48, 52, Text.translatable("femclothes.estilado.siguiente_molde"),
                 "femclothes.estilado.tooltip.siguiente_molde", () -> clickBoton(EstiladoBlockEntity.BTN_SIGUIENTE_MOLDE));
         moldeCreativo.visible = handler.be.creativa();
         crearPanel();
@@ -1096,15 +1107,21 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         // Sombrero de bruja en la prenda (2026-10-05): colorear o poner apliques.
         ItemStack enPrenda = be.getStack(EstiladoBlockEntity.SLOT_PRENDA);
         boolean sombrero = enPrenda.getItem() instanceof com.femclothes.item.ZonasTenibles;
-        if (!sombrero) modoColor = false;
-        btnModoColor.visible = sombrero;
-        btnModoColor.setMessage(Text.translatable(modoColor ? "femclothes.estilado.modo_color.apliques"
-                : "femclothes.estilado.modo_color.colorear"));
-        // Correas libres: solo en prendas y wearables con caja de cuerpo (no el sombrero, la banda, la pollera ni la capa).
+        // Correas libres: en toda prenda y wearable puesto.
         boolean admiteCorrea = !enPrenda.isEmpty();
-        if (!admiteCorrea) { modoCorrea = false; correaInicio = null; }
-        btnModoCorrea.visible = admiteCorrea;
-        btnModoCorrea.setMessage(Text.translatable(modoCorrea ? "femclothes.correa.modo_correa.apliques" : "femclothes.correa.modo_correa.correas"));
+        if (!admiteCorrea && pestana != 0) pestana = 0;
+        modoCorrea = pestana == 1;
+        modoColor = pestana == 2 && sombrero;
+        if (!modoCorrea) correaInicio = null;
+        String[] nombresPestana = {"aplique", "correa", "acabado"};
+        for (int i = 0; i < btnPestana.length; i++) {
+            btnPestana[i].active = i == 0 || admiteCorrea;
+            Text base = i == 0 ? Text.translatable("femclothes.estilado.pestana.aplique", apliques.size(), Aplique.MAXIMO_POR_PRENDA)
+                    : i == 1 ? Text.translatable("femclothes.estilado.pestana.correa", be.correas().size(), com.femclothes.correa.Correa.MAXIMO_POR_PRENDA)
+                    : Text.translatable("femclothes.estilado.pestana.acabado");
+            btnPestana[i].setMessage(i == pestana ? Text.literal("[").append(base).append("]") : base);
+        }
+        btnTextura.visible = pestana == 2 && !sombrero;
         btnCorreaModo.visible = btnCorreaAncho.visible = btnCorreaQuitar.visible = btnCorreaColor.visible = modoCorrea;
         btnCorreaLargo.visible = btnCorreaLargoMenos.visible = btnCorreaLargoMas.visible = modoCorrea;
         // El largo solo vale para las que cuelgan (de la elegida, si hay una).
@@ -1124,7 +1141,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         btnCorreaQuitar.setMessage(Text.translatable(correaInicio != null ? "femclothes.correa.boton.cancelar"
                 : correaSel >= 0 ? "femclothes.correa.boton.quitar_sel" : "femclothes.correa.boton.quitar", correaSel >= 0 ? correaSel + 1 : be.correas().size()));
         btnCorreaQuitar.active = correaInicio != null || !be.correas().isEmpty();
-        for (ButtonWidget b : grupoAplique) b.visible = !modoColor && !modoCorrea;
+        for (ButtonWidget b : grupoAplique) b.visible = pestana == 0;
         java.util.List<Integer> fuente = be.coloresDeLaFuente();
         for (int z = 0; z < 3; z++) {
             for (int c = 0; c < 3; c++) {
@@ -1165,7 +1182,9 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         net.minecraft.util.Identifier trim = be.patronDeTrim(be.getStack(EstiladoBlockEntity.SLOT_MOLDE));
         if (trim != null) {
             // Molde de trim de vanilla: acabado animado de toda la prenda (2026-10-06).
-            boolean ya = trim.equals(prendaPuesta.get(com.femclothes.item.FemclothesComponents.ACABADO_TRIM));
+            net.minecraft.util.Identifier matSlot = be.materialDe(be.getStack(EstiladoBlockEntity.SLOT_MATERIAL));
+            boolean ya = trim.equals(prendaPuesta.get(com.femclothes.item.FemclothesComponents.ACABADO_TRIM))
+                    && (matSlot == null || matSlot.equals(prendaPuesta.get(com.femclothes.item.FemclothesComponents.ACABADO_MATERIAL)));
             btnTextura.active = !prendaPuesta.isEmpty() && EstiladoBlockEntity.admiteAcabado(prendaPuesta);
             btnTextura.setMessage(Text.translatable(ya ? "femclothes.estilado.acabado.quitar" : "femclothes.estilado.acabado.poner",
                     Text.translatable("femclothes.efecto." + com.femclothes.render.EfectoTrim.tipoDe(trim).name().toLowerCase())));
@@ -1174,6 +1193,15 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
             btnTextura.active = true;
             btnTextura.setMessage(Text.translatable(actual == mt.textura ? "femclothes.estilado.textura.quitar"
                     : "femclothes.estilado.textura.poner", Text.translatable(mt.textura.traduccion())));
+        } else if (be.materialDe(be.getStack(EstiladoBlockEntity.SLOT_MATERIAL)) != null
+                && prendaPuesta.get(com.femclothes.item.FemclothesComponents.ACABADO_TRIM) != null
+                && !be.materialDe(be.getStack(EstiladoBlockEntity.SLOT_MATERIAL))
+                        .equals(prendaPuesta.get(com.femclothes.item.FemclothesComponents.ACABADO_MATERIAL))) {
+            // Sin molde pero con material: solo cambia el material del acabado que ya está.
+            btnTextura.active = true;
+            net.minecraft.util.Identifier m = be.materialDe(be.getStack(EstiladoBlockEntity.SLOT_MATERIAL));
+            btnTextura.setMessage(Text.translatable("femclothes.estilado.acabado.material",
+                    Text.translatable("trim_material." + m.getNamespace() + "." + m.getPath())));
         } else {
             btnTextura.active = false;
             btnTextura.setMessage(Text.translatable("femclothes.estilado.textura.actual",
@@ -1227,8 +1255,25 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         if (creativa()) {
             context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.slot.objeto"), X_DER + 77, y + 30, EstiloPergamino.TEXTO, false);
         }
-        context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.apliques", handler.be.apliques().size(),
-                Aplique.MAXIMO_POR_PRENDA), X_DER + (creativa() ? 102 : 80), EstiladoScreenHandler.Y_SLOTS + 4, EstiloPergamino.TEXTO, false);
+        context.drawText(this.textRenderer, Text.translatable("femclothes.estilado.slot.material"), X_DER + 103, y, EstiloPergamino.TEXTO, false);
+        ItemStack enPrendaF = handler.be.getStack(EstiladoBlockEntity.SLOT_PRENDA);
+        if (pestana == 2 && !enPrendaF.isEmpty() && !(enPrendaF.getItem() instanceof com.femclothes.item.ZonasTenibles)) {
+            // Qué lleva la prenda y cómo se pone (2026-10-06).
+            net.minecraft.util.Identifier t = enPrendaF.get(com.femclothes.item.FemclothesComponents.ACABADO_TRIM);
+            net.minecraft.util.Identifier m = enPrendaF.get(com.femclothes.item.FemclothesComponents.ACABADO_MATERIAL);
+            Text actual = t == null ? Text.translatable("femclothes.estilado.acabado.ninguno")
+                    : Text.translatable("femclothes.acabado.tooltip", Text.translatable(
+                            "femclothes.efecto." + com.femclothes.render.EfectoTrim.tipoDe(t).name().toLowerCase()));
+            if (t != null && m != null) actual = actual.copy().append(" · ").append(Text.translatable(
+                    "trim_material." + m.getNamespace() + "." + m.getPath()));
+            int yy = 90;
+            for (var linea : this.textRenderer.wrapLines(actual, 162)) { context.drawText(this.textRenderer, linea, X_DER, yy, EstiloPergamino.TEXTO, false); yy += 10; }
+            yy += 4;
+            for (var linea : this.textRenderer.wrapLines(Text.translatable("femclothes.estilado.acabado.ayuda"), 162)) {
+                context.drawText(this.textRenderer, linea, X_DER, yy, 0xFF6B5A78, false);
+                yy += 10;
+            }
+        }
         if (modoColor) {
             for (int z = 0; z < 3; z++) {
                 context.drawText(this.textRenderer, Text.translatable(handler.be.getStack(EstiladoBlockEntity.SLOT_PRENDA).getItem() instanceof com.femclothes.item.BandaItem ? "femclothes.banda.parte." + (z + 1) : "femclothes.sombrero.zona." + (z + 1)),
@@ -1245,6 +1290,7 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
                         : correaInicio == null ? "femclothes.correa.ayuda.inicio" : "femclothes.correa.ayuda.fin")
                 : modoColor ? Text.translatable("femclothes.estilado.ayuda_color",
                         Text.literal("■").styled(st -> st.withColor(fuenteAyuda == null ? 0x808080 : fuenteAyuda.get(colorActivo))))
+                : pestana == 2 ? Text.translatable("femclothes.estilado.ayuda_acabado")
                 : Text.translatable("femclothes.estilado.ayuda");
         int color = aviso != null ? 0xFFFF9090 : 0xFFE8DCC8;
         for (var linea : this.textRenderer.wrapLines(ayuda, PX2 - PX1 - 12)) {
@@ -1263,6 +1309,10 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
             context.fill(ox - 1, oy - 1, ox + 17, oy + 17, 0xFF2A180C);
             context.fill(ox, oy, ox + 16, oy + 16, 0xFF6B5A78);
         }
+        // Marco del slot de material (2026-10-06): tampoco lo trae el fondo.
+        int mx = this.x + X_DER + 4 * 26, my = this.y + EstiladoScreenHandler.Y_SLOTS;
+        context.fill(mx - 1, my - 1, mx + 17, my + 17, 0xFF2A180C);
+        context.fill(mx, my, mx + 16, my + 16, 0xFF6B5A78);
         dibujarPanel(context);
     }
 }

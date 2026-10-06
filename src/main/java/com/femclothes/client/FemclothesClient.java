@@ -25,9 +25,15 @@ public class FemclothesClient implements ClientModInitializer {
         net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback.EVENT.register((stack, contexto, tipo, lineas) -> {
             net.minecraft.util.Identifier trim = stack.get(com.femclothes.item.FemclothesComponents.ACABADO_TRIM);
             if (trim == null) return;
-            lineas.add(net.minecraft.text.Text.translatable("femclothes.acabado.tooltip", net.minecraft.text.Text.translatable(
-                    "femclothes.efecto." + com.femclothes.render.EfectoTrim.tipoDe(trim).name().toLowerCase()))
-                    .formatted(net.minecraft.util.Formatting.LIGHT_PURPLE));
+            net.minecraft.text.MutableText linea = net.minecraft.text.Text.translatable("femclothes.acabado.tooltip",
+                    net.minecraft.text.Text.translatable(
+                            "femclothes.efecto." + com.femclothes.render.EfectoTrim.tipoDe(trim).name().toLowerCase()));
+            net.minecraft.util.Identifier material = stack.get(com.femclothes.item.FemclothesComponents.ACABADO_MATERIAL);
+            if (material != null) {
+                linea.append(" · ").append(net.minecraft.text.Text.translatable(
+                        "trim_material." + material.getNamespace() + "." + material.getPath()));
+            }
+            lineas.add(linea.formatted(net.minecraft.util.Formatting.LIGHT_PURPLE));
         });
         HandledScreens.register(FemclothesScreenHandlers.MODELADO, ModeladoScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.TINTURAS, TinturasScreen::new);

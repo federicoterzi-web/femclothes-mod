@@ -87,12 +87,13 @@ public class EstilistaScreenHandler extends EstiladoScreenHandler {
         if (s == null || !s.hasStack() || !s.canTakeItems(player)) return ItemStack.EMPTY;
         ItemStack stack = s.getStack();
         ItemStack copia = stack.copy();
-        if (index < EstiladoBlockEntity.SLOT_BIBLIOTECA) {
+        if (index < EstiladoBlockEntity.SLOT_BIBLIOTECA || index == EstiladoBlockEntity.SLOT_MATERIAL) {
             // Del editor: al almacén (si es algo que se guarda) y si no al inventario.
             if (!insertItem(stack, INV_FIN + 2, slots.size(), false) && !insertItem(stack, BASE, INV_FIN, true)) return ItemStack.EMPTY;
         } else if (index < BASE || index >= INV_FIN) {
             // De la máquina: molde, retazo y muestra al editor; el resto al inventario.
-            if (index >= INV_FIN + 2 && insertItem(stack, 0, EstiladoBlockEntity.SLOT_BIBLIOTECA, false)) {
+            if (index >= INV_FIN + 2 && (insertItem(stack, 0, EstiladoBlockEntity.SLOT_BIBLIOTECA, false)
+                    || insertItem(stack, EstiladoBlockEntity.SLOT_MATERIAL, EstiladoBlockEntity.SLOT_MATERIAL + 1, false))) {
                 // ok
             } else if (!insertItem(stack, BASE, INV_FIN, true)) {
                 return ItemStack.EMPTY;
@@ -104,6 +105,7 @@ public class EstilistaScreenHandler extends EstiladoScreenHandler {
                 return copia;
             }
             if (!insertItem(stack, 0, EstiladoBlockEntity.SLOT_BIBLIOTECA, false)
+                    && !insertItem(stack, EstiladoBlockEntity.SLOT_MATERIAL, EstiladoBlockEntity.SLOT_MATERIAL + 1, false)
                     && !insertItem(stack, INV_FIN, INV_FIN + 1, false)
                     && !insertItem(stack, INV_FIN + 2, slots.size(), false)) {
                 return stack.getCount() != copia.getCount() ? copia : ItemStack.EMPTY;

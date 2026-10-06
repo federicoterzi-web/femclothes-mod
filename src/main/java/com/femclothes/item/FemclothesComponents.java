@@ -565,6 +565,14 @@ public final class FemclothesComponents {
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "acabado_trim"),
             ComponentType.<Identifier>builder().codec(Identifier.CODEC).packetCodec(Identifier.PACKET_CODEC).build());
 
+    /**
+     * Material del acabado (2026-10-06, "el material por separado, opcional"): el id del material de trim de vanilla
+     * (ej. {@code minecraft:gold}); cambia la paleta del efecto. Ausente = la paleta de fábrica del patrón.
+     */
+    public static final ComponentType<Identifier> ACABADO_MATERIAL = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "acabado_material"),
+            ComponentType.<Identifier>builder().codec(Identifier.CODEC).packetCodec(Identifier.PACKET_CODEC).build());
+
     public static final ComponentType<java.util.List<Integer>> COLORES_APLIQUE = Registry.register(
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "colores_aplique"),
             ComponentType.<java.util.List<Integer>>builder()

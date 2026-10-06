@@ -62,7 +62,13 @@ public class EstiladoBlockEntity extends BlockEntity
      * de estilado donde lo encuentro" → "vamos con las dos"): una copia de cada molde que fabrica, en slots
      * escondidos al FINAL del inventario (así el handler los sincroniza solo y el NBT guardado no se corre).
      */
-    public static final int SLOT_BIBLIOTECA = 4, BIBLIOTECA = 24, TAMANO = SLOT_BIBLIOTECA + BIBLIOTECA;
+    public static final int SLOT_BIBLIOTECA = 4, BIBLIOTECA = 24, BIBLIOTECA_FIN = SLOT_BIBLIOTECA + BIBLIOTECA;
+    /**
+     * El material del acabado (2026-10-06, "el material por separado, opcional"): un material de trim de vanilla (lingote,
+     * cuarzo, redstone...). Cambia la paleta del efecto del acabado y se gasta 1 al aplicarlo. Al FINAL del inventario
+     * para no correr los índices guardados.
+     */
+    public static final int SLOT_MATERIAL = BIBLIOTECA_FIN, TAMANO = SLOT_MATERIAL + 1;
     /** Botones de la lista de la biblioteca: dar una copia y borrar, uno por fila. */
     public static final int BTN_BIBLIO_DAR_BASE = 200, BTN_BIBLIO_BORRAR_BASE = 240;
 
@@ -347,15 +353,15 @@ public class EstiladoBlockEntity extends BlockEntity
 
     /** Guarda una copia en el primer lugar libre de la biblioteca; si está llena, se va el más viejo. */
     private void guardarEnBiblioteca(ItemStack molde) {
-        for (int i = SLOT_BIBLIOTECA; i < TAMANO; i++) {
+        for (int i = SLOT_BIBLIOTECA; i < BIBLIOTECA_FIN; i++) {
             if (items.get(i).isEmpty()) {
                 items.set(i, molde);
                 markDirty();
                 return;
             }
         }
-        for (int i = SLOT_BIBLIOTECA; i < TAMANO - 1; i++) items.set(i, items.get(i + 1));
-        items.set(TAMANO - 1, molde);
+        for (int i = SLOT_BIBLIOTECA; i < BIBLIOTECA_FIN - 1; i++) items.set(i, items.get(i + 1));
+        items.set(BIBLIOTECA_FIN - 1, molde);
         markDirty();
     }
 
@@ -369,8 +375,8 @@ public class EstiladoBlockEntity extends BlockEntity
         if (!creativa() || i < 0 || i >= BIBLIOTECA) return false;
         if (items.get(SLOT_BIBLIOTECA + i).isEmpty()) return false;
         // Se corre la lista para que no queden huecos en el medio.
-        for (int k = SLOT_BIBLIOTECA + i; k < TAMANO - 1; k++) items.set(k, items.get(k + 1));
-        items.set(TAMANO - 1, ItemStack.EMPTY);
+        for (int k = SLOT_BIBLIOTECA + i; k < BIBLIOTECA_FIN - 1; k++) items.set(k, items.get(k + 1));
+        items.set(BIBLIOTECA_FIN - 1, ItemStack.EMPTY);
         markDirty();
         return true;
     }
@@ -609,19 +615,53 @@ public class EstiladoBlockEntity extends BlockEntity
                 .flatMap(e -> e.getKey()).map(k -> k.getValue()).orElse(null);
     }
 
+    /** El id del material de trim de este ítem de vanilla (ej. {@code minecraft:gold}), o null si no es uno. */
+    @org.jetbrains.annotations.Nullable
+    public net.minecraft.util.Identifier materialDe(ItemStack material) {
+        if (material.isEmpty()) return null;
+        net.minecraft.registry.RegistryWrapper.WrapperLookup reg = registros();
+        if (reg == null) return null;
+        return net.minecraft.item.trim.ArmorTrimMaterials.get(reg, material)
+                .flatMap(e -> e.getKey()).map(k -> k.getValue()).orElse(null);
+    }
+
     /**
      * Acabado con un molde de trim (2026-10-06, "en la de estilo pero no hace falta trim ya hay un slot de acabado"):
      * el mismo botón de la textura. Con el molde de trim en el slot, lo pone (y el molde se gasta: no se duplica) o,
-     * si la prenda ya lleva ese patrón, lo quita. {@code gratis()} no gasta nada.
+     * si la prenda ya lleva ese patrón, lo quita. El material del slot de material (opcional, "dale opcional") le da la
+     * paleta y también se gasta; sin material, la paleta de fábrica del patrón. Sin molde pero con material y un
+     * acabado puesto, el botón cambia solo el material. {@code gratis()} no gasta nada.
+     *
+     * @param patron el patrón del molde del slot, o null si no hay molde de trim
      */
-    private boolean alternarAcabadoTrim(net.minecraft.util.Identifier patron) {
+    private boolean aplicarAcabado(@org.jetbrains.annotations.Nullable net.minecraft.util.Identifier patron) {
         ItemStack prenda = items.get(SLOT_PRENDA);
         if (prenda.isEmpty() || !admiteAcabado(prenda)) return false;
-        if (patron.equals(prenda.get(FemclothesComponents.ACABADO_TRIM))) {
+        net.minecraft.util.Identifier mat = materialDe(items.get(SLOT_MATERIAL));
+        net.minecraft.util.Identifier patronActual = prenda.get(FemclothesComponents.ACABADO_TRIM);
+        net.minecraft.util.Identifier matActual = prenda.get(FemclothesComponents.ACABADO_MATERIAL);
+        if (patron == null) {
+            // Solo cambiar el material de un acabado que ya está.
+            if (patronActual == null || mat == null || mat.equals(matActual)) return false;
+            prenda.set(FemclothesComponents.ACABADO_MATERIAL, mat);
+            if (!gratis()) items.get(SLOT_MATERIAL).decrement(1);
+            markDirty();
+            return true;
+        }
+        boolean cambiaPatron = !patron.equals(patronActual);
+        if (!cambiaPatron && (mat == null || mat.equals(matActual))) {
             prenda.remove(FemclothesComponents.ACABADO_TRIM);
+            prenda.remove(FemclothesComponents.ACABADO_MATERIAL);
         } else {
-            prenda.set(FemclothesComponents.ACABADO_TRIM, patron);
-            if (!gratis()) items.get(SLOT_MOLDE).decrement(1);
+            if (cambiaPatron) {
+                prenda.set(FemclothesComponents.ACABADO_TRIM, patron);
+                if (!gratis()) items.get(SLOT_MOLDE).decrement(1);
+                if (mat == null) prenda.remove(FemclothesComponents.ACABADO_MATERIAL);   // paleta de fábrica
+            }
+            if (mat != null && (cambiaPatron || !mat.equals(matActual))) {
+                prenda.set(FemclothesComponents.ACABADO_MATERIAL, mat);
+                if (!gratis()) items.get(SLOT_MATERIAL).decrement(1);
+            }
         }
         markDirty();
         return true;
@@ -636,7 +676,9 @@ public class EstiladoBlockEntity extends BlockEntity
     private boolean alternarTextura() {
         ItemStack prenda = items.get(SLOT_PRENDA);
         net.minecraft.util.Identifier trim = patronDeTrim(items.get(SLOT_MOLDE));
-        if (trim != null) return alternarAcabadoTrim(trim);
+        if (trim != null) return aplicarAcabado(trim);
+        if (!(items.get(SLOT_MOLDE).getItem() instanceof com.femclothes.item.MoldeTexturaItem)
+                && materialDe(items.get(SLOT_MATERIAL)) != null) return aplicarAcabado(null);
         if (prenda.isEmpty() || !(items.get(SLOT_MOLDE).getItem() instanceof com.femclothes.item.MoldeTexturaItem m)) return false;
         if (prenda.get(FemclothesComponents.TEXTURA_TELA) == m.textura) prenda.remove(FemclothesComponents.TEXTURA_TELA);
         else prenda.set(FemclothesComponents.TEXTURA_TELA, m.textura);
@@ -750,13 +792,14 @@ public class EstiladoBlockEntity extends BlockEntity
             case SLOT_RETAZO -> stack.getItem() instanceof RetazoApliqueItem
                     || stack.getItem() instanceof com.femclothes.item.MuestraColorItem;
             case SLOT_OBJETO -> creativa() && ObjetoAplique.admite(stack);
+            case SLOT_MATERIAL -> materialDe(stack) != null;   // material de trim de vanilla (2026-10-06)
             default -> false;
         };
     }
 
     @Override
     public int getMaxCount(ItemStack stack) {
-        return stack.getItem() instanceof RetazoApliqueItem ? 64 : 1;
+        return stack.getItem() instanceof RetazoApliqueItem || materialDe(stack) != null ? 64 : 1;
     }
 
     @Override
