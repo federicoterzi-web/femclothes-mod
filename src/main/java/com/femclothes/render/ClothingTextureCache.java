@@ -550,6 +550,10 @@ public final class ClothingTextureCache {
     private static boolean componiendoTranslucida = false;
     private static final java.util.Set<Identifier> TRANSLUCIDAS = new java.util.HashSet<>();
 
+    /** La última tela pedida a {@link #capaDeRender}: {@code EfectoTrim} la lee en el {@code getBuffer} que viene justo después. */
+    @org.jetbrains.annotations.Nullable
+    public static Identifier ultimaTextura;
+
     public static boolean esTranslucida(Identifier textura) {
         return TRANSLUCIDAS.contains(textura);
     }
@@ -559,6 +563,7 @@ public final class ClothingTextureCache {
      * su textura tiene transparencia a medias, si no el recorte de siempre.
      */
     public static net.minecraft.client.render.RenderLayer capaDeRender(Identifier textura) {
+        ultimaTextura = textura;   // para EfectoTrim: sabe qué tela se está por dibujar (2026-10-06)
         return esTranslucida(textura)
                 ? net.minecraft.client.render.RenderLayer.getEntityTranslucent(textura)
                 : net.minecraft.client.render.RenderLayer.getArmorCutoutNoCull(textura);

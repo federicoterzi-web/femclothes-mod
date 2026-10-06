@@ -21,6 +21,14 @@ public class FemclothesClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        // Acabado con trim (2026-10-06): la prenda lo dice en su descripción.
+        net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback.EVENT.register((stack, contexto, tipo, lineas) -> {
+            net.minecraft.util.Identifier trim = stack.get(com.femclothes.item.FemclothesComponents.ACABADO_TRIM);
+            if (trim == null) return;
+            lineas.add(net.minecraft.text.Text.translatable("femclothes.acabado.tooltip", net.minecraft.text.Text.translatable(
+                    "femclothes.efecto." + com.femclothes.render.EfectoTrim.tipoDe(trim).name().toLowerCase()))
+                    .formatted(net.minecraft.util.Formatting.LIGHT_PURPLE));
+        });
         HandledScreens.register(FemclothesScreenHandlers.MODELADO, ModeladoScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.TINTURAS, TinturasScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.SUBLIMADORA, SublimadoraScreen::new);

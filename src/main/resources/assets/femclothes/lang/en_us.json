@@ -933,5 +933,15 @@
   "femclothes.pollera.molde_borde.ayuda": "Goes in the Skirt's Custom pin: changes the hem edge.",
   "item.femclothes.molde_borde_ondulado": "Edge Template: Wavy",
   "item.femclothes.molde_borde_festoneado": "Edge Template: Scalloped",
-  "item.femclothes.molde_borde_pico": "Edge Template: Pointed"
+  "item.femclothes.molde_borde_pico": "Edge Template: Pointed",
+  "femclothes.estilado.acabado.poner": "Finish: %s",
+  "femclothes.estilado.acabado.quitar": "Remove finish (%s)",
+  "femclothes.efecto.lava": "Lava",
+  "femclothes.efecto.oceano": "Ocean",
+  "femclothes.efecto.esculk": "Sculk",
+  "femclothes.efecto.ender": "End iridescence",
+  "femclothes.efecto.destello": "Glitter",
+  "femclothes.efecto.metal": "Metallic shine",
+  "femclothes.efecto.rayo": "Sparks",
+  "femclothes.acabado.tooltip": "Finish: %s"
 }

@@ -649,7 +649,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
      */
     private static void dibujarPiezas(Parte parte, boolean slim, List<Pieza> piezas, @Nullable Pieza conVolumen,
                                       ModelPart delModelo, MatrixStack matrices,
-                                      VertexConsumerProvider vertexConsumers, int luz,
+                                      VertexConsumerProvider vcpBase, int luz,
                                       com.femclothes.render.relieve.MapaRelieve debajo, Map<Pieza, ItemStack> origen) {
         // Relieve (2026-10-01): cada tela envuelve a lo de abajo (el cuerpo o
         // la pieza anterior) según su calce, y suma arrugas, textura y extrusión.
@@ -670,6 +670,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
 
         for (Pieza pieza : piezas) {
             indice++;
+            // Acabado con trim (2026-10-06): la tela de esta prenda se dibuja además con su efecto animado.
+            VertexConsumerProvider vertexConsumers = EfectoTrim.envolver(origen.get(pieza), vcpBase);
             int desde = Math.max(0, Math.min(12, pieza.filaDesde()));
             int hasta = Math.max(desde, Math.min(12, pieza.filaHasta()));
             float base = pieza.dilatacion();

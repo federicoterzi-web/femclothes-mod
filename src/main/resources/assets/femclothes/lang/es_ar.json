@@ -933,5 +933,15 @@
   "femclothes.pollera.molde_borde.ayuda": "Va en el pin Custom de la Pollera: cambia el borde del ruedo.",
   "item.femclothes.molde_borde_ondulado": "Molde de Borde: Ondulado",
   "item.femclothes.molde_borde_festoneado": "Molde de Borde: Festoneado",
-  "item.femclothes.molde_borde_pico": "Molde de Borde: Con pico"
+  "item.femclothes.molde_borde_pico": "Molde de Borde: Con pico",
+  "femclothes.estilado.acabado.poner": "Acabado: %s",
+  "femclothes.estilado.acabado.quitar": "Quitar acabado (%s)",
+  "femclothes.efecto.lava": "Lava",
+  "femclothes.efecto.oceano": "Océano",
+  "femclothes.efecto.esculk": "Sculk",
+  "femclothes.efecto.ender": "Iridiscente del End",
+  "femclothes.efecto.destello": "Destellos",
+  "femclothes.efecto.metal": "Brillo metálico",
+  "femclothes.efecto.rayo": "Chispas",
+  "femclothes.acabado.tooltip": "Acabado: %s"
 }

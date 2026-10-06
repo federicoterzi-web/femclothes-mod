@@ -1004,6 +1004,12 @@ public final class EstampaTextures {
         }
     }
 
+    /** Lo mismo para quien no conoce el tamaño (EfectoTrim, 2026-10-06): lee la textura tal cual está en la GPU. */
+    @Nullable
+    public static NativeImage leerTextura(Identifier textura) {
+        return leerDeLaGpu(textura, 0, 0);
+    }
+
     /**
      * Los pixeles de una textura ya subida a la placa.
      *

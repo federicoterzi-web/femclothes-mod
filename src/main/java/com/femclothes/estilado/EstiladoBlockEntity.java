@@ -591,8 +591,52 @@ public class EstiladoBlockEntity extends BlockEntity
         return true;
     }
 
+    /** El registro de patrones de trim: el del mundo, o el del anfitrión si esta es el editor de la Estilista. */
+    @org.jetbrains.annotations.Nullable
+    private net.minecraft.registry.RegistryWrapper.WrapperLookup registros() {
+        if (world != null) return world.getRegistryManager();
+        if (anfitrion != null && anfitrion.getWorld() != null) return anfitrion.getWorld().getRegistryManager();
+        return null;
+    }
+
+    /** El id del patrón de trim de este molde de vanilla (ej. {@code minecraft:snout}), o null si no es uno. */
+    @org.jetbrains.annotations.Nullable
+    public net.minecraft.util.Identifier patronDeTrim(ItemStack molde) {
+        if (molde.isEmpty()) return null;
+        net.minecraft.registry.RegistryWrapper.WrapperLookup reg = registros();
+        if (reg == null) return null;
+        return net.minecraft.item.trim.ArmorTrimPatterns.get(reg, molde)
+                .flatMap(e -> e.getKey()).map(k -> k.getValue()).orElse(null);
+    }
+
+    /**
+     * Acabado con un molde de trim (2026-10-06, "en la de estilo pero no hace falta trim ya hay un slot de acabado"):
+     * el mismo botón de la textura. Con el molde de trim en el slot, lo pone (y el molde se gasta: no se duplica) o,
+     * si la prenda ya lleva ese patrón, lo quita. {@code gratis()} no gasta nada.
+     */
+    private boolean alternarAcabadoTrim(net.minecraft.util.Identifier patron) {
+        ItemStack prenda = items.get(SLOT_PRENDA);
+        if (prenda.isEmpty() || !admiteAcabado(prenda)) return false;
+        if (patron.equals(prenda.get(FemclothesComponents.ACABADO_TRIM))) {
+            prenda.remove(FemclothesComponents.ACABADO_TRIM);
+        } else {
+            prenda.set(FemclothesComponents.ACABADO_TRIM, patron);
+            if (!gratis()) items.get(SLOT_MOLDE).decrement(1);
+        }
+        markDirty();
+        return true;
+    }
+
+    /** Qué prendas llevan acabado: las de tela que se dibujan por piezas (remera, chaqueta, pantalón, medias, calentabrazos). */
+    public static boolean admiteAcabado(ItemStack prenda) {
+        return com.femclothes.garment.Garments.esPrenda(prenda) && !(prenda.getItem() instanceof com.femclothes.item.PolleraItem)
+                && !(prenda.getItem() instanceof com.femclothes.item.CapaItem);
+    }
+
     private boolean alternarTextura() {
         ItemStack prenda = items.get(SLOT_PRENDA);
+        net.minecraft.util.Identifier trim = patronDeTrim(items.get(SLOT_MOLDE));
+        if (trim != null) return alternarAcabadoTrim(trim);
         if (prenda.isEmpty() || !(items.get(SLOT_MOLDE).getItem() instanceof com.femclothes.item.MoldeTexturaItem m)) return false;
         if (prenda.get(FemclothesComponents.TEXTURA_TELA) == m.textura) prenda.remove(FemclothesComponents.TEXTURA_TELA);
         else prenda.set(FemclothesComponents.TEXTURA_TELA, m.textura);
@@ -701,7 +745,8 @@ public class EstiladoBlockEntity extends BlockEntity
             case SLOT_MOLDE -> stack.getItem() instanceof MoldeApliqueItem
                     || stack.getItem() instanceof com.femclothes.aplique.MoldeApliquePersonalizadoItem
                     || stack.getItem() instanceof com.femclothes.correa.MoldeCorreaItem
-                    || stack.getItem() instanceof com.femclothes.item.MoldeTexturaItem;
+                    || stack.getItem() instanceof com.femclothes.item.MoldeTexturaItem
+                    || patronDeTrim(stack) != null;   // molde de trim de vanilla (2026-10-06)
             case SLOT_RETAZO -> stack.getItem() instanceof RetazoApliqueItem
                     || stack.getItem() instanceof com.femclothes.item.MuestraColorItem;
             case SLOT_OBJETO -> creativa() && ObjetoAplique.admite(stack);

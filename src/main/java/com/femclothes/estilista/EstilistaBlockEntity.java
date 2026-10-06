@@ -61,7 +61,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     /** Lo que copia un diseño de la prenda de muestra (lo demás de la prenda no se toca). */
     private static final java.util.List<net.minecraft.component.ComponentType<?>> COMPONENTES_DE_DISENO = java.util.List.of(
             com.femclothes.item.FemclothesComponents.APLIQUES, com.femclothes.item.FemclothesComponents.CORREAS,
-            com.femclothes.item.FemclothesComponents.TEXTURA_TELA,
+            com.femclothes.item.FemclothesComponents.TEXTURA_TELA, com.femclothes.item.FemclothesComponents.ACABADO_TRIM,
             com.femclothes.item.FemclothesComponents.COLORES_SOMBRERO, com.femclothes.item.FemclothesComponents.PATRONES_SOMBRERO,
             com.femclothes.item.FemclothesComponents.COLORES_BANDA, com.femclothes.item.FemclothesComponents.PATRONES_BANDA);
 

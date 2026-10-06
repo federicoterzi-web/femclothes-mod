@@ -1162,7 +1162,14 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
         ItemStack prendaPuesta = be.getStack(EstiladoBlockEntity.SLOT_PRENDA);
         com.femclothes.item.TexturaTela actual = prendaPuesta.getOrDefault(
                 com.femclothes.item.FemclothesComponents.TEXTURA_TELA, com.femclothes.item.TexturaTela.LISA);
-        if (be.getStack(EstiladoBlockEntity.SLOT_MOLDE).getItem() instanceof com.femclothes.item.MoldeTexturaItem mt
+        net.minecraft.util.Identifier trim = be.patronDeTrim(be.getStack(EstiladoBlockEntity.SLOT_MOLDE));
+        if (trim != null) {
+            // Molde de trim de vanilla: acabado animado de toda la prenda (2026-10-06).
+            boolean ya = trim.equals(prendaPuesta.get(com.femclothes.item.FemclothesComponents.ACABADO_TRIM));
+            btnTextura.active = !prendaPuesta.isEmpty() && EstiladoBlockEntity.admiteAcabado(prendaPuesta);
+            btnTextura.setMessage(Text.translatable(ya ? "femclothes.estilado.acabado.quitar" : "femclothes.estilado.acabado.poner",
+                    Text.translatable("femclothes.efecto." + com.femclothes.render.EfectoTrim.tipoDe(trim).name().toLowerCase())));
+        } else if (be.getStack(EstiladoBlockEntity.SLOT_MOLDE).getItem() instanceof com.femclothes.item.MoldeTexturaItem mt
                 && !prendaPuesta.isEmpty()) {
             btnTextura.active = true;
             btnTextura.setMessage(Text.translatable(actual == mt.textura ? "femclothes.estilado.textura.quitar"
