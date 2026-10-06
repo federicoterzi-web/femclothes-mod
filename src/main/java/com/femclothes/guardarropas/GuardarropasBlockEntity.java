@@ -58,7 +58,7 @@ import java.util.List;
 public class GuardarropasBlockEntity extends BlockEntity
         implements net.minecraft.inventory.SidedInventory, ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity {
 
-    public static final int POR_CATEGORIA = 4;
+    public static final int POR_CATEGORIA = 3;
 
     public static final int REMERA = 0;
     public static final int PANTALON = 1;

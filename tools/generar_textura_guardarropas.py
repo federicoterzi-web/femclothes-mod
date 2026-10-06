@@ -11,7 +11,7 @@ mod y los colores de sus acentos metalicos":
 Reusa las funciones de dibujo de generar_textura_tinturas.py (importadas: leen
 la paleta del módulo, que aplicar_tema reasigna). Mismas coordenadas que
 GuardarropasScreenHandler / ManiquiScreenHandler para los Slot reales:
-grilla de 5 categorías x 4 capas en (M_MEDIO + c*20, 20 + r*20), columna de
+grilla de 5 categorías x 3 capas en (M_MEDIO + c*20, 20 + r*20), columna de
 armadura en X_ARMADURA, inventario en (M_MEDIO + j*18, 180 + i*18) y hotbar
 en y=238. Los botones y sliders los dibuja Java (EstiloPergamino).
 
@@ -25,7 +25,7 @@ import generar_textura_tinturas as base
 
 ANCHO, ALTO = 482, 264
 M_MEDIO = 19 + 100
-CATEGORIAS, CAPAS, ARMADURAS = 5, 4, 4
+CATEGORIAS, CAPAS, ARMADURAS = 5, 3, 4
 X_ARMADURA = M_MEDIO + CATEGORIAS * 20 + 6
 X_SLIDERS = M_MEDIO + 170          # ManiquiScreen: sliders de pose a la derecha
 
