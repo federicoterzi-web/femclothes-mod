@@ -64,8 +64,12 @@ public final class EfectoTrim {
         };
     }
 
-    /** Cuántos cuadros tiene el bucle, su duración, el lado en que se calcula el efecto y cada cuánto se genera un cuadro. */
-    private static final int CUADROS = 8, PERIODO_MS = 2400, LADO = 256, ESPERA_MS = 20;
+    /**
+     * Cuántos cuadros tiene el bucle, su duración y cada cuánto se genera un cuadro. 2026-10-06, "puede tener mas
+     * definicion el efecto y mas fps": 24 cuadros en 2,4 s (10 por segundo) y el efecto se calcula a la resolución
+     * de la propia tela (antes, a 256² y estirado).
+     */
+    private static final int CUADROS = 24, PERIODO_MS = 2400, ESPERA_MS = 20;
 
     /**
      * Lo que se dibuja con el acabado de {@code prenda}: el proveedor de siempre si no lleva ninguno.
@@ -177,26 +181,20 @@ public final class EfectoTrim {
         if (c.base != null) { c.base.close(); c.base = null; }
     }
 
-    /** La tela con el efecto del cuadro {@code c.hechos} mezclado encima (solo donde hay tela). */
+    /** La tela con el efecto del cuadro {@code c.hechos} mezclado encima (solo donde hay tela, a la resolución de la tela). */
     private static void generarSiguiente(Cuadros c) {
         int i = c.hechos;
         float t = i / (float) CUADROS;
-        int[] efecto = new int[LADO * LADO];
-        float[] o = new float[3];
-        for (int y = 0; y < LADO; y++) {
-            for (int x = 0; x < LADO; x++) {
-                efecto[y * LADO + x] = pixel(c.tipo, c.paleta, (x + 0.5f) / LADO, (y + 0.5f) / LADO, t, i, o);
-            }
-        }
         int w = c.base.getWidth(), h = c.base.getHeight();
         NativeImage img = new NativeImage(w, h, true);
+        float[] o = new float[3];
         for (int y = 0; y < h; y++) {
-            int fy = Math.min(LADO - 1, y * LADO / h);
+            float v = (y + 0.5f) / h;
             for (int x = 0; x < w; x++) {
                 int px = c.base.getColor(x, y);
                 int alfa = px >>> 24;
                 if (alfa > 0) {
-                    int e = efecto[fy * LADO + Math.min(LADO - 1, x * LADO / w)];
+                    int e = pixel(c.tipo, c.paleta, (x + 0.5f) / w, v, t, i, o);
                     int ea = e >>> 24;
                     int r = ((px & 0xFF) * (255 - ea) + (e & 0xFF) * ea) / 255;
                     int g = (((px >> 8) & 0xFF) * (255 - ea) + ((e >> 8) & 0xFF) * ea) / 255;
@@ -206,7 +204,8 @@ public final class EfectoTrim {
                 img.setColor(x, y, px);
             }
         }
-        NativeImageBackedTexture tex = new NativeImageBackedTexture(img);
+        NativeImageBackedTexture tex = new NativeImageBackedTexture(img);   // se sube al crearla
+        tex.setImage(null);   // ya está en la placa: la copia en memoria sobra (24 cuadros por tela pesan)
         c.ids[i] = MinecraftClient.getInstance().getTextureManager()
                 .registerDynamicTexture(Femclothes.MOD_ID + "_trim_" + (numero++), tex);
         c.hechos = i + 1;
@@ -288,6 +287,31 @@ public final class EfectoTrim {
         float a = azar(x0 + semilla * 31, y0), b = azar(x1 + semilla * 31, y0),
                 c = azar(x0 + semilla * 31, y1), d = azar(x1 + semilla * 31, y1);
         return (a * (1 - fx) + b * fx) * (1 - fy) + (c * (1 - fx) + d * fx) * fy;
+    }
+
+    /**
+     * Voronoi periódico de {@code n} celdas por vuelta: deja en {@code o} la distancia al punto más cercano, al segundo
+     * más cercano y el id de la celda del más cercano.
+     */
+    private static void voronoi(float u, float v, int n, int semilla, float[] o) {
+        float x = frac(u) * n, y = frac(v) * n;
+        int cx = (int) x, cy = (int) y;
+        float d1 = 9f, d2 = 9f;
+        int id = 0;
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                int gx = cx + dx, gy = cy + dy;
+                int wx = Math.floorMod(gx, n), wy = Math.floorMod(gy, n);
+                float px = gx + 0.15f + 0.7f * azar(wx + semilla * 13, wy);
+                float py = gy + 0.15f + 0.7f * azar(wx, wy + semilla * 7 + 101);
+                float d = (float) Math.sqrt((px - x) * (px - x) + (py - y) * (py - y));
+                if (d < d1) { d2 = d1; d1 = d; id = wx * 131 + wy; }
+                else if (d < d2) d2 = d;
+            }
+        }
+        o[0] = d1;
+        o[1] = d2;
+        o[2] = id;
     }
 
     private static int mezclar(int[] a, int[] b, float k, int canal) {
@@ -388,12 +412,22 @@ public final class EfectoTrim {
                 alfa = 0.5f + 0.4f * vena;
                 brillo = vena * vena * 0.3f;
             }
-            case SNOUT -> {   // magma: corteza oscura, naranja e incandescente
-                float a = sen(TAU * (4 * u + 0.35f * sen(TAU * (3 * v + t))));
-                float b = sen(TAU * (5 * v + 0.35f * sen(TAU * (2 * u - t))));
-                float c = sen(TAU * (3 * u + 3 * v + t));
-                h = suave((a + b + c) / 6f + 0.5f);
-                alfa = h < 0.5f ? 0.92f : 0.96f;
+            case SNOUT -> {
+                // Magma (2026-10-06, "mas que tanto movimiento el magma es mas un shifteo de brillos y endurecimientos
+                // magmaticos"): placas de corteza quietas con grietas incandescentes; lo que se mueve es el calor: cada
+                // placa se enfría y se endurece y vuelve a calentarse, y el brillo de las grietas se corre despacio.
+                voronoi(u, v, 7, 3, o);
+                float borde = o[1] - o[0];
+                float fase = azar((int) o[2], 77);
+                float grieta = lim(1f - borde / 0.2f);
+                grieta *= grieta;
+                float calor = 0.5f + 0.5f * sen(TAU * (t + fase));
+                float pulso = 0.6f + 0.4f * sen(TAU * (t * 2 + fase * 3 + u));
+                float corteza = ruido(u, v, 28, 5);
+                float placa = 0.06f + 0.10f * corteza + 0.30f * calor * calor * (0.5f + 0.5f * corteza);
+                h = grieta * (0.55f + 0.45f * pulso * (0.5f + 0.5f * calor)) + (1f - grieta) * placa;
+                alfa = 0.94f;
+                brillo = grieta * 0.35f * pulso * calor;
             }
             case RIB -> {   // brasas sueltas que se encienden y se apagan sobre una corteza quemada
                 int n = 18;
