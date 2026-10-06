@@ -37,10 +37,12 @@ public class RopaScreenHandler extends ScreenHandler {
     }
 
     /** Medidas de la pantalla (px). */
-    public static final int ANCHO = 284, ALTO = 214;
-    public static final int X_MOD = 74, Y_MOD = 26;
+    public static final int ANCHO = 284, ALTO = 238;
+    public static final int X_MOD = 74, Y_MOD = 26, PASO_FILA = 20;
+    /** El cinto va solo, abajo del muñeco (2026-10-06): no entra en las filas de a 3. */
+    public static final int X_CINTO = 30, Y_CINTO = 130;
     public static final int X_REAL = 150, X_COSM = 172, Y_ARMADURA = 26, PASO_ARMADURA = 22;
-    public static final int X_INV = 61, Y_INV = 134;
+    public static final int X_INV = 61, Y_INV = 152;
 
     private static final Identifier[] FONDO_ARMADURA = {
             PlayerScreenHandler.EMPTY_HELMET_SLOT_TEXTURE, PlayerScreenHandler.EMPTY_CHESTPLATE_SLOT_TEXTURE,
@@ -55,7 +57,7 @@ public class RopaScreenHandler extends ScreenHandler {
         super(FemclothesScreenHandlers.ROPA, syncId);
         this.jugador = inv.player;
 
-        int celda = 0;
+        int celda = 0, filaGrupo = 1;
         var comp = TrinketsApi.getTrinketComponent(jugador);
         if (comp.isPresent()) {
             Map<String, SlotGroup> grupos = TrinketsApi.getPlayerSlots(jugador);
@@ -64,10 +66,19 @@ public class RopaScreenHandler extends ScreenHandler {
                 TrinketInventory ti = delGrupo == null ? null : delGrupo.get(s[1]);
                 SlotGroup grupo = grupos.get(s[0]);
                 if (ti == null || grupo == null) continue;
-                for (int i = 0; i < ti.size(); i++, celda++) {
-                    int x = X_MOD + (celda % 3) * 22, y = Y_MOD + (celda / 3) * 22;
+                // Acomodo (2026-10-06, "la mitad de los casilleros de ropa me aparecen fusionados con el inventario"): con
+                // 3 slots por prenda, cada prenda ocupa una fila de 3; sombrero, gargantilla y capa comparten la primera
+                // y el cinto va solo debajo del muñeco.
+                boolean superior = s[1].equals("sombrero") || s[1].equals("choker") || s[1].equals("capa");
+                boolean cinto = s[1].equals("cinto");
+                for (int i = 0; i < ti.size(); i++) {
+                    int x, y;
+                    if (cinto) { x = X_CINTO; y = Y_CINTO; }
+                    else if (superior) { x = X_MOD + (celda++ % 3) * 22; y = Y_MOD; }
+                    else { x = X_MOD + (i % 3) * 22; y = Y_MOD + (filaGrupo + i / 3) * PASO_FILA; }
                     addSlot(new SurvivalTrinketSlot(ti, i, x, y, grupo, ti.getSlotType(), i, true));
                 }
+                if (!superior && !cinto) filaGrupo += (ti.size() + 2) / 3;
             }
         }
 
