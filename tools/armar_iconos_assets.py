@@ -20,6 +20,7 @@ TIRAS = {
     "faldas.png": ["molde_pollera_campana", "molde_pollera_circular", "molde_pollera_tubo", "molde_pollera_tableada", "molde_pollera_globo"],
     "pantalones.png": ["molde_calce_pegado", "molde_calce_ajustado", "molde_calce_normal", "molde_calce_suelto", "molde_calce_oversize"],
     "torsos.png": ["molde_cuello_redondo", "molde_cuello_v", "molde_cuello_polera", "molde_cuello_cuadrado", "molde_cuello_corazon"],
+    "volantes.png": [None, "molde_volado_recto", "molde_volado_circular"],   # el 1.º (falda lisa con puntada) todavía no tiene dónde ir
     "capas.png": ["molde_capa_ruedo_redondeado", "molde_capa_ruedo_recto", "molde_capa_cuello_alto", "molde_capa_ruedo_cola"],
 }
 TAM = 64
@@ -61,6 +62,40 @@ def componer(papel, spr, k):
     return fondo
 
 
+def guardar(nombre, img):
+    destino = os.path.join(ITEMS, nombre + ".png")
+    if os.path.exists(destino) and not os.path.exists(os.path.join(VIEJOS, nombre + ".png")):
+        shutil.copy(destino, os.path.join(VIEJOS, nombre + ".png"))
+    img.save(destino)
+    print("ok", nombre)
+
+
+# motivos.png: grilla de 10 x 3 íconos; (fila, columna) de cada uno que se usa
+MOTIVOS = {
+    "molde_aplique_mono": (0, 9),       # moño rojo (el verde está en (2, 1))
+    "molde_aplique_mariposa": (2, 0),   # mariposa violeta
+    "molde_aplique_flor": (0, 3),       # flor rosa (la blanca está en (2, 2))
+}
+# los patrones llevan el motivo adentro del aro de bordado
+PATRONES = {
+    "pattern_corazones": (0, 1),
+    "pattern_estrellas": (1, 9),
+}
+CAJA_MOTIVO = 40     # lado máximo del motivo sobre el papel
+CAJA_ARO = 30        # lado máximo del motivo adentro del aro
+
+
+def motivo(grilla, fila, col):
+    celda_w, celda_h = grilla.width / 10, grilla.height / 3
+    recorte = grilla.crop((round(col * celda_w), round(fila * celda_h), round((col + 1) * celda_w), round((fila + 1) * celda_h)))
+    return recorte.crop(recorte.getbbox())
+
+
+def en_caja(spr, caja):
+    k = min(caja / spr.width, caja / spr.height)
+    return spr.resize((max(1, round(spr.width * k)), max(1, round(spr.height * k))), Image.LANCZOS)
+
+
 def main():
     papel = Image.open(os.path.join(FUENTE, "papel.png")).convert("RGBA")
     os.makedirs(VIEJOS, exist_ok=True)
@@ -71,11 +106,26 @@ def main():
         sprites = [sprite(tira, x0, x1) for (x0, x1) in rangos[:len(nombres)]]
         k = min(CAJA / max(sp.width for sp in sprites), CAJA / max(sp.height for sp in sprites))   # misma escala en toda la tira
         for nombre, spr in zip(nombres, sprites):
-            destino = os.path.join(ITEMS, nombre + ".png")
-            if os.path.exists(destino) and not os.path.exists(os.path.join(VIEJOS, nombre + ".png")):
-                shutil.copy(destino, os.path.join(VIEJOS, nombre + ".png"))
-            componer(papel, spr, k).save(destino)
-            print("ok", nombre)
+            if nombre:
+                guardar(nombre, componer(papel, spr, k))
+
+    # Apliques: el motivo sobre el pergamino
+    grilla = Image.open(os.path.join(FUENTE, "motivos.png")).convert("RGBA")
+    for nombre, (fila, col) in MOTIVOS.items():
+        spr = en_caja(motivo(grilla, fila, col), CAJA_MOTIVO)
+        fondo = papel.resize((TAM, TAM), Image.LANCZOS).convert("RGBA")
+        fondo.alpha_composite(spr, ((TAM - spr.width) // 2, (TAM - spr.height) // 2))
+        guardar(nombre, fondo)
+
+    # Patrones: el aro de bordado (el "bastidor" de tu sistema de diseño) con el motivo adentro
+    aro = Image.open(os.path.join(FUENTE, "aro.png")).convert("RGBA")
+    base = aro.crop(aro.getbbox()).resize((TAM - 6, TAM - 6), Image.LANCZOS)
+    for nombre, (fila, col) in PATRONES.items():
+        fondo = Image.new("RGBA", (TAM, TAM), (0, 0, 0, 0))
+        fondo.alpha_composite(base, (3, 3))
+        spr = en_caja(motivo(grilla, fila, col), CAJA_ARO)
+        fondo.alpha_composite(spr, ((TAM - spr.width) // 2, (TAM - spr.height) // 2 + 3))
+        guardar(nombre, fondo)
 
 
 if __name__ == "__main__":
