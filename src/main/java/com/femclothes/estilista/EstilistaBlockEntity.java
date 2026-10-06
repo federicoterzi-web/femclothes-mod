@@ -444,7 +444,10 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         if (estado != Estado.REPOSO || items.get(SLOT_PRENDA).isEmpty() || !items.get(SLOT_SALIDA).isEmpty()) return false;
         // Sin diseño fijado para este tipo, pero con una muestra del mismo tipo en el editor: se usa esa (2026-10-06,
         // "cuando solo se aplica un finish no te deja activar la maquina"): no hace falta apretar Fijar antes.
-        if (diseno(items.get(SLOT_PRENDA)) == null) fijarDeLaMuestraDelEditor(items.get(SLOT_PRENDA));
+        // 2026-10-06, "el acabado se ve en la vista previa pero no en el mundo": si ya había un diseño fijado de ese tipo,
+        // Aplicar lo usaba tal cual y el acabado recién puesto en la muestra no llegaba a la prenda. La muestra del editor
+        // (si es del mismo tipo y lleva algo) manda siempre.
+        fijarDeLaMuestraDelEditor(items.get(SLOT_PRENDA));
         Resultado r = iniciar();
         switch (r) {
             case SIN_DISENO -> jugador.sendMessage(Text.translatable("femclothes.estilista.sin_diseno"), true);
