@@ -27,6 +27,11 @@ public final class ModItems {
     public static final ComponentType<Estampa> ESTAMPA_FRENTE = registrarEstampa("estampa_frente");
     /** Idem en la espalda. Estampar las dos caras cuesta dos pasadas. */
     public static final ComponentType<Estampa> ESTAMPA_ESPALDA = registrarEstampa("estampa_espalda");
+    /**
+     * Foto sublimada en un banner (2026-10-06, "solo tintes y sublimadoras a banners y 16x"): la dibuja
+     * {@link BannerHD} a 16x sobre la cara del banner y, si el banner se usa en la receta del escudo, sobre el escudo.
+     */
+    public static final ComponentType<Estampa> BANNER_ESTAMPA = registrarEstampa("banner_estampa");
 
     /**
      * Las capas de estampa con máscara (2026-10-02, "mascaras de sublimacion...

@@ -822,7 +822,7 @@ public final class EstampaTextures {
      * al jugador: una foto de Camerapture es opaca de punta a punta, y un PNG
      * que alguien subio para estampar casi siempre tiene fondo transparente.
      */
-    private static boolean tieneTransparencia(NativeImage foto) {
+    static boolean tieneTransparencia(NativeImage foto) {
         // De a saltos: con mirar una grilla alcanza para distinguir un fondo
         // transparente, y recorrer millones de pixeles por frame no.
         int paso = Math.max(1, Math.min(foto.getWidth(), foto.getHeight()) / 64);
@@ -961,7 +961,7 @@ public final class EstampaTextures {
     }
 
     @Nullable
-    private static CameraptureClientCompat.Foto fotoDe(UUID id) {
+    static CameraptureClientCompat.Foto fotoDe(UUID id) {
         if (!net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("camerapture")) return null;
         try {
             return CameraptureClientCompat.foto(id);
@@ -1013,7 +1013,7 @@ public final class EstampaTextures {
      * puede estar paddeada y leer con el tamano equivocado corrompe la imagen.
      */
     @Nullable
-    private static NativeImage leerDeLaGpu(Identifier textura, int anchoSugerido, int altoSugerido) {
+    static NativeImage leerDeLaGpu(Identifier textura, int anchoSugerido, int altoSugerido) {
         if (!RenderSystem.isOnRenderThread()) return null;
         try {
             AbstractTexture tex = MinecraftClient.getInstance().getTextureManager().getTexture(textura);

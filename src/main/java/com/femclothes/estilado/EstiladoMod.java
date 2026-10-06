@@ -34,6 +34,7 @@ public final class EstiladoMod {
 
     public static void register() {
         ComandoMoldes.init();
+        com.femclothes.sublimadora.ComandoBanner.init();
         Identifier id = Identifier.of(Femclothes.MOD_ID, "mesa_estilado");
         Registry.register(Registries.BLOCK, id, ESTILADO_BLOCK);
         Registry.register(Registries.ITEM, id, ESTILADO_BLOCK_ITEM);

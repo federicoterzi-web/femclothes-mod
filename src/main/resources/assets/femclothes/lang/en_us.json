@@ -933,5 +933,8 @@
   "femclothes.pollera.molde_borde.ayuda": "Goes in the Skirt's Custom pin: changes the hem edge.",
   "item.femclothes.molde_borde_ondulado": "Edge Template: Wavy",
   "item.femclothes.molde_borde_festoneado": "Edge Template: Scalloped",
-  "item.femclothes.molde_borde_pico": "Edge Template: Pointed"
+  "item.femclothes.molde_borde_pico": "Edge Template: Pointed",
+  "femclothes.banner.sin_banner": "Hold a banner or a shield in your main hand.",
+  "femclothes.banner.puesta": "Photo applied to the banner (16x).",
+  "femclothes.banner.quitada": "Photo removed from the banner."
 }
