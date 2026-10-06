@@ -51,7 +51,9 @@ public class EmpalmeBlockEntity extends BlockEntity implements SidedInventory {
     }
 
     public int ticks() {
-        return switch (lado()) { case 1, 2 -> TICKS_LADO; case 3 -> TICKS_ARRIBA; default -> TICKS_RECTO; };
+        int base = switch (lado()) { case 1, 2 -> TICKS_LADO; case 3 -> TICKS_ARRIBA; default -> TICKS_RECTO; };
+        // Acelerado por el hielo de abajo, como la cinta (2026-10-06).
+        return Math.max(1, Math.round(base / (float) CintaFisica.multiplicador(world, pos)));
     }
 
     public float tiempoEfectivo(float tickDelta) {

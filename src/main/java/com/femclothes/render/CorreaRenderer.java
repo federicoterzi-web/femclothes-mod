@@ -223,7 +223,12 @@ public final class CorreaRenderer {
                     Vector3f pb = new Vector3f(b.pos()).add(new Vector3f(b.normal()).mul(fuera / 16f)).mul(16f);
                     curva = curvaColgada(pa, pb, c.largo() * s, g, incl, a.normal());
                 }
-                for (Vector3f q : curva) camino.add(new Nodo(q, new Vector3f(a.normal())));
+                // Siempre hacia afuera de la tela (2026-10-06, "que los straps cuelguen hacia afuera de la pollera en lugar
+                // de hacia adentro"): cuanto más baja, más se separa por la normal, como el vuelo de la falda.
+                for (Vector3f q : curva) {
+                    float d = q.distance(pa);
+                    camino.add(new Nodo(new Vector3f(q).add(new Vector3f(a.normal()).mul(Math.min(4f * s, 0.3f * d))), new Vector3f(a.normal())));
+                }
             } else if (a != null) {
                 Vector3f pa = new Vector3f(a.pos()).add(new Vector3f(a.normal()).mul(fuera / 16f)).mul(16f);
                 Vector3f pb = b != null ? new Vector3f(b.pos()).add(new Vector3f(b.normal()).mul(fuera / 16f)).mul(16f)

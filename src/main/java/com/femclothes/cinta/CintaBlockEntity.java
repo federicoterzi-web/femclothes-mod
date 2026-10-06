@@ -48,6 +48,11 @@ public class CintaBlockEntity extends BlockEntity implements SidedInventory {
         return estado.get(CintaBlock.FORMA).esCurva() ? TICKS_CURVA : TICKS_RECTA;   // la rampa va a la misma velocidad de banda
     }
 
+    /** Con el hielo de abajo (2026-10-06, "si los items tambien se aceleran") el ítem tarda menos: ×2 / ×3. */
+    public static int ticksDe(World mundo, BlockPos pos, BlockState estado) {
+        return Math.max(1, Math.round(ticksDe(estado) / (float) CintaFisica.multiplicador(mundo, pos)));
+    }
+
     /** Servidor: cuando la prenda llegó al final, la empuja al inventario de enfrente (si no puede, espera). */
     public static void tick(World world, BlockPos pos, BlockState state, CintaBlockEntity be) {
         // La forma se vuelve a mirar sola cada tanto (2026-10-05, "el recalculado que se haga automatico al updatear
@@ -73,7 +78,7 @@ public class CintaBlockEntity extends BlockEntity implements SidedInventory {
         }
         if (pausada) return;
         if (be.carga.isEmpty()) return;
-        if (world.getTime() - be.llegada < ticksDe(state)) return;
+        if (world.getTime() - be.llegada < ticksDe(world, pos, state)) return;
         Direction frente = state.get(CintaBlock.FACING);
         BlockPos destino = pos.offset(frente);
         CintaBlock.Forma forma = state.get(CintaBlock.FORMA);

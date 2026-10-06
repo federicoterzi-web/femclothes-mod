@@ -35,7 +35,7 @@ public class CintaRenderer implements BlockEntityRenderer<CintaBlockEntity> {
         if (stack.isEmpty() || be.getWorld() == null) return;
         var estado = be.getCachedState();
         CintaBlock.Forma forma = estado.get(CintaBlock.FORMA);
-        float t = (be.tiempoEfectivo(tickDelta) - be.llegada()) / CintaBlockEntity.ticksDe(estado);
+        float t = (be.tiempoEfectivo(tickDelta) - be.llegada()) / CintaBlockEntity.ticksDe(be.getWorld(), be.getPos(), estado);
         t = Math.max(0f, Math.min(1f, t));
 
         // Posición y rumbo en el marco "mira al norte" centrado en el bloque. En las rampas la banda sube/baja
