@@ -29,8 +29,13 @@ public final class CintaFisica {
     /** Parte de la velocidad que se pierde por el rozamiento del suelo: se agrega esto para llegar a la velocidad de la banda. */
     private static final double IMPULSO = PX_POR_TICK * 0.45;
 
-    /** Gancho para acelerar la cinta más adelante (2026-10-06, "si esta arriba de hielo azul es el doble"): hoy siempre 1. */
-    public static double multiplicador(World mundo, BlockPos pos) { return 1.0; }
+    /** Aceleración por el bloque de abajo (2026-10-06, "hielo comprimido x2 hielo azul x3"). */
+    public static double multiplicador(World mundo, BlockPos pos) {
+        BlockState abajo = mundo.getBlockState(pos.down());
+        if (abajo.isOf(net.minecraft.block.Blocks.BLUE_ICE)) return 3.0;
+        if (abajo.isOf(net.minecraft.block.Blocks.PACKED_ICE)) return 2.0;
+        return 1.0;
+    }
 
     // ── Empuje ──
 
