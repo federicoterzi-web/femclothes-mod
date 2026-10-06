@@ -7,7 +7,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.VertexConsumers;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.item.ItemStack;
@@ -88,31 +87,82 @@ public final class EfectoTrim {
             Identifier base = ClothingTextureCache.ultimaTextura;
             ClothingTextureCache.ultimaTextura = null;   // vale para este pedido solamente
             if (base == null) return normal;
+            // No se piden dos buffers a la vez: el proveedor inmediato cierra el anterior al cambiar de capa
+            // ("Not building!"). Se anotan los vértices y la capa de efecto se dibuja después, con volcarTodo().
+            Registro r = new Registro(normal, real, tipo, base);
+            REGISTROS.add(r);
+            return r;
+        }
+    }
+
+    private static final java.util.List<Registro> REGISTROS = new java.util.ArrayList<>();
+
+    /** Dibuja las capas de efecto de todo lo anotado hasta ahora (cada pieza terminada, y después de las translúcidas). */
+    public static void volcarTodo() {
+        if (REGISTROS.isEmpty()) return;
+        java.util.List<Registro> lista = new java.util.ArrayList<>(REGISTROS);
+        REGISTROS.clear();
+        for (Registro r : lista) r.volcar();
+    }
+
+    /** Deja pasar todo al buffer normal y se acuerda de cada vértice para repetirlo en la capa de efecto. */
+    private static final class Registro implements VertexConsumer {
+        private final VertexConsumer normal;
+        private final VertexConsumerProvider real;
+        private final Tipo tipo;
+        private final Identifier base;
+        private float[] datos = new float[12 * 64];   // por vértice: x y z u v ou ov lu lv nx ny nz
+        private int n = 0;
+        private float x, y, z, u, v, nx, ny, nz;
+        private int ou, ov, lu, lv;
+
+        Registro(VertexConsumer normal, VertexConsumerProvider real, Tipo tipo, Identifier base) {
+            this.normal = normal;
+            this.real = real;
+            this.tipo = tipo;
+            this.base = base;
+        }
+
+        @Override public VertexConsumer vertex(float x, float y, float z) { normal.vertex(x, y, z); this.x = x; this.y = y; this.z = z; return this; }
+        @Override public VertexConsumer color(int r, int g, int b, int a) { normal.color(r, g, b, a); return this; }
+        @Override public VertexConsumer texture(float u, float v) { normal.texture(u, v); this.u = u; this.v = v; return this; }
+        @Override public VertexConsumer overlay(int u, int v) { normal.overlay(u, v); ou = u; ov = v; return this; }
+        @Override public VertexConsumer light(int u, int v) { normal.light(u, v); lu = u; lv = v; return this; }
+
+        @Override
+        public VertexConsumer normal(float nx, float ny, float nz) {
+            normal.normal(nx, ny, nz);
+            if ((n + 1) * 12 > datos.length) datos = java.util.Arrays.copyOf(datos, datos.length * 2);
+            int o = n * 12;
+            datos[o] = x; datos[o + 1] = y; datos[o + 2] = z; datos[o + 3] = u; datos[o + 4] = v;
+            datos[o + 5] = ou; datos[o + 6] = ov; datos[o + 7] = lu; datos[o + 8] = lv;
+            datos[o + 9] = nx; datos[o + 10] = ny; datos[o + 11] = nz;
+            n++;
+            return this;
+        }
+
+        void volcar() {
+            if (n == 0) return;
             Cuadros c = cuadros(tipo, base);
-            if (c == null || c.hechos == 0) return normal;
+            if (c == null || c.hechos == 0) return;
             float fase = (System.currentTimeMillis() % PERIODO_MS) / (float) PERIODO_MS * c.hechos;
             int a = Math.min((int) fase, c.hechos - 1);
             int b = (a + 1) % c.hechos;
             float t = fase - (int) fase;
-            VertexConsumer ea = new Escalado(real.getBuffer(RenderLayer.getEyes(c.ids[a])), 1f - t);
-            VertexConsumer eb = new Escalado(real.getBuffer(RenderLayer.getEyes(c.ids[b])), t);
-            return VertexConsumers.union(normal, ea, eb);
+            repetir(real.getBuffer(RenderLayer.getEyes(c.ids[a])), 1f - t);
+            if (b != a) repetir(real.getBuffer(RenderLayer.getEyes(c.ids[b])), t);
         }
-    }
 
-    /** Multiplica el alfa de cada vértice: el fundido entre dos cuadros. */
-    private static final class Escalado implements VertexConsumer {
-        private final VertexConsumer vc;
-        private final float k;
-
-        Escalado(VertexConsumer vc, float k) { this.vc = vc; this.k = k; }
-
-        @Override public VertexConsumer vertex(float x, float y, float z) { vc.vertex(x, y, z); return this; }
-        @Override public VertexConsumer color(int r, int g, int b, int a) { vc.color(r, g, b, Math.round(a * k)); return this; }
-        @Override public VertexConsumer texture(float u, float v) { vc.texture(u, v); return this; }
-        @Override public VertexConsumer overlay(int u, int v) { vc.overlay(u, v); return this; }
-        @Override public VertexConsumer light(int u, int v) { vc.light(u, v); return this; }
-        @Override public VertexConsumer normal(float x, float y, float z) { vc.normal(x, y, z); return this; }
+        private void repetir(VertexConsumer vc, float peso) {
+            int alfa = Math.round(255 * peso);
+            if (alfa <= 0) return;
+            for (int i = 0; i < n; i++) {
+                int o = i * 12;
+                vc.vertex(datos[o], datos[o + 1], datos[o + 2]).color(255, 255, 255, alfa).texture(datos[o + 3], datos[o + 4])
+                        .overlay((int) datos[o + 5], (int) datos[o + 6]).light((int) datos[o + 7], (int) datos[o + 8])
+                        .normal(datos[o + 9], datos[o + 10], datos[o + 11]);
+            }
+        }
     }
 
     // ── los cuadros de cada tela ─────────────────────────────────────────────

@@ -670,6 +670,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
 
         for (Pieza pieza : piezas) {
             indice++;
+            EfectoTrim.volcarTodo();   // la capa de efecto de la pieza anterior (ya terminó de dibujarse)
             // Acabado con trim (2026-10-06): la tela de esta prenda se dibuja además con su efecto animado.
             VertexConsumerProvider vertexConsumers = EfectoTrim.envolver(origen.get(pieza), vcpBase);
             int desde = Math.max(0, Math.min(12, pieza.filaDesde()));
@@ -810,6 +811,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             for (int k = 0; k < colgado; k++) exterior[hasta + k] = Math.max(exterior[hasta + k], dilColgado);
         }
         } finally {
+            EfectoTrim.volcarTodo();
             com.femclothes.render.relieve.RelieveRender.actual = null;
         }
     }
@@ -1104,6 +1106,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     private static void dibujarTranslucidas() {
         for (Runnable r : TRANSLUCIDAS_PENDIENTES) r.run();
         TRANSLUCIDAS_PENDIENTES.clear();
+        EfectoTrim.volcarTodo();
     }
 
     /**
