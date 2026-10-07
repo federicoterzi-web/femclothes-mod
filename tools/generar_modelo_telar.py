@@ -23,8 +23,8 @@ RAIZ = os.path.join(os.path.dirname(__file__), "..")
 RES = os.path.join(RAIZ, "src", "main", "resources", "assets", "femclothes")
 NUEVO = os.path.join(RAIZ, "assets_nuevos_prueba", "telar")
 # Texels propios y libres del atlas (2026-10-07, "el telar automatico tiene q tener la barra de progreso y dos barras de
-# insumos como la autoestiladora"): barra de progreso lila y las de lana (blanca) e hilo (dorado).
-TEXEL_LILA, TEXEL_LANA, TEXEL_HILO = (100, 60), (101, 60), (102, 60)
+# insumos como la autoestiladora"): barra de progreso granate y las de lana (blanca) e hilo (dorado).
+TEXEL_ACENTO, TEXEL_LANA, TEXEL_HILO = (100, 60), (101, 60), (102, 60)
 
 
 def geo(ruta):
@@ -62,7 +62,7 @@ def main():
         if b["name"] == "progress":
             for c in b["cubes"]:
                 for cara in c["uv"].values():
-                    cara["uv"] = [TEXEL_LILA[0], TEXEL_LILA[1]]
+                    cara["uv"] = [TEXEL_ACENTO[0], TEXEL_ACENTO[1]]
     # Dos indicadores verticales de insumos en el hueco del panel (como la Estilista); el cliente los escala en Y.
     for nombre, x0, texel in (("lana", 1.55, TEXEL_LANA), ("hilo", 3.55, TEXEL_HILO)):
         base["cubes"].append({
@@ -103,7 +103,7 @@ def main():
     atlas = Image.new("RGBA", (128, 256), (0, 0, 0, 0))
     atlas.paste(a, (0, 0))
     atlas.paste(b, (0, est.DESPLAZAR_V))
-    atlas.putpixel(TEXEL_LILA, (0xD6, 0xAA, 0xE8, 255))
+    atlas.putpixel(TEXEL_ACENTO, (0xA3, 0x26, 0x3A, 255))
     atlas.putpixel(TEXEL_LANA, (0xF2, 0xF2, 0xF2, 255))
     atlas.putpixel(TEXEL_HILO, (0xD8, 0xA8, 0x5A, 255))
     # La pista gris de las barras (texel 126,1) la usa también la Estilista: se copia a este atlas si falta.

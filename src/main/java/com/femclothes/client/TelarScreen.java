@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * El Telar automático (2026-10-07, "produzca prendas basicas a base de lana e hilo" + "se pueda seleccionar varias
  * prendas y vaya alternando, y se le pueda configurar que cantidad de prenda se quiere que saque"): fondo, marcos y
- * barra de progreso dibujados por código (sin texturas), con el acento lila de las máquinas de estilo. A la izquierda
+ * barra de progreso dibujados por código (sin texturas), con el acento granate del Telar (2026-10-07, "el color del telar es granate"). A la izquierda
  * lana e hilo, en el medio las seis prendas (se tildan varias) y el lote, a la derecha la prenda terminada; abajo el
  * inventario.
  */
@@ -35,7 +35,7 @@ public class TelarScreen extends net.minecraft.client.gui.screen.ingame.HandledS
     @Override
     protected void init() {
         super.init();
-        EstiloPergamino.usarTema(EstiloPergamino.Tema.LILA);
+        EstiloPergamino.usarTema(EstiloPergamino.Tema.GRANATE);
         botones.clear();
         TelarPrenda[] prendas = TelarPrenda.values();
         for (int i = 0; i < prendas.length; i++) {
@@ -98,7 +98,7 @@ public class TelarScreen extends net.minecraft.client.gui.screen.ingame.HandledS
         int bx = x0 + 52, by = y0 + Y_BARRA, bw = 104;
         c.fill(bx - 1, by - 1, bx + bw + 1, by + 7, 0xFF2A180C);
         c.fill(bx, by, bx + bw, by + 6, 0xFF111111);
-        c.fill(bx, by, bx + (int) (bw * nivel), by + 6, 0xFFD6AAE8);
+        c.fill(bx, by, bx + (int) (bw * nivel), by + 6, 0xFFB3283F);
         // Lote y costo de la que sigue.
         Text lote = be.lote() == 0 ? Text.translatable("femclothes.telar.lote_sin_limite")
                 : Text.translatable("femclothes.telar.lote_n", be.lote(), be.restantes());

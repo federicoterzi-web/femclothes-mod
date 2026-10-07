@@ -41,7 +41,9 @@ public final class EstiloPergamino {
         /** Maniquí: azul esmaltado de sus esquinas y parante (2026-09-30). */
         AZUL(0xFF96B8E6, 0xFF1E345A),
         /** Mesa de estilado: lila de sus herrajes (2026-10-01). */
-        LILA(0xFFD6AAE8, 0xFF462260);
+        LILA(0xFFD6AAE8, 0xFF462260),
+        /** Telar automático: granate (2026-10-07, "el color del telar es granate"). */
+        GRANATE(0xFFC8485E, 0xFF4A0E1A);
 
         public final int claro, oscuro;
 
