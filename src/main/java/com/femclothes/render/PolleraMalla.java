@@ -154,7 +154,7 @@ public final class PolleraMalla {
 
         // La tela sale del perfil QUIETO (no del que se mueve): así el dibujo
         // no "nada" sobre la pollera cuando la tela se balancea.
-        Perfil perfil = perfil(forma, largo);
+        Perfil perfil = perfil(forma, largo, cola);
         for (int f = 0; f <= FILAS; f++) {
             float t = f / (float) FILAS;
             float y = Y_CINTURA + t * l;
@@ -458,15 +458,43 @@ public final class PolleraMalla {
 
     /** Siempre de la pollera lisa (sin volados): las UV de la tela no cambian con ellos. */
     public static Perfil perfil(PolleraForma forma, PolleraLargo largo) {
-        return PERFILES.computeIfAbsent(forma + "|" + largo, k -> calcularPerfil(forma, largo));
+        return perfil(forma, largo, 0f);
     }
 
-    private static Perfil calcularPerfil(PolleraForma forma, PolleraLargo largo) {
+    /**
+     * Con la cola (2026-10-07, "minimizar la deformacion de los patrones en las polleras sobre todo atras"): la tela
+     * de atrás pasa por fuera de las nalgas ({@link #pasarPorFueraDeLaCola}), así que ahí mide más que la pollera sin
+     * cola y el dibujo salía estirado. El perfil se calcula con esa misma deformación, por pasos de media unidad de
+     * cola ({@link #pasoDeCola}), para que las UV y los patrones "desplegados" la tengan en cuenta.
+     */
+    public static Perfil perfil(PolleraForma forma, PolleraLargo largo, float cola) {
+        int paso = pasoDeCola(cola);
+        return PERFILES.computeIfAbsent(forma + "|" + largo + "|" + paso, k -> calcularPerfil(forma, largo, paso / 2f));
+    }
+
+    /** La cola en pasos de media unidad (0 si casi no hay): la clave de los perfiles y de las texturas de la pollera. */
+    public static int pasoDeCola(float cola) {
+        return cola > 0.05f ? Math.min(12, Math.round(cola * 2f)) : 0;
+    }
+
+    private static Perfil calcularPerfil(PolleraForma forma, PolleraLargo largo, float cola) {
         Perfil pf = new Perfil();
         float l = largo.pixeles;
         float a0 = 4.35f, b0 = 2.35f;
         float[][][] anillos = new float[FILAS + 1][][];
         for (int f = 0; f <= FILAS; f++) anillos[f] = anillo(f / (float) FILAS, a0, b0, l, 0f, forma, null, null);
+        if (cola > 0.05f) {
+            // La misma deformación de la espalda que hace la malla al dibujar (con y, que anillo() no trae).
+            float[][][] p3 = new float[FILAS + 1][COLUMNAS + 1][];
+            for (int f = 0; f <= FILAS; f++) {
+                float y = Y_CINTURA + f / (float) FILAS * l;
+                for (int c = 0; c <= COLUMNAS; c++) p3[f][c] = new float[]{anillos[f][c][0], y, anillos[f][c][1]};
+            }
+            pasarPorFueraDeLaCola(p3, cola);
+            for (int f = 0; f <= FILAS; f++) {
+                for (int c = 0; c <= COLUMNAS; c++) anillos[f][c] = new float[]{p3[f][c][0], p3[f][c][2]};
+            }
+        }
 
         // u: largo recorrido sobre cada anillo, con el centro del frente
         // clavado en u 24 y el de la espalda en u 36 (cada mitad de la vuelta

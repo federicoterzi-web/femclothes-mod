@@ -349,7 +349,13 @@ public final class PatronGenerador {
      * patrones dependen de la forma y del largo (ver {@link #desplegar}).
      */
     public static String clavePollera(com.femclothes.item.PolleraForma forma, com.femclothes.item.PolleraLargo largo) {
-        return "pollera:" + forma.name() + ":" + largo.name();
+        return clavePollera(forma, largo, 0);
+    }
+
+    /** Con la cola del que la lleva en pasos de media unidad ({@link PolleraMalla#pasoDeCola}). */
+    public static String clavePollera(com.femclothes.item.PolleraForma forma, com.femclothes.item.PolleraLargo largo,
+                                      int pasoCola) {
+        return "pollera:" + forma.name() + ":" + largo.name() + (pasoCola > 0 ? ":" + pasoCola : "");
     }
 
     private static List<Caja> cajasDe(String prenda) {
@@ -376,7 +382,7 @@ public final class PatronGenerador {
         if (!prenda.startsWith("pollera:") || caja != TORSO) return f;
         String[] partes = prenda.split(":");
         PolleraMalla.Perfil perfil = PolleraMalla.perfil(com.femclothes.item.PolleraForma.valueOf(partes[1]),
-                com.femclothes.item.PolleraLargo.valueOf(partes[2]));
+                com.femclothes.item.PolleraLargo.valueOf(partes[2]), partes.length > 3 ? Integer.parseInt(partes[3]) / 2f : 0f);
         int w = caja.x1() - caja.x0(), h = caja.alto();
         int centro = w / 3, mitad = w / 2;
         float alto = perfil.largoTela / 12f;

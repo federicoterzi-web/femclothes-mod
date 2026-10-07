@@ -303,7 +303,10 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         // (no es una Pieza: el cuerpo de abajo no se achica por ella) —
         // Ajustado pasó a -0.25 el 2026-09-30.
         float dilatacion = Math.max(0F, com.femclothes.item.Calce.dilatacionEfectiva(stack)) + nivel * SEPARACION_POLLERAS;
-        Identifier textura = texturaPollera(stack);
+        // La cola del que la lleva entra en las UV de la tela (2026-10-07, "minimizar la deformacion... atras").
+        float colaTela = com.femclothes.render.relieve.BustoRender.actual == null ? 0f
+                : com.femclothes.render.relieve.BustoRender.actual.cola();
+        Identifier textura = texturaPollera(stack, PolleraMalla.pasoDeCola(colaTela));
 
         ModelPart delJugador = CuerpoGeometria.delJugador(biped, Parte.TORSO);
         if (!delJugador.visible) return;
@@ -340,6 +343,11 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
      * color del mismo lugar que la prenda puesta.
      */
     public static Identifier texturaPollera(ItemStack stack) {
+        return texturaPollera(stack, 0);
+    }
+
+    /** Con la cola del que la lleva en pasos de media unidad ({@link PolleraMalla#pasoDeCola}). */
+    public static Identifier texturaPollera(ItemStack stack, int pasoCola) {
         int colorBase = com.femclothes.region.RegionResolver.colorBase(stack, com.femclothes.region.Lado.IZQUIERDA);
         // Tela nueva (2026-09-29, "teñirla y sublimarla"): pollera_tela.png
         // tiene el layout de la caja del TORSO (ver PolleraMalla), así que
@@ -351,7 +359,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         java.util.List<ClothingTextureCache.CapaMascara> capasMascaraPollera = new java.util.ArrayList<>(capasPollera.size());
         // Patrones desplegados según la forma y el largo (2026-10-01, ver PatronGenerador#desplegar).
         String clavePollera = com.femclothes.render.PatronGenerador.clavePollera(
-                com.femclothes.item.PolleraItem.forma(stack), com.femclothes.item.PolleraItem.largo(stack));
+                com.femclothes.item.PolleraItem.forma(stack), com.femclothes.item.PolleraItem.largo(stack), pasoCola);
         for (com.femclothes.region.RegionResolver.CapaPatron capa : capasPollera) {
             net.minecraft.client.texture.NativeImage mascara = com.femclothes.render.PatronGenerador.mascaraDeCapa(clavePollera, capa);
             if (!capa.lisa() && mascara == null) continue;
