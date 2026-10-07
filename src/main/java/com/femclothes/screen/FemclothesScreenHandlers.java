@@ -50,9 +50,50 @@ public final class FemclothesScreenHandlers {
                     (syncId, inv, pos) -> com.femclothes.guardarropas.GuardarropasScreenHandler.deCliente(syncId, inv, pos),
                     net.minecraft.util.math.BlockPos.PACKET_CODEC));
 
+    /** Maniquí (2026-09-30): mismo patrón extended que GUARDARROPAS, para que el cliente apunte al block entity real. */
+    public static final net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<
+            com.femclothes.maniqui.ManiquiScreenHandler, net.minecraft.util.math.BlockPos> MANIQUI = Registry.register(
+            Registries.SCREEN_HANDLER,
+            Identifier.of("femclothes", "maniqui"),
+            new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<>(
+                    (syncId, inv, pos) -> com.femclothes.maniqui.ManiquiScreenHandler.deCliente(syncId, inv, pos),
+                    net.minecraft.util.math.BlockPos.PACKET_CODEC));
+
+    /** Mesa de estilado (2026-10-01): la prenda con sus apliques viaja en el block entity real. */
+    public static final net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<
+            com.femclothes.estilado.EstiladoScreenHandler, net.minecraft.util.math.BlockPos> ESTILADO = Registry.register(
+            Registries.SCREEN_HANDLER,
+            Identifier.of("femclothes", "estilado"),
+            new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<>(
+                    (syncId, inv, pos) -> com.femclothes.estilado.EstiladoScreenHandler.deCliente(syncId, inv, pos),
+                    net.minecraft.util.math.BlockPos.PACKET_CODEC));
+
     public static void init() {
         // fuerza class-loading
     }
 
     private FemclothesScreenHandlers() {}
+
+    /** Pantalla de Ropa (2026-10-05): sin datos extra, todo sale del jugador. */
+    public static final ScreenHandlerType<com.femclothes.ropa.RopaScreenHandler> ROPA = Registry.register(
+            Registries.SCREEN_HANDLER, Identifier.of("femclothes", "ropa"),
+            new ScreenHandlerType<>(com.femclothes.ropa.RopaScreenHandler::new, FeatureSet.empty()));
+
+    /** Pantalla de la Estilista automática (2026-10-05). */
+    public static final net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<
+            com.femclothes.estilista.EstilistaScreenHandler, net.minecraft.util.math.BlockPos> ESTILISTA = Registry.register(
+            Registries.SCREEN_HANDLER,
+            Identifier.of("femclothes", "estilista"),
+            new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<>(
+                    (syncId, inv, pos) -> com.femclothes.estilista.EstilistaScreenHandler.deCliente(syncId, inv, pos),
+                    net.minecraft.util.math.BlockPos.PACKET_CODEC));
+
+    /** Pantalla del Telar automático (2026-10-07). */
+    public static final net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<
+            com.femclothes.telar.TelarScreenHandler, net.minecraft.util.math.BlockPos> TELAR = Registry.register(
+            Registries.SCREEN_HANDLER,
+            Identifier.of("femclothes", "telar"),
+            new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<>(
+                    (syncId, inv, pos) -> com.femclothes.telar.TelarScreenHandler.deCliente(syncId, inv, pos),
+                    net.minecraft.util.math.BlockPos.PACKET_CODEC));
 }

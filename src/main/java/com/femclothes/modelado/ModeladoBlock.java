@@ -43,15 +43,25 @@ public class ModeladoBlock extends BlockWithEntity {
 
     public ModeladoBlock(Settings settings) {
         super(settings);
-        setDefaultState(getStateManager().getDefaultState().with(FACING, Direction.NORTH));
+        setDefaultState(getStateManager().getDefaultState().with(FACING, Direction.NORTH)
+                .with(com.femclothes.util.LuzMaquina.LIT, false));
     }
 
     @Override
     protected MapCodec<? extends BlockWithEntity> getCodec() { return CODEC; }
 
+    /** Máquina creativa (2026-10-01): viene cargada al colocarla — ver {@code util.MaquinaCreativa}. */
+    @Override
+    public void onPlaced(net.minecraft.world.World world, net.minecraft.util.math.BlockPos pos, BlockState state,
+                         @org.jetbrains.annotations.Nullable net.minecraft.entity.LivingEntity placer,
+                         net.minecraft.item.ItemStack itemStack) {
+        super.onPlaced(world, pos, state, placer, itemStack);
+        com.femclothes.util.MaquinaCreativa.alColocar(world, pos, state, itemStack);
+    }
+
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, com.femclothes.util.LuzMaquina.LIT);
     }
 
     @Override
@@ -98,7 +108,14 @@ public class ModeladoBlock extends BlockWithEntity {
                                               PlayerEntity player, Hand hand, net.minecraft.util.hit.BlockHitResult hit) {
         if (!(world.getBlockEntity(pos) instanceof ModeladoBlockEntity be)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
 
-        boolean esPrenda = FemclothesDye.isClothing(stack);
+        if (stack.isOf(net.minecraft.item.Items.SHEARS)) {
+            // Tijeras a mano (2026-10-05): van al casillero invisible; con una ya puesta no entran.
+            if (world.isClient) return ItemActionResult.SUCCESS;
+            if (!be.cargarTijera(player.isCreative() ? stack.copy() : stack)) return ItemActionResult.FAIL;
+            world.playSound(null, pos, SoundEvents.ITEM_ARMOR_EQUIP_IRON.value(), SoundCategory.BLOCKS, 0.8f, 1.2f);
+            return ItemActionResult.SUCCESS;
+        }
+        boolean esPrenda = ModeladoBlockEntity.esPrendaModelable(stack);
         boolean esMolde = ModeladoBlockEntity.esMolde(stack);
         if (!esPrenda && !esMolde) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
 
@@ -120,13 +137,13 @@ public class ModeladoBlock extends BlockWithEntity {
         ModeladoBlockEntity.Categoria categoria = be.categoria();
         int destino = -1;
         if (ModeladoBlockEntity.esMoldeDeCategoria(stack, categoria)) {
-            int activo = ModeladoBlockEntity.ACTIVO_INICIO + categoria.ordinal();
+            int activo = ModeladoBlockEntity.activoSlot(categoria);
             if (be.getStack(activo).isEmpty()) {
                 destino = activo;
             } else {
-                int base = ModeladoBlockEntity.porPrendaInicio(categoria);
-                for (int i = 0; i < ModeladoBlockEntity.PORPRENDA_POR_CATEGORIA; i++) {
-                    if (be.getStack(base + i).isEmpty()) { destino = base + i; break; }
+                for (int i = 0; i < ModeladoBlockEntity.PORPRENDA_TOTAL; i++) {
+                    int lugar = ModeladoBlockEntity.porPrendaSlot(categoria, i);
+                    if (be.getStack(lugar).isEmpty()) { destino = lugar; break; }
                 }
             }
         }
@@ -153,6 +170,12 @@ public class ModeladoBlock extends BlockWithEntity {
         if (world.isClient) return ActionResult.SUCCESS;
         if (!(world.getBlockEntity(pos) instanceof ModeladoBlockEntity be)) return ActionResult.PASS;
 
+        // Agachado y con la mano vacía, la tijera vuelve al jugador (2026-10-05).
+        if (player.isSneaking() && !be.tijera().isEmpty() && be.estado() != ModeladoBlockEntity.Estado.PROCESANDO) {
+            player.getInventory().offerOrDrop(be.sacarTijera());
+            world.playSound(null, pos, SoundEvents.UI_LOOM_TAKE_RESULT, SoundCategory.BLOCKS, 1.0f, 1.2f);
+            return ActionResult.SUCCESS;
+        }
         ItemStack salida = be.getStack(ModeladoBlockEntity.SALIDA);
         if (!salida.isEmpty()) {
             player.getInventory().offerOrDrop(salida.copy());
@@ -201,13 +224,17 @@ public class ModeladoBlock extends BlockWithEntity {
                 .formatted(net.minecraft.util.Formatting.RED), true);
     }
 
+    /** Cae con todo adentro, como una shulker (ver {@link com.femclothes.util.DropMaquina}). */
     @Override
-    protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-        if (!state.isOf(newState.getBlock())) {
-            if (world.getBlockEntity(pos) instanceof ModeladoBlockEntity be) {
-                ItemScatterer.spawn(world, pos, be);
-            }
-        }
-        super.onStateReplaced(state, world, pos, newState, moved);
+    protected java.util.List<ItemStack> getDroppedStacks(BlockState state,
+            net.minecraft.loot.context.LootContextParameterSet.Builder builder) {
+        return com.femclothes.util.DropMaquina.drops(this, builder);
+    }
+
+    @Override
+    public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
+        com.femclothes.util.DropMaquina.enCreativo(world, pos, player, this,
+                !(world.getBlockEntity(pos) instanceof ModeladoBlockEntity be) || be.isEmpty());
+        return super.onBreak(world, pos, state, player);
     }
 }

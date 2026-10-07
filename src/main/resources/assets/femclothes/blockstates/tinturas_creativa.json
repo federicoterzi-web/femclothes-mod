@@ -1,0 +1,9 @@
+{
+  "_comment": "Bloque simple v1, modelo estatico placeholder (sin arte todavia) -- a diferencia de modelado/sublimadora, NO es invisible ni lo dibuja GeckoLib.",
+  "variants": {
+    "facing=north": { "model": "femclothes:block/tinturas" },
+    "facing=south": { "model": "femclothes:block/tinturas" },
+    "facing=east": { "model": "femclothes:block/tinturas" },
+    "facing=west": { "model": "femclothes:block/tinturas" }
+  }
+}

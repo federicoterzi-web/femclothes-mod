@@ -82,8 +82,12 @@ public class TinturasGeoModel extends GeoModel<TinturasBlockEntity> {
     // ── viales: últimos 2 colores usados (2026-09-21, "que muestren los
     // ultimos dos colores utilizados") ──────────────────────────────────
     /** Rects UV reales de cada vial (relevados a mano con Python) — vial_1 el más reciente, vial_2 el anterior. */
-    private static final com.femclothes.render.PantallaLed.Rect VIAL_1_UV = new com.femclothes.render.PantallaLed.Rect(48, 8, 8, 8);
-    private static final com.femclothes.render.PantallaLed.Rect VIAL_2_UV = new com.femclothes.render.PantallaLed.Rect(24, 8, 8, 8);
+    // Movidos a una zona propia del atlas (2026-09-29, "cuando solo tenia dos
+    // tintes... el magenta se veia blanco en el indicador"): compartían UV con
+    // los tubos level_magenta (48,8) y level_cyan (24,8), así que pintar el
+    // vial con el último color pisaba también el tubo.
+    private static final com.femclothes.render.PantallaLed.Rect VIAL_1_UV = new com.femclothes.render.PantallaLed.Rect(40, 16, 8, 8);
+    private static final com.femclothes.render.PantallaLed.Rect VIAL_2_UV = new com.femclothes.render.PantallaLed.Rect(48, 16, 8, 8);
     /**
      * Último color pintado en cada vial, por máquina — para no repintar
      * (y volver a subir a la GPU) la textura entera cada frame, mismo
@@ -114,7 +118,7 @@ public class TinturasGeoModel extends GeoModel<TinturasBlockEntity> {
         // pintado encima) — a pedido (2026-09-21, "que muestre el
         // preview del setting de la ultima prenda seteada"); ya prioriza
         // salida > entrada+borrador > representativo, ver su javadoc.
-        Identifier id = com.femclothes.render.PantallaMaquina.con(TEX, com.femclothes.render.PantallaMaquina.PANEL_TINTURAS, be.vistaPreviaPersistente(), be.getPos());
+        Identifier id = com.femclothes.render.PantallaMaquina.con(com.femclothes.util.MaquinaCreativa.textura(TEX, com.femclothes.util.MaquinaCreativa.es(be)), com.femclothes.render.PantallaMaquina.PANEL_TINTURAS, be.vistaPreviaPersistente(), be.getPos());
         pintarViales(be, id);
         return id;
     }
@@ -229,7 +233,14 @@ public class TinturasGeoModel extends GeoModel<TinturasBlockEntity> {
 
         GeoBone progreso = getAnimationProcessor().getBone("progress");
         if (progreso != null) {
-            float nivel = be.progresoFraccion();
+            // Normalizada con las hermanas (2026-09-29, "las barras de
+            // progreso la q mas me gusta es la de la tintura porque tiene
+            // fondo negro nomas que crece para el lado contrario que
+            // deberia. las normalicemos"): el pivote del hueso pasó al
+            // otro borde en el .geo.json (el modelo mira a +z, al revés que
+            // las otras dos) y queda llena con la prenda lista en la salida.
+            boolean lista = be.estado() == TinturasBlockEntity.Estado.REPOSO && !be.getSalida().isEmpty();
+            float nivel = lista ? 1f : be.progresoFraccion();
             progreso.setScaleX(Math.max(0.001f, nivel));
             progreso.setHidden(nivel <= 0.001f);
         }
@@ -249,17 +260,11 @@ public class TinturasGeoModel extends GeoModel<TinturasBlockEntity> {
         // visible mientras TINIENDO — a diferencia de Modeladora/
         // Sublimadora (muestran la prenda cargada aunque esté en
         // reposo), acá no hay "prenda cargada quieta".
-        net.minecraft.item.ItemStack entrada = be.getPrendaEntrada();
-        TinturasBlockEntity.Categoria categoria = be.estado() == TinturasBlockEntity.Estado.TINIENDO
-                ? TinturasBlockEntity.categoriaDe(entrada) : null;
+        // Siempre ocultos (2026-09-29): la prenda la dibuja PrendaEnMaquinaLayer
+        // con su ícono real, anclada en "prenda_remera" para girar con el rodillo.
         for (int i = 0; i < HUESOS_PRENDA.length; i++) {
             GeoBone hueso = getAnimationProcessor().getBone(HUESOS_PRENDA[i]);
-            if (hueso != null) hueso.setHidden(categoria == null || categoria.ordinal() != i);
-        }
-        if (categoria != null) {
-            Identifier textura = com.femclothes.render.PantallaMaquina.con(TEX,
-                    com.femclothes.render.PantallaMaquina.PANEL_TINTURAS, be.vistaPreviaPersistente(), be.getPos());
-            pintarColorPrenda(be, textura, abgrOpaco(colorDePrenda(entrada)));
+            if (hueso != null) hueso.setHidden(true);
         }
     }
 }

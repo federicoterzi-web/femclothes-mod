@@ -16,3 +16,4 @@ Thumbs.db
 # Salida del plugin de Java de VSCode: compila en paralelo a Gradle y no debe
 # versionarse ni quedar en el classpath.
 bin/
+__pycache__/

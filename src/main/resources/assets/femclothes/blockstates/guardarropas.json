@@ -1,5 +1,29 @@
 {
+  "_comment": "INVISIBLE: lo dibuja GeckoLib desde el block entity (wardrobe.geo.json). El modelo solo aporta la textura de partículas.",
   "variants": {
-    "": { "model": "femclothes:block/guardarropas" }
+    "facing=north,open=false": {
+      "model": "femclothes:block/guardarropas"
+    },
+    "facing=north,open=true": {
+      "model": "femclothes:block/guardarropas"
+    },
+    "facing=south,open=false": {
+      "model": "femclothes:block/guardarropas"
+    },
+    "facing=south,open=true": {
+      "model": "femclothes:block/guardarropas"
+    },
+    "facing=east,open=false": {
+      "model": "femclothes:block/guardarropas"
+    },
+    "facing=east,open=true": {
+      "model": "femclothes:block/guardarropas"
+    },
+    "facing=west,open=false": {
+      "model": "femclothes:block/guardarropas"
+    },
+    "facing=west,open=true": {
+      "model": "femclothes:block/guardarropas"
+    }
   }
 }

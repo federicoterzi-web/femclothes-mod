@@ -28,11 +28,20 @@ public class Femclothes implements ModInitializer {
         PrendasDelMod.init();
         PerfilesDeCuerpo.init();
         ComandoCuerpo.init();
-        com.femclothes.util.DebugMaquinas.init();
+        com.femclothes.body.RedCuerpo.init();
+        com.femclothes.util.RedTwirl.init();
+        com.femclothes.util.RedCapucha.init();
+        com.femclothes.ropa.Cosmeticos.init();
+        com.femclothes.ropa.RedRopa.init();
         FemclothesScreenHandlers.init();
         com.femclothes.modelado.ModeladoMod.register();
+        com.femclothes.estilista.EstilistaMod.register();
+        com.femclothes.telar.TelarMod.register();
         com.femclothes.tinturas.TinturasMod.register();
         com.femclothes.guardarropas.GuardarropasMod.register();
+        com.femclothes.maniqui.ManiquiMod.register();
+        com.femclothes.cinta.CintaMod.register();
+        com.femclothes.estilado.EstiladoMod.register();
         registrarPestanaCreativa();
     }
 
@@ -57,16 +66,47 @@ public class Femclothes implements ModInitializer {
             .entries((contexto, entries) -> {
             // Máquinas primero.
             entries.add(com.femclothes.modelado.ModeladoMod.MODELADO_BLOCK_ITEM);
+            entries.add(com.femclothes.telar.TelarMod.TELAR_ITEM);
+            entries.add(com.femclothes.estilista.EstilistaMod.ESTILISTA_ITEM);
             entries.add(com.femclothes.tinturas.TinturasMod.TINTURAS_BLOCK_ITEM);
             entries.add(com.femclothes.sublimadora.ModBlocks.SUBLIMADORA_ITEM);
             entries.add(com.femclothes.guardarropas.GuardarropasMod.GUARDARROPAS_BLOCK_ITEM);
+            entries.add(com.femclothes.maniqui.ManiquiMod.MANIQUI_BLOCK_ITEM);
+            entries.add(com.femclothes.estilado.EstiladoMod.ESTILADO_BLOCK_ITEM);
+            entries.add(com.femclothes.cinta.CintaMod.CINTA_ITEM);
+            entries.add(com.femclothes.cinta.CintaMod.EMPALME_ITEM);
+            // Máquinas creativas (2026-10-01): sin espera ni insumos, cargadas al colocarlas.
+            entries.add(com.femclothes.modelado.ModeladoMod.MODELADO_CREATIVA_ITEM);
+            entries.add(com.femclothes.telar.TelarMod.TELAR_CREATIVA_ITEM);
+            entries.add(com.femclothes.estilista.EstilistaMod.ESTILISTA_CREATIVA_ITEM);
+            entries.add(com.femclothes.tinturas.TinturasMod.TINTURAS_CREATIVA_ITEM);
+            entries.add(com.femclothes.sublimadora.ModBlocks.SUBLIMADORA_CREATIVA_ITEM);
+            entries.add(com.femclothes.estilado.EstiladoMod.ESTILADO_CREATIVA_ITEM);
+            // Kits (2026-10-01, antes /femclothes debug patrones|moldes|insumos).
+            for (ItemStack kit : com.femclothes.util.KitsCreativos.todos()) entries.add(kit);
             // Prendas.
             entries.add(com.femclothes.sublimadora.ModItems.REMERA);
+            entries.add(FemclothesItems.CHAQUETA);
+            // Apliques (2026-10-01): los 3 moldes y retazos de prueba con colores
+            // de fábrica, hasta que Tintes los tiña (fase 4).
+            entries.add(FemclothesItems.MOLDE_APLIQUE_MONO);
+            entries.add(FemclothesItems.MOLDE_APLIQUE_MARIPOSA);
+            entries.add(FemclothesItems.MOLDE_APLIQUE_FLOR);
+            entries.add(FemclothesItems.MOLDE_TEXTURA_FRUNCIDO);
+            entries.add(FemclothesItems.MOLDE_TEXTURA_ACOLCHADO);
+            entries.add(FemclothesItems.ESTROGENOS);
+            entries.add(com.femclothes.aplique.RetazoApliqueItem.conColores(
+                    new ItemStack(FemclothesItems.RETAZO_APLIQUE), 0xE878A8, 0xF8D860, 0x58A868));
+            entries.add(com.femclothes.aplique.RetazoApliqueItem.conColores(
+                    new ItemStack(FemclothesItems.RETAZO_APLIQUE), 0x78B8E8, 0xF2F2F6, 0x2E4A80));
+            entries.add(com.femclothes.aplique.RetazoApliqueItem.conColores(
+                    new ItemStack(FemclothesItems.RETAZO_APLIQUE), 0xC82828, 0x1E1E22, 0xE8C050));
             entries.add(FemclothesItems.SOCKS_34);
             entries.add(FemclothesItems.SOCKS_SOLID);
             entries.add(FemclothesItems.FISHNET_SOCKS);
             entries.add(FemclothesItems.PANTALON);
             entries.add(FemclothesItems.POLLERA);
+            entries.add(FemclothesItems.TINTE_MEZCLA);
             // Los moldes por-eje ESPECÍFICOS de pantalón-largo y medias se
             // sacaron (a pedido, "sintetizar todos en esos dos moldes
             // aunque cada prenda tenga su propia medida") — reemplazados
@@ -77,8 +117,32 @@ public class Femclothes implements ModInitializer {
             // de remera y tiro de pantalón en cobertura de torso") —
             // reemplazado por el molde de TORSO unificado de abajo.
             entries.add(FemclothesItems.CALIENTABRAZOS);
+            entries.add(FemclothesItems.CAPA);
+            entries.add(FemclothesItems.SOMBRERO_BRUJA);
+            // Banda (2026-10-05): un cinto y un choker de fábrica, hasta que lleguen los moldes de la Modeladora.
+            entries.add(FemclothesItems.BANDA);
+            entries.add(FemclothesItems.MOLDE_CORREA_LISA);
+            entries.add(FemclothesItems.MOLDE_CORREA_CADENA);
+            entries.add(FemclothesItems.MOLDE_CORREA_CADENA_FINA);
+            entries.add(FemclothesItems.MOLDE_CORREA_OJALILLOS);
+            entries.add(FemclothesItems.MOLDE_CORREA_CORDON);
+            net.minecraft.item.ItemStack choker = new net.minecraft.item.ItemStack(FemclothesItems.BANDA);
+            com.femclothes.item.BandaItem.setZona(choker, com.femclothes.item.BandaZona.CUELLO);
+            com.femclothes.item.BandaItem.setAncho(choker, com.femclothes.item.BandaAncho.FINO);
+            entries.add(choker);
+            // Variantes de fábrica hasta que lleguen los moldes de la Modeladora (tanda 2).
+            for (var par : new Object[][] {
+                    {com.femclothes.item.SombreroAla.CORTA, com.femclothes.item.SombreroPunta.RECTA},
+                    {com.femclothes.item.SombreroAla.ANCHA, com.femclothes.item.SombreroPunta.DOBLADA},
+                    {com.femclothes.item.SombreroAla.CORTA, com.femclothes.item.SombreroPunta.DOBLADA}}) {
+                net.minecraft.item.ItemStack variante = new net.minecraft.item.ItemStack(FemclothesItems.SOMBRERO_BRUJA);
+                com.femclothes.item.SombreroBrujaItem.setAla(variante, (com.femclothes.item.SombreroAla) par[0]);
+                com.femclothes.item.SombreroBrujaItem.setPunta(variante, (com.femclothes.item.SombreroPunta) par[1]);
+                entries.add(variante);
+            }
             entries.add(FemclothesItems.MAID_OUTFIT);
-            entries.add(FemclothesItems.OVERSIZED_HOODIE);
+            // El Buzo Oversize viejo (armadura) se reemplazó por el hoodie
+            // (2026-09-30): sigue registrado para no romper mundos, fuera de la pestaña.
             entries.add(FemclothesItems.PATTERN_STRIPE_TOP);
             entries.add(FemclothesItems.PATTERN_STRIPE_ALT);
             entries.add(FemclothesItems.PATTERN_TRIPLE_STRIPE);
@@ -88,10 +152,12 @@ public class Femclothes implements ModInitializer {
             entries.add(FemclothesItems.PATTERN_VICHY);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_DE_CORTE);
             // Moldes de la Sublimadora (manga y cuello por valor).
-            entries.add(com.femclothes.sublimadora.ModItems.MOLDE_MANGA);
             entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_REDONDO);
             entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_V);
+            for (var m : com.femclothes.sublimadora.ModItems.MOLDES_MASCARA) entries.add(m);
             entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_POLERA);
+            entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_CUADRADO);
+            entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_CORAZON);
             // Los 8 presets de combo directo (cobertura de torso/extremidad)
             // se sacaron de la pestaña — traen los anclajes horneados de
             // fábrica e ignoran Anclaje/Lado por completo, lo que generaba
@@ -100,17 +166,13 @@ public class Femclothes implements ModInitializer {
             // Molde de rango unificado (a pedido): mismos 5, sirven para
             // pantalón/medias/calientabrazos/manga de remera, cada una
             // traduciéndolo a su propia escala real al fijar.
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RANGO_CERO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RANGO_MINIMO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RANGO_CORTO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RANGO_MEDIO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RANGO_MEDIOLARGO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RANGO_LARGO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RANGO_MAXIMO);
-            // Molde de torso unificado (a pedido): mismos 3, sirven para
-            // largo de remera y tiro de pantalón.
-            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_TORSO_CORTO);
-            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_TORSO_MEDIO);
-            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_TORSO_LARGO);
             // Molde de calce (a pedido): transversal a las 4 categorías,
             // controla la dilatación de la geometría 3D, no recorta tela.
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CALCE_PEGADO);
@@ -131,6 +193,35 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RED_ARNES_TIRANTES);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RED_ARNES_BANDAS);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_RED_LISA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_POLLERA_CAMPANA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_POLLERA_TABLEADA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_POLLERA_TUBO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_POLLERA_GLOBO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_POLLERA_CIRCULAR);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_VOLADO_RECTO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_VOLADO_CIRCULAR);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BORDE_ONDULADO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BORDE_FESTONEADO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BORDE_PICO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_RUEDO_RECTO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_RUEDO_REDONDEADO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_RUEDO_COLA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_CON_CAPUCHA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_SIN_CAPUCHA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_CUELLO_ALTO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CAPA_SIN_CUELLO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_SOMBRERO_ALA_ANCHA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_SOMBRERO_ALA_CORTA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_SOMBRERO_PUNTA_RECTA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_SOMBRERO_PUNTA_DOBLADA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_ZONA_CINTURA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_ZONA_CUELLO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_ANCHO_FINO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_ANCHO_MEDIO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_ANCHO_ANCHO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_HERRAJE_NINGUNO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_HERRAJE_PLACA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_HERRAJE_ARO);
             })
             .build();
 

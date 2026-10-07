@@ -386,12 +386,12 @@ public final class ClothingTextureCache {
                                @Nullable java.util.List<CajaSkin.Rect> region,
                                com.femclothes.region.ModoMezcla modo, int opacidad,
                                int[] paleta, boolean contorno, com.femclothes.render.Variacion variacion,
-                               @Nullable NativeImage regionExtra) {
+                               @Nullable NativeImage regionExtra, boolean regionInvertida) {
         public CapaMascara(@Nullable NativeImage mascara, int color, boolean invertido,
                            @Nullable java.util.List<CajaSkin.Rect> region,
                            com.femclothes.region.ModoMezcla modo, int opacidad,
                            int[] paleta, boolean contorno, com.femclothes.render.Variacion variacion) {
-            this(mascara, color, invertido, region, modo, opacidad, paleta, contorno, variacion, null);
+            this(mascara, color, invertido, region, modo, opacidad, paleta, contorno, variacion, null, false);
         }
         public CapaMascara(@Nullable NativeImage mascara, int color) { this(mascara, color, false, null); }
         public CapaMascara(@Nullable NativeImage mascara, int color, boolean invertido) { this(mascara, color, invertido, null); }
@@ -416,13 +416,14 @@ public final class ClothingTextureCache {
         public static CapaMascara de(com.femclothes.region.RegionResolver.CapaPatron capa, @Nullable NativeImage mascara,
                                      @Nullable java.util.List<CajaSkin.Rect> region, @Nullable NativeImage regionExtra) {
             return new CapaMascara(mascara, capa.color(), capa.invertido(), region, capa.modo(), capa.opacidad(),
-                    capa.paleta(), capa.contorno(), capa.variacion(), regionExtra);
+                    capa.paleta(), capa.contorno(), capa.variacion(), regionExtra, capa.fueraDeRegion());
         }
 
         /** Para la clave de cache: todo lo que cambia el resultado además de máscara/región. */
         String claveColores() {
             return java.util.Arrays.toString(paleta) + (contorno ? "c" : "") + variacion.ordinal()
-                    + (regionExtra == null ? "" : "r" + System.identityHashCode(regionExtra));
+                    + (regionExtra == null ? "" : "r" + System.identityHashCode(regionExtra))
+                    + (regionInvertida ? "x" : "");
         }
 
         /**
@@ -432,6 +433,21 @@ public final class ClothingTextureCache {
          * {@link com.femclothes.render.Variacion}, leyendo el número de
          * repetición / valor al azar / altura que trae la máscara.
          */
+        /**
+         * ¿Pinta con transparencia a medias (canal T entre 1 y 254)? Una T
+         * llena es un recorte y no necesita alfa real.
+         */
+        public boolean translucida() {
+            if (parcial(color)) return true;
+            if (paleta != null) for (int c : paleta) if (parcial(c)) return true;
+            return false;
+        }
+
+        private static boolean parcial(int rgb) {
+            int t = (rgb >>> 24) & 0xFF;
+            return t > 0 && t < 255;
+        }
+
         public int colorEn(int x, int y) {
             if (paleta.length <= 1) return color;
             int px = mascara == null || x >= mascara.getWidth() || y >= mascara.getHeight() ? 0 : mascara.getColor(x, y);
@@ -454,9 +470,13 @@ public final class ClothingTextureCache {
          * un sí/no.
          */
         public int cobertura(int x, int y) {
-            if (region != null && !dentroDeAlguno(region, x, y)) return 0;
-            if (regionExtra != null && (x >= regionExtra.getWidth() || y >= regionExtra.getHeight()
-                    || ((regionExtra.getColor(x, y) >>> 24) & 0xFF) == 0)) return 0;
+            boolean adentro = (region == null || dentroDeAlguno(region, x, y))
+                    && (regionExtra == null || (x < regionExtra.getWidth() && y < regionExtra.getHeight()
+                        && ((regionExtra.getColor(x, y) >>> 24) & 0xFF) != 0));
+            // Velo de "resto apagado" (Fase B, 2026-09-28): liso, todo lo de
+            // AFUERA de la región — la zona resaltada queda como está.
+            if (regionInvertida) return adentro ? 0 : 255;
+            if (!adentro) return 0;
             if (mascara == null) return 255;
             if (x >= mascara.getWidth() || y >= mascara.getHeight()) return invertido ? 255 : 0;
             int px = mascara.getColor(x, y);
@@ -517,6 +537,38 @@ public final class ClothingTextureCache {
         return a | (rb << 16) | (rg << 8) | rr;
     }
 
+    /**
+     * Transparencia real (2026-10-01, "porque la transparencia no se ve una
+     * transparencia real sino pixeles q van pasando de visible a
+     * invisible"): una prenda con alguna capa a medias transparente se
+     * compone con su alfa verdadero (sin {@link #tramar}, que mira esta
+     * bandera mientras se compone: también lo usan las estampas y la banda
+     * de cintura desde su {@link Encima}) y su textura queda anotada acá
+     * para que el render la dibuje en modo translúcido
+     * ({@link #capaDeRender}). Las demás siguen en recorte, como siempre.
+     */
+    private static boolean componiendoTranslucida = false;
+    private static final java.util.Set<Identifier> TRANSLUCIDAS = new java.util.HashSet<>();
+
+    /** La última tela pedida a {@link #capaDeRender}: {@code EfectoTrim} la lee en el {@code getBuffer} que viene justo después. */
+    @org.jetbrains.annotations.Nullable
+    public static Identifier ultimaTextura;
+
+    public static boolean esTranslucida(Identifier textura) {
+        return TRANSLUCIDAS.contains(textura);
+    }
+
+    /**
+     * El RenderLayer de una tela: translúcido (alfa de verdad, ordenado) si
+     * su textura tiene transparencia a medias, si no el recorte de siempre.
+     */
+    public static net.minecraft.client.render.RenderLayer capaDeRender(Identifier textura) {
+        ultimaTextura = textura;   // para EfectoTrim: sabe qué tela se está por dibujar (2026-10-06)
+        return esTranslucida(textura)
+                ? net.minecraft.client.render.RenderLayer.getEntityTranslucent(textura)
+                : net.minecraft.client.render.RenderLayer.getArmorCutoutNoCull(textura);
+    }
+
     /** Matriz de Bayer 4x4 (umbrales 0..255) para el tramado de {@link #tramar}. */
     private static final int[] BAYER = {
             8, 136, 40, 168,
@@ -534,7 +586,7 @@ public final class ClothingTextureCache {
      */
     public static int tramar(int abgr, int x, int y) {
         int alfa = (abgr >>> 24) & 0xFF;
-        if (alfa == 0 || alfa == 255) return abgr;
+        if (alfa == 0 || alfa == 255 || componiendoTranslucida) return abgr;
         return alfa > BAYER[(y & 3) * 4 + (x & 3)] ? abgr | 0xFF000000 : 0;
     }
 
@@ -653,8 +705,11 @@ public final class ClothingTextureCache {
         // Cualquier capa (con máscara o lisa recortada a una región) pide
         // la resolución completa — una región lisa también tiene bordes.
         boolean hayAlgunaMascara = !capas.isEmpty();
-
+        boolean translucida = false;
+        for (CapaMascara c : capas) translucida |= c.translucida();
         NativeImage composite = new NativeImage(base.getWidth(), base.getHeight(), true);
+        componiendoTranslucida = translucida;
+        try {
         for (int y = 0; y < base.getHeight(); y++) {
             for (int x = 0; x < base.getWidth(); x++) {
                 float f = faceFactor(x, y, shading);
@@ -694,14 +749,21 @@ public final class ClothingTextureCache {
             composite.close();
             return baseTexture;
         }
+        } finally {
+            componiendoTranslucida = false;
+        }
 
         if (DEBUG_DUMP) volcarADisco(key, composite);
 
-        composite = reducirSiHaceFalta(composite, encima != null, hayAlgunaMascara);
+        // Translúcida: sin achicar — el achique mezcla los bordes con el
+        // negro de los huecos y en modo translúcido se vería un halo oscuro.
+        if (!translucida) composite = reducirSiHaceFalta(composite, encima != null, hayAlgunaMascara);
 
         Identifier id = Identifier.of("femclothes", "dynamic/garment_" + Integer.toHexString(key.hashCode()));
         MinecraftClient.getInstance().getTextureManager()
                 .registerTexture(id, new NativeImageBackedTexture(composite));
+        if (translucida) TRANSLUCIDAS.add(id);
+        else TRANSLUCIDAS.remove(id);
         TINTED_CACHE.put(key, id);
         return id;
     }
@@ -834,8 +896,14 @@ public final class ClothingTextureCache {
             perforarRedEnCara(img, tipo, cara.x0(), cara.y0(), cara.x1(), cara.y1(), true, yDesde, yHasta, rol);
         }
         CajaSkin.Rect arriba = caja.arriba(), abajo = caja.abajo();
-        perforarRedEnCara(img, tipo, arriba.x0(), arriba.y0(), arriba.x1(), arriba.y1(),
-                false, Integer.MIN_VALUE, Integer.MAX_VALUE, torso ? ARNES_ROL_HOMBROS : ARNES_ROL_COMUN);
+        boolean brazo = parte == com.femclothes.garment.Parte.BRAZO_DER || parte == com.femclothes.garment.Parte.BRAZO_IZQ;
+        if (tipo.esArnes() && brazo && filaDesde == 0) {
+            // Va DESPUÉS de los costados: lee cómo quedaron sus tiras.
+            continuarTirasEnHombro(img, tipo, caja);
+        } else {
+            perforarRedEnCara(img, tipo, arriba.x0(), arriba.y0(), arriba.x1(), arriba.y1(),
+                    false, Integer.MIN_VALUE, Integer.MAX_VALUE, torso ? ARNES_ROL_HOMBROS : ARNES_ROL_COMUN);
+        }
         perforarRedEnCara(img, tipo, abajo.x0(), abajo.y0(), abajo.x1(), abajo.y1(),
                 false, Integer.MIN_VALUE, Integer.MAX_VALUE, ARNES_ROL_COMUN);
     }
@@ -986,6 +1054,86 @@ public final class ClothingTextureCache {
             default -> Math.abs(y - h / 3) < medio || Math.abs(y - 2 * h / 3) < medio
                     || (torso && y < h / 3 && (Math.abs(x - w * ARNES_ANCLA_1) < medio || Math.abs(x - w * ARNES_ANCLA_2) < medio));
         };
+    }
+
+    /**
+     * Tapa de arriba del BRAZO con arnés (2026-09-28, "los hombros no estan
+     * pintando los arneses" / "tienen que continuar las tiras de arriba del
+     * brazo"): el hombro que se ve es esta tapa (la del torso queda debajo
+     * de la cabeza), y antes quedaba pelada entera — no tiene ningún borde
+     * propio, así que el arnés la agujereaba toda. Ahora cada tira que
+     * llega al borde de arriba de una cara del brazo sigue por la tapa
+     * hasta la mitad; si la cara de enfrente tiene una tira en el mismo
+     * lugar, las dos se juntan y cruzan el hombro de lado a lado.
+     *
+     * <p>2026-09-29 ("los hombros no se completaron" — con el arnés
+     * cruzado solo quedaba un marquito, porque las diagonales llegan por
+     * las esquinas): además la tapa lleva el MISMO dibujo del arnés que un
+     * costado (X de esquina a esquina con su anillo, tirantes o bandas),
+     * así el hombro se ve completo y empalma con lo que sube por el brazo.
+     *
+     * <p>Empalmes en el atlas (mismo layout que {@link CajaSkin}): la fila
+     * de abajo de la tapa toca el frente (misma columna); la de arriba, la
+     * espalda (columna espejada); la columna 0 toca la cara derecha (su
+     * columna {@code j} es la fila {@code j} de la tapa); la última, la
+     * izquierda (su columna 0 va con la fila de abajo).
+     */
+    private static void continuarTirasEnHombro(NativeImage img, com.femclothes.item.PatronRed tipo, CajaSkin caja) {
+        CajaSkin.Rect tapa = caja.arriba(), frente = caja.frente(), atras = caja.atras();
+        CajaSkin.Rect der = caja.derecha(), izq = caja.izquierda();
+        int ancho = tapa.x1() - tapa.x0(), prof = tapa.y1() - tapa.y0();
+        if (ancho <= 0 || prof <= 0) return;
+        boolean[][] tira = new boolean[ancho][prof];
+        int mitadProf = (prof + 1) / 2, mitadAncho = (ancho + 1) / 2;
+        for (int i = 0; i < ancho; i++) {
+            if (opaco(img, frente.x0() + i, frente.y0())) {
+                for (int d = 0; d < mitadProf; d++) tira[i][prof - 1 - d] = true;
+            }
+            if (opaco(img, atras.x1() - 1 - i, atras.y0())) {
+                for (int d = 0; d < mitadProf; d++) tira[i][d] = true;
+            }
+        }
+        for (int j = 0; j < prof; j++) {
+            if (opaco(img, der.x0() + j, der.y0())) {
+                for (int k = 0; k < mitadAncho; k++) tira[k][j] = true;
+            }
+            if (opaco(img, izq.x0() + j, izq.y0())) {
+                for (int k = 0; k < mitadAncho; k++) tira[ancho - 1 - k][prof - 1 - j] = true;
+            }
+        }
+        // El dibujo del arnés sobre la tapa entera, como en un costado.
+        double[][] anillos = anillosArnes(tipo.dibujo, ancho, prof, false);
+        for (int d = 0; d < prof; d++) {
+            for (int i = 0; i < ancho; i++) {
+                int x = tapa.x0() + i, y = tapa.y0() + d;
+                if (!opaco(img, x, y)) continue;
+                double lx = i + 0.5, ly = d + 0.5;
+                boolean enAnillo = false;
+                for (double[] a : anillos) {
+                    double dist = Math.hypot(lx - a[0], ly - a[1]);
+                    if (dist > ARNES_ANILLO_EXT) continue;
+                    if (dist <= ARNES_ANILLO_INT) {
+                        img.setColor(x, y, 0);
+                    } else {
+                        double k = 1 + ((a[0] - lx) + (a[1] - ly)) / ARNES_ANILLO_EXT * 0.25;
+                        if (dist > ARNES_ANILLO_EXT - 0.8) k *= 0.78;
+                        int r = (int) Math.min(255, ARNES_METAL_R * k), g = (int) Math.min(255, ARNES_METAL_G * k),
+                                b = (int) Math.min(255, ARNES_METAL_B * k);
+                        img.setColor(x, y, 0xFF000000 | (b << 16) | (g << 8) | r);
+                    }
+                    enAnillo = true;
+                    break;
+                }
+                if (enAnillo) continue;
+                if (tira[i][d] || esTiraArnes(tipo.dibujo, lx, ly, ancho, prof, false)) continue;
+                img.setColor(x, y, 0);
+            }
+        }
+    }
+
+    private static boolean opaco(NativeImage img, int x, int y) {
+        return x >= 0 && y >= 0 && x < img.getWidth() && y < img.getHeight()
+                && ((img.getColor(x, y) >> 24) & 0xFF) != 0;
     }
 
     /** Tapa de hombros del torso: dos tiras de adelante hacia atrás, en las anclas — iguales para los tres arneses. */

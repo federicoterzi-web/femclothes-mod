@@ -46,6 +46,14 @@ public final class Capa {
     public static final int POLLERA = 30;
 
     /**
+     * Chaquetas: hoodie, campera, saco (2026-09-30, "haceme un hoodie
+     * oversize... una nueva categoria de prendas llamadas chaquetas"). Va
+     * por encima de la remera y de la pollera (un buzo largo cae sobre la
+     * cintura de la pollera).
+     */
+    public static final int CHAQUETA = 35;
+
+    /**
      * El ruedo de un remeron sobre el muslo.
      *
      * Va arriba del short a proposito: una remera larga cae POR ENCIMA del

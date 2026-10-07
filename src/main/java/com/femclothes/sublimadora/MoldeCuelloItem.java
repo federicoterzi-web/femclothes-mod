@@ -28,8 +28,7 @@ public class MoldeCuelloItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        tooltip.add(Text.translatable("femclothes.categoria.molde").formatted(Formatting.GOLD));
-        tooltip.add(PrendaLore.seUsaEn("remera").formatted(Formatting.DARK_GRAY));
+        PrendaLore.molde(tooltip, "cuello", PrendaLore.Maquina.MODELADORA, "remera");
         tooltip.add(Text.translatable("femclothes.sublimadora.molde.ayuda").formatted(Formatting.DARK_GRAY));
     }
 }

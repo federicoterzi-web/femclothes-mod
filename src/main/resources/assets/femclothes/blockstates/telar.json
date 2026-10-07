@@ -1,0 +1,29 @@
+{
+  "_comment": "El bloque es INVISIBLE y lo dibuja GeckoLib desde el block entity (telar.geo.json).",
+  "variants": {
+    "facing=north,lit=true": {
+      "model": "femclothes:block/telar"
+    },
+    "facing=north,lit=false": {
+      "model": "femclothes:block/telar"
+    },
+    "facing=south,lit=true": {
+      "model": "femclothes:block/telar"
+    },
+    "facing=south,lit=false": {
+      "model": "femclothes:block/telar"
+    },
+    "facing=east,lit=true": {
+      "model": "femclothes:block/telar"
+    },
+    "facing=east,lit=false": {
+      "model": "femclothes:block/telar"
+    },
+    "facing=west,lit=true": {
+      "model": "femclothes:block/telar"
+    },
+    "facing=west,lit=false": {
+      "model": "femclothes:block/telar"
+    }
+  }
+}

@@ -78,7 +78,10 @@ public class ModeladoGeoModel extends GeoModel<ModeladoBlockEntity> {
         // La VISTA PREVIA (con las fijadas ya aplicadas), no la prenda
         // cruda del slot — a pedido (2026-09-21, "que muestre el preview
         // del setting de la ultima prenda seteada").
-        return com.femclothes.render.PantallaMaquina.con(TEX, com.femclothes.render.PantallaMaquina.PANEL_128, be.vistaPreviaPersistente(), be.getPos());
+        Identifier id = com.femclothes.render.PantallaMaquina.con(com.femclothes.util.MaquinaCreativa.textura(TEX, com.femclothes.util.MaquinaCreativa.es(be)), com.femclothes.render.PantallaMaquina.PANEL_128, be.vistaPreviaPersistente(), be.getPos());
+        // La pantallita de la tijera (2026-10-05): la creativa no usa tijera, así que no la muestra.
+        com.femclothes.render.PantallaTijera.pintar(id, be.getPos(), !be.tijera().isEmpty(), be.durabilidadTijera());
+        return id;
     }
 
     @Override public Identifier getAnimationResource(ModeladoBlockEntity be) { return ANIM; }
@@ -89,8 +92,14 @@ public class ModeladoGeoModel extends GeoModel<ModeladoBlockEntity> {
 
         GeoBone progreso = getAnimationProcessor().getBone("progress");
         if (progreso != null) {
-            float nivel = be.estado() == ModeladoBlockEntity.Estado.PROCESANDO
-                    ? be.progreso() / (float) ModeladoBlockEntity.TICKS_PROCESO : 0f;
+            // Llena mientras la prenda espera en la salida, igual que la
+            // Sublimadora (2026-09-29, "las barras de progreso... las
+            // normalicemos").
+            float nivel = switch (be.estado()) {
+                case PROCESANDO -> be.progreso() / (float) ModeladoBlockEntity.TICKS_PROCESO;
+                case LISTO -> 1f;
+                default -> 0f;
+            };
             progreso.setScaleX(Math.max(0.001f, nivel * FACTOR_PROGRESO));
             progreso.setHidden(nivel <= 0.001f);
         }
@@ -101,10 +110,10 @@ public class ModeladoGeoModel extends GeoModel<ModeladoBlockEntity> {
         // con el resto de la carcasa) + las otras 3 categorías armadas en
         // cubos simples con el mismo criterio ("no aparecen las otras
         // prendas") — solo una visible a la vez, según la prenda cargada.
-        ModeladoBlockEntity.Categoria categoria = be.categoriaPrenda();
         for (String huesoCat : HUESOS_CATEGORIA) {
             GeoBone hueso = getAnimationProcessor().getBone(huesoCat);
-            if (hueso != null) hueso.setHidden(categoria == null || !huesoCat.equals(categoria.name()));
+            // Siempre ocultos (2026-09-29): la prenda la dibuja PrendaEnMaquinaLayer con su ícono real.
+            if (hueso != null) hueso.setHidden(true);
         }
     }
 

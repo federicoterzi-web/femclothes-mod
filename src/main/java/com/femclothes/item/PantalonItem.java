@@ -30,10 +30,7 @@ public class PantalonItem extends ClothingTrinketItem {
     public static final net.minecraft.util.Identifier TEXTURA_BASE =
             net.minecraft.util.Identifier.of(com.femclothes.Femclothes.MOD_ID, "textures/models/armor/pantalon_pantalon_layer_1.png");
 
-    // ── anclaje SUPERIOR: cintura hacia abajo ───────────────────────────
-    // 2026-09-23: ya NO se escribe desde la GUI ("pantalones se fija solo
-    // el corte inferior") — queda el getter por si algo viejo lo consulta,
-    // filasVisibles ya no lo usa (ver más abajo).
+    // ── anclaje SUPERIOR: cintura hacia abajo (el que escribe la Mesa desde el 2026-10-04) ──
 
     public static Botamanga largoSuperior(ItemStack stack, Lado lado) {
         return EjeBilateral.leer(stack, lado, FemclothesComponents.PANTALON_LARGO_SUPERIOR,
@@ -45,7 +42,7 @@ public class PantalonItem extends ClothingTrinketItem {
                 FemclothesComponents.RIGHT_PANTALON_LARGO_SUPERIOR, Botamanga.PIE, valor);
     }
 
-    // ── anclaje INFERIOR: tobillo hacia arriba (el único que fija la GUI) ──
+    // ── anclaje INFERIOR: tobillo hacia arriba (el de los pantalones hechos antes del 2026-10-04) ──
 
     public static Botamanga largoInferior(ItemStack stack, Lado lado) {
         return EjeBilateral.leer(stack, lado, FemclothesComponents.PANTALON_LARGO_INFERIOR,
@@ -58,16 +55,19 @@ public class PantalonItem extends ClothingTrinketItem {
     }
 
     /**
-     * Filas [desde,hasta) de las 12 con tela, para el lado dado. Desde
-     * 2026-09-23 el pantalón ya no usa el anclaje superior (siempre
-     * "abierto", cintura completa) — solo el inferior define hasta dónde
-     * llega la pierna. {@code hasta} es exclusivo.
+     * Filas [desde,hasta) de las 12 con tela, para el lado dado: la intersección de los dos anclajes (como medias).
+     * Desde el 2026-10-04 ("el anclaje de corte fija inferior cuando tiene que ser siempre superior") la Mesa
+     * escribe el SUPERIOR (hasta dónde baja la pierna desde la cintura); el inferior queda para los pantalones
+     * hechos antes. Un anclaje nunca tocado se trata como "12, abierto". {@code hasta} es exclusivo.
      */
     public static int[] filasVisibles(ItemStack stack, Lado lado) {
+        boolean supAusente = !EjeBilateral.presente(stack, lado,
+                FemclothesComponents.PANTALON_LARGO_SUPERIOR, FemclothesComponents.RIGHT_PANTALON_LARGO_SUPERIOR);
         boolean infAusente = !EjeBilateral.presente(stack, lado,
                 FemclothesComponents.PANTALON_LARGO_INFERIOR, FemclothesComponents.RIGHT_PANTALON_LARGO_INFERIOR);
+        int filasSup = supAusente ? 12 : largoSuperior(stack, lado).filas;
         int filasInf = infAusente ? 12 : largoInferior(stack, lado).filas;
-        return EjeBilateral.interseccion(12, filasInf);
+        return EjeBilateral.interseccion(filasSup, filasInf);
     }
 
     /** El tiro actual. Sin componente, MEDIO (cintura natural). No es cobertura de extremidad, sigue igual. */

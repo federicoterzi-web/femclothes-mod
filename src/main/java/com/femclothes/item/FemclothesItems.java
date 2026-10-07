@@ -66,6 +66,64 @@ public final class FemclothesItems {
     // al nacer PantalonItem): un stack viejo en un mundo existente queda
     // como ítem desconocido, no rompe nada.
     // maxCount(16): mismo criterio que remera/medias/pantalón.
+    /** Capa personalizable (2026-09-29, "seria una nueva categoria de ropa"). */
+    public static final CapaItem CAPA = register("capa", new CapaItem(new Item.Settings().maxCount(16)));
+
+    /** Sombrero de bruja (2026-10-04), slot {@code head/sombrero}. */
+    public static final SombreroBrujaItem SOMBRERO_BRUJA = register("sombrero_bruja",
+            new SombreroBrujaItem(new Item.Settings().maxCount(1)));
+
+    /** Banda: cinto o choker según su zona (2026-10-05), slots {@code torso/cinto} y {@code head/choker}. */
+    public static final BandaItem BANDA = register("banda", new BandaItem(new Item.Settings().maxCount(1)));
+
+    // Moldes de correa (2026-10-05, Mesa de estilado): el estilo de la correa que se pone; no se gastan.
+    public static final com.femclothes.correa.MoldeCorreaItem MOLDE_CORREA_LISA = register("molde_correa_lisa",
+            new com.femclothes.correa.MoldeCorreaItem(new Item.Settings().maxCount(1), com.femclothes.correa.EstiloCorrea.LISA));
+    public static final com.femclothes.correa.MoldeCorreaItem MOLDE_CORREA_CADENA = register("molde_correa_cadena",
+            new com.femclothes.correa.MoldeCorreaItem(new Item.Settings().maxCount(1), com.femclothes.correa.EstiloCorrea.CADENA));
+    public static final com.femclothes.correa.MoldeCorreaItem MOLDE_CORREA_CADENA_FINA = register("molde_correa_cadena_fina",
+            new com.femclothes.correa.MoldeCorreaItem(new Item.Settings().maxCount(1), com.femclothes.correa.EstiloCorrea.CADENA_FINA));
+    public static final com.femclothes.correa.MoldeCorreaItem MOLDE_CORREA_OJALILLOS = register("molde_correa_ojalillos",
+            new com.femclothes.correa.MoldeCorreaItem(new Item.Settings().maxCount(1), com.femclothes.correa.EstiloCorrea.OJALILLOS));
+    public static final com.femclothes.correa.MoldeCorreaItem MOLDE_CORREA_CORDON = register("molde_correa_cordon",
+            new com.femclothes.correa.MoldeCorreaItem(new Item.Settings().maxCount(1), com.femclothes.correa.EstiloCorrea.CORDON));
+
+    // Apliques (2026-10-01, Mesa de estilado): moldes que no se gastan y el retazo con los colores.
+    public static final com.femclothes.aplique.MoldeApliqueItem MOLDE_APLIQUE_MONO = register("molde_aplique_mono",
+            new com.femclothes.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.femclothes.aplique.ModeloAplique.MONO));
+    public static final com.femclothes.aplique.MoldeApliqueItem MOLDE_APLIQUE_MARIPOSA = register("molde_aplique_mariposa",
+            new com.femclothes.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.femclothes.aplique.ModeloAplique.MARIPOSA));
+    public static final com.femclothes.aplique.MoldeApliqueItem MOLDE_APLIQUE_FLOR = register("molde_aplique_flor",
+            new com.femclothes.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.femclothes.aplique.ModeloAplique.FLOR));
+    /** Lo fabrica la Mesa de estilado creativa (2026-10-04); no está en la pestaña creativa. */
+    public static final com.femclothes.aplique.MoldeApliquePersonalizadoItem MOLDE_APLIQUE_PERSONALIZADO = register(
+            "molde_aplique_personalizado",
+            new com.femclothes.aplique.MoldeApliquePersonalizadoItem(new Item.Settings().maxCount(1)));
+    public static final com.femclothes.aplique.RetazoApliqueItem RETAZO_APLIQUE = register("retazo_aplique",
+            new com.femclothes.aplique.RetazoApliqueItem(new Item.Settings().maxCount(64)));
+
+    /**
+     * Hoodie oversize, primera prenda de la categoría Chaqueta (2026-09-30).
+     * Sale de fábrica largo, con manga larga, cuello redondo y calce
+     * Oversize — todo cambiable en la Modeladora como una remera.
+     */
+    public static final ChaquetaItem CHAQUETA = register("chaqueta", new ChaquetaItem(new Item.Settings().maxCount(16)
+            .component(com.femclothes.sublimadora.ModItems.VARIANTE, new com.femclothes.sublimadora.Variante(
+                    com.femclothes.sublimadora.Variante.Largo.LARGO, com.femclothes.sublimadora.Variante.Manga.LARGA,
+                    com.femclothes.sublimadora.Variante.Cuello.REDONDO))
+            .component(FemclothesComponents.CALCE, Calce.OVERSIZE)));
+
+    /** Muestra de color de la Estación de Tintes (2026-09-30), ver {@link MuestraColorItem}. */
+    /** Estrógenos (2026-10-01): cada dosis sube un talle el busto del relieve. */
+    public static final EstrogenosItem ESTROGENOS = register("estrogenos",
+            new EstrogenosItem(new Item.Settings().maxCount(16)));
+    /** Moldes de textura de tela (2026-10-01, relieve), se usan en la Mesa de estilado. */
+    public static final MoldeTexturaItem MOLDE_TEXTURA_FRUNCIDO = register("molde_textura_fruncido",
+            new MoldeTexturaItem(TexturaTela.FRUNCIDO, new Item.Settings().maxCount(1)));
+    public static final MoldeTexturaItem MOLDE_TEXTURA_ACOLCHADO = register("molde_textura_acolchado",
+            new MoldeTexturaItem(TexturaTela.ACOLCHADO, new Item.Settings().maxCount(1)));
+    public static final MuestraColorItem TINTE_MEZCLA = register("tinte_mezcla",
+            new MuestraColorItem(new Item.Settings().maxCount(16)));
     public static final CalientabrazosItem CALIENTABRAZOS = register("calientabrazos",
             new CalientabrazosItem(new Item.Settings().maxCount(16)));
 

@@ -4,7 +4,6 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.util.Uuids;
 import net.minecraft.util.math.MathHelper;
 
@@ -28,8 +27,17 @@ import java.util.UUID;
  * @param x      corrimiento horizontal, -0.5 a 0.5, 0 es centrado
  * @param y      corrimiento vertical, -0.5 a 0.5, positivo es hacia arriba
  * @param angulo rotación en grados, 0 es como viene la foto
+ * @param espejo simetría lateral (2026-09-28, "a la sublimadora hay que
+ *               agregarle simetria lateral para medias y cubrebrazos"): la
+ *               pierna/brazo izquierdo lleva el ESPEJO del derecho en vez
+ *               de la misma copia. Solo lo usan las prendas de a pares.
  */
-public record Estampa(UUID foto, float escala, float x, float y, float angulo, boolean cubrir) {
+public record Estampa(UUID foto, float escala, float x, float y, float angulo, boolean cubrir, boolean espejo) {
+
+    /** Sin simetría lateral — todas las estampas de antes. */
+    public Estampa(UUID foto, float escala, float x, float y, float angulo, boolean cubrir) {
+        this(foto, escala, x, y, angulo, cubrir, false);
+    }
 
     /** Ni tan chica que no se lea, ni tan grande que se coma las mangas. */
     public static final float ESCALA_DEFECTO = 0.42f;
@@ -116,15 +124,21 @@ public record Estampa(UUID foto, float escala, float x, float y, float angulo, b
             Codec.FLOAT.optionalFieldOf("x", 0f).forGetter(Estampa::x),
             Codec.FLOAT.optionalFieldOf("y", 0f).forGetter(Estampa::y),
             Codec.FLOAT.optionalFieldOf("angulo", 0f).forGetter(Estampa::angulo),
-            Codec.BOOL.optionalFieldOf("cubrir", false).forGetter(Estampa::cubrir)
+            Codec.BOOL.optionalFieldOf("cubrir", false).forGetter(Estampa::cubrir),
+            Codec.BOOL.optionalFieldOf("espejo", false).forGetter(Estampa::espejo)
     ).apply(i, Estampa::new));
 
-    public static final PacketCodec<ByteBuf, Estampa> PACKET_CODEC = PacketCodec.tuple(
-            Uuids.PACKET_CODEC, Estampa::foto,
-            PacketCodecs.FLOAT, Estampa::escala,
-            PacketCodecs.FLOAT, Estampa::x,
-            PacketCodecs.FLOAT, Estampa::y,
-            PacketCodecs.FLOAT, Estampa::angulo,
-            PacketCodecs.BOOL, Estampa::cubrir,
-            Estampa::new);
+    // A mano y no con PacketCodec.tuple: con el espejo son 7 campos y tuple llega a 6.
+    public static final PacketCodec<ByteBuf, Estampa> PACKET_CODEC = PacketCodec.of(
+            (e, buf) -> {
+                Uuids.PACKET_CODEC.encode(buf, e.foto());
+                buf.writeFloat(e.escala());
+                buf.writeFloat(e.x());
+                buf.writeFloat(e.y());
+                buf.writeFloat(e.angulo());
+                buf.writeBoolean(e.cubrir());
+                buf.writeBoolean(e.espejo());
+            },
+            buf -> new Estampa(Uuids.PACKET_CODEC.decode(buf), buf.readFloat(), buf.readFloat(),
+                    buf.readFloat(), buf.readFloat(), buf.readBoolean(), buf.readBoolean()));
 }

@@ -88,7 +88,7 @@ public class SublimadoraGeoModel extends GeoModel<SublimadoraBlockEntity> {
         // La VISTA PREVIA (estampa del borrador ya aplicada), no la
         // remera cruda — a pedido (2026-09-21, "que muestre el preview
         // del setting de la ultima prenda seteada").
-        return com.femclothes.render.PantallaMaquina.con(TEX, com.femclothes.render.PantallaMaquina.PANEL_128, be.vistaPreviaPersistente(), be.getPos());
+        return com.femclothes.render.PantallaMaquina.con(com.femclothes.util.MaquinaCreativa.textura(TEX, com.femclothes.util.MaquinaCreativa.es(be)), com.femclothes.render.PantallaMaquina.PANEL_128, be.vistaPreviaPersistente(), be.getPos());
     }
 
     @Override public Identifier getAnimationResource(SublimadoraBlockEntity be) { return ANIM; }
@@ -183,11 +183,10 @@ public class SublimadoraGeoModel extends GeoModel<SublimadoraBlockEntity> {
         // prendas") — solo una visible a la vez, según qué se estampó.
         // Visible mientras haya una prenda cargada O la recién estampada
         // no se retiró.
-        net.minecraft.item.ItemStack mostrar = !be.getRemera().isEmpty() ? be.getRemera() : be.getSalida();
-        String categoria = huesoDe(mostrar);
+        // Siempre ocultos (2026-09-29): la prenda la dibuja PrendaEnMaquinaLayer con su ícono real.
         for (String huesoCat : HUESOS_CATEGORIA) {
             GeoBone hueso = getAnimationProcessor().getBone(huesoCat);
-            if (hueso != null) hueso.setHidden(!huesoCat.equals(categoria));
+            if (hueso != null) hueso.setHidden(true);
         }
     }
 
@@ -197,7 +196,7 @@ public class SublimadoraGeoModel extends GeoModel<SublimadoraBlockEntity> {
     @org.jetbrains.annotations.Nullable
     private static String huesoDe(net.minecraft.item.ItemStack stack) {
         if (stack.isEmpty()) return null;
-        if (stack.getItem() == ModItems.REMERA) return "REMERA";
+        if (stack.getItem() instanceof RemeraItem) return "REMERA"; // la chaqueta también
         if (stack.getItem() instanceof com.femclothes.item.PantalonItem) return "PANTALON";
         if (stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID) return "MEDIAS";
         if (stack.getItem() instanceof com.femclothes.item.CalientabrazosItem) return "CALIENTABRAZOS";

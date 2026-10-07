@@ -27,6 +27,38 @@ public final class ModItems {
     public static final ComponentType<Estampa> ESTAMPA_FRENTE = registrarEstampa("estampa_frente");
     /** Idem en la espalda. Estampar las dos caras cuesta dos pasadas. */
     public static final ComponentType<Estampa> ESTAMPA_ESPALDA = registrarEstampa("estampa_espalda");
+    /**
+     * Foto sublimada en un banner (2026-10-06, "solo tintes y sublimadoras a banners y 16x"): la dibuja
+     * {@link BannerHD} a 16x sobre la cara del banner y, si el banner se usa en la receta del escudo, sobre el escudo.
+     */
+    public static final ComponentType<Estampa> BANNER_ESTAMPA = registrarEstampa("banner_estampa");
+
+    /**
+     * Las capas de estampa con máscara (2026-10-02, "mascaras de sublimacion...
+     * varias layers 12 quizas entre frente y atras"): en orden, cada una pinta
+     * encima de la anterior, después de las estampas de frente y espalda.
+     */
+    public static final ComponentType<java.util.List<CapaEstampa>> ESTAMPAS_CAPAS = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of(Femclothes.MOD_ID, "estampas_capas"),
+            ComponentType.<java.util.List<CapaEstampa>>builder()
+                    .codec(CapaEstampa.CODEC.listOf())
+                    .packetCodec(net.minecraft.network.codec.PacketCodecs.codec(CapaEstampa.CODEC.listOf()))
+                    .build());
+
+    /** Los moldes de máscara, uno por forma (en el orden de {@link FormaMascara}). */
+    public static final MoldeMascaraItem[] MOLDES_MASCARA = registrarMoldesMascara();
+
+    private static MoldeMascaraItem[] registrarMoldesMascara() {
+        FormaMascara[] formas = FormaMascara.values();
+        MoldeMascaraItem[] out = new MoldeMascaraItem[formas.length];
+        for (int i = 0; i < formas.length; i++) {
+            out[i] = Registry.register(Registries.ITEM,
+                    Identifier.of(Femclothes.MOD_ID, "molde_mascara_" + formas[i].clave),
+                    new MoldeMascaraItem(new Item.Settings().maxCount(1), formas[i]));
+        }
+        return out;
+    }
 
     /**
      * El componente viejo, de cuando la estampa era un UUID pelado y siempre
@@ -102,13 +134,17 @@ public final class ModItems {
      */
     public static boolean esEstampable(net.minecraft.item.ItemStack stack) {
         // A pedido (2026-09-19, "hace todas las prendas sublimables") —
-        // pantalón y calientabrazos se suman a remera/medias. Pollera queda
-        // afuera por ahora: su geometría (PolleraGeometria, paneles en
-        // abanico) no encaja en el mapeo Cara[] plano que usa EstampaTextures.
-        return stack.getItem() == REMERA
+        // pantalón y calientabrazos se suman a remera/medias.
+        return stack.getItem() instanceof RemeraItem // la chaqueta también (2026-09-30)
                 || stack.getItem() == com.femclothes.item.FemclothesItems.SOCKS_SOLID
                 || stack.getItem() == com.femclothes.item.FemclothesItems.PANTALON
-                || stack.getItem() == com.femclothes.item.FemclothesItems.CALIENTABRAZOS;
+                || stack.getItem() == com.femclothes.item.FemclothesItems.CALIENTABRAZOS
+                // La pollera nueva (2026-09-29, "quiero poder... sublimarla"):
+                // su tela es una caja de torso, ver EstampaTextures#POLLERA.
+                || stack.getItem() instanceof com.femclothes.item.PolleraItem
+                || stack.getItem() instanceof com.femclothes.item.CapaItem
+                // El banner (2026-10-06, "sublimadoras a banners y 16x"): una foto en el Frente, ver BannerHD.
+                || stack.getItem() instanceof net.minecraft.item.BannerItem;
     }
 
     private static ComponentType<Estampa> registrarEstampa(String nombre) {
@@ -139,6 +175,11 @@ public final class ModItems {
             moldeCuello("molde_cuello_v", Variante.Cuello.V);
     public static final MoldeCuelloItem MOLDE_CUELLO_POLERA =
             moldeCuello("molde_cuello_polera", Variante.Cuello.POLERA);
+
+    public static final MoldeCuelloItem MOLDE_CUELLO_CUADRADO =
+            moldeCuello("molde_cuello_cuadrado", Variante.Cuello.CUADRADO);
+    public static final MoldeCuelloItem MOLDE_CUELLO_CORAZON =
+            moldeCuello("molde_cuello_corazon", Variante.Cuello.CORAZON);
 
     private static MoldeItem molde(String nombre, MoldeItem.Eje eje) {
         return Registry.register(Registries.ITEM,

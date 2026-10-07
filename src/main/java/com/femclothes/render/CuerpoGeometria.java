@@ -188,7 +188,11 @@ public final class CuerpoGeometria {
      * partirla.
      */
     private static Map<String, PlantillaCuerpo> plantillasCuerpo() {
-        final int S = Superficie.CUERPO.escala;
+        return plantillas(Superficie.CUERPO.escala);
+    }
+
+    /** Las mismas cajas de {@link #raiz} (sin la cabeza) a la escala {@code S}. */
+    private static Map<String, PlantillaCuerpo> plantillas(final int S) {
         int prof = 4 * S, brazo = 4 * S, brazoFino = 3 * S;
         Map<String, PlantillaCuerpo> m = new java.util.HashMap<>();
         m.put(Parte.TORSO.clave(), new PlantillaCuerpo(16 * S, 16 * S, -4 * S, 0, -2 * S, 8 * S, prof));
@@ -202,6 +206,7 @@ public final class CuerpoGeometria {
     }
 
     private static final Map<String, PlantillaCuerpo> PLANTILLAS_CUERPO = plantillasCuerpo();
+    private static final Map<String, PlantillaCuerpo> PLANTILLAS_TELA = plantillas(Superficie.TELA.escala);
     private static final Map<String, ModelPart> RAICES_CUERPO_SEGMENTADO = new java.util.HashMap<>();
 
     private CuerpoGeometria() {}
@@ -402,12 +407,15 @@ public final class CuerpoGeometria {
     /**
      * Cuánto se marca el perfil según el calce: cuanto MÁS ajustada la
      * media, MÁS se marca (tela que aprieta = carne que abulta; a pedido).
-     * Ojo: el calce NORMAL dilata 0.02 (no los 0.32 fijos de TELA), ajustado
-     * -0.04, pegado ~0, suelto 0.15, oversize 0.30: normal = 1, ajustado/
-     * pegado más, suelto/oversize cada vez menos.
+     * Desde 2026-09-30 sale de {@code Calce.factorVolumen}: antes se
+     * derivaba de la dilatación con una recta calibrada para los valores
+     * viejos (normal 0.02), que con los calces nuevos daba cualquier cosa
+     * — Ajustado ya aprieta con su propia dilatación (-0.25), así que no
+     * necesita además exagerar el perfil.
      */
     private static float factorVolumen(float dilatacionBase) {
-        return Math.max(0.25F, Math.min(1.7F, 1.0F + (0.02F - dilatacionBase) / 0.06F * 0.6F));
+        com.femclothes.item.Calce calce = com.femclothes.item.Calce.de(dilatacionBase);
+        return calce == null ? 1.0F : calce.factorVolumen;
     }
 
     private static float dilTelaFila(float dilatacionBase, int fila) {
@@ -480,6 +488,138 @@ public final class CuerpoGeometria {
                 false, texW, texW, java.util.EnumSet.of(net.minecraft.util.math.Direction.UP)));
         ModelPart resultado = new ModelPart(cuboides, java.util.Map.of());
         RAICES_TELA_VOLUMEN.put(key, resultado);
+        return resultado;
+    }
+
+    private static final Map<String, ModelPart> RAICES_TELA_POR_FILAS = new java.util.HashMap<>();
+
+    /**
+     * La TELA de una parte partida en sus 12 filas, cada una con su propia
+     * dilatación — para el calce (2026-09-30, "el suelto mas holgado y si se
+     * puede con caida y el oversize super grande" / "además cuelga más
+     * abajo") y para que una capa de arriba nunca quede por dentro de una de
+     * abajo (ver {@code GarmentFeatureRenderer#dibujarPiezas}). Misma técnica
+     * que {@link #telaConVolumenDePierna}: el grosor extra solo en x/z, cada
+     * fila con su altura exacta y su franja de UV.
+     *
+     * <p>A diferencia de la caja entera de {@link #raiz} (que infla también
+     * en y y estira la textura), acá las filas no se inflan en y. Para que
+     * no quede una rendija arriba, la tapa de arriba va a -dil como en la
+     * caja entera y una tira sin alto (UV de la primera fila) cierra el
+     * costado entre la tapa y la fila 0. Abajo, la tapa solo va si la tela
+     * llega a la fila 12 sin colgar (y nunca en brazos: ver {@link #SIN_MUNECA}).
+     *
+     * @param dilFila  dilatación de cada una de las 12 filas, en píxeles de skin
+     * @param hasta    fila (exclusiva) donde corta la tela — de ahí cuelga
+     * @param colgado  filas extra por debajo de {@code hasta}, repitiendo la
+     *                 franja de UV de la última fila con tela
+     */
+    public static ModelPart telaPorFilas(Parte parte, boolean slim, float[] dilFila, int hasta, int colgado,
+                                         float dilColgado) {
+        return telaPorFilas(parte, slim, dilFila, hasta, colgado, dilColgado, -1F);
+    }
+
+    /**
+     * Cuánto se corre (px) cada costado en x de una tela con holgura {@code dil}
+     * cuando el lado que da al cuerpo va con {@code interno} (2026-10-02,
+     * "probar no ensanchar los lados internos que coexisten en torso y
+     * brazos"): {mínimo x, máximo x}. El torso tiene los dos costados contra
+     * los brazos; el brazo derecho (x local −3..1) da al torso por +x y el
+     * izquierdo (−1..3) por −x. Con {@code interno} negativo, los dos {@code dil}.
+     */
+    public static float[] costadosX(Parte parte, float dil, float interno) {
+        if (interno < 0F || interno >= dil) return new float[]{dil, dil};
+        return switch (parte) {
+            case TORSO -> new float[]{interno, interno};
+            case BRAZO_DER -> new float[]{dil, interno};
+            case BRAZO_IZQ -> new float[]{interno, dil};
+            default -> new float[]{dil, dil};
+        };
+    }
+
+    /**
+     * Con {@code interno} ≥ 0: los costados que dan al cuerpo (ver
+     * {@link #costadosX}) se inflan solo eso, así la manga y el torso de una
+     * prenda holgada no se meten uno adentro del otro.
+     */
+    public static ModelPart telaPorFilas(Parte parte, boolean slim, float[] dilFila, int hasta, int colgado,
+                                         float dilColgado, float interno) {
+        String key = parte.clave() + "|" + slim + "|" + java.util.Arrays.toString(dilFila) + "|" + hasta
+                + "|" + colgado + "|" + dilColgado + "|" + interno;
+        ModelPart cacheada = RAICES_TELA_POR_FILAS.get(key);
+        if (cacheada != null) return cacheada;
+        // Cada combinación de calces/largos/capas es una entrada: tope para
+        // que no crezca sin fin en una sesión larga.
+        if (RAICES_TELA_POR_FILAS.size() > 512) RAICES_TELA_POR_FILAS.clear();
+
+        boolean brazo = parte == Parte.BRAZO_DER || parte == Parte.BRAZO_IZQ;
+        PlantillaCuerpo t = PLANTILLAS_TELA.get(nombre(parte, slim));
+        // La cabeza no tiene plantilla (nunca lleva cuerpo): caja entera.
+        if (t == null) return parte(Superficie.TELA, parte, slim, dilFila[0]);
+        final int S = Superficie.TELA.escala;
+        float texW = LayoutSkin.LADO * S;
+        java.util.Set<net.minecraft.util.math.Direction> costados = java.util.EnumSet.of(
+                net.minecraft.util.math.Direction.NORTH, net.minecraft.util.math.Direction.SOUTH,
+                net.minecraft.util.math.Direction.EAST, net.minecraft.util.math.Direction.WEST);
+        java.util.List<ModelPart.Cuboid> cuboides = new java.util.ArrayList<>();
+
+        for (int fila = 0; fila < 12; fila++) {
+            float dil = dilFila[fila] * S;
+            // Costados en x: inflado y corrimiento para que el lado interno quede en "interno".
+            float[] cx = costadosX(parte, dilFila[fila], interno);
+            float ex = (cx[0] + cx[1]) / 2F * S, ox = (cx[1] - cx[0]) / 2F * S;
+            cuboides.add(new ModelPart.Cuboid(
+                    t.uvX(), t.uvY() + fila * S,
+                    t.originX() + ox, t.originY() + fila * S, t.originZ(),
+                    t.sizeX(), S, t.sizeZ(),
+                    ex, 0F, dil,
+                    false, texW, texW, costados));
+        }
+
+        // Tapa de arriba (Direction.DOWN = arriba, nombres invertidos) a -dil,
+        // como la caja entera, más la tira que cierra el costado hasta la fila 0.
+        float dilArriba = dilFila[0] * S;
+        float[] cxA = costadosX(parte, dilFila[0], interno);
+        float exA = (cxA[0] + cxA[1]) / 2F * S, oxA = (cxA[1] - cxA[0]) / 2F * S;
+        cuboides.add(new ModelPart.Cuboid(
+                t.uvX(), t.uvY(), t.originX() + oxA, t.originY(), t.originZ(),
+                t.sizeX(), 12 * S, t.sizeZ(), exA, dilArriba, dilArriba,
+                false, texW, texW, java.util.EnumSet.of(net.minecraft.util.math.Direction.DOWN)));
+        if (dilArriba > 0) {
+            cuboides.add(new ModelPart.Cuboid(
+                    t.uvX(), t.uvY(), t.originX() + oxA, t.originY() - dilArriba / 2F, t.originZ(),
+                    t.sizeX(), 0F, t.sizeZ(), exA, dilArriba / 2F, dilArriba,
+                    false, texW, texW, costados));
+        }
+
+        // Lo que cuelga: filas extra con la franja de UV de la última fila con tela.
+        int ultima = Math.max(0, Math.min(11, hasta - 1));
+        float dilC = dilColgado * S;
+        for (int k = 0; k < colgado; k++) {
+            cuboides.add(new ModelPart.Cuboid(
+                    t.uvX(), t.uvY() + ultima * S,
+                    t.originX(), t.originY() + (hasta + k) * S, t.originZ(),
+                    t.sizeX(), S, t.sizeZ(),
+                    dilC, 0F, dilC,
+                    false, texW, texW, costados));
+        }
+
+        if (!brazo && hasta >= 12 && colgado == 0) {
+            float dilAbajo = dilFila[11] * S;
+            cuboides.add(new ModelPart.Cuboid(
+                    t.uvX(), t.uvY(), t.originX(), t.originY(), t.originZ(),
+                    t.sizeX(), 12 * S, t.sizeZ(), dilAbajo, dilAbajo, dilAbajo,
+                    false, texW, texW, java.util.EnumSet.of(net.minecraft.util.math.Direction.UP)));
+            if (dilAbajo > 0) {
+                cuboides.add(new ModelPart.Cuboid(
+                        t.uvX(), t.uvY() + 12 * S - 1, t.originX(), t.originY() + 12 * S + dilAbajo / 2F, t.originZ(),
+                        t.sizeX(), 0F, t.sizeZ(), dilAbajo, dilAbajo / 2F, dilAbajo,
+                        false, texW, texW, costados));
+            }
+        }
+
+        ModelPart resultado = new ModelPart(cuboides, Map.of());
+        RAICES_TELA_POR_FILAS.put(key, resultado);
         return resultado;
     }
 

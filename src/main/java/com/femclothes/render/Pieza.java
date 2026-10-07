@@ -31,7 +31,18 @@ import net.minecraft.util.Identifier;
  * (compat) asume pieza entera.
  */
 public record Pieza(Parte parte, int capa, Identifier textura, float dilatacion, int filaDesde, int filaHasta,
-                    boolean volumenPierna) {
+                    boolean volumenPierna, boolean elastico) {
+
+    /**
+     * Sin elástico. {@code elastico} (2026-09-30, hoodie: "puños y ruedo
+     * elásticos"): la última fila con tela aprieta hacia el cuerpo y la
+     * prenda no cuelga — la caída se ve como un "globo" arriba de la banda
+     * (ver {@code GarmentFeatureRenderer#dibujarPiezas}).
+     */
+    public Pieza(Parte parte, int capa, Identifier textura, float dilatacion, int filaDesde, int filaHasta,
+                 boolean volumenPierna) {
+        this(parte, capa, textura, dilatacion, filaDesde, filaHasta, volumenPierna, false);
+    }
 
     /**
      * Sin volumen extra (todo lo que había antes). {@code volumenPierna}
@@ -40,14 +51,14 @@ public record Pieza(Parte parte, int capa, Identifier textura, float dilatacion,
      * {@link CuerpoGeometria#telaConVolumenDePierna}.
      */
     public Pieza(Parte parte, int capa, Identifier textura, float dilatacion, int filaDesde, int filaHasta) {
-        this(parte, capa, textura, dilatacion, filaDesde, filaHasta, false);
+        this(parte, capa, textura, dilatacion, filaDesde, filaHasta, false, false);
     }
 
     public Pieza(Parte parte, int capa, Identifier textura, float dilatacion) {
-        this(parte, capa, textura, dilatacion, 0, 12, false);
+        this(parte, capa, textura, dilatacion, 0, 12, false, false);
     }
 
     public Pieza(Parte parte, int capa, Identifier textura) {
-        this(parte, capa, textura, CuerpoGeometria.Superficie.TELA.dilatacion, 0, 12, false);
+        this(parte, capa, textura, CuerpoGeometria.Superficie.TELA.dilatacion, 0, 12, false, false);
     }
 }

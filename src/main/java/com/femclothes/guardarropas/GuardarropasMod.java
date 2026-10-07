@@ -1,24 +1,28 @@
 package com.femclothes.guardarropas;
 
 import com.femclothes.Femclothes;
+import com.femclothes.bloque.BloqueGeoItem;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.Identifier;
 
-/** Registro del Guardarropas — PLACEHOLDER, ver GuardarropasBlockEntity. */
+/** Registro del Guardarropas (modelo GeckoLib "wardrobe" desde 2026-09-30). */
 public final class GuardarropasMod {
 
     public static final GuardarropasBlock GUARDARROPAS_BLOCK = new GuardarropasBlock(
             AbstractBlock.Settings.create()
                     .strength(2.5f, 4.0f)
-                    .sounds(BlockSoundGroup.WOOD));
+                    .sounds(BlockSoundGroup.WOOD)
+                    // INVISIBLE (lo dibuja GeckoLib): sin esto vanilla lo
+                    // trata como cubo opaco y cullea las caras vecinas.
+                    .nonOpaque());
 
-    public static final BlockItem GUARDARROPAS_BLOCK_ITEM = new BlockItem(GUARDARROPAS_BLOCK, new Item.Settings());
+    public static final BloqueGeoItem GUARDARROPAS_BLOCK_ITEM =
+            new BloqueGeoItem(GUARDARROPAS_BLOCK, new Item.Settings(), "wardrobe");
 
     public static final BlockEntityType<GuardarropasBlockEntity> GUARDARROPAS_BLOCK_ENTITY =
             BlockEntityType.Builder.create(GuardarropasBlockEntity::new, GUARDARROPAS_BLOCK).build();

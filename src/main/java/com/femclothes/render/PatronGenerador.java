@@ -58,6 +58,12 @@ public final class PatronGenerador {
     private static final Caja BRAZO_IZQ = new Caja(256, 416, 384, 96, 32);
     // TORSO (u=16,v=16,ancho=8,prof=4): caras 2*prof+2*ancho=192 de ancho.
     private static final Caja TORSO = new Caja(128, 160, 320, 96, 32);
+    // La capa (2026-09-29, "capas... como las capas vanilla"): el paño es la
+    // caja 10x16x1 de la capa vanilla en uv 0,0 (exterior = frente, forro =
+    // atrás) y capucha/cuello salen de una caja de detalles 12x8x2 en uv 24,0
+    // (ver render.CapaMalla).
+    private static final Caja CAPA = new Caja(0, 8, 176, 128, 8);
+    private static final Caja CAPA_DETALLES = new Caja(192, 16, 416, 64, 16);
 
     /** El valor (pixel de máscara) de un punto de la tira de 4 caras, en coordenadas de la tira. */
     @FunctionalInterface
@@ -107,8 +113,7 @@ public final class PatronGenerador {
      * Qué cajas pinta un patrón para cada prenda — la pierna/brazo que
      * gobierna esa prenda (medias y pantalón comparten pierna, calienta-
      * brazos usa brazo, remera usa torso+los dos brazos). Prenda sin
-     * entrada acá (ej. "pollera", UV propio sin mapear todavía) → sin
-     * patrón procedural, cae a la prenda lisa como antes.
+     * entrada acá → sin patrón procedural, cae a la prenda lisa.
      */
     private static final Map<String, List<Caja>> CAJAS_POR_PRENDA = Map.of(
             "socks", List.of(PIERNA_DER, PIERNA_IZQ),
@@ -119,7 +124,12 @@ public final class PatronGenerador {
             // patrón de acá en vez de quedar SIEMPRE lisa.
             "pantalon", List.of(PIERNA_DER, PIERNA_IZQ, TORSO),
             "calientabrazos", List.of(BRAZO_DER, BRAZO_IZQ),
-            "remera", List.of(TORSO, BRAZO_DER, BRAZO_IZQ));
+            "remera", List.of(TORSO, BRAZO_DER, BRAZO_IZQ),
+            // La pollera nueva (2026-09-29, "quiero poder... teñirla"): su tela
+            // usa el layout de la caja del TORSO, envuelto en la campana (ver
+            // render.PolleraMalla), así que los patrones van en esa caja.
+            "pollera", List.of(TORSO),
+            "capa", List.of(CAPA, CAPA_DETALLES));
 
     /**
      * Dónde cae la rayita a lo largo del eje que le toca según
@@ -206,13 +216,33 @@ public final class PatronGenerador {
      */
     public static NativeImage mascaraPara(String prenda, Forma forma, float anguloGrados,
                                           int grosorBase, TamanoPatron tamano, float posicion, int semilla) {
-        List<Caja> cajas = CAJAS_POR_PRENDA.get(prenda);
+        return mascaraPara(prenda, forma, anguloGrados, grosorBase, tamano, posicion, semilla, 1f);
+    }
+
+    /**
+     * Con {@code distancia} (2026-09-30, sliders de distancia): factor del
+     * período de las rayas — 1 = raya y hueco del mismo ancho, como siempre;
+     * 0.5 = sin hueco (pegadas); 3 = el triple de período. Solo cambia
+     * ALTERNADO y TRES_RAYAS (las de una sola raya no tienen distancia).
+     */
+    public static NativeImage mascaraPara(String prenda, Forma forma, float anguloGrados,
+                                          int grosorBase, TamanoPatron tamano, float posicion, int semilla,
+                                          float distancia) {
+        return mascaraPara(prenda, forma, anguloGrados, grosorBase, tamano, posicion, semilla, distancia, false);
+    }
+
+    /** Con {@code simetria} del torso (2026-09-30): las rayas en diagonal quedan en V, ver {@link #reflejoTorso}. */
+    public static NativeImage mascaraPara(String prenda, Forma forma, float anguloGrados,
+                                          int grosorBase, TamanoPatron tamano, float posicion, int semilla,
+                                          float distancia, boolean simetria) {
+        List<Caja> cajas = cajasDe(prenda);
         if (cajas == null) return null;
 
         int grosor = Math.max(1, Math.round(grosorBase * tamano.escala));
         int posPaso = forma == Forma.TRES_RAYAS ? Math.round(Math.max(0f, Math.min(1f, posicion)) * 100) : 0;
         int anguloPaso = Math.round(anguloGrados / 15f) * 15;
-        String key = prenda + "|" + forma + "|" + anguloPaso + "|" + grosor + "|" + posPaso + "|" + semilla;
+        int periodo = Math.max(grosor, Math.round(grosor * 2 * distancia));
+        String key = prenda + "|" + forma + "|" + anguloPaso + "|" + grosor + "|" + posPaso + "|" + semilla + "|" + periodo + "|" + simetria;
         NativeImage cacheada = CACHE.get(key);
         if (cacheada != null) return cacheada;
 
@@ -226,10 +256,9 @@ public final class PatronGenerador {
         // "x' = 3·cuarto − x (mod ancho)": intercambia der↔izq (cada uno
         // invertido) e invierte frente/atrás DENTRO de su columna — así una
         // diagonal sale con la inclinación opuesta en el otro brazo.
-        int periodo = grosor * 2;
         // TRES_RAYAS: bloque fijo hueco,raya,hueco,raya,hueco,raya que se
-        // desliza con posPaso a lo largo del eje.
-        int bloque = grosor * 6;
+        // desliza con posPaso a lo largo del eje (3 períodos).
+        int bloque = periodo * 3;
         // Grosor del contorno de una raya: un cuarto de su ancho, mínimo 1px.
         int contorno = Math.max(1, grosor / 4);
         double rad = Math.toRadians(anguloPaso);
@@ -244,8 +273,10 @@ public final class PatronGenerador {
             int largo = (int) Math.round(max - min);
             int inicioBloque = Math.round(posPaso / 100f * Math.max(0, largo - bloque));
             double minFinal = min;
-            recorrer(caja, img, (lx, ly) -> {
+            boolean simetrica = simetria && caja == TORSO;
+            recorrer(caja, img, desplegar(prenda, caja, simetrica, (lx, ly) -> {
                 int lxEspejado = espejar ? Math.floorMod(3 * cuarto - lx, w) : lx;
+                if (simetrica) lxEspejado = reflejoTorso(lxEspejado, w);
                 int d = (int) Math.round(lxEspejado * sin + ly * cos - minFinal);
                 boolean opaco = rayaOpaca(forma, d, grosor, periodo, largo, inicioBloque, bloque);
                 boolean esContorno = !opaco && (rayaOpaca(forma, d - contorno, grosor, periodo, largo, inicioBloque, bloque)
@@ -258,7 +289,7 @@ public final class PatronGenerador {
                         ? Math.floorDiv(dRaya - inicioBloque, periodo) : Math.floorDiv(dRaya, periodo);
                 int cob = opaco || esContorno ? 255 : 0;
                 return pixelMascara(cob, esContorno, indice, 0, semilla, ly, h);
-            });
+            }));
         }
 
         CACHE.put(key, img);
@@ -275,8 +306,10 @@ public final class PatronGenerador {
             case ABAJO -> d >= largo - grosor * 2 && d < largo - grosor;
             case MEDIO -> d >= (largo - grosor) / 2 && d < (largo - grosor) / 2 + grosor;
             case TRES_RAYAS -> {
+                // La raya ocupa el final de cada período (con período = 2
+                // grosores es lo mismo de siempre: hueco, raya).
                 int rel = d - inicioBloque;
-                yield rel >= 0 && rel < bloque && (rel / grosor) % 2 == 1;
+                yield rel >= 0 && rel < bloque && rel % periodo >= periodo - grosor;
             }
         };
     }
@@ -311,6 +344,51 @@ public final class PatronGenerador {
     /** Altura (0 arriba .. 255 abajo) de este pixel dentro de su pieza. */
     public static int altura(int pixel) { return (pixel >> 16) & 0xFF; }
 
+    /**
+     * Clave de prenda de la pollera para {@link #mascaraDeCapa}: los
+     * patrones dependen de la forma y del largo (ver {@link #desplegar}).
+     */
+    public static String clavePollera(com.femclothes.item.PolleraForma forma, com.femclothes.item.PolleraLargo largo) {
+        return "pollera:" + forma.name() + ":" + largo.name();
+    }
+
+    private static List<Caja> cajasDe(String prenda) {
+        return CAJAS_POR_PRENDA.get(prenda.startsWith("pollera:") ? "pollera" : prenda);
+    }
+
+    /**
+     * Patrones de la pollera sin deformar (2026-10-01, "alguna forma de
+     * acomodar las UVs de las polleras para que los patrones no se
+     * deformen?"): la tela da la vuelta entera en los 24 px de textura en
+     * todas las filas, pero el ruedo es mucho más ancho que la cintura (y el
+     * largo de tela no son 12 px). Acá cada pixel de la textura se lleva a
+     * dónde cae en la tela desplegada de esa pollera ({@link PolleraMalla.Perfil}):
+     * en horizontal, la distancia al centro del frente por la vuelta de esa
+     * fila / 24; en vertical, la fracción del largo de tela. El patrón se
+     * evalúa ahí, así que en la textura queda "abierto en abanico" y sobre
+     * la pollera los lunares salen redondos y las rayas parejas. La costura
+     * queda en el centro de la espalda, como en una pollera de verdad.
+     *
+     * <p>Con simetría, la mitad izquierda lee la derecha espejada antes de
+     * desplegar (el reflejo del torso no sirve: la media vuelta ya no mide 96).
+     */
+    private static ValorTira desplegar(String prenda, Caja caja, boolean simetria, ValorTira f) {
+        if (!prenda.startsWith("pollera:") || caja != TORSO) return f;
+        String[] partes = prenda.split(":");
+        PolleraMalla.Perfil perfil = PolleraMalla.perfil(com.femclothes.item.PolleraForma.valueOf(partes[1]),
+                com.femclothes.item.PolleraLargo.valueOf(partes[2]));
+        int w = caja.x1() - caja.x0(), h = caja.alto();
+        int centro = w / 3, mitad = w / 2;
+        float alto = perfil.largoTela / 12f;
+        return (lx, ly) -> {
+            int d = Math.floorMod(lx - centro + mitad, w) - mitad;
+            if (simetria && d >= 0) d = -1 - d;
+            float q = Math.max(0f, Math.min(1f, (ly + 0.5f) / h));
+            float ancho = perfil.circunferenciaEn(q) / 24f;
+            return f.valor(centro + Math.round(d * ancho), Math.round(ly * alto));
+        };
+    }
+
     private static NativeImage mascaraVacia() {
         NativeImage img = new NativeImage(LADO_ATLAS, LADO_ATLAS, true);
         for (int y = 0; y < LADO_ATLAS; y++) for (int x = 0; x < LADO_ATLAS; x++) img.setColor(x, y, 0);
@@ -332,17 +410,24 @@ public final class PatronGenerador {
         }
         com.femclothes.item.ClothingPatternItem item = com.femclothes.item.ClothingPatternItem.porId(capa.patronId());
         if (item == null) return null;
+        DistribucionPatron dist = capa.distribucion() == null ? DistribucionPatron.DEFECTO : capa.distribucion();
         if (item.motivo != null) {
             return mascaraMotivo(prenda, item.motivo, item.grosorBase * capa.tamano().escala,
-                    capa.repeticion(), capa.semilla(), capa.posicion());
+                    capa.repeticion(), capa.semilla(), capa.posicion(), capa.angulo(), dist);
         }
-        return mascaraPara(prenda, capa.forma(), capa.angulo(), item.grosorBase, capa.tamano(), capa.posicion(), capa.semilla());
+        // Rayas: la distancia que cuenta es la que cruza las rayas — 0° son
+        // horizontales (se separan en vertical), 90° verticales (en horizontal).
+        double rad = Math.toRadians(capa.angulo());
+        double s2 = Math.sin(rad) * Math.sin(rad);
+        float distancia = (float) (dist.distanciaV() * (1 - s2) + dist.distanciaH() * s2);
+        return mascaraPara(prenda, capa.forma(), capa.angulo(), item.grosorBase, capa.tamano(), capa.posicion(),
+                capa.semilla(), distancia, dist.simetria());
     }
 
     /** Capa lisa con degradé: cubre todas las cajas de la prenda, con la altura en el canal azul. */
     @org.jetbrains.annotations.Nullable
     public static NativeImage mascaraGradiente(String prenda) {
-        List<Caja> cajas = CAJAS_POR_PRENDA.get(prenda);
+        List<Caja> cajas = cajasDe(prenda);
         if (cajas == null) return null;
         String key = prenda + "|gradiente";
         NativeImage cacheada = CACHE.get(key);
@@ -377,11 +462,27 @@ public final class PatronGenerador {
      */
     public static NativeImage mascaraMotivo(String prenda, Motivo motivo, double escala,
                                             Repeticion repeticion, int semilla, float posicion) {
-        List<Caja> cajas = CAJAS_POR_PRENDA.get(prenda);
+        return mascaraMotivo(prenda, motivo, escala, repeticion, semilla, posicion, 0f, DistribucionPatron.DEFECTO);
+    }
+
+    /**
+     * Con giro de grilla ({@code anguloGrilla}, el ángulo de la capa) y
+     * {@link DistribucionPatron} (giro de cada motivo y distancias) —
+     * 2026-09-30, "que los patrones si se puedan girar y que haya un slider
+     * vertical y horizontal para ponerlos mas juntos". Con la grilla girada
+     * ya no entra una cantidad entera de columnas en el perímetro: en la
+     * costura de atrás el dibujo puede no empalmar.
+     */
+    public static NativeImage mascaraMotivo(String prenda, Motivo motivo, double escala,
+                                            Repeticion repeticion, int semilla, float posicion,
+                                            float anguloGrilla, DistribucionPatron dist) {
+        List<Caja> cajas = cajasDe(prenda);
         if (cajas == null) return null;
         double k = Math.max(0.75, Math.round(escala * 4) / 4.0);
         int posPaso = Math.round(Math.max(0f, Math.min(1f, posicion)) * 20);
-        String key = prenda + "|motivo|" + motivo + "|" + k + "|" + repeticion + "|" + semilla + "|" + posPaso;
+        int grillaPaso = Math.floorMod(Math.round(anguloGrilla / 15f) * 15, 360);
+        String key = prenda + "|motivo|" + motivo + "|" + k + "|" + repeticion + "|" + semilla + "|" + posPaso
+                + "|" + grillaPaso + "|" + dist.clave();
         NativeImage cacheada = CACHE.get(key);
         if (cacheada != null) return cacheada;
 
@@ -395,15 +496,17 @@ public final class PatronGenerador {
             // miden lo mismo (frente = 2ª columna); el torso es der 32 |
             // frente 64 | izq 32 | atrás 64.
             double centroFrente = caja == TORSO ? 64 : cuarto * 1.5;
-            recorrer(caja, img, (lx, ly) -> {
+            boolean simetrica = dist.simetria() && caja == TORSO;
+            recorrer(caja, img, desplegar(prenda, caja, simetrica, (lx, ly) -> {
                 int u = espejar ? Math.floorMod(3 * cuarto - lx, w) : lx;
+                if (simetrica) u = reflejoTorso(u, w);
                 int rol = motivo.esProcedural()
-                        ? coberturaVichy(u, ly, w, k, posPaso / 20.0, celda)
+                        ? coberturaVichy(u, ly, w, h, k, posPaso / 20.0, centroFrente, grillaPaso, dist, celda)
                         : rolSprite(motivo, repeticion, u + 0.5, ly + 0.5, w, h, k, semilla,
-                                posPaso / 20.0, centroFrente, celda);
+                                posPaso / 20.0, centroFrente, grillaPaso, dist, celda);
                 int cob = rol == ROL_NADA ? 0 : rol == ROL_MEDIO ? 128 : 255;
                 return pixelMascara(cob, rol == ROL_CONTORNO, celda[0], celda[1], semilla, ly, h);
-            });
+            }));
         }
         CACHE.put(key, img);
         return img;
@@ -411,41 +514,122 @@ public final class PatronGenerador {
 
     private static final int ROL_NADA = 0, ROL_RELLENO = 1, ROL_CONTORNO = 2, ROL_MEDIO = 3;
 
-    /** Qué es este pixel dentro del motivo, y de qué celda (en {@code celda}: columna, fila). */
+    /**
+     * Qué es este pixel dentro del motivo, y de qué celda (en {@code celda}:
+     * columna, fila). Mira la celda del pixel y sus 8 vecinas: con los
+     * motivos girados o con poca distancia (2026-09-30) un motivo se sale de
+     * su celda, y sin mirar las vecinas quedaría cortado en el borde.
+     */
     private static int rolSprite(Motivo m, Repeticion rep, double u, double v, int w, int h,
-                                 double k, int semilla, double posicion, double centroFrente, int[] celda) {
+                                 double k, int semilla, double posicion, double centroFrente,
+                                 int anguloGrilla, DistribucionPatron dist, int[] celda) {
+        double giro = Math.toRadians(dist.giroMotivo());
         double anchoM = m.ancho * k, altoM = m.alto * k;
-        double lu, lv, kk = k;
         if (rep == Repeticion.UNICO) {
-            kk = k * MOTIVO_UNICO;
-            lu = u - centroFrente;
-            lv = v - posicion * h;
             celda[0] = 0;
             celda[1] = 0;
+            double kk = k * MOTIVO_UNICO;
+            // El logo gira con los dos ángulos (no hay grilla que girar aparte).
+            return rolEn(m, u - centroFrente, v - posicion * h, giro + Math.toRadians(anguloGrilla), kk,
+                    false, dist.espejo());
+        }
+        double tam = Math.max(anchoM, altoM) * MOTIVO_CELDA;
+        double celdaY = tam * dist.distanciaV();
+        double celdaX;
+        int columnas;
+        double gu, gv;
+        if (anguloGrilla == 0) {
+            // Grilla derecha: entra una cantidad entera de columnas en el
+            // perímetro (el motivo de la costura de atrás sigue del otro lado).
+            columnas = Math.max(1, (int) Math.round(w / (tam * dist.distanciaH())));
+            celdaX = (double) w / columnas;
+            gu = u;
+            gv = v;
         } else {
-            int columnas = Math.max(1, (int) Math.round(w / (Math.max(anchoM, altoM) * MOTIVO_CELDA)));
-            double celdaX = (double) w / columnas;
-            double celdaY = Math.max(anchoM, altoM) * MOTIVO_CELDA;
-            // Posición corre la grilla en vertical (0.5 = sin corrimiento).
-            double vv = v + (posicion - 0.5) * celdaY;
-            int fila = (int) Math.floor(vv / celdaY);
-            double uu = u;
-            if (rep == Repeticion.LADRILLO && Math.floorMod(fila, 2) == 1) uu += celdaX / 2;
-            int col = Math.floorMod((int) Math.floor(uu / celdaX), columnas);
-            celda[0] = col;
-            celda[1] = fila;
-            lu = uu - Math.floor(uu / celdaX) * celdaX - celdaX / 2;
-            lv = vv - fila * celdaY - celdaY / 2;
-            if (rep == Repeticion.DISPERSO) {
-                long hash = mezclarHash(col, fila, semilla);
-                if ((hash & 0xFF) / 255.0 < MOTIVO_VACIAS) return ROL_NADA;
-                // Corrimiento dentro de la celda, sin salirse de ella (así
-                // alcanza con mirar la celda propia).
-                double libreX = Math.max(0, (celdaX - anchoM) / 2 - k), libreY = Math.max(0, (celdaY - altoM) / 2 - k);
-                lu -= (((hash >> 8) & 0xFF) / 255.0 * 2 - 1) * libreX;
-                lv -= (((hash >> 16) & 0xFF) / 255.0 * 2 - 1) * libreY;
+            columnas = 0;
+            celdaX = tam * dist.distanciaH();
+            double a = -Math.toRadians(anguloGrilla), cos = Math.cos(a), sin = Math.sin(a);
+            double du = u - centroFrente, dv = v - h / 2.0;
+            gu = du * cos - dv * sin + centroFrente;
+            gv = du * sin + dv * cos + h / 2.0;
+        }
+        // Posición corre la grilla en vertical (0.5 = sin corrimiento).
+        gv += (posicion - 0.5) * celdaY;
+
+        int fila0 = (int) Math.floor(gv / celdaY);
+        int resultado = ROL_NADA;
+        for (int df = -1; df <= 1; df++) {
+            int fila = fila0 + df;
+            double corrimiento = rep == Repeticion.LADRILLO && Math.floorMod(fila, 2) == 1 ? celdaX / 2 : 0;
+            int col0 = (int) Math.floor((gu - corrimiento) / celdaX);
+            for (int dc = -1; dc <= 1; dc++) {
+                int col = col0 + dc;
+                int colId = columnas > 0 ? Math.floorMod(col, columnas) : col;
+                double lu = gu - ((col + 0.5) * celdaX + corrimiento);
+                double lv = gv - (fila + 0.5) * celdaY;
+                if (rep == Repeticion.DISPERSO) {
+                    long hash = mezclarHash(colId, fila, semilla);
+                    if ((hash & 0xFF) / 255.0 < MOTIVO_VACIAS) continue;
+                    double libreX = Math.max(0, (celdaX - anchoM) / 2 - k), libreY = Math.max(0, (celdaY - altoM) / 2 - k);
+                    lu -= (((hash >> 8) & 0xFF) / 255.0 * 2 - 1) * libreX;
+                    lv -= (((hash >> 16) & 0xFF) / 255.0 * 2 - 1) * libreY;
+                }
+                int rol = rolEn(m, lu, lv, giro, k, dist.alternancia().espeja(colId, fila), dist.espejo());
+                if (rol == ROL_RELLENO) {
+                    celda[0] = colId;
+                    celda[1] = fila;
+                    return ROL_RELLENO;
+                }
+                if (rol == ROL_CONTORNO && resultado == ROL_NADA) {
+                    resultado = ROL_CONTORNO;
+                    celda[0] = colId;
+                    celda[1] = fila;
+                }
             }
         }
+        if (resultado == ROL_NADA) {
+            celda[0] = columnas > 0 ? Math.floorMod((int) Math.floor(gu / celdaX), columnas) : (int) Math.floor(gu / celdaX);
+            celda[1] = fila0;
+        }
+        return resultado;
+    }
+
+    /**
+     * Simetría del torso (2026-09-30): la mitad que va del centro del frente
+     * (u 64, a escala 8) hasta el centro de la espalda (64 + w/2) toma el
+     * pixel reflejado de la otra mitad — así el lado izquierdo es el espejo
+     * del derecho, en el frente y en la espalda.
+     */
+    private static int reflejoTorso(int u, int w) {
+        int centro = w / 3;          // der w/6 + medio frente w/6 (192: 32 + 32 = 64)
+        int mitad = w / 2;
+        if (u >= centro && u < centro + mitad) return Math.floorMod(2 * centro - 1 - u, w);
+        return u;
+    }
+
+    /** Relleno / contorno / nada de un motivo centrado en (0,0), girado {@code giro} radianes, a escala {@code kk}. */
+    private static int rolEn(Motivo m, double lu, double lv, double giro, double kk) {
+        return rolEn(m, lu, lv, giro, kk, false, DistribucionPatron.Espejo.NINGUNO);
+    }
+
+    /**
+     * Con espejos (2026-09-30): el motivo final es
+     * {@code alternado( girado( espejado(motivo) ) )}, así que al pixel se le
+     * aplica la inversa en el orden contrario — primero la alternancia (dar
+     * vuelta el motivo YA girado: con Giro sale un zigzag), después el giro,
+     * y al final el espejo propio del motivo.
+     */
+    private static int rolEn(Motivo m, double lu, double lv, double giro, double kk,
+                             boolean alternado, DistribucionPatron.Espejo espejo) {
+        if (alternado) lu = -lu;
+        if (giro != 0) {
+            double cos = Math.cos(-giro), sin = Math.sin(-giro);
+            double ru = lu * cos - lv * sin, rv = lu * sin + lv * cos;
+            lu = ru;
+            lv = rv;
+        }
+        if (espejo.horizontal) lu = -lu;
+        if (espejo.vertical) lv = -lv;
         int sx = (int) Math.floor(lu / kk + m.ancho / 2.0), sy = (int) Math.floor(lv / kk + m.alto / 2.0);
         if (m.pinta(sx, sy)) return ROL_RELLENO;
         // Contorno: un pixel de sprite alrededor del dibujo (8 vecinos).
@@ -463,15 +647,28 @@ public final class PatronGenerador {
      * cuadro de 3 tonos de verdad con un solo color de capa). Sin
      * contorno; cada cuadro es una "repetición" para Alternar/Aleatorio.
      */
-    private static int coberturaVichy(int u, int v, int w, double k, double posicion, int[] celda) {
+    private static int coberturaVichy(int u, int v, int w, int h, double k, double posicion, double centroFrente,
+                                      int anguloGrilla, DistribucionPatron dist, int[] celda) {
         double deseado = VICHY_PERIODO * k * 2;
-        int columnas = Math.max(1, (int) Math.round(w / deseado));
-        double periodoX = (double) w / columnas;
-        double periodoY = deseado;
-        double vv = v + (posicion - 0.5) * periodoY;
-        celda[0] = (int) Math.floor(u / periodoX);
+        double periodoY = deseado * dist.distanciaV();
+        double periodoX, uu, vv;
+        if (anguloGrilla == 0) {
+            int columnas = Math.max(1, (int) Math.round(w / (deseado * dist.distanciaH())));
+            periodoX = (double) w / columnas;
+            uu = u;
+            vv = v;
+        } else {
+            // Vichy en diagonal (2026-09-30): el cuadriculado gira alrededor del centro del frente.
+            periodoX = deseado * dist.distanciaH();
+            double a = -Math.toRadians(anguloGrilla), cos = Math.cos(a), sin = Math.sin(a);
+            double du = u - centroFrente, dv = v - h / 2.0;
+            uu = du * cos - dv * sin + centroFrente;
+            vv = du * sin + dv * cos + h / 2.0;
+        }
+        vv += (posicion - 0.5) * periodoY;
+        celda[0] = (int) Math.floor(uu / periodoX);
         celda[1] = (int) Math.floor(vv / periodoY);
-        boolean vertical = (u % periodoX) < periodoX / 2;
+        boolean vertical = (((uu % periodoX) + periodoX) % periodoX) < periodoX / 2;
         boolean horizontal = (((vv % periodoY) + periodoY) % periodoY) < periodoY / 2;
         if (vertical && horizontal) return ROL_RELLENO;
         return vertical || horizontal ? ROL_MEDIO : ROL_NADA;

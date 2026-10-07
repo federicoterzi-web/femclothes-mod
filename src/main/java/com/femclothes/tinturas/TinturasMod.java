@@ -26,12 +26,19 @@ public final class TinturasMod {
                     // block entity, modelo dye_station) — sin esto vanilla
                     // lo trata como cubo opaco sólido y cullea la cara del
                     // bloque de abajo (mismo bug que tuvo Modeladora).
-                    .nonOpaque());
+                    .nonOpaque()
+                    .luminance(com.femclothes.util.LuzMaquina::luminancia));
 
     public static final TinturasBlockItem TINTURAS_BLOCK_ITEM = new TinturasBlockItem(TINTURAS_BLOCK, new Item.Settings());
 
+    /** Versión creativa (2026-10-01): sin espera ni tinta, viene con todos los patrones — ver {@code util.MaquinaCreativa}. */
+    public static final TinturasBlock TINTURAS_CREATIVA = com.femclothes.util.MaquinaCreativa.creativa(new TinturasBlock(
+            AbstractBlock.Settings.create().strength(2.5f, 4.0f).sounds(BlockSoundGroup.WOOD).nonOpaque()
+                    .luminance(com.femclothes.util.LuzMaquina::luminancia)));
+    public static final TinturasBlockItem TINTURAS_CREATIVA_ITEM = new TinturasBlockItem(TINTURAS_CREATIVA, new Item.Settings());
+
     public static final BlockEntityType<TinturasBlockEntity> TINTURAS_BLOCK_ENTITY =
-            BlockEntityType.Builder.create(TinturasBlockEntity::new, TINTURAS_BLOCK).build();
+            BlockEntityType.Builder.create(TinturasBlockEntity::new, TINTURAS_BLOCK, TINTURAS_CREATIVA).build();
 
     /**
      * El tanque de 16 colores viaja adentro del ítem al romper el bloque
@@ -51,6 +58,9 @@ public final class TinturasMod {
         Registry.register(Registries.BLOCK, bloqueId, TINTURAS_BLOCK);
         Registry.register(Registries.ITEM, bloqueId, TINTURAS_BLOCK_ITEM);
         Registry.register(Registries.BLOCK_ENTITY_TYPE, bloqueId, TINTURAS_BLOCK_ENTITY);
+        Identifier creativaId = Identifier.of(Femclothes.MOD_ID, "tinturas_creativa");
+        Registry.register(Registries.BLOCK, creativaId, TINTURAS_CREATIVA);
+        Registry.register(Registries.ITEM, creativaId, TINTURAS_CREATIVA_ITEM);
 
         // "Guardar diseño" con nombre (2026-09-27): el nombre viaja como paquete propio, ver GuardarDisenoTinturasPayload.
         PayloadTypeRegistry.playC2S().register(GuardarDisenoTinturasPayload.ID, GuardarDisenoTinturasPayload.CODEC);

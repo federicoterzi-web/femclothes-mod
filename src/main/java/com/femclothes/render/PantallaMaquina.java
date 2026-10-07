@@ -77,6 +77,16 @@ public final class PantallaMaquina {
         final NativeImageBackedTexture textura;
         /** null = todavía no se pintó nunca — fuerza el primer repintado aunque la vista previa esté vacía. */
         @Nullable ItemStack ultimaVistaPrevia;
+        /** El ícono todavía esperaba texturas la última vez: se reintenta (a lo sumo 1 vez por segundo). */
+        boolean incompleta;
+        long ultimoIntento;
+        /**
+         * Copia con SOLO la pantalla opaca (el resto transparente), para la
+         * capa emisiva — 2026-09-29, "que las pantallitas de las maquinas
+         * siempre esten iluminadas". Ver {@code PantallaGlowLayer}.
+         */
+        @Nullable Identifier glowId;
+        @Nullable NativeImageBackedTexture glow;
 
         Entrada(Identifier id, NativeImageBackedTexture textura) {
             this.id = id;
@@ -112,7 +122,15 @@ public final class PantallaMaquina {
     // esta se agrandó a juego, ~90% del hueco del marco (6.6×5.4),
     // guardando su misma proporción.
     public static final Rect PANEL_128 = new Rect(0, 48, 90, 74);
-    public static final Rect PANEL_TINTURAS = new Rect(0, 24, 48, 28);
+    // Tintes al molde de sus hermanas (2026-09-29, "el panel de la estacion
+    // de tintes, donde esta la pantallita tiene cosas atras que no van y un
+    // hueso que no se usa. mira la estructura de las otras dos"): se sacaron
+    // las 2 placas intermedias, las dos ventanitas 2x2 de adorno y la tira
+    // de barra de progreso sin uso (el progreso real está en el panel de los
+    // viales); queda el marco de afuera + la pantalla, que se agrandó a
+    // ~90% del marco como en la Modeladora/Sublimadora (5.94×4.884). 49×40
+    // guarda esa proporción dentro de la franja libre del atlas de 64.
+    public static final Rect PANEL_TINTURAS = new Rect(0, 24, 49, 40);
 
     /**
      * Margen alrededor de la prenda dentro de la pantalla — a pedido
@@ -123,7 +141,8 @@ public final class PantallaMaquina {
      * un recuadro más chico centrado adentro — 20% del panel de margen a
      * cada lado, la prenda ocupa el 60% central.
      */
-    private static final float MARGEN = 0.20f;
+    // 8% (2026-09-29): el ícono de 64x64 ya trae aire propio alrededor de la prenda.
+    private static final float MARGEN = 0.08f;
 
     /**
      * @param posInstancia la posición del bloque dueño de esta pantalla — cachea UNA
@@ -153,12 +172,24 @@ public final class PantallaMaquina {
             NativeImageBackedTexture textura = new NativeImageBackedTexture(copia);
             MinecraftClient.getInstance().getTextureManager().registerTexture(id, textura);
             entrada = new Entrada(id, textura);
+            NativeImage vacia = new NativeImage(base.getWidth(), base.getHeight(), true);
+            for (int y = 0; y < base.getHeight(); y++) for (int x = 0; x < base.getWidth(); x++) vacia.setColor(x, y, 0);
+            entrada.glow = new NativeImageBackedTexture(vacia);
+            entrada.glowId = Identifier.of("femclothes", "dynamic/pantalla_glow_" + Integer.toHexString(key.hashCode()));
+            MinecraftClient.getInstance().getTextureManager().registerTexture(entrada.glowId, entrada.glow);
             CACHE.put(key, entrada);
         }
 
-        if (entrada.ultimaVistaPrevia == null || !ItemStack.areItemsAndComponentsEqual(entrada.ultimaVistaPrevia, vistaPrevia)) {
+        boolean cambio = entrada.ultimaVistaPrevia == null
+                || !ItemStack.areItemsAndComponentsEqual(entrada.ultimaVistaPrevia, vistaPrevia);
+        // El ícono nuevo puede estar esperando una textura (la foto bajando):
+        // se repinta hasta que quede completo.
+        long ahora = System.currentTimeMillis();
+        if (cambio || (entrada.incompleta && ahora - entrada.ultimoIntento > 1000)) {
+            entrada.ultimoIntento = ahora;
             repintar(entrada, rect, vistaPrevia);
             entrada.ultimaVistaPrevia = vistaPrevia.copy();
+            entrada.incompleta = !vistaPrevia.isEmpty() && !IconoPrenda.completo(vistaPrevia);
         }
         return entrada.id;
     }
@@ -170,12 +201,40 @@ public final class PantallaMaquina {
         try {
             pintarPlano(destino, rect, FONDO); // fondo siempre — también detrás del margen cuando SÍ hay prenda
             if (recorte != null) {
-                pegarReescalado(destino, conMargen(rect), recorte);
+                pegarReescalado(destino, cuadradoCentrado(conMargen(rect)), recorte);
             }
         } finally {
             if (recorte != null) recorte.close();
         }
         entrada.textura.upload();
+        if (entrada.glow != null && entrada.glow.getImage() != null) {
+            NativeImage g = entrada.glow.getImage();
+            int x1 = Math.min(destino.getWidth(), rect.u() + rect.ancho());
+            int y1 = Math.min(destino.getHeight(), rect.v() + rect.alto());
+            for (int y = rect.v(); y < y1; y++) {
+                for (int x = rect.u(); x < x1; x++) g.setColor(x, y, destino.getColor(x, y) | 0xFF000000);
+            }
+            entrada.glow.upload();
+        }
+    }
+
+    /**
+     * La textura emisiva de la pantalla de esa máquina (misma clave que
+     * {@link #con}; hay que llamarla después de {@code con} en el mismo frame),
+     * o null si todavía no existe.
+     */
+    @Nullable
+    public static Identifier glow(Identifier atlasBase, Rect rect, BlockPos posInstancia) {
+        String key = atlasBase + "|" + rect.u() + "," + rect.v() + "," + rect.ancho() + "," + rect.alto()
+                + "|" + posInstancia.asLong();
+        Entrada entrada = CACHE.get(key);
+        return entrada == null ? null : entrada.glowId;
+    }
+
+    /** El ícono es cuadrado: se centra un cuadrado del lado más corto para no estirarlo. */
+    private static Rect cuadradoCentrado(Rect r) {
+        int lado = Math.min(r.ancho(), r.alto());
+        return new Rect(r.u() + (r.ancho() - lado) / 2, r.v() + (r.alto() - lado) / 2, lado, lado);
     }
 
     private static Rect conMargen(Rect rect) {
@@ -253,7 +312,11 @@ public final class PantallaMaquina {
      */
     @Nullable
     private static NativeImage iconoDePrenda(ItemStack stack) {
-        if (stack.getItem() == com.femclothes.sublimadora.ModItems.REMERA) {
+        // El ícono de 64x64 armado con la tela real (2026-09-29, "igual el item
+        // que aparece en la pantallita?"): el mismo que el inventario y la mesa.
+        NativeImage nuevo = IconoPrenda.copia(stack);
+        if (nuevo != null) return nuevo;
+        if (stack.getItem() instanceof com.femclothes.sublimadora.RemeraItem) {
             return com.femclothes.sublimadora.EstampaTextures.iconoParaPantalla(stack);
         }
         Identifier iconoBase;

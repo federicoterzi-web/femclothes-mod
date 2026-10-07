@@ -14,6 +14,6 @@ public class TinturasItemGeoModel extends GeoModel<TinturasBlockItem> {
             Identifier.of(Femclothes.MOD_ID, "animations/dye_station.animation.json");
 
     @Override public Identifier getModelResource(TinturasBlockItem item) { return GEO; }
-    @Override public Identifier getTextureResource(TinturasBlockItem item) { return TEX; }
+    @Override public Identifier getTextureResource(TinturasBlockItem item) { return com.femclothes.util.MaquinaCreativa.textura(TEX, com.femclothes.util.MaquinaCreativa.es(item)); }
     @Override public Identifier getAnimationResource(TinturasBlockItem item) { return ANIM; }
 }

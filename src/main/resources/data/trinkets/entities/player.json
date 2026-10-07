@@ -6,6 +6,11 @@
     "arms/armwarmer",
     "piernas/exterior",
     "socks/pair",
-    "torso/prenda"
+    "torso/prenda",
+    "espalda/capa",
+    "torso/chaqueta",
+    "head/sombrero",
+    "torso/cinto",
+    "head/choker"
   ]
 }

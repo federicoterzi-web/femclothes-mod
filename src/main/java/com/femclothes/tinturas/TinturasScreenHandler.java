@@ -46,7 +46,13 @@ public class TinturasScreenHandler extends ScreenHandler {
     public static final int ENTRADA_X = 48, SALIDA_X = 176, SLOT_Y_IO = 184;
 
     private static final int SLOT_ALMACEN_INICIO = 0;
-    private static final int SLOT_CASILLAS_INICIO = SLOT_ALMACEN_INICIO + TinturasBlockEntity.ALMACEN_TAMANO;
+    private static final int SLOT_CASILLAS_INICIO = SLOT_ALMACEN_INICIO + TinturasBlockEntity.ALMACEN_TOTAL;
+    /**
+     * Almacén en la columna IZQUIERDA, 5x6 debajo de Guardar diseño
+     * (2026-09-28, "quiero mas espacios de almacenamiento"): a la derecha
+     * ya no entraba más que la fila de 9.
+     */
+    public static final int ALMACEN_X = 8, ALMACEN_Y = 280, ALMACEN_COLUMNAS = 5;
     private static final int SLOT_CASILLAS_TAMANO =
             TinturasBlockEntity.CASILLAS * TinturasBlockEntity.Categoria.values().length;
     // Entrada/salida — a pedido (2026-09-21, "slot de entrada y de
@@ -82,8 +88,12 @@ public class TinturasScreenHandler extends ScreenHandler {
         // (dentro del esquema) aunque se agregue DESPUÉS acá. Columna
         // DERECHA, debajo de la vista previa de color — mismo criterio que
         // ModeladoScreenHandler (el storage vive a la derecha, no en medio).
-        for (int i = 0; i < TinturasBlockEntity.ALMACEN_TAMANO; i++) {
-            addSlot(new Slot(be, TinturasBlockEntity.ALMACEN_INICIO + i, M_DERECHA + i * 18, 200));
+        for (int i = 0; i < TinturasBlockEntity.ALMACEN_TOTAL; i++) {
+            int indice = TinturasBlockEntity.slotAlmacen(i);
+            addSlot(new Slot(be, indice, ALMACEN_X + (i % ALMACEN_COLUMNAS) * 18, ALMACEN_Y + (i / ALMACEN_COLUMNAS) * 18) {
+                @Override
+                public boolean canInsert(ItemStack stack) { return be.isValid(indice, stack); }
+            });
         }
 
         // Un slot de molde por CUADRADITO del esquema, por categoría
@@ -107,6 +117,10 @@ public class TinturasScreenHandler extends ScreenHandler {
         addSlot(new Slot(be, TinturasBlockEntity.SLOT_PRENDA_ENTRADA, M_MEDIO + ENTRADA_X, SLOT_Y_IO) {
             @Override
             public boolean canInsert(ItemStack stack) { return be.isValid(TinturasBlockEntity.SLOT_PRENDA_ENTRADA, stack); }
+
+            /** De a uno: el retazo de aplique se apila a 64 y el resto se perdería (2026-10-04). */
+            @Override
+            public int getMaxItemCount() { return 1; }
 
             // Desde la GUI la prenda solo se CARGA — arranca con el botón
             // Teñir (2026-09-28, "sigue empezando a funcionar apenas pongo
@@ -145,9 +159,20 @@ public class TinturasScreenHandler extends ScreenHandler {
      * otra vez y todo quedaba 36px más abajo que el dibujo. Pollera no tiene
      * esquema: sus 3 van en una fila fija dentro del hueco del dibujo.
      */
+    private static final int[][] POS_POLLERA = {{53, 19}, {181, 55}, {39, 98}};
+    private static final int[][] POS_CAPA = {{48, 53}, {189, 96}, {175, 18}};
+
     public static int[] posCasilla(TinturasBlockEntity.Categoria cat, int i) {
-        if (cat == TinturasBlockEntity.Categoria.POLLERA) {
-            return new int[]{M_MEDIO + 84 + i * 28, 94};
+        if (cat == TinturasBlockEntity.Categoria.POLLERA || cat == TinturasBlockEntity.Categoria.CAPA
+                || cat == TinturasBlockEntity.Categoria.APLIQUE) {
+            // Sobre el dibujo de esquema_tintes_<prenda>.png (2026-10-04, "adaptalos"): origen del ítem de 16x16
+            // en px de GUI dentro del esquema de 240x136 (arranca en ESQUEMA_Y). Pollera: cintura, falda, ruedo.
+            // Capa: exterior (izq.), forro (abajo der.), detalles (capucha, arriba der.).
+            int[][] p = cat == TinturasBlockEntity.Categoria.POLLERA ? POS_POLLERA : POS_CAPA;   // el retazo usa el esquema de la capa (provisorio)
+            // Los cuadraditos que no existen (i >= 3) quedan fuera de pantalla: el handler crea los 12 por
+            // categoría y p[i] reventaba al abrir la GUI (2026-10-04, "no abre gui ni ingresa prendas").
+            if (i >= p.length) return new int[]{-2000, -2000};
+            return new int[]{M_MEDIO + p[i][0], ESQUEMA_Y + p[i][1]};
         }
         int[] p = ModeladoScreenHandler.PIN_POS[cat.ordinal()][i];
         return new int[]{M_MEDIO + p[0], p[1]};
@@ -155,7 +180,8 @@ public class TinturasScreenHandler extends ScreenHandler {
 
     /** Centro de la chincheta del cuadradito {@code i} (relativo al panel) — {@code PIN_BTN} de la Modeladora, o arriba a la derecha del slot en Pollera. */
     public static int[] posChincheta(TinturasBlockEntity.Categoria cat, int i) {
-        if (cat == TinturasBlockEntity.Categoria.POLLERA) {
+        if (cat == TinturasBlockEntity.Categoria.POLLERA || cat == TinturasBlockEntity.Categoria.CAPA
+                || cat == TinturasBlockEntity.Categoria.APLIQUE) {
             int[] s = posCasilla(cat, i);
             return new int[]{s[0] + 17, s[1] - 1};
         }
@@ -202,7 +228,52 @@ public class TinturasScreenHandler extends ScreenHandler {
             if (motivo != null) player.sendMessage(motivo, true);
             return motivo == null;
         }
+        if (id == TinturasBlockEntity.BTN_ENVASAR || id == TinturasBlockEntity.BTN_USAR_MUESTRA) {
+            if (player.getWorld().isClient) return true;
+            net.minecraft.text.Text motivo = id == TinturasBlockEntity.BTN_ENVASAR ? envasar(player) : usarMuestra(player);
+            if (motivo != null) player.sendMessage(motivo, true);
+            return motivo == null;
+        }
         return be.onButtonClick(id);
+    }
+
+    /**
+     * Envasar (2026-09-30, "que la estacion de tintes genere un mezcla de
+     * color por si la gente se quiere pasar colores"): gasta un frasco de
+     * vidrio del inventario y da una muestra con el color que se está
+     * editando. No gasta tinta: es la receta del color, no tinta.
+     */
+    @org.jetbrains.annotations.Nullable
+    private net.minecraft.text.Text envasar(PlayerEntity player) {
+        var inv = player.getInventory();
+        int frasco = -1;
+        for (int i = 0; i < inv.size() && frasco < 0; i++) {
+            if (inv.getStack(i).isOf(net.minecraft.item.Items.GLASS_BOTTLE)) frasco = i;
+        }
+        boolean gratis = player.isCreative() || com.femclothes.util.MaquinaCreativa.es(be);
+        if (frasco < 0 && !gratis) {
+            return net.minecraft.text.Text.translatable("femclothes.muestra.sin_frasco");
+        }
+        if (frasco >= 0 && !gratis) inv.getStack(frasco).decrement(1);
+        ItemStack muestra = com.femclothes.item.MuestraColorItem.con(
+                new ItemStack(com.femclothes.item.FemclothesItems.TINTE_MEZCLA), be.mezclaEnEdicion());
+        inv.offerOrDrop(muestra);
+        return null;
+    }
+
+    /** Usar muestra: la del cursor, o si no la primera del inventario; no se gasta. */
+    @org.jetbrains.annotations.Nullable
+    private net.minecraft.text.Text usarMuestra(PlayerEntity player) {
+        int[] mezcla = com.femclothes.item.MuestraColorItem.mezcla(getCursorStack());
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.size() && mezcla == null; i++) {
+            if (inv.getStack(i).isOf(com.femclothes.item.FemclothesItems.TINTE_MEZCLA)) {
+                mezcla = com.femclothes.item.MuestraColorItem.mezcla(inv.getStack(i));
+            }
+        }
+        if (mezcla == null) return net.minecraft.text.Text.translatable("femclothes.muestra.sin_muestra");
+        be.ponerMezclaEnEdicion(mezcla);
+        return null;
     }
 
     @Override
@@ -226,7 +297,7 @@ public class TinturasScreenHandler extends ScreenHandler {
             boolean movio = this.insertItem(stack, SLOT_ALMACEN_INICIO, SLOT_CASILLAS_INICIO, false);
             if (!stack.isEmpty()) movio |= this.insertItem(stack, base, base + TinturasBlockEntity.CASILLAS, false);
             if (!movio) return ItemStack.EMPTY;
-        } else if (com.femclothes.item.FemclothesDye.isClothing(stack)) {
+        } else if (TinturasBlockEntity.aceptaEntrada(stack)) {
             if (!this.insertItem(stack, SLOT_ENTRADA, SLOT_ENTRADA + 1, false)) return ItemStack.EMPTY;
         } else if (!this.insertItem(stack, INV_START, this.slots.size(), false)) {
             return ItemStack.EMPTY;

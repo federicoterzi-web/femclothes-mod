@@ -36,6 +36,18 @@ public final class PreviewJugador {
     public static void dibujar(DrawContext context, LivingEntity entity,
                                 int x1, int y1, int x2, int y2, int size,
                                 float anguloGrados, float mouseY) {
+        dibujar(context, entity, x1, y1, x2, y2, size, anguloGrados, mouseY, 0f);
+    }
+
+    /**
+     * Con {@code inclinacionGrados} (2026-10-04, "más girable la previa... ver
+     * arriba y abajo para poner apliques en puño y hombro"): además del giro
+     * alrededor del cuerpo, la figura entera se inclina hacia la cámara (+) o
+     * se aleja de ella (-) para ver las tapas de arriba y de abajo.
+     */
+    public static void dibujar(DrawContext context, LivingEntity entity,
+                                int x1, int y1, int x2, int y2, int size,
+                                float anguloGrados, float mouseY, float inclinacionGrados) {
         float g = (x1 + x2) / 2.0F;
         float h = (y1 + y2) / 2.0F;
         context.enableScissor(x1, y1, x2, y2);
@@ -44,6 +56,11 @@ public final class PreviewJugador {
         Quaternionf quaternionf = new Quaternionf().rotateZ((float) Math.PI);
         Quaternionf quaternionf2 = new Quaternionf().rotateX(j * 20.0F * (float) (Math.PI / 180.0));
         quaternionf.mul(quaternionf2);
+        if (inclinacionGrados != 0f) {
+            Quaternionf inclinar = new Quaternionf().rotateX((float) Math.toRadians(inclinacionGrados));
+            quaternionf.mul(inclinar);
+            quaternionf2.mul(inclinar);
+        }
 
         float bodyYawViejo = entity.bodyYaw;
         float yawViejo = entity.getYaw();

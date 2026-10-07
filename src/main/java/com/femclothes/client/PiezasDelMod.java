@@ -49,6 +49,7 @@ public final class PiezasDelMod {
         PiezasDePrenda.registrar(FemclothesItems.SOCKS_SOLID, PiezasDelMod::medias);
         PiezasDePrenda.registrar(FemclothesItems.PANTALON, PiezasDelMod::pantalon);
         PiezasDePrenda.registrar(ModItems.REMERA, PiezasDelMod::remera);
+        PiezasDePrenda.registrar(FemclothesItems.CHAQUETA, PiezasDelMod::chaqueta);
         PiezasDePrenda.registrar(FemclothesItems.CALIENTABRAZOS, PiezasDelMod::calientabrazos);
         PiezasDePrenda.registrar(FemclothesItems.POLLERA, PiezasDelMod::pollera);
     }
@@ -169,6 +170,28 @@ public final class PiezasDelMod {
      * sigue al cuerpo sin geometria extra y queda recortada a la tela sola.
      */
     private static List<Pieza> remera(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
+        return piezasDeRemera(stack, Capa.TORSO_EXTERIOR, false, null);
+    }
+
+    /**
+     * Hoodie (2026-09-30, categoría Chaqueta): las mismas piezas que la
+     * remera — comparte tela, corte y todo lo de las máquinas, ver
+     * {@code ChaquetaItem} — pero en {@code Capa.CHAQUETA}, con puños y
+     * ruedo elásticos y el bolsillo canguro y los ribs pintados sobre la
+     * tela ya compuesta ({@link com.femclothes.render.DetallesHoodie}). La
+     * capucha y los cordones son geometría aparte
+     * ({@code GarmentFeatureRenderer#dibujarCapucha}).
+     */
+    private static List<Pieza> chaqueta(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
+        Variante variante = RemeraItem.variante(stack);
+        return piezasDeRemera(stack, Capa.CHAQUETA, true, textura -> com.femclothes.render.DetallesHoodie.pintar(
+                textura, variante.largo().filas,
+                RemeraItem.manga(stack, Lado.IZQUIERDA).filas, RemeraItem.manga(stack, Lado.DERECHA).filas));
+    }
+
+    private static List<Pieza> piezasDeRemera(ItemStack stack, int capa, boolean elastico,
+                                              @org.jetbrains.annotations.Nullable
+                                              java.util.function.UnaryOperator<Identifier> detalles) {
         Variante variante = RemeraItem.variante(stack);
         Variante varianteBase = new Variante(variante.largo(), Variante.Manga.LARGA, variante.cuello());
         // La remera es Lado.AMBAS siempre para PATRON (un solo color, un
@@ -179,14 +202,16 @@ public final class PiezasDelMod {
                 RemeraItem.estampaDe(stack, Estampa.Cara.ESPALDA),
                 RemeraItem.color(stack),
                 RegionResolver.capasTinte(stack, Lado.AMBAS),
-                com.femclothes.item.PatronRed.leer(stack));
+                com.femclothes.item.PatronRed.leer(stack),
+                RemeraItem.capasDe(stack));
         // Si todavia no se pudo componer -la foto no bajo- se usa la lisa,
         // que es lo correcto mientras tanto.
         if (textura == null) textura = varianteBase.texturaCuerpo();
+        if (detalles != null) textura = detalles.apply(textura);
 
         float dilatacion = Calce.dilatacionEfectiva(stack);
         List<Pieza> piezas = new ArrayList<>(3);
-        piezas.add(new Pieza(Parte.TORSO, Capa.TORSO_EXTERIOR, textura, dilatacion, 0, variante.largo().filas));
+        piezas.add(new Pieza(Parte.TORSO, capa, textura, dilatacion, 0, variante.largo().filas, false, elastico));
         // Mangas POR LADO (2026-09-24, "vamos con mangas distintas") — cada
         // brazo lee su propio valor (RemeraItem#manga, izquierda vive en
         // Variante, derecha es un override aparte) y se recorta
@@ -196,11 +221,11 @@ public final class PiezasDelMod {
         com.femclothes.item.PatronRed red = com.femclothes.item.PatronRed.leer(stack);
         int filasIzq = RemeraItem.manga(stack, Lado.IZQUIERDA).filas;
         if (filasIzq > 0) {
-            piezas.add(new Pieza(Parte.BRAZO_IZQ, Capa.TORSO_EXTERIOR, recortarMangaYCachear(textura, Parte.BRAZO_IZQ, filasIzq, red), dilatacion, 0, filasIzq));
+            piezas.add(new Pieza(Parte.BRAZO_IZQ, capa, recortarMangaYCachear(textura, Parte.BRAZO_IZQ, filasIzq, red), dilatacion, 0, filasIzq, false, elastico));
         }
         int filasDer = RemeraItem.manga(stack, Lado.DERECHA).filas;
         if (filasDer > 0) {
-            piezas.add(new Pieza(Parte.BRAZO_DER, Capa.TORSO_EXTERIOR, recortarMangaYCachear(textura, Parte.BRAZO_DER, filasDer, red), dilatacion, 0, filasDer));
+            piezas.add(new Pieza(Parte.BRAZO_DER, capa, recortarMangaYCachear(textura, Parte.BRAZO_DER, filasDer, red), dilatacion, 0, filasDer, false, elastico));
         }
         return piezas;
     }
@@ -283,11 +308,15 @@ public final class PiezasDelMod {
         int[] filasIzq = PantalonItem.filasVisibles(stack, Lado.IZQUIERDA);
         int[] filasDer = PantalonItem.filasVisibles(stack, Lado.DERECHA);
         int filasTiro = PantalonItem.tiro(stack).filas;
-        return List.of(
-                new Pieza(Parte.PIERNA_IZQ, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA), dilatacion, filasIzq[0], filasIzq[1]),
-                new Pieza(Parte.PIERNA_DER, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.DERECHA), dilatacion, filasDer[0], filasDer[1]),
-                // La banda de cintura pinta las últimas filasTiro filas del torso (ver pintarCintura).
-                new Pieza(Parte.TORSO, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA), dilatacion, 12 - filasTiro, 12));
+        List<Pieza> piezas = new ArrayList<>(3);
+        piezas.add(new Pieza(Parte.PIERNA_IZQ, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA), dilatacion, filasIzq[0], filasIzq[1]));
+        piezas.add(new Pieza(Parte.PIERNA_DER, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.DERECHA), dilatacion, filasDer[0], filasDer[1]));
+        // La banda de cintura pinta las últimas filasTiro filas del torso (ver pintarCintura); con tiro 0 (a la
+        // cadera, 2026-10-04) no hay banda.
+        if (filasTiro > 0) {
+            piezas.add(new Pieza(Parte.TORSO, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA), dilatacion, 12 - filasTiro, 12));
+        }
+        return piezas;
     }
 
     private static Identifier texturaPantalon(Identifier base, ItemStack stack, Lado lado) {
@@ -388,32 +417,16 @@ public final class PiezasDelMod {
     }
 
     /**
-     * Cinto de la pollera: una banda lisa en las últimas filas del TORSO,
-     * mismo mecanismo que la banda de cintura del pantalón ({@link
-     * #pintarCintura}) — a pedido (2026-09-17), "para que una la pollera
-     * con la cintura": sin esto la geometría de la pollera (que arranca en
-     * {@code PolleraGeometria#OFFSET_ABAJO}, fila ~9 de las 12 del torso)
-     * nacía de golpe contra la remera/piel de arriba, sin nada que tape la
-     * costura. {@code Capa.POLLERA}=30, arriba de {@code TORSO_EXTERIOR}
-     * (25): el cinto se ve incluso con una remera puesta.
+     * La pollera no tiene piezas sobre la caja del torso: es toda malla
+     * ({@code render.PolleraMalla}, dibujada aparte). El cinto cuadrado que
+     * tenía (2026-09-17, banda lisa en las filas 9..12 del torso) se sacó el
+     * 2026-10-01 ("la base cuadrada de la pollera en el torso me queda con
+     * otro color y fea"): salía de la textura del pantalón con otro sombreado
+     * y sin los patrones; ahora la cintura de la malla es casi recta y tapa
+     * sola la unión con el torso.
      */
     private static List<Pieza> pollera(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
-        float dilatacion = Calce.dilatacionEfectiva(stack);
-        return List.of(new Pieza(Parte.TORSO, Capa.POLLERA, texturaCintoPollera(stack), dilatacion, 9, 12));
-    }
-
-    private static Identifier texturaCintoPollera(ItemStack stack) {
-        int colorBase = RegionResolver.colorBase(stack, Lado.IZQUIERDA);
-        Identifier base = PantalonItem.TEXTURA_BASE;
-        ClothingTextureCache.Encima ajustes = new ClothingTextureCache.Encima() {
-            @Override public String clave() { return "pollera_cinto"; }
-            @Override public boolean aplicar(NativeImage destino) {
-                pintarCintura(destino, colorBase, 3, List.of());
-                return true;
-            }
-        };
-        return ClothingTextureCache.composeGarment(base, colorBase, null, 0,
-                ClothingTextureCache.Shading.LEGS, ajustes);
+        return List.of();
     }
 
     /**

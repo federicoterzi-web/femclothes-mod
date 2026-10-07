@@ -62,6 +62,10 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
             Identifier.of("femclothes", "textures/gui/container/esquema_pantalon.png"),
             Identifier.of("femclothes", "textures/gui/container/esquema_medias.png"),
             Identifier.of("femclothes", "textures/gui/container/esquema_calientabrazos.png"),
+            Identifier.of("femclothes", "textures/gui/container/esquema_pollera.png"),
+            Identifier.of("femclothes", "textures/gui/container/esquema_capa.png"),
+            Identifier.of("femclothes", "textures/gui/container/esquema_sombrero.png"),
+            Identifier.of("femclothes", "textures/gui/container/esquema_banda.png"),
     };
     /** Cuadros de la chincheta: 0 sin fijar (aguja a la vista), 1 a mitad de clavarse, 2 fijada (sin aguja). */
     private static final Identifier[] TEXTURE_CHINCHETA = {
@@ -87,6 +91,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
     private ButtonWidget btnFijar;
     private ButtonWidget btnAnclaje, btnLado;
     private ButtonWidget btnSimetria;
+    private ButtonWidget btnModelar;
     private ButtonWidget btnVista;
     private ButtonWidget btnGuardarDiseno;
     private net.minecraft.client.gui.widget.TextFieldWidget txtNombreDiseno;
@@ -105,6 +110,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
 
     @Override
     protected void init() {
+        EstiloPergamino.usarTema(EstiloPergamino.Tema.COBRE);
         super.init();
 
         btnCategoria = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO, this.y + 20, M_MEDIO_ANCHO, 14, Text.literal(""), b -> clickBoton(ModeladoBlockEntity.BTN_CATEGORIA));
@@ -130,6 +136,13 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         btnSimetria = new EstiloPergamino.BotonPergamino(this.x + 8, this.y + 292, 86, 16, Text.literal(""), b -> clickBoton(ModeladoBlockEntity.BTN_SIMETRIA));
         btnSimetria.setTooltip(Tooltip.of(Text.translatable("femclothes.modelado.tooltip.simetria")));
         this.addDrawableChild(btnSimetria);
+
+        // Modelar, ENCIMA de la flecha Entrada -> Salida (2026-09-28, "a
+        // modeladora le agreguemos el boton modelar") — como Teñir y Prensar.
+        btnModelar = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO + 96, this.y + 184, 48, 16,
+                Text.translatable("femclothes.modelado.boton.modelar"), b -> clickBoton(ModeladoBlockEntity.BTN_MODELAR));
+        btnModelar.setTooltip(Tooltip.of(Text.translatable("femclothes.modelado.tooltip.modelar")));
+        this.addDrawableChild(btnModelar);
 
         // Casilleros de diseño (2026-09-27, "que los slots donde se fijaban
         // sirvan para guardar el diseño completo de todos los pines como 1
@@ -322,6 +335,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         // quedaron sin uso: el esquema los reemplaza. Simetría aplica a todo
         // pin de lado (mangas, botas, cortes izq/der de medias y cubrebrazos).
         btnFijar.visible = false;
+        btnModelar.active = be.puedeModelar();
         btnAnclaje.visible = false;
         btnLado.visible = false;
         btnSimetria.visible = true;
@@ -346,7 +360,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
             int p = cat * ModeladoBlockEntity.PINES_POR_CATEGORIA + i;
             boolean usable = ModeladoBlockEntity.ROLES[cat][i] != ModeladoBlockEntity.Rol.NINGUNO;
             boolean fijado = be.pinFijado(p);
-            boolean conMolde = !be.getStack(ModeladoBlockEntity.PINES_INICIO + p).isEmpty();
+            boolean conMolde = !be.getStack(ModeladoBlockEntity.pinSlot(p)).isEmpty();
             int[] c = ModeladoScreenHandler.PIN_BTN[cat][i];
             btnPines[i].setPosition(this.x + M_MEDIO + c[0] - 8, this.y + c[1] - 8);
             btnPines[i].pin = p;
@@ -388,6 +402,14 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         combo.calientabrazosCoberturaSuperior().ifPresent(v -> sb.append("Calient. sup: ").append(v.clave).append(' '));
         combo.calientabrazosCoberturaInferior().ifPresent(v -> sb.append("Calient. inf: ").append(v.clave).append(' '));
         combo.calce().ifPresent(v -> sb.append("Calce: ").append(v.clave).append(' '));
+        combo.pollera().ifPresent(p -> {
+            p.largo().ifPresent(v -> sb.append("Pollera largo: ").append(v.clave).append(' '));
+            p.forma().ifPresent(v -> sb.append("Pollera forma: ").append(v.clave).append(' '));
+            p.capaLargo().ifPresent(v -> sb.append("Capa largo: ").append(v.asString()).append(' '));
+            p.capaRuedo().ifPresent(v -> sb.append("Capa ruedo: ").append(v.asString()).append(' '));
+            p.capaCapucha().ifPresent(v -> sb.append(v ? "Con capucha " : "Sin capucha "));
+            p.capaCuello().ifPresent(v -> sb.append(v ? "Cuello alto " : "Sin cuello "));
+        });
         if (combo.lado() != com.femclothes.region.Lado.AMBAS) sb.append('(').append(combo.lado().clave()).append(')');
         return Text.literal(sb.toString().trim());
     }
@@ -494,7 +516,8 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
 
         ItemStack enConstruccion = this.handler.be.previsualizar();
         List<ItemStack> prendas = new ArrayList<>(GarmentFeatureRenderer.equipadas(jugador));
-        if (!enConstruccion.isEmpty()) {
+        boolean esSombrero = com.femclothes.render.AccesorioRenderer.es(enConstruccion);
+        if (!enConstruccion.isEmpty() && !esSombrero) {
             prendas.removeIf(s -> s.getItem().getClass() == enConstruccion.getItem().getClass());
             prendas.add(enConstruccion);
         }
@@ -502,10 +525,12 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         int x1 = this.x + PREVIEW_X1_LOCAL, y1 = this.y + PREVIEW_Y1_LOCAL;
         int x2 = this.x + PREVIEW_X2_LOCAL, y2 = this.y + PREVIEW_Y2_LOCAL;
         GarmentFeatureRenderer.previewOverride = prendas;
+        GarmentFeatureRenderer.sombreroOverride = esSombrero ? enConstruccion : null;
         try {
             PreviewJugador.dibujar(context, jugador, x1, y1, x2, y2, Math.round(35 * zoomVista), anguloVista, (float) mouseY);
         } finally {
             GarmentFeatureRenderer.previewOverride = null;
+            GarmentFeatureRenderer.sombreroOverride = null;
         }
     }
 
@@ -570,7 +595,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         for (int i = 0; i < ModeladoBlockEntity.PINES_POR_CATEGORIA; i++) {
             int p = cat * ModeladoBlockEntity.PINES_POR_CATEGORIA + i;
             if (ModeladoBlockEntity.ROLES[cat][i] == ModeladoBlockEntity.Rol.NINGUNO) continue;
-            if (!be.pinFijado(p) || !be.getStack(ModeladoBlockEntity.PINES_INICIO + p).isEmpty()) continue;
+            if (!be.pinFijado(p) || !be.getStack(ModeladoBlockEntity.pinSlot(p)).isEmpty()) continue;
             ComboCorte combo = be.pinCombo(p);
             if (combo == null) continue;
             ItemStack icono = iconoDe(combo);

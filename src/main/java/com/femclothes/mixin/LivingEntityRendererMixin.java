@@ -58,6 +58,30 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, M extend
     @Shadow
     protected M model;
 
+    /**
+     * El busto del jugador que se dibuja, para los modelos de otros mods
+     * (2026-10-02, "que adapte las prendas y armaduras de cualquier mod") —
+     * ver {@code render.relieve.BustoEnModelos}.
+     */
+    @Inject(method = "render(Lnet/minecraft/entity/LivingEntity;FFLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V",
+            at = @At("HEAD"))
+    private void femclothes$bustoEmpieza(T entidad, float f, float g, MatrixStack matrices,
+                                          VertexConsumerProvider vertexConsumers, int luz, CallbackInfo ci) {
+        com.femclothes.render.relieve.BustoEnModelos.enEntidad = entidad instanceof AbstractClientPlayerEntity
+                ? GarmentFeatureRenderer.bustoDe(entidad, g, true) : null;
+        com.femclothes.render.relieve.BustoEnModelos.modeloPrincipal = this.model;
+        com.femclothes.ropa.CosmeticosRender.entidad = entidad;   // armadura cosmética (2026-10-05)
+    }
+
+    @Inject(method = "render(Lnet/minecraft/entity/LivingEntity;FFLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V",
+            at = @At("RETURN"))
+    private void femclothes$bustoTermina(T entidad, float f, float g, MatrixStack matrices,
+                                          VertexConsumerProvider vertexConsumers, int luz, CallbackInfo ci) {
+        com.femclothes.render.relieve.BustoEnModelos.enEntidad = null;
+        com.femclothes.render.relieve.BustoEnModelos.modeloPrincipal = null;
+        com.femclothes.ropa.CosmeticosRender.entidad = null;
+    }
+
     @Inject(method = "render", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/render/entity/model/EntityModel;render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;III)V",
             shift = At.Shift.BEFORE))
@@ -80,5 +104,18 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, M extend
         for (Parte parte : GarmentFeatureRenderer.partesAOcultarDeVanilla(jugador)) {
             CuerpoGeometria.delJugador(biped, parte).visible = true;
         }
+    }
+
+    /**
+     * El twirl (2026-09-30): una vuelta entera alrededor del eje del cuerpo,
+     * después del giro normal del cuerpo. Ver {@code client/TwirlCliente}.
+     */
+    @Inject(method = "setupTransforms", at = @At("TAIL"))
+    private void femclothes$twirl(T entidad, MatrixStack matrices, float animationProgress, float bodyYaw,
+                                  float tickDelta, float scale, CallbackInfo ci) {
+        float p = com.femclothes.client.TwirlCliente.progreso(entidad, tickDelta);
+        if (p < 0f) return;
+        matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(
+                -com.femclothes.client.TwirlCliente.angulo(p)));
     }
 }

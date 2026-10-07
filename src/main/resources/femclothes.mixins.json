@@ -3,11 +3,26 @@
   "minVersion": "0.8",
   "package": "com.femclothes.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [],
+  "mixins": [
+    "BannerBlockEntityMixin",
+    "BannerDropsMixin",
+    "ShieldDecorationRecipeMixin"
+  ],
   "client": [
     "AbstractClientPlayerEntityMixin",
+    "BipedEntityModelTwirlMixin",
     "LivingEntityRendererMixin",
-    "PlayerEntityRendererFirstPersonArmMixin"
+    "PlayerEntityCapasSkinMixin",
+    "PlayerEntityRendererFirstPersonArmMixin",
+    "HandledScreenSlotInfoMixin",
+    "BustoEnModelosMixin",
+    "ArmaduraBustoMixin",
+    "PlayerEntityCosmeticosMixin",
+    "RopaOcultaEnInventarioMixin",
+    "TrinketScreenManagerMixin",
+    "HandledScreenAccessor",
+    "BannerRendererMixin",
+    "BuiltinModelItemRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -452,6 +452,202 @@ public final class FemclothesComponents {
                     .packetCodec(com.femclothes.modelado.ComboCorte.PACKET_CODEC)
                     .build());
 
+    /** Largo de la pollera (§{@link PolleraLargo}); ausente = MEDIO. */
+    public static final ComponentType<PolleraLargo> POLLERA_LARGO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "pollera_largo"),
+            ComponentType.<PolleraLargo>builder()
+                    .codec(StringIdentifiable.createCodec(PolleraLargo::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PolleraLargo.values()[i], Enum::ordinal))
+                    .build());
+
+    /** Volado del borde de abajo / de toda la pollera (2026-10-05); ausente = sin volado. */
+    public static final ComponentType<PolleraVolado> POLLERA_VOLADO_RUEDO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "pollera_volado_ruedo"),
+            ComponentType.<PolleraVolado>builder()
+                    .codec(StringIdentifiable.createCodec(PolleraVolado::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PolleraVolado.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<PolleraVolado> POLLERA_VOLADO_TODO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "pollera_volado_todo"),
+            ComponentType.<PolleraVolado>builder()
+                    .codec(StringIdentifiable.createCodec(PolleraVolado::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PolleraVolado.values()[i], Enum::ordinal))
+                    .build());
+
+    /** Borde decorativo del ruedo de la pollera (2026-10-05); ausente = recto. */
+    public static final ComponentType<PolleraBorde> POLLERA_BORDE = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "pollera_borde"),
+            ComponentType.<PolleraBorde>builder()
+                    .codec(StringIdentifiable.createCodec(PolleraBorde::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PolleraBorde.values()[i], Enum::ordinal))
+                    .build());
+
+    /** Forma de la pollera (§{@link PolleraForma}); ausente = CAMPANA. */
+    public static final ComponentType<PolleraForma> POLLERA_FORMA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("femclothes", "pollera_forma"),
+            ComponentType.<PolleraForma>builder()
+                    .codec(StringIdentifiable.createCodec(PolleraForma::values))
+                    .packetCodec(PacketCodecs.indexed(i -> PolleraForma.values()[i], Enum::ordinal))
+                    .build());
+
+    // ── capa (2026-09-29) — ausentes = Medio / Recto / sin capucha / sin cuello ──
+    public static final ComponentType<CapaLargo> CAPA_LARGO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capa_largo"),
+            ComponentType.<CapaLargo>builder()
+                    .codec(StringIdentifiable.createCodec(CapaLargo::values))
+                    .packetCodec(PacketCodecs.indexed(i -> CapaLargo.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<CapaRuedo> CAPA_RUEDO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capa_ruedo"),
+            ComponentType.<CapaRuedo>builder()
+                    .codec(StringIdentifiable.createCodec(CapaRuedo::values))
+                    .packetCodec(PacketCodecs.indexed(i -> CapaRuedo.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<Boolean> CAPA_CAPUCHA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capa_capucha"),
+            ComponentType.<Boolean>builder().codec(com.mojang.serialization.Codec.BOOL).packetCodec(PacketCodecs.BOOL).build());
+    public static final ComponentType<Boolean> CAPA_CUELLO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capa_cuello"),
+            ComponentType.<Boolean>builder().codec(com.mojang.serialization.Codec.BOOL).packetCodec(PacketCodecs.BOOL).build());
+
+    /**
+     * Capucha puesta en la cabeza (true) o caída en la espalda (ausente/false)
+     * de una chaqueta (2026-09-30, hoodie "con tecla para subir/bajar"). Vive
+     * en el stack equipado: el servidor la cambia (ver {@code util/RedCapucha})
+     * y Trinkets la sincroniza a todos.
+     */
+    public static final ComponentType<Boolean> CAPUCHA_ARRIBA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capucha_arriba"),
+            ComponentType.<Boolean>builder().codec(com.mojang.serialization.Codec.BOOL).packetCodec(PacketCodecs.BOOL).build());
+
+    /** La plantilla de un molde de aplique personalizado (2026-10-04) — ver {@code aplique/MoldeApliquePersonalizadoItem}. */
+    public static final ComponentType<com.femclothes.aplique.Aplique> APLIQUE_PLANTILLA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "aplique_plantilla"),
+            ComponentType.<com.femclothes.aplique.Aplique>builder()
+                    .codec(com.femclothes.aplique.Aplique.CODEC)
+                    .packetCodec(PacketCodecs.registryCodec(com.femclothes.aplique.Aplique.CODEC))
+                    .build());
+
+    /** Apliques puestos en una prenda (2026-10-01, Mesa de estilado) — ver {@code aplique/Aplique}. */
+    public static final ComponentType<java.util.List<com.femclothes.aplique.Aplique>> APLIQUES = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "apliques"),
+            ComponentType.<java.util.List<com.femclothes.aplique.Aplique>>builder()
+                    .codec(com.femclothes.aplique.Aplique.CODEC.listOf())
+                    .packetCodec(PacketCodecs.registryCodec(com.femclothes.aplique.Aplique.CODEC.listOf()))
+                    .build());
+
+    /** Correas libres puestas en una prenda o wearable (2026-10-05) — ver {@code correa/Correa}. */
+    public static final ComponentType<java.util.List<com.femclothes.correa.Correa>> CORREAS = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "correas"),
+            ComponentType.<java.util.List<com.femclothes.correa.Correa>>builder()
+                    .codec(com.femclothes.correa.Correa.CODEC.listOf())
+                    .packetCodec(PacketCodecs.registryCodec(com.femclothes.correa.Correa.CODEC.listOf()))
+                    .build());
+
+    /** Los 3 colores de zona (RGB) de un retazo de aplique (2026-10-01). */
+    /**
+     * Volumen propio de la tela (2026-10-01, relieve) — ver {@link TexturaTela}.
+     * Se pone con un Molde de textura en la Mesa de estilado.
+     */
+    public static final ComponentType<TexturaTela> TEXTURA_TELA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "textura_tela"),
+            ComponentType.<TexturaTela>builder().codec(TexturaTela.CODEC)
+                    .packetCodec(PacketCodecs.VAR_INT.xmap(i -> TexturaTela.values()[i], TexturaTela::ordinal)).build());
+
+    /**
+     * Acabado de tela con un trim (2026-10-06, "los trims puedan agregar a las prendas texturas animadas, brillo,
+     * policromatismo, reflejos"): el id del patrón de trim (ej. {@code minecraft:snout}); el efecto sale del patrón
+     * ({@code render.EfectoTrim}). Se pone en la Mesa de estilado / Estilista con un molde de trim de vanilla.
+     */
+    public static final ComponentType<Identifier> ACABADO_TRIM = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "acabado_trim"),
+            ComponentType.<Identifier>builder().codec(Identifier.CODEC).packetCodec(Identifier.PACKET_CODEC).build());
+
+    /**
+     * Material del acabado (2026-10-06, "el material por separado, opcional"): el id del material de trim de vanilla
+     * (ej. {@code minecraft:gold}); cambia la paleta del efecto. Ausente = la paleta de fábrica del patrón.
+     */
+    public static final ComponentType<Identifier> ACABADO_MATERIAL = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "acabado_material"),
+            ComponentType.<Identifier>builder().codec(Identifier.CODEC).packetCodec(Identifier.PACKET_CODEC).build());
+
+    public static final ComponentType<java.util.List<Integer>> COLORES_APLIQUE = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "colores_aplique"),
+            ComponentType.<java.util.List<Integer>>builder()
+                    .codec(com.mojang.serialization.Codec.INT.listOf())
+                    .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
+                    .build());
+
+    // ── sombrero de bruja (2026-10-04) — ausentes = ala ancha / punta recta / colores de fábrica ──
+    public static final ComponentType<SombreroAla> SOMBRERO_ALA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "sombrero_ala"),
+            ComponentType.<SombreroAla>builder()
+                    .codec(StringIdentifiable.createCodec(SombreroAla::values))
+                    .packetCodec(PacketCodecs.indexed(i -> SombreroAla.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<SombreroPunta> SOMBRERO_PUNTA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "sombrero_punta"),
+            ComponentType.<SombreroPunta>builder()
+                    .codec(StringIdentifiable.createCodec(SombreroPunta::values))
+                    .packetCodec(PacketCodecs.indexed(i -> SombreroPunta.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<java.util.List<Integer>> COLORES_SOMBRERO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "colores_sombrero"),
+            ComponentType.<java.util.List<Integer>>builder()
+                    .codec(com.mojang.serialization.Codec.INT.listOf())
+                    .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
+                    .build());
+
+    /** Banda (2026-10-05, cintos y chokers): zona, ancho, herraje, colores y dibujo de sus 3 partes. */
+    public static final ComponentType<BandaZona> BANDA_ZONA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "banda_zona"),
+            ComponentType.<BandaZona>builder()
+                    .codec(StringIdentifiable.createCodec(BandaZona::values))
+                    .packetCodec(PacketCodecs.indexed(i -> BandaZona.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<BandaAncho> BANDA_ANCHO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "banda_ancho"),
+            ComponentType.<BandaAncho>builder()
+                    .codec(StringIdentifiable.createCodec(BandaAncho::values))
+                    .packetCodec(PacketCodecs.indexed(i -> BandaAncho.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<BandaHerraje> BANDA_HERRAJE = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "banda_herraje"),
+            ComponentType.<BandaHerraje>builder()
+                    .codec(StringIdentifiable.createCodec(BandaHerraje::values))
+                    .packetCodec(PacketCodecs.indexed(i -> BandaHerraje.values()[i], Enum::ordinal))
+                    .build());
+    public static final ComponentType<java.util.List<Integer>> COLORES_BANDA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "colores_banda"),
+            ComponentType.<java.util.List<Integer>>builder()
+                    .codec(com.mojang.serialization.Codec.INT.listOf())
+                    .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
+                    .build());
+    public static final ComponentType<java.util.List<Integer>> PATRONES_BANDA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "patrones_banda"),
+            ComponentType.<java.util.List<Integer>>builder()
+                    .codec(com.mojang.serialization.Codec.INT.listOf())
+                    .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
+                    .build());
+
+    /** Dibujo de cada zona del sombrero (2026-10-05): ordinales de {@link SombreroPatron}, ala/cono/cinta. */
+    public static final ComponentType<java.util.List<Integer>> PATRONES_SOMBRERO = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "patrones_sombrero"),
+            ComponentType.<java.util.List<Integer>>builder()
+                    .codec(com.mojang.serialization.Codec.INT.listOf())
+                    .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
+                    .build());
+
+    /** La mezcla C/M/Y/K/T de una muestra de color (2026-09-30), 5 niveles de 0..20. */
+    public static final ComponentType<java.util.List<Integer>> MEZCLA_COLOR = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "mezcla_color"),
+            ComponentType.<java.util.List<Integer>>builder()
+                    .codec(com.mojang.serialization.Codec.INT.listOf())
+                    .packetCodec(PacketCodecs.VAR_INT.collect(PacketCodecs.toList()))
+                    .build());
+
     public static void init() {
         // fuerza class-loading
     }

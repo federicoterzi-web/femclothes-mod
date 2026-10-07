@@ -29,7 +29,13 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
     public enum Largo implements StringIdentifiable {
         CROP("crop", 5),
         NORMAL("normal", 9),
-        LARGO("largo", 12);
+        LARGO("largo", 12),
+        // Los 7 puntos del molde de rango (2026-10-04, "agreguemos un molde y medida mas" + "el molde de rango o
+        // cobertura cubra tambien a los de torso"): 3, 5, 7, 9, 10, 11, 12. Los nuevos van al FINAL (viajan por ordinal).
+        TOP("top", 3),
+        CORTO("corto", 7),
+        CADERA_ALTA("cadera_alta", 10),
+        CADERA("cadera", 11);
 
         public final String clave;
         public final int filas;
@@ -37,6 +43,16 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
         Largo(String clave, int filas) {
             this.clave = clave;
             this.filas = filas;
+        }
+
+        /**
+         * El largo de los 3 de siempre cuya textura y modelo de ítem sirven para este: el más corto que lo
+         * contiene (la tela se recorta en runtime a {@link #filas}; no hay una textura por cada largo nuevo).
+         */
+        public Largo base() {
+            if (filas <= CROP.filas) return CROP;
+            if (filas <= NORMAL.filas) return NORMAL;
+            return LARGO;
         }
 
         @Override public String asString() { return clave; }
@@ -82,7 +98,10 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
     public enum Cuello implements StringIdentifiable {
         REDONDO("redondo"),
         V("v"),
-        POLERA("polera");
+        POLERA("polera"),
+        /** Cuadrado y corazón (2026-10-04): al FINAL, el cuello viaja por red y se guarda por ordinal. */
+        CUADRADO("cuadrado"),
+        CORAZON("corazon");
 
         public final String clave;
 
@@ -134,16 +153,24 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
         return largo.clave + "_" + manga.clave + "_" + cuello.clave;
     }
 
+    /** La clave de archivo: los largos nuevos usan la textura y el modelo del largo de siempre que los contiene. */
+    public String claveBase() {
+        return largo.base().clave + "_" + manga.clave + "_" + cuello.clave;
+    }
+
     public boolean tieneMangas() {
         return manga != Manga.SIN;
     }
 
     public Identifier texturaCuerpo() {
-        return Identifier.of(Femclothes.MOD_ID, "textures/entity/cuerpo_" + clave() + ".png");
+        // Cuadrado y corazón no tienen archivo: se recortan en runtime del redondo (ver CuelloRecorte).
+        Cuello archivo = CuelloRecorte.recortaEnRuntime(cuello) ? Cuello.REDONDO : cuello;
+        return Identifier.of(Femclothes.MOD_ID, "textures/entity/cuerpo_" + largo.base().clave + "_" + manga.clave
+                + "_" + archivo.clave + ".png");
     }
 
     public Identifier modeloItem() {
-        return Identifier.of(Femclothes.MOD_ID, "item/corte_" + clave());
+        return Identifier.of(Femclothes.MOD_ID, "item/corte_" + claveBase());
     }
 
     /**
@@ -154,7 +181,7 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
      * mas la define y el resto va al tooltip.
      */
     public String nombre() {
-        if (largo == Largo.CROP) return "croptop";
+        if (largo.filas <= Largo.CORTO.filas) return "croptop";
         if (manga == Manga.SIN) return "musculosa";
         if (cuello == Cuello.POLERA) return "polera";
         if (largo == Largo.LARGO) return "remeron";

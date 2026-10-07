@@ -81,31 +81,58 @@ public final class DebugApariencia {
                     feedback(ctx.getSource());
                     return 1;
                 }))
-                .then(pollera());
+                .then(relieve())
+                .then(cuello());
     }
 
     /**
-     * Comparar en el juego los 4 estilos de pollera traídos de un
-     * Artifact (campana/gajos/dos_vuelos/movimiento × 3 largos) antes de
-     * invertir en integrarlos como molde real de la Modeladora — a
-     * pedido (2026-09-17). Solo cambia campos estáticos de {@link
-     * com.femclothes.render.PolleraJsonGeometria}; no hay UI ni
-     * persistencia, es puramente para mirar.
+     * Cómo se ata el cuellito de la polera (2026-10-04): {@code torso}, {@code cabeza} o {@code partido}; sin argumento
+     * pasa al siguiente. Solo para quien lo usa, sin persistencia.
      */
-    private static LiteralArgumentBuilder<FabricClientCommandSource> pollera() {
-        LiteralArgumentBuilder<FabricClientCommandSource> raiz = ClientCommandManager.literal("pollera");
-        for (String est : new String[]{"campana", "gajos", "dos_vuelos", "movimiento"}) {
-            LiteralArgumentBuilder<FabricClientCommandSource> nodoEstilo = ClientCommandManager.literal(est);
-            for (String lg : new String[]{"rodilla", "media_pierna", "tobillo"}) {
-                nodoEstilo.then(ClientCommandManager.literal(lg).executes(ctx -> {
-                    com.femclothes.render.PolleraJsonGeometria.estilo = est;
-                    com.femclothes.render.PolleraJsonGeometria.largo = lg;
-                    ctx.getSource().sendFeedback(Text.literal("[femclothes debug] pollera=" + est + "/" + lg));
+    private static LiteralArgumentBuilder<FabricClientCommandSource> cuello() {
+        LiteralArgumentBuilder<FabricClientCommandSource> raiz = ClientCommandManager.literal("cuello")
+                .executes(ctx -> {
+                    var modos = com.femclothes.render.CuelloYCapucha.ModoCuello.values();
+                    com.femclothes.render.CuelloYCapucha.modoCuello =
+                            modos[(com.femclothes.render.CuelloYCapucha.modoCuello.ordinal() + 1) % modos.length];
+                    ctx.getSource().sendFeedback(Text.literal("[femclothes debug] cuello de polera: "
+                            + com.femclothes.render.CuelloYCapucha.modoCuello.name().toLowerCase(java.util.Locale.ROOT)));
                     return 1;
-                }));
-            }
-            raiz.then(nodoEstilo);
+                });
+        for (com.femclothes.render.CuelloYCapucha.ModoCuello m : com.femclothes.render.CuelloYCapucha.ModoCuello.values()) {
+            String nombre = m.name().toLowerCase(java.util.Locale.ROOT);
+            raiz.then(ClientCommandManager.literal(nombre).executes(ctx -> {
+                com.femclothes.render.CuelloYCapucha.modoCuello = m;
+                ctx.getSource().sendFeedback(Text.literal("[femclothes debug] cuello de polera: " + nombre));
+                return 1;
+            }));
         }
+        return raiz;
+    }
+
+    /**
+     * Estilo del relieve (2026-10-01, "podemos hacer una muestra de prueba de
+     * los dos?"): {@code suave} (superficie continua), {@code escalonado}
+     * (bloquecitos tipo 3D Skin Layers) o {@code apagado} (las cajas de
+     * siempre). Solo para quien lo usa, sin persistencia.
+     */
+    private static LiteralArgumentBuilder<FabricClientCommandSource> relieve() {
+        LiteralArgumentBuilder<FabricClientCommandSource> raiz = ClientCommandManager.literal("relieve");
+        for (com.femclothes.render.relieve.RelieveRender.Estilo e : com.femclothes.render.relieve.RelieveRender.Estilo.values()) {
+            String nombre = e.name().toLowerCase(java.util.Locale.ROOT);
+            raiz.then(ClientCommandManager.literal(nombre).executes(ctx -> {
+                com.femclothes.render.relieve.RelieveRender.forzado = e;
+                com.femclothes.render.relieve.RelieveRender.estilo = e;
+                ctx.getSource().sendFeedback(Text.literal("[femclothes debug] relieve " + nombre));
+                return 1;
+            }));
+        }
+        // "perfil" suelta el forzado: vuelve a mandar el volumen que eligió cada jugador.
+        raiz.then(ClientCommandManager.literal("perfil").executes(ctx -> {
+            com.femclothes.render.relieve.RelieveRender.forzado = null;
+            ctx.getSource().sendFeedback(Text.literal("[femclothes debug] relieve según el perfil"));
+            return 1;
+        }));
         return raiz;
     }
 

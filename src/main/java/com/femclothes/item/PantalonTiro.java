@@ -16,7 +16,14 @@ public enum PantalonTiro implements StringIdentifiable {
 
     CORTO("corto", 1),
     MEDIO("medio", 2),
-    LARGO("largo", 4);
+    LARGO("largo", 4),
+    // Los 7 puntos del molde de rango (2026-10-04, "tiro... extendamos hasta los hombros"): la cintura sube 12, 10,
+    // 8, 6, 4, 2 y 0 filas; 4 y 2 son LARGO y MEDIO de siempre. Los nuevos, al FINAL (viajan por ordinal).
+    HOMBROS("hombros", 12),
+    PECHO("pecho", 10),
+    BAJO_PECHO("bajo_pecho", 8),
+    MUY_ALTO("muy_alto", 6),
+    CADERA("cadera", 0);
 
     public final String clave;
     public final int filas;

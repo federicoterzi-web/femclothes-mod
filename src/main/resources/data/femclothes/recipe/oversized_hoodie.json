@@ -1,4 +1,5 @@
 {
+  "_comment": "2026-09-30: el Buzo Oversize viejo (armadura) se reemplaza por el hoodie de la categoría Chaqueta — misma receta, sale el nuevo (largo, manga larga, calce oversize: son los componentes por defecto del ítem).",
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "pattern": [
@@ -7,5 +8,11 @@
     "W W"
   ],
   "key": { "W": { "item": "minecraft:white_wool" } },
-  "result": { "id": "femclothes:oversized_hoodie", "count": 1 }
+  "result": {
+    "id": "femclothes:chaqueta",
+    "count": 1,
+    "components": {
+      "minecraft:dyed_color": { "rgb": 16383998, "show_in_tooltip": false }
+    }
+  }
 }

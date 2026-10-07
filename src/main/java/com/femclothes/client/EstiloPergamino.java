@@ -25,8 +25,41 @@ public final class EstiloPergamino {
     private static final int MADERA_HOVER_ABAJO = 0xFF5C3A22;
     private static final int MADERA_APAGADA_ARRIBA = 0xFF5C4A3A;
     private static final int MADERA_APAGADA_ABAJO = 0xFF3A2E26;
-    private static final int LATON_CLARO = 0xFFF4D070;
-    private static final int LATON_OSCURO = 0xFF684818;
+    /**
+     * Metal de cada máquina (2026-09-29, "estacion de tintes verdoso,
+     * modeladora cobrizo y sublimadora dorado"): mismos valores que
+     * {@code TEMAS} en tools/generar_textura_tinturas.py. Cada pantalla
+     * fija el suyo en {@code init()}; solo hay una abierta a la vez.
+     */
+    public enum Tema {
+        LATON(0xFFF4D070, 0xFF684818),
+        VERDIN(0xFF96D4AA, 0xFF1C4A38),
+        COBRE(0xFFF2AA78, 0xFF602C16),
+        ORO(0xFFFFE476, 0xFF7A5608),
+        /** Guardarropas: acero plateado de sus bisagras y manijas (2026-09-30). */
+        PLATA(0xFFE6EAF0, 0xFF424854),
+        /** Maniquí: azul esmaltado de sus esquinas y parante (2026-09-30). */
+        AZUL(0xFF96B8E6, 0xFF1E345A),
+        /** Mesa de estilado: lila de sus herrajes (2026-10-01). */
+        LILA(0xFFD6AAE8, 0xFF462260);
+
+        public final int claro, oscuro;
+
+        Tema(int claro, int oscuro) {
+            this.claro = claro;
+            this.oscuro = oscuro;
+        }
+    }
+
+    private static Tema tema = Tema.LATON;
+
+    public static void usarTema(Tema t) {
+        tema = t;
+    }
+
+    public static Tema tema() {
+        return tema;
+    }
     private static final int BORDE = 0xFF2A180C;
 
     /** Fondo de botón: madera con degradado vertical, filo de latón (claro arriba/izq., oscuro abajo/der.). */
@@ -34,7 +67,7 @@ public final class EstiloPergamino {
         int arriba = !activo ? MADERA_APAGADA_ARRIBA : hover ? MADERA_HOVER_ARRIBA : MADERA_ARRIBA;
         int abajo = !activo ? MADERA_APAGADA_ABAJO : hover ? MADERA_HOVER_ABAJO : MADERA_ABAJO;
         c.fillGradient(x, y, x + w, y + h, arriba, abajo);
-        int claro = activo ? LATON_CLARO : 0xFF8A7448, oscuro = activo ? LATON_OSCURO : 0xFF4A3A22;
+        int claro = activo ? tema.claro : 0xFF8A7448, oscuro = activo ? tema.oscuro : 0xFF4A3A22;
         c.fill(x, y, x + w, y + 1, claro);
         c.fill(x, y, x + 1, y + h, claro);
         c.fill(x, y + h - 1, x + w, y + h, oscuro);

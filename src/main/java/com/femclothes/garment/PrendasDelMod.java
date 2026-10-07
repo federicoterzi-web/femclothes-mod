@@ -27,6 +27,9 @@ public final class PrendasDelMod {
         Garments.registrar(ModItems.REMERA, REMERA);
         Garments.registrar(FemclothesItems.CALIENTABRAZOS, CALIENTABRAZOS);
         Garments.registrar(FemclothesItems.POLLERA, POLLERA);
+        Garments.registrar(FemclothesItems.CAPA, CAPA);
+        // La chaqueta gobierna las mismas partes que la remera (torso y brazos).
+        Garments.registrar(FemclothesItems.CHAQUETA, REMERA);
     }
 
     /**
@@ -140,7 +143,29 @@ public final class PrendasDelMod {
             return switch (op) {
                 // PATRON habilitado a pedido (2026-09-18), ver PANTALON.
                 case TENIR, PATRON -> BILATERAL;
-                case CORTE, ESTAMPAR -> Set.of();
+                // Largo/forma y estampa desde 2026-09-29 (pollera rehecha).
+                case CORTE -> ENTERA;
+                case ESTAMPAR -> CARAS;
+            };
+        }
+
+        @Override
+        public Set<Parte> partes(ItemStack stack) {
+            return Set.of();
+        }
+    };
+
+    /**
+     * Capa (2026-09-29): se dibuja aparte, colgando de los hombros con la
+     * dinámica de la capa vanilla (ver {@code GarmentFeatureRenderer#dibujarCapa}),
+     * sin gobernar ninguna parte del cuerpo. Frente = exterior, Espalda = forro.
+     */
+    private static final Garment CAPA = new Garment() {
+        @Override
+        public Set<Region> regionesDe(Operacion op) {
+            return switch (op) {
+                case TENIR, PATRON, CORTE -> ENTERA;
+                case ESTAMPAR -> CARAS;
             };
         }
 

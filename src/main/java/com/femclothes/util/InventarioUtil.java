@@ -36,6 +36,25 @@ public final class InventarioUtil {
      * todo) — {@code stack} en sí no se modifica.
      */
     public static ItemStack empujarA(World world, BlockPos destino, Direction caraDestino, ItemStack stack) {
+        boolean antes = enCadena;
+        enCadena = true;
+        try {
+            return empujar(world, destino, caraDestino, stack);
+        } finally {
+            enCadena = antes;
+        }
+    }
+
+    /**
+     * Verdadero mientras una máquina empuja su salida al vecino (2026-10-04,
+     * "activemos la linea de produccion textil" + "me parece perfecto que
+     * saltee"): el {@code setStack} de la máquina que recibe lo mira para
+     * saber que la prenda llega por la cadena y, si no tiene diseño fijado,
+     * pasarla de largo en vez de dejarla esperando. Solo servidor, un hilo.
+     */
+    public static boolean enCadena = false;
+
+    private static ItemStack empujar(World world, BlockPos destino, Direction caraDestino, ItemStack stack) {
         if (stack.isEmpty()) return stack;
         BlockEntity be = world.getBlockEntity(destino);
         if (!(be instanceof Inventory inv)) return stack;
