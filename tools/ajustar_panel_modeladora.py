@@ -12,7 +12,7 @@ Uso: python tools/ajustar_panel_modeladora.py
 import json
 import os
 
-RAIZ = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "femclothes")
+RAIZ = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "modamod")
 RUTA = os.path.join(RAIZ, "geo", "garment_shaper.geo.json")
 RECT_TIJERA = (90, 50, 38, 30)
 

@@ -12,7 +12,7 @@ import shutil
 from PIL import Image, ImageDraw, ImageFilter
 
 RAIZ = os.path.join(os.path.dirname(__file__), "..")
-GUI = os.path.join(RAIZ, "src", "main", "resources", "assets", "femclothes", "textures", "gui", "container")
+GUI = os.path.join(RAIZ, "src", "main", "resources", "assets", "modamod", "textures", "gui", "container")
 RESPALDO = os.path.join(RAIZ, "assets_viejos", "esquemas_modeladora_2026-10-04")
 ESQUEMA_Y = 36
 SS = 4  # supermuestreo de las líneas

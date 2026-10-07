@@ -7,7 +7,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter
 
 RAIZ = Path(__file__).resolve().parent.parent
-TEX = RAIZ / "src/main/resources/assets/femclothes/textures/item"
+TEX = RAIZ / "src/main/resources/assets/modamod/textures/item"
 papel_src = Image.open(TEX / "molde_capa_ruedo_recto.png").convert("RGBA")
 S = 8
 CUERO = (92, 58, 36, 255)
@@ -89,6 +89,6 @@ if __name__ == "__main__":
         ic = papel()
         ic.alpha_composite(dibujo(t))
         ic.save(TEX / f"molde_correa_{t}.png")
-        modelo = RAIZ / f"src/main/resources/assets/femclothes/models/item/molde_correa_{t}.json"
-        modelo.write_text('{\n  "parent": "minecraft:item/generated",\n  "textures": {\n    "layer0": "femclothes:item/molde_correa_%s"\n  }\n}\n' % t)
+        modelo = RAIZ / f"src/main/resources/assets/modamod/models/item/molde_correa_{t}.json"
+        modelo.write_text('{\n  "parent": "minecraft:item/generated",\n  "textures": {\n    "layer0": "modamod:item/molde_correa_%s"\n  }\n}\n' % t)
         print("ok", t)

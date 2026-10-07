@@ -15,7 +15,7 @@ import generar_textura_tinturas as base
 ANCHO, ALTO = 384, 256
 X_DERECHA, Y_SLOTS, Y_INVENTARIO = 214, 30, 172
 
-GUI = Path(__file__).resolve().parent.parent / "src/main/resources/assets/femclothes/textures/gui/container"
+GUI = Path(__file__).resolve().parent.parent / "src/main/resources/assets/modamod/textures/gui/container"
 
 # Mismos valores que EstiloPergamino.Tema.LILA en Java.
 base.TEMAS["lila"] = dict(pergamino=[224, 206, 182], claro=[214, 170, 232], medio=[150, 90, 184], oscuro=[70, 34, 96])

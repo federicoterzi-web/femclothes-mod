@@ -1,7 +1,0 @@
-{
-  "_comment": "El aspecto real del corte. Reusa el icono de manga corta del mismo largo/cuello como placeholder -- no hay arte propia todavia para media.",
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "femclothes:item/corte_crop_corta_redondo"
-  }
-}

@@ -109,7 +109,7 @@ No tocar el almacén en absoluto (sigue siendo una grilla libre de 18) —
 la "categoría" es puramente visual: un borde o tinte de color por slot
 ocupado, reusando la convención de acento por eje que el mod ya tiene
 (rojo/azul/verde/ámbar/violeta/magenta por tipo de molde — ver
-`FEMCLOTHES.md` §"Un color de acento por EJE"). Un vistazo rápido muestra
+`MODAMOD.md` §"Un color de acento por EJE"). Un vistazo rápido muestra
 qué es cada cosa sin restringir dónde se puede poner.
 
 - 👍 Cero cambios de `isValid`/estructura, el menor riesgo de todos.
@@ -134,7 +134,7 @@ no de lógica de fondo.
 
 ## Archivos a tocar (una vez que se elija la organización)
 
-- `FemclothesComponents.java`: 3 componentes `RIGHT_*` nuevos.
+- `ModamodComponents.java`: 3 componentes `RIGHT_*` nuevos.
 - `PantalonItem.java`, `MediasLargo.java`, `CalientabrazosItem.java`:
   overloads Lado-aware de largo/cobertura.
 - `PiezasDelMod.java`: `pantalon()`/`medias()`/`calientabrazos()` resuelven

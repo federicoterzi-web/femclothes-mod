@@ -94,7 +94,7 @@ def main():
                         PIN_MATERIAL_3, PIN_MANGA_DER, PIN_CALCE, PIN_TORSO):
         slot(img, px_, py_)
 
-    out = "src/main/resources/assets/femclothes/textures/gui/container/esquema_remera.png"
+    out = "src/main/resources/assets/modamod/textures/gui/container/esquema_remera.png"
     img.save(out)
     print("guardado:", out)
 

@@ -17,7 +17,7 @@ from PIL import Image
 
 RAIZ = os.path.join(os.path.dirname(__file__), "..")
 ORIGEN = os.path.join(RAIZ, "assets_nuevos_prueba", "medias_pantalon")
-ITEMS = os.path.join(RAIZ, "src", "main", "resources", "assets", "femclothes", "textures", "item")
+ITEMS = os.path.join(RAIZ, "src", "main", "resources", "assets", "modamod", "textures", "item")
 RESPALDO = os.path.join(RAIZ, "assets_viejos", "iconos_medias_pantalon_2026-10-05")
 RANGOS = ["cero", "minimo", "corto", "medio", "mediolargo", "largo", "maximo"]
 CALCES = ["pegado", "ajustado", "normal", "suelto", "oversize"]

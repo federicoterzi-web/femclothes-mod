@@ -17,7 +17,7 @@ from PIL import Image
 RAIZ = os.path.join(os.path.dirname(__file__), "..")
 TEXEL_HILO, TEXEL_CUERO = (101, 60), (102, 60)   # indicadores del frente (2026-10-05, "algun indicador visible en el frente")
 TEXEL_LILA = (100, 60)          # libre en la franja de la pantalla; color de Tema.LILA
-RES = os.path.join(RAIZ, "src", "main", "resources", "assets", "femclothes")
+RES = os.path.join(RAIZ, "src", "main", "resources", "assets", "modamod")
 NUEVO = os.path.join(RAIZ, "assets_nuevos_prueba", "estilista")
 CORTE = 10.3          # donde termina el cuerpo de la Modeladora y empieza la tapa (la base de la tapa está en 10.3)
 DESPLAZAR_V = 128     # la tapa usa la mitad de abajo del atlas

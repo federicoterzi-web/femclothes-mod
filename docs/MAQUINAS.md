@@ -5,7 +5,7 @@
 > la sublimadora ya existente en [SUBLIMADORA.md](SUBLIMADORA.md).
 
 Reemplaza el hook del telar (`UseBlockCallback`, decisión #4 de
-FEMCLOTHES.md) por bloques propios. El telar vuelve a ser solo banderas.
+MODAMOD.md) por bloques propios. El telar vuelve a ser solo banderas.
 
 ---
 
@@ -91,7 +91,7 @@ pre-configuradas.
   consume banderas).
 - **GUI**: elegís color activo (paleta de 16) + patrón activo.
 - Aplicar consume una dosis del color activo; setea `minecraft:dyed_color` +
-  `femclothes:pattern_id` / `pattern_color`.
+  `modamod:pattern_id` / `pattern_color`.
 
 ### Mesa de sastrería
 
@@ -113,7 +113,7 @@ Molde de corte físico (vs solo NBT del bloque): **se comparte y se vende**
 molde, y **no es "un ítem por combo crafteado"** (se fabrica una vez a mano
 desde el config).
 
-Aplicar setea `femclothes:variante`. No consume material (o aguja+hilo si se
+Aplicar setea `modamod:variante`. No consume material (o aguja+hilo si se
 quiere un sink blando).
 
 ### Categorías de patrones de modelado — la arquitectura definitiva
@@ -185,7 +185,7 @@ direcciones fijas distintas por código, no por elección del jugador.
 > pre-generar un PNG por combinación — no hicieron falta "más filas de
 > tela distintas por dirección" como se especulaba acá.
 >
-> La Mesa de Modelado (`com.femclothes.modelado`) tiene: un botón de
+> La Mesa de Modelado (`com.modamod.modelado`) tiene: un botón de
 > **Categoría** que cicla entre las 4 prendas de extremidad + remera
 > (reemplaza "el molde define el eje" por "el botón define el eje, el
 > molde aporta el valor"), botones de **Anclaje** y **Lateralidad**
@@ -219,7 +219,7 @@ cubrebrazos.
 Qué tan ajustada o voluminosa es la prenda respecto del cuerpo: Tight,
 Regular, Loose, Oversize. Altamente reutilizable — aplica a las 4 prendas
 (remera, pantalón, medias, cubrebrazos) y a las futuras. Es la misma idea
-que ya se había anotado suelta en `FEMCLOTHES.md` como "eje fit,
+que ya se había anotado suelta en `MODAMOD.md` como "eje fit,
 sin implementar" — esto la formaliza dentro del sistema de categorías.
 
 #### Compatibilidad de patrones por prenda
@@ -363,7 +363,7 @@ Independiente de la fase 1 de PRENDAS.md (una mesa solo setea componentes).
 1. **Mesa de tinturas** — tanque 16 + biblioteca de patrones + GUI + aplicar
    por click derecho. Sacar el hook del telar acá.
 2. **Mesa de sastrería** — moldes de eje (gates) + grilla de moldes de corte
-   + GUI de armado + guardar. Depende de que `femclothes:variante` ya lea
+   + GUI de armado + guardar. Depende de que `modamod:variante` ya lea
    todos los ejes nuevos (coordina con track prendas).
 3. **Convención de caras** en las 3 (incluido reacomodar la sublimadora) +
    modelos con puertos.

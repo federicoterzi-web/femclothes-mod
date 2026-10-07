@@ -20,8 +20,11 @@ sys.path.insert(0, os.path.dirname(__file__))
 import generar_modelo_estilista as est   # recortar_cubo / bajar_uv / CORTE / DESPLAZAR_V
 
 RAIZ = os.path.join(os.path.dirname(__file__), "..")
-RES = os.path.join(RAIZ, "src", "main", "resources", "assets", "femclothes")
+RES = os.path.join(RAIZ, "src", "main", "resources", "assets", "modamod")
 NUEVO = os.path.join(RAIZ, "assets_nuevos_prueba", "telar")
+# Texels propios y libres del atlas (2026-10-07, "el telar automatico tiene q tener la barra de progreso y dos barras de
+# insumos como la autoestiladora"): barra de progreso granate y las de lana (blanca) e hilo (dorado).
+TEXEL_ACENTO, TEXEL_LANA, TEXEL_HILO = (100, 60), (101, 60), (102, 60)
 
 
 def geo(ruta):
@@ -55,6 +58,25 @@ def main():
         b["parent"] = b.get("parent") or "root"
         huesos.append(b)
 
+    for b in huesos:
+        if b["name"] == "progress":
+            for c in b["cubes"]:
+                for cara in c["uv"].values():
+                    cara["uv"] = [TEXEL_ACENTO[0], TEXEL_ACENTO[1]]
+    # Dos indicadores verticales de insumos en el hueco del panel (como la Estilista); el cliente los escala en Y.
+    for nombre, x0, texel in (("lana", 1.55, TEXEL_LANA), ("hilo", 3.55, TEXEL_HILO)):
+        base["cubes"].append({
+            "origin": [x0 - 0.12, 5.18, -8.86], "size": [1.34, 3.34, 0.1],
+            "uv": {cara: {"uv": [126, 1], "uv_size": [0.3, 0.3]} for cara in ("north", "south", "east", "west", "up", "down")},
+        })
+        huesos.append({
+            "name": nombre, "parent": "root", "pivot": [x0 + 0.55, 5.3, -8.78],
+            "cubes": [{
+                "origin": [x0, 5.3, -8.9], "size": [1.1, 3.1, 0.24],
+                "uv": {cara: {"uv": [texel[0], texel[1]], "uv_size": [0.3, 0.3]} for cara in ("north", "south", "east", "west", "up", "down")},
+            }],
+        })
+
     out = copy.deepcopy(M)
     g = out["minecraft:geometry"][0]
     g["description"]["identifier"] = "geometry.telar"
@@ -81,6 +103,12 @@ def main():
     atlas = Image.new("RGBA", (128, 256), (0, 0, 0, 0))
     atlas.paste(a, (0, 0))
     atlas.paste(b, (0, est.DESPLAZAR_V))
+    atlas.putpixel(TEXEL_ACENTO, (0xA3, 0x26, 0x3A, 255))
+    atlas.putpixel(TEXEL_LANA, (0xF2, 0xF2, 0xF2, 255))
+    atlas.putpixel(TEXEL_HILO, (0xD8, 0xA8, 0x5A, 255))
+    # La pista gris de las barras (texel 126,1) la usa también la Estilista: se copia a este atlas si falta.
+    est_atlas = Image.open(os.path.join(RES, "textures", "block", "estilista_atlas.png")).convert("RGBA")
+    atlas.putpixel((126, 1), est_atlas.getpixel((126, 1)))
     atlas.save(os.path.join(RES, "textures", "block", "telar_atlas.png"))
     print("huesos:", [x["name"] for x in huesos])
     print("cubos de la base:", len(base["cubes"]), "| animaciones:", list(animaciones))

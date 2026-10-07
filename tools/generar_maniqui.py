@@ -18,7 +18,7 @@ from pathlib import Path
 
 from PIL import Image
 
-SALIDA = Path(__file__).resolve().parent.parent / "src/main/resources/assets/femclothes/textures/entity/maniqui.png"
+SALIDA = Path(__file__).resolve().parent.parent / "src/main/resources/assets/modamod/textures/entity/maniqui.png"
 
 BASE = (214, 188, 150)      # #D6BC96 lino/madera clara
 SOMBRA = (184, 154, 112)    # #B89A70

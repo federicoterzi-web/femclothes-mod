@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw
 
 S = 6
 T = 64 * S
-SALIDA = "src/main/resources/assets/femclothes/textures/entity/cuerpo"
+SALIDA = "src/main/resources/assets/modamod/textures/entity/cuerpo"
 
 TELA, COSTURA, ELASTICO, RAYA, ENCAJE = 244, 196, 214, 176, 212
 

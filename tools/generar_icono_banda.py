@@ -8,7 +8,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-RAIZ = Path(__file__).resolve().parent.parent / "src/main/resources/assets/femclothes/textures"
+RAIZ = Path(__file__).resolve().parent.parent / "src/main/resources/assets/modamod/textures"
 TINTA = (59, 36, 16, 255)
 CUERO = (110, 72, 44, 255)
 CUERO_LUZ = (146, 100, 64, 255)

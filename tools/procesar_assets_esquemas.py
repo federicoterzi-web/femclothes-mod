@@ -5,13 +5,13 @@ con inpainting, y (2) recorta los 3 cuadros del sprite de la chincheta
 (sin fijar / a mitad / fijada) con fondo transparente.
 
 Uso: python3 tools/procesar_assets_esquemas.py  (lee de Descargas, escribe en
-src/main/resources/assets/femclothes/textures/gui/container/). Imprime los
+src/main/resources/assets/modamod/textures/gui/container/). Imprime los
 centros de slot y de chincheta en píxeles FUENTE para medir ModeladoScreenHandler.
 """
 import cv2, json, numpy as np
 
 D = 'C:/Users/feder/Downloads/'
-OUT = 'src/main/resources/assets/femclothes/textures/gui/container/'
+OUT = 'src/main/resources/assets/modamod/textures/gui/container/'
 
 SLOTS = {
     'calientabrazos': [(323, 186), (835, 189), (1344, 186), (832, 386), (835, 582), (311, 736), (1360, 738), (835, 800)],

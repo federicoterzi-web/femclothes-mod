@@ -26,7 +26,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 T = 64
-SALIDA = "src/main/resources/assets/femclothes/textures/item/icono"
+SALIDA = "src/main/resources/assets/modamod/textures/item/icono"
 
 TORSO, BRAZO_DER, BRAZO_IZQ, PIERNA_DER, PIERNA_IZQ, TORSO_ATRAS, POLLERA, CAPA = 1, 2, 3, 4, 5, 6, 7, 8
 

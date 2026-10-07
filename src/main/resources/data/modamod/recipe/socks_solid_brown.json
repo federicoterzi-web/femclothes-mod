@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "A A",
+    "A A",
+    "A A"
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:brown_wool"
+    }
+  },
+  "result": {
+    "id": "modamod:socks_solid",
+    "count": 1,
+    "components": {
+      "minecraft:dyed_color": {
+        "rgb": 8606770
+      }
+    }
+  }
+}

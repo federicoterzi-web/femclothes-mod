@@ -271,7 +271,7 @@ en una máquina de producción automática.
 ## Nota de integración (2026-09-09)
 
 Este documento llegó DESPUÉS de que ya existiera una primera implementación
-de la Mesa de Modelado (`com.femclothes.modelado`, ver `FEMCLOTHES.md`) con
+de la Mesa de Modelado (`com.modamod.modelado`, ver `MODAMOD.md`) con
 un modelo de interacción distinto: sin estado on/off, GUI siempre abierta,
 aplicación instantánea por click derecho con la prenda en mano (el gesto de
 `docs/MAQUINAS.md` §3). Este informe pide algo bastante más grande:

@@ -1,5 +1,5 @@
 """
-Genera el manual del mod: docs/manual/MANUAL.md -> docs/manual/FemClothes_Manual.docx
+Genera el manual del mod: docs/manual/MANUAL.md -> docs/manual/ModaMod_Manual.docx
 
 Uso:  python tools/generar_manual.py [--destino <carpeta>]
 
@@ -33,8 +33,8 @@ from docx.shared import Cm, Pt, RGBColor
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(RAIZ, 'docs', 'manual')
 IMG = os.path.join(DOCS, 'img')
-TEX_ITEM = os.path.join(RAIZ, 'src', 'main', 'resources', 'assets', 'femclothes', 'textures', 'item')
-SALIDA = os.path.join(DOCS, 'FemClothes_Manual.docx')
+TEX_ITEM = os.path.join(RAIZ, 'src', 'main', 'resources', 'assets', 'modamod', 'textures', 'item')
+SALIDA = os.path.join(DOCS, 'ModaMod_Manual.docx')
 
 # Capturas elegidas: (archivo de salida, ruta de origen, recorte (izq, arriba, der, abajo) o None)
 MODRINTH = r'C:\Users\feder\AppData\Roaming\ModrinthApp\profiles\Fabric 1.21.1 (2)\screenshots'

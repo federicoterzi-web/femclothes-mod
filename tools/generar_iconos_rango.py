@@ -18,7 +18,7 @@ import sys
 from PIL import Image
 
 RAIZ = os.path.join(os.path.dirname(__file__), "..")
-ITEMS = os.path.join(RAIZ, "src", "main", "resources", "assets", "femclothes", "textures", "item")
+ITEMS = os.path.join(RAIZ, "src", "main", "resources", "assets", "modamod", "textures", "item")
 RESPALDO = os.path.join(RAIZ, "assets_viejos", "molde_rango_2026-10-04")
 
 T = 64

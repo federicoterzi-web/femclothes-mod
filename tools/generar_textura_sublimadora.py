@@ -76,7 +76,7 @@ def main():
     img = costura_vertical(img, M_MEDIO - 9, 16, ALTO - 16)
     img = costura_vertical(img, M_DERECHA - 9, 16, ALTO - 16)
 
-    out = "src/main/resources/assets/femclothes/textures/gui/container/sublimadora.png"
+    out = "src/main/resources/assets/modamod/textures/gui/container/sublimadora.png"
     Image.fromarray(rgb(img)).save(out)
     print("guardado:", out, ANCHO, "x", ALTO)
 

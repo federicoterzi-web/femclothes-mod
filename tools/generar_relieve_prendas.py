@@ -20,7 +20,7 @@ from pathlib import Path
 from PIL import Image
 
 ESCALA = 4
-RAIZ = Path(__file__).resolve().parent.parent / "src/main/resources/assets/femclothes/textures/models/relieve"
+RAIZ = Path(__file__).resolve().parent.parent / "src/main/resources/assets/modamod/textures/models/relieve"
 
 # (x0, y0) de cada parte en la skin clásica; ancho de frente.
 PARTES = {

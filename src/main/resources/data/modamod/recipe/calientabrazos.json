@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "W",
+    "W",
+    " "
+  ],
+  "key": { "W": { "item": "minecraft:white_wool" } },
+  "result": { "id": "modamod:calientabrazos", "count": 1 }
+}
