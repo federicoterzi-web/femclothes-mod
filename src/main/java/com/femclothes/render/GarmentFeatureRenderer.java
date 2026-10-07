@@ -283,15 +283,26 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     private static void dibujarPollera(List<ItemStack> prendas, LivingEntity entidad, BipedEntityModel<?> biped,
                                        MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz,
                                        float tickDelta) {
-        ItemStack stack = prendas.stream()
-                .filter(s -> s.getItem() instanceof com.femclothes.item.PolleraItem)
-                .findFirst().orElse(null);
-        if (stack == null) return;
+        // Varias polleras (2026-10-07, "que las polleras rendericen abajo de
+        // otras polleras", "por orden de slot"): la de slot más bajo queda
+        // abajo y cada siguiente se infla SEPARACION_POLLERAS más.
+        int nivel = 0;
+        for (ItemStack s : prendas) {
+            if (!(s.getItem() instanceof com.femclothes.item.PolleraItem)) continue;
+            dibujarUnaPollera(s, nivel++, entidad, biped, matrices, vertexConsumers, luz, tickDelta);
+        }
+    }
 
+    /** Cuánto más se infla cada pollera respecto de la de abajo (px). */
+    private static final float SEPARACION_POLLERAS = 0.3F;
+
+    private static void dibujarUnaPollera(ItemStack stack, int nivel, LivingEntity entidad, BipedEntityModel<?> biped,
+                                          MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz,
+                                          float tickDelta) {
         // La cintura de la pollera no puede apretar por dentro del cuerpo
         // (no es una Pieza: el cuerpo de abajo no se achica por ella) —
         // Ajustado pasó a -0.25 el 2026-09-30.
-        float dilatacion = Math.max(0F, com.femclothes.item.Calce.dilatacionEfectiva(stack));
+        float dilatacion = Math.max(0F, com.femclothes.item.Calce.dilatacionEfectiva(stack)) + nivel * SEPARACION_POLLERAS;
         Identifier textura = texturaPollera(stack);
 
         ModelPart delJugador = CuerpoGeometria.delJugador(biped, Parte.TORSO);
@@ -364,7 +375,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             }
         };
         return ClothingTextureCache.composeGarmentCapas(POLLERA_BASE, colorBase, capasMascaraPollera,
-                ClothingTextureCache.Shading.NONE, encima);
+                ClothingTextureCache.Shading.NONE, encima, true);
     }
 
     private static final Identifier CAPA_BASE = Identifier.of("femclothes",
@@ -609,21 +620,23 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     }
 
     /** La pollera del dibujo en curso (la tela de encima pasa por fuera), o null. */
-    @Nullable
-    private static ItemStack polleraPuesta;
+    private static final List<ItemStack> polleras = new java.util.ArrayList<>();
 
     private static void anotarPollera(List<ItemStack> prendas) {
-        polleraPuesta = null;
-        for (ItemStack s : prendas) if (s.getItem() instanceof com.femclothes.item.PolleraItem) polleraPuesta = s;
+        polleras.clear();
+        for (ItemStack s : prendas) if (s.getItem() instanceof com.femclothes.item.PolleraItem) polleras.add(s);
     }
 
     /** Cuánto sale la pollera puesta del torso a la altura {@code y}, o −1 (ver {@link PolleraMalla#holguraEn}). */
     private static float holguraPollera(float y) {
-        ItemStack s = polleraPuesta;
-        if (s == null) return -1F;
-        return PolleraMalla.holguraEn(com.femclothes.item.PolleraItem.forma(s), com.femclothes.item.PolleraItem.largo(s),
-                com.femclothes.item.PolleraItem.voladoRuedo(s), com.femclothes.item.PolleraItem.voladoTodo(s),
-                Math.max(0F, com.femclothes.item.Calce.dilatacionEfectiva(s)), y);
+        float mejor = -1F;
+        for (int i = 0; i < polleras.size(); i++) {
+            ItemStack s = polleras.get(i);
+            mejor = Math.max(mejor, PolleraMalla.holguraEn(com.femclothes.item.PolleraItem.forma(s), com.femclothes.item.PolleraItem.largo(s),
+                    com.femclothes.item.PolleraItem.voladoRuedo(s), com.femclothes.item.PolleraItem.voladoTodo(s),
+                    Math.max(0F, com.femclothes.item.Calce.dilatacionEfectiva(s)) + i * SEPARACION_POLLERAS, y));
+        }
+        return mejor;
     }
 
     /** Cuánto queda cada capa por fuera de la de abajo, en las filas donde se superponen (px de skin). */

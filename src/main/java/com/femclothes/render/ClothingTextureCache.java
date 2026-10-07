@@ -671,6 +671,18 @@ public final class ClothingTextureCache {
                                                  java.util.List<CapaMascara> capas,
                                                  Shading shading,
                                                  @Nullable Encima encima) {
+        return composeGarmentCapas(baseTexture, baseRgb, capas, shading, encima, false);
+    }
+
+    /**
+     * {@code resolucionCompleta}: no achica la tela ya compuesta (pollera,
+     * 2026-10-07, "agrandame la resolucion de las polleras, los motivos quedan
+     * mal": con patrón se achicaba a 4x y el motivo salía borroso).
+     */
+    public static Identifier composeGarmentCapas(Identifier baseTexture, int baseRgb,
+                                                 java.util.List<CapaMascara> capas,
+                                                 Shading shading,
+                                                 @Nullable Encima encima, boolean resolucionCompleta) {
         StringBuilder capasKey = new StringBuilder();
         for (CapaMascara c : capas) {
             // invertido tiene que estar en la clave — bug real (2026-09-21,
@@ -695,7 +707,8 @@ public final class ClothingTextureCache {
         }
         String key = baseTexture + "#" + Integer.toHexString(baseRgb)
                 + "@capas" + capasKey + ":" + shading
-                + (encima == null ? "" : "+" + encima.clave());
+                + (encima == null ? "" : "+" + encima.clave())
+                + (resolucionCompleta ? "^full" : "");
         Identifier cached = TINTED_CACHE.get(key);
         if (cached != null) return cached;
 
@@ -757,7 +770,7 @@ public final class ClothingTextureCache {
 
         // Translúcida: sin achicar — el achique mezcla los bordes con el
         // negro de los huecos y en modo translúcido se vería un halo oscuro.
-        if (!translucida) composite = reducirSiHaceFalta(composite, encima != null, hayAlgunaMascara);
+        if (!translucida && !resolucionCompleta) composite = reducirSiHaceFalta(composite, encima != null, hayAlgunaMascara);
 
         Identifier id = Identifier.of("femclothes", "dynamic/garment_" + Integer.toHexString(key.hashCode()));
         MinecraftClient.getInstance().getTextureManager()
