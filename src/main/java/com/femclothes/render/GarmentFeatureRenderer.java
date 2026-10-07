@@ -494,7 +494,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
 
     /** ¿Hay un hoodie (chaqueta con capucha) entre las prendas? */
     private static boolean conHoodie(List<ItemStack> prendas) {
-        for (ItemStack s : prendas) if (s.getItem() instanceof com.femclothes.item.ChaquetaItem) return true;
+        for (ItemStack s : prendas) if (com.femclothes.item.ChaquetaItem.tieneCapucha(s)) return true;
         return false;
     }
 
@@ -513,7 +513,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 float caida = calce == null ? 0f : calce.caida;
                 extra = Math.max(extra, Math.max(0f, p.dilatacion()) + caida * 0.6f + 0.1f);
             }
-            if (s.getItem() instanceof com.femclothes.item.ChaquetaItem && !com.femclothes.item.ChaquetaItem.capuchaArriba(s)) {
+            if (com.femclothes.item.ChaquetaItem.tieneCapucha(s) && !com.femclothes.item.ChaquetaItem.capuchaArriba(s)) {
                 // La bolsa de la capucha caída (CuelloYCapucha.capuchaCaida): 2.4 de grosor desde 2 + d + 0.2.
                 extra = Math.max(extra, Math.max(0f, com.femclothes.item.Calce.dilatacionEfectiva(s)) + 2.7f);
             }

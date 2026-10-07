@@ -46,7 +46,7 @@ public final class RedCapucha {
     }
 
     private static boolean tieneCapucha(ItemStack stack) {
-        return stack.getItem() instanceof ChaquetaItem
+        return ChaquetaItem.tieneCapucha(stack)
                 || (stack.getItem() instanceof CapaItem && CapaItem.capucha(stack));
     }
 

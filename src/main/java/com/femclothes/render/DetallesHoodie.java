@@ -36,7 +36,18 @@ public final class DetallesHoodie {
      * lo pueda volver a leer.
      */
     public static Identifier pintar(Identifier base, int filasTorso, int filasIzq, int filasDer) {
-        String key = base + "#hoodie" + filasTorso + "_" + filasIzq + "_" + filasDer;
+        return pintar(base, filasTorso, filasIzq, filasDer, true, true, false);
+    }
+
+    /**
+     * Con el corte modular de la chaqueta (2026-10-07): {@code rib} = puños y ruedo elásticos, {@code canguro} = el
+     * bolsillo de hoodie (sin capucha no lleva: los bolsillos van por apliques) y {@code abierta} = el frente abierto,
+     * una franja del medio de la cara de adelante del torso queda transparente (se ve lo de abajo) con las dos
+     * orillas más oscuras.
+     */
+    public static Identifier pintar(Identifier base, int filasTorso, int filasIzq, int filasDer,
+                                    boolean rib, boolean canguro, boolean abierta) {
+        String key = base + "#hoodie" + filasTorso + "_" + filasIzq + "_" + filasDer + (rib ? "r" : "") + (canguro ? "c" : "") + (abierta ? "a" : "");
         Identifier cacheada = CACHE.get(key);
         if (cacheada != null) return cacheada;
         NativeImage origen = ClothingTextureCache.imagenBase(base);
@@ -48,11 +59,14 @@ public final class DetallesHoodie {
 
         if (filasTorso > 0) {
             // Ruedo: la última fila del torso, alrededor de las 4 caras.
-            rib(img, s, 16, 20 + filasTorso - 1, 24);
-            bolsillo(img, s, filasTorso);
+            if (rib) rib(img, s, 16, 20 + filasTorso - 1, 24);
+            if (canguro) bolsillo(img, s, filasTorso);
+            if (abierta) abrirFrente(img, s, filasTorso);
         }
-        if (filasDer > 0) rib(img, s, 40, 20 + filasDer - 1, 16);
-        if (filasIzq > 0) rib(img, s, 32, 52 + filasIzq - 1, 16);
+        if (rib) {
+            if (filasDer > 0) rib(img, s, 40, 20 + filasDer - 1, 16);
+            if (filasIzq > 0) rib(img, s, 32, 52 + filasIzq - 1, 16);
+        }
 
         Identifier id = Identifier.of(Femclothes.MOD_ID, "dynamic/hoodie_" + Integer.toHexString(key.hashCode()));
         MinecraftClient.getInstance().getTextureManager().registerTexture(id, new NativeImageBackedTexture(img));
@@ -90,6 +104,20 @@ public final class DetallesHoodie {
                 boolean costura = y < y0 + borde || y >= y1 - borde || x < a + borde || x >= b - borde;
                 oscurecer(img, x, y, costura ? 0.70F : 0.93F);
             }
+        }
+    }
+
+    /**
+     * Frente abierto: 2 píxeles del medio de la cara de adelante del torso (u 23..25) transparentes en todo el
+     * alto, con una orilla oscura de un cuarto de píxel a cada lado (la solapa).
+     */
+    private static void abrirFrente(NativeImage img, int s, int filasTorso) {
+        int x0 = 23 * s, x1 = 25 * s;
+        int borde = Math.max(1, s / 4);
+        for (int y = 20 * s; y < (20 + filasTorso) * s; y++) {
+            for (int x = x0 - borde; x < x0; x++) oscurecer(img, x, y, 0.72F);
+            for (int x = x1; x < x1 + borde; x++) oscurecer(img, x, y, 0.72F);
+            for (int x = x0; x < x1; x++) img.setColor(x, y, 0);
         }
     }
 

@@ -522,6 +522,25 @@ public final class FemclothesComponents {
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "capucha_arriba"),
             ComponentType.<Boolean>builder().codec(com.mojang.serialization.Codec.BOOL).packetCodec(PacketCodecs.BOOL).build());
 
+    /** Frente de la chaqueta (2026-10-07); ausente = cerrada. */
+    public static final ComponentType<ChaquetaFrente> CHAQUETA_FRENTE = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "chaqueta_frente"),
+            ComponentType.<ChaquetaFrente>builder()
+                    .codec(StringIdentifiable.createCodec(ChaquetaFrente::values))
+                    .packetCodec(PacketCodecs.indexed(i -> ChaquetaFrente.values()[i], Enum::ordinal))
+                    .build());
+    /** Remate de puños y ruedo de la chaqueta (2026-10-07); ausente = elástico. */
+    public static final ComponentType<ChaquetaRemate> CHAQUETA_REMATE = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "chaqueta_remate"),
+            ComponentType.<ChaquetaRemate>builder()
+                    .codec(StringIdentifiable.createCodec(ChaquetaRemate::values))
+                    .packetCodec(PacketCodecs.indexed(i -> ChaquetaRemate.values()[i], Enum::ordinal))
+                    .build());
+    /** La chaqueta SIN capucha (2026-10-07): solo se guarda cuando es false; ausente = con capucha (el hoodie de siempre). */
+    public static final ComponentType<Boolean> CHAQUETA_SIN_CAPUCHA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "chaqueta_sin_capucha"),
+            ComponentType.<Boolean>builder().codec(com.mojang.serialization.Codec.BOOL).packetCodec(PacketCodecs.BOOL).build());
+
     /** La plantilla de un molde de aplique personalizado (2026-10-04) — ver {@code aplique/MoldeApliquePersonalizadoItem}. */
     public static final ComponentType<com.femclothes.aplique.Aplique> APLIQUE_PLANTILLA = Registry.register(
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "aplique_plantilla"),

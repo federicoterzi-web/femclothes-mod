@@ -167,6 +167,20 @@ public final class ModeladoMod {
     public static final MoldeBandaItem MOLDE_BANDA_HERRAJE_ARO = new MoldeBandaItem(new Item.Settings().maxCount(1),
             MoldeBandaItem.Tipo.HERRAJE_ARO);
 
+    // ── moldes de la chaqueta (2026-10-07) ──
+    public static final MoldeChaquetaItem MOLDE_CHAQUETA_FRENTE_CERRADA = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
+            MoldeChaquetaItem.Tipo.FRENTE_CERRADA);
+    public static final MoldeChaquetaItem MOLDE_CHAQUETA_FRENTE_ABIERTA = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
+            MoldeChaquetaItem.Tipo.FRENTE_ABIERTA);
+    public static final MoldeChaquetaItem MOLDE_CHAQUETA_CAPUCHA_CON = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
+            MoldeChaquetaItem.Tipo.CAPUCHA_CON);
+    public static final MoldeChaquetaItem MOLDE_CHAQUETA_CAPUCHA_SIN = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
+            MoldeChaquetaItem.Tipo.CAPUCHA_SIN);
+    public static final MoldeChaquetaItem MOLDE_CHAQUETA_REMATE_ELASTICO = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
+            MoldeChaquetaItem.Tipo.REMATE_ELASTICO);
+    public static final MoldeChaquetaItem MOLDE_CHAQUETA_REMATE_RECTO = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
+            MoldeChaquetaItem.Tipo.REMATE_RECTO);
+
     public static void register() {
         Identifier bloqueId = Identifier.of(Femclothes.MOD_ID, "modelado");
         Registry.register(Registries.BLOCK, bloqueId, MODELADO_BLOCK);
@@ -233,6 +247,12 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_banda_herraje_ninguno"), MOLDE_BANDA_HERRAJE_NINGUNO);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_banda_herraje_placa"), MOLDE_BANDA_HERRAJE_PLACA);
         Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_banda_herraje_aro"), MOLDE_BANDA_HERRAJE_ARO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_chaqueta_frente_cerrada"), MOLDE_CHAQUETA_FRENTE_CERRADA);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_chaqueta_frente_abierta"), MOLDE_CHAQUETA_FRENTE_ABIERTA);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_chaqueta_capucha_con"), MOLDE_CHAQUETA_CAPUCHA_CON);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_chaqueta_capucha_sin"), MOLDE_CHAQUETA_CAPUCHA_SIN);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_chaqueta_remate_elastico"), MOLDE_CHAQUETA_REMATE_ELASTICO);
+        Registry.register(Registries.ITEM, Identifier.of(Femclothes.MOD_ID, "molde_chaqueta_remate_recto"), MOLDE_CHAQUETA_REMATE_RECTO);
 
         // "Guardar diseño" con nombre (2026-09-27): el nombre viaja como paquete propio, ver GuardarDisenoPayload.
         PayloadTypeRegistry.playC2S().register(GuardarDisenoPayload.ID, GuardarDisenoPayload.CODEC);

@@ -224,6 +224,24 @@ public final class PrendaModelado {
             }
         }
 
+        // Chaqueta (2026-10-07): frente, capucha y remate de puños y ruedo (el cuello, las mangas y el largo salen del bloque de remera).
+        if (out.getItem() instanceof com.femclothes.item.ChaquetaItem && combo.pollera().isPresent()
+                && combo.pollera().get().chaqueta().isPresent()) {
+            var c = combo.pollera().get().chaqueta().get();
+            if (c.frente().isPresent()) {
+                com.femclothes.item.ChaquetaItem.setFrente(out, c.frente().get());
+                cambio = true;
+            }
+            if (c.capucha().isPresent()) {
+                com.femclothes.item.ChaquetaItem.setConCapucha(out, c.capucha().get());
+                cambio = true;
+            }
+            if (c.remate().isPresent()) {
+                com.femclothes.item.ChaquetaItem.setRemate(out, c.remate().get());
+                cambio = true;
+            }
+        }
+
         return cambio ? out : prenda;
     }
 

@@ -111,7 +111,28 @@ public record ComboCorte(
                                Optional<com.femclothes.item.PolleraVolado> voladoRuedo,
                                Optional<com.femclothes.item.PolleraVolado> voladoTodo,
                                // El borde decorativo del ruedo (2026-10-05).
-                               Optional<com.femclothes.item.PolleraBorde> borde) {
+                               Optional<com.femclothes.item.PolleraBorde> borde,
+                               // La chaqueta (2026-10-07): frente, capucha y remate en un solo campo (tope de 16 campos).
+                               Optional<ChaquetaCorte> chaqueta) {
+
+        /** Los 14 campos de antes de la chaqueta. */
+        public PolleraCorte(Optional<com.femclothes.item.PolleraLargo> largo,
+                            Optional<com.femclothes.item.PolleraForma> forma,
+                            Optional<com.femclothes.item.CapaLargo> capaLargo,
+                            Optional<com.femclothes.item.CapaRuedo> capaRuedo,
+                            Optional<Boolean> capaCapucha,
+                            Optional<Boolean> capaCuello,
+                            Optional<com.femclothes.item.SombreroAla> sombreroAla,
+                            Optional<com.femclothes.item.SombreroPunta> sombreroPunta,
+                            Optional<com.femclothes.item.BandaZona> bandaZona,
+                            Optional<com.femclothes.item.BandaAncho> bandaAncho,
+                            Optional<com.femclothes.item.BandaHerraje> bandaHerraje,
+                            Optional<com.femclothes.item.PolleraVolado> voladoRuedo,
+                            Optional<com.femclothes.item.PolleraVolado> voladoTodo,
+                            Optional<com.femclothes.item.PolleraBorde> borde) {
+            this(largo, forma, capaLargo, capaRuedo, capaCapucha, capaCuello, sombreroAla, sombreroPunta, bandaZona,
+                    bandaAncho, bandaHerraje, voladoRuedo, voladoTodo, borde, Optional.empty());
+        }
 
         /** Los 13 campos de antes del borde. */
         public PolleraCorte(Optional<com.femclothes.item.PolleraLargo> largo,
@@ -128,7 +149,7 @@ public record ComboCorte(
                             Optional<com.femclothes.item.PolleraVolado> voladoRuedo,
                             Optional<com.femclothes.item.PolleraVolado> voladoTodo) {
             this(largo, forma, capaLargo, capaRuedo, capaCapucha, capaCuello, sombreroAla, sombreroPunta, bandaZona,
-                    bandaAncho, bandaHerraje, voladoRuedo, voladoTodo, Optional.empty());
+                    bandaAncho, bandaHerraje, voladoRuedo, voladoTodo, Optional.empty(), Optional.empty());
         }
         public PolleraCorte(Optional<com.femclothes.item.PolleraLargo> largo,
                             Optional<com.femclothes.item.PolleraForma> forma) {
@@ -180,7 +201,7 @@ public record ComboCorte(
                     && capaCapucha.isEmpty() && capaCuello.isEmpty()
                     && sombreroAla.isEmpty() && sombreroPunta.isEmpty()
                     && bandaZona.isEmpty() && bandaAncho.isEmpty() && bandaHerraje.isEmpty()
-                    && voladoRuedo.isEmpty() && voladoTodo.isEmpty() && borde.isEmpty();
+                    && voladoRuedo.isEmpty() && voladoTodo.isEmpty() && borde.isEmpty() && chaqueta.isEmpty();
         }
 
         static final Codec<PolleraCorte> CODEC = RecordCodecBuilder.create(i -> i.group(
@@ -209,8 +230,40 @@ public record ComboCorte(
                 StringIdentifiable.createCodec(com.femclothes.item.PolleraVolado::values).optionalFieldOf("volado_todo")
                         .forGetter(PolleraCorte::voladoTodo),
                 StringIdentifiable.createCodec(com.femclothes.item.PolleraBorde::values).optionalFieldOf("borde")
-                        .forGetter(PolleraCorte::borde)
+                        .forGetter(PolleraCorte::borde),
+                ChaquetaCorte.CODEC.optionalFieldOf("chaqueta").forGetter(PolleraCorte::chaqueta)
         ).apply(i, PolleraCorte::new));
+    }
+
+    /** Los ejes propios de la chaqueta (2026-10-07): frente, capucha (true = con) y remate de puños y ruedo. */
+    public record ChaquetaCorte(Optional<com.femclothes.item.ChaquetaFrente> frente, Optional<Boolean> capucha,
+                                Optional<com.femclothes.item.ChaquetaRemate> remate) {
+        static final Codec<ChaquetaCorte> CODEC = RecordCodecBuilder.create(i -> i.group(
+                StringIdentifiable.createCodec(com.femclothes.item.ChaquetaFrente::values).optionalFieldOf("frente")
+                        .forGetter(ChaquetaCorte::frente),
+                Codec.BOOL.optionalFieldOf("capucha").forGetter(ChaquetaCorte::capucha),
+                StringIdentifiable.createCodec(com.femclothes.item.ChaquetaRemate::values).optionalFieldOf("remate")
+                        .forGetter(ChaquetaCorte::remate)
+        ).apply(i, ChaquetaCorte::new));
+    }
+
+    public static ComboCorte chaquetaFrente(com.femclothes.item.ChaquetaFrente v) {
+        return conChaqueta(new ChaquetaCorte(Optional.of(v), Optional.empty(), Optional.empty()));
+    }
+
+    public static ComboCorte chaquetaCapucha(boolean v) {
+        return conChaqueta(new ChaquetaCorte(Optional.empty(), Optional.of(v), Optional.empty()));
+    }
+
+    public static ComboCorte chaquetaRemate(com.femclothes.item.ChaquetaRemate v) {
+        return conChaqueta(new ChaquetaCorte(Optional.empty(), Optional.empty(), Optional.of(v)));
+    }
+
+    private static ComboCorte conChaqueta(ChaquetaCorte c) {
+        return VACIO.conPollera(new PolleraCorte(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.of(c)));
     }
 
     public static ComboCorte polleraLargo(com.femclothes.item.PolleraLargo v) {
@@ -549,6 +602,12 @@ public record ComboCorte(
                     writeOptEnum(buf, p.voladoRuedo());
                     writeOptEnum(buf, p.voladoTodo());
                     writeOptEnum(buf, p.borde());
+                    buf.writeBoolean(p.chaqueta().isPresent());
+                    p.chaqueta().ifPresent(c -> {
+                        writeOptEnum(buf, c.frente());
+                        writeOptBool(buf, c.capucha());
+                        writeOptEnum(buf, c.remate());
+                    });
                 });
             },
             buf -> new ComboCorte(
@@ -582,7 +641,12 @@ public record ComboCorte(
                             readOptEnum(buf, com.femclothes.item.BandaHerraje.values()),
                             readOptEnum(buf, com.femclothes.item.PolleraVolado.values()),
                             readOptEnum(buf, com.femclothes.item.PolleraVolado.values()),
-                            readOptEnum(buf, com.femclothes.item.PolleraBorde.values()))) : Optional.empty()));
+                            readOptEnum(buf, com.femclothes.item.PolleraBorde.values()),
+                            buf.readBoolean() ? Optional.of(new ChaquetaCorte(
+                                    readOptEnum(buf, com.femclothes.item.ChaquetaFrente.values()),
+                                    readOptBool(buf),
+                                    readOptEnum(buf, com.femclothes.item.ChaquetaRemate.values()))) : Optional.empty()))
+                            : Optional.empty()));
 
     private static void writeOptBool(ByteBuf buf, Optional<Boolean> value) {
         buf.writeByte(value.isEmpty() ? 0 : value.get() ? 2 : 1);

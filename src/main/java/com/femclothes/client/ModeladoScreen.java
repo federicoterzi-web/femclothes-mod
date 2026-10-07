@@ -66,6 +66,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
             Identifier.of("femclothes", "textures/gui/container/esquema_capa.png"),
             Identifier.of("femclothes", "textures/gui/container/esquema_sombrero.png"),
             Identifier.of("femclothes", "textures/gui/container/esquema_banda.png"),
+            Identifier.of("femclothes", "textures/gui/container/esquema_chaqueta.png"),
     };
     /** Cuadros de la chincheta: 0 sin fijar (aguja a la vista), 1 a mitad de clavarse, 2 fijada (sin aguja). */
     private static final Identifier[] TEXTURE_CHINCHETA = {

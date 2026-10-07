@@ -216,6 +216,12 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_SOMBRERO_PUNTA_DOBLADA);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_ZONA_CINTURA);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_ZONA_CUELLO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CHAQUETA_FRENTE_CERRADA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CHAQUETA_FRENTE_ABIERTA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CHAQUETA_CAPUCHA_CON);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CHAQUETA_CAPUCHA_SIN);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CHAQUETA_REMATE_ELASTICO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CHAQUETA_REMATE_RECTO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_ANCHO_FINO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_ANCHO_MEDIO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_ANCHO_ANCHO);

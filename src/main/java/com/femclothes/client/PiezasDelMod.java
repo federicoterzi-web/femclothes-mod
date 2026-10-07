@@ -184,9 +184,14 @@ public final class PiezasDelMod {
      */
     private static List<Pieza> chaqueta(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
         Variante variante = RemeraItem.variante(stack);
-        return piezasDeRemera(stack, Capa.CHAQUETA, true, textura -> com.femclothes.render.DetallesHoodie.pintar(
+        // Corte modular (2026-10-07): remate (elástico o recto), capucha (con ella, el bolsillo canguro) y frente.
+        boolean elastico = com.femclothes.item.ChaquetaItem.remate(stack) == com.femclothes.item.ChaquetaRemate.ELASTICO;
+        boolean canguro = com.femclothes.item.ChaquetaItem.conCapucha(stack);
+        boolean abierta = com.femclothes.item.ChaquetaItem.frente(stack) == com.femclothes.item.ChaquetaFrente.ABIERTA;
+        return piezasDeRemera(stack, Capa.CHAQUETA, elastico, textura -> com.femclothes.render.DetallesHoodie.pintar(
                 textura, variante.largo().filas,
-                RemeraItem.manga(stack, Lado.IZQUIERDA).filas, RemeraItem.manga(stack, Lado.DERECHA).filas));
+                RemeraItem.manga(stack, Lado.IZQUIERDA).filas, RemeraItem.manga(stack, Lado.DERECHA).filas,
+                elastico, canguro, abierta));
     }
 
     private static List<Pieza> piezasDeRemera(ItemStack stack, int capa, boolean elastico,

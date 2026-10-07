@@ -66,7 +66,7 @@ public final class CuelloYCapucha {
         for (ItemStack s : prendas) {
             if (!(s.getItem() instanceof RemeraItem)) continue;
             if (RemeraItem.variante(s).cuello() == Variante.Cuello.POLERA) polera = s;
-            if (s.getItem() instanceof ChaquetaItem) chaqueta = s;
+            if (ChaquetaItem.tieneCapucha(s)) chaqueta = s; // sin capucha no hay capucha ni cordones (2026-10-07)
         }
         if (polera != null && biped.body.visible) {
             float d = Math.max(0F, Calce.dilatacionEfectiva(polera));
