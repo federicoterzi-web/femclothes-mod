@@ -55,7 +55,7 @@ def main():
                 r, g, b, a = px[x, y]
                 if a == 0:
                     continue
-                if nombre == "estilista_atlas" and (x, y) in ((100, 60), (101, 60), (102, 60)):
+                if nombre in ("estilista_atlas", "telar_atlas") and (x, y) in ((100, 60), (101, 60), (102, 60)):
                     continue                           # los acentos lila / hilo / cuero de la Estilista no se recolorean
                 px[x, y] = (*recolorear(r, g, b, x, y), a)
         img.save(CARPETA / f"{nombre}_creativa.png")

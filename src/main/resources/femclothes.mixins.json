@@ -6,7 +6,8 @@
   "mixins": [
     "BannerBlockEntityMixin",
     "BannerDropsMixin",
-    "ShieldDecorationRecipeMixin"
+    "ShieldDecorationRecipeMixin",
+    "LivingEntityCintaMixin"
   ],
   "client": [
     "AbstractClientPlayerEntityMixin",
@@ -22,7 +23,8 @@
     "TrinketScreenManagerMixin",
     "HandledScreenAccessor",
     "BannerRendererMixin",
-    "BuiltinModelItemRendererMixin"
+    "BuiltinModelItemRendererMixin",
+    "ClientPlayerEntityCintaMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -49,6 +49,14 @@ public class TelarGeoModel extends GeoModel<TelarBlockEntity> {
                 be.vistaPrevia(), be.getPos());
     }
 
+    private void indicador(String hueso, int valor) {
+        GeoBone b = getAnimationProcessor().getBone(hueso);
+        if (b == null) return;
+        float nivel = Math.min(1f, valor / 64f);
+        b.setScaleY(Math.max(0.001f, nivel));
+        b.setHidden(nivel <= 0.001f);
+    }
+
     static Identifier atlas(TelarBlockEntity be) {
         return com.femclothes.util.MaquinaCreativa.textura(TEX, com.femclothes.util.MaquinaCreativa.es(be));
     }
@@ -68,6 +76,9 @@ public class TelarGeoModel extends GeoModel<TelarBlockEntity> {
             progreso.setScaleX(Math.max(0.001f, nivel * FACTOR_PROGRESO));
             progreso.setHidden(nivel <= 0.001f);
         }
+        // Dos barras verticales de insumos en el frente, como la Estilista (2026-10-07): lana e hilo, sobre 64.
+        indicador("lana", be.lana());
+        indicador("hilo", be.hilo());
         GeoBone prenda = getAnimationProcessor().getBone("garment");
         if (prenda != null) prenda.setHidden(true);
     }

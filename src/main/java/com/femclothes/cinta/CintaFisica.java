@@ -39,11 +39,8 @@ public final class CintaFisica {
 
     // ── Empuje ──
 
-    /** Lo llaman {@code onSteppedOn} de la cinta y del empalme (en cliente y servidor). */
-    public static void empujar(World mundo, BlockPos pos, BlockState estado, Entity e) {
-        if (!e.isOnGround()) return;
-        // El jugador se mueve en su cliente: ahí se empuja; en el servidor su velocidad no cuenta. El resto, al revés.
-        if (e instanceof PlayerEntity ? !mundo.isClient : mundo.isClient) return;
+    /** Hacia dónde empuja la banda a {@code e}, o null si el bloque no es una cinta o un empalme, o está parada. */
+    static Vec3d direccion(BlockPos pos, BlockState estado, Entity e) {
         Direction frente;
         boolean pausada;
         CintaBlock.Forma forma = null;
@@ -54,8 +51,8 @@ public final class CintaFisica {
         } else if (estado.getBlock() instanceof EmpalmeBlock) {
             frente = estado.get(EmpalmeBlock.FACING);
             pausada = estado.get(EmpalmeBlock.POWERED);
-        } else return;
-        if (pausada) return;
+        } else return null;
+        if (pausada) return null;
 
         Vec3d dir = new Vec3d(frente.getOffsetX(), 0, frente.getOffsetZ());
         if (forma != null && forma.esCurva()) {
@@ -72,11 +69,61 @@ public final class CintaFisica {
             double n = Math.sqrt(tx * tx + tz * tz);
             if (n > 1e-3) dir = new Vec3d(tx / n, 0, tz / n);
         }
+        return dir;
+    }
+
+    /** Lo llaman {@code onSteppedOn} de la cinta y del empalme (en cliente y servidor). */
+    public static void empujar(World mundo, BlockPos pos, BlockState estado, Entity e) {
+        if (!e.isOnGround()) return;
+        // El jugador se mueve en su cliente: ahí se empuja; en el servidor su velocidad no cuenta. El resto, al revés.
+        if (e instanceof PlayerEntity ? !mundo.isClient : mundo.isClient) return;
+        Vec3d dir = direccion(pos, estado, e);
+        if (dir == null) return;
+        CintaBlock.Forma forma = estado.getBlock() instanceof CintaBlock ? estado.get(CintaBlock.FORMA) : null;
         double k = IMPULSO * multiplicador(mundo, pos);
         double vy = 0;
         // Las prendas y los ítems caídos no suben escalones solos: la rampa de subida los levanta un poco.
         if (forma == CintaBlock.Forma.RAMPA_SUBE && !(e instanceof net.minecraft.entity.LivingEntity)) vy = 0.05;
         e.addVelocity(dir.x * k, vy, dir.z * k);
+    }
+
+    // ── Deslizamiento (2026-10-07, "se puede hacer que sea un deslizamiento? porque se ve como si el personaje caminara") ──
+
+    /** Velocidad a la que queda quien se sube: el impulso de cada tick contra el rozamiento del bloque (v = k·f / (1 − f)). */
+    private static double velocidadBanda(World mundo, BlockPos pos, BlockState estado) {
+        double f = estado.getBlock().getSlipperiness() * 0.91;
+        return IMPULSO * multiplicador(mundo, pos) * f / (1.0 - f);
+    }
+
+    /** La cinta que lleva a {@code e} ahora (la del bloque de abajo, en marcha), o null. */
+    private static BlockPos cintaBajo(Entity e) {
+        if (!e.isOnGround()) return null;
+        BlockPos p = BlockPos.ofFloored(e.getX(), e.getY() - 0.2, e.getZ());
+        BlockState s = e.getWorld().getBlockState(p);
+        return direccion(p, s, e) != null ? p : null;
+    }
+
+    /** ¿Lo está llevando una cinta ahora? (para quitarle el vaivén de la cámara al jugador quieto). */
+    public static boolean llevada(Entity e) { return cintaBajo(e) != null; }
+
+    /**
+     * Cuánto camina de verdad {@code e} este tick, para las piernas y los brazos: lo que avanzó menos lo que la cinta lo
+     * lleva. Quieto sobre la banda da 0 y se desliza como sobre hielo; si camina o corre, se anima por lo suyo.
+     */
+    public static float pasoPropio(Entity e, float posDelta) {
+        BlockPos p = cintaBajo(e);
+        if (p == null) return posDelta;
+        BlockState s = e.getWorld().getBlockState(p);
+        Vec3d dir = direccion(p, s, e);
+        double v = velocidadBanda(e.getWorld(), p, s);
+        double dx = e.getX() - e.prevX, dz = e.getZ() - e.prevZ;
+        double along = dx * dir.x + dz * dir.z;
+        double perpX = dx - along * dir.x, perpZ = dz - along * dir.z;
+        // Llevado: avanza como la banda (con un poco de margen al arrancar) y casi nada al costado.
+        if (along >= -0.25 * v && along <= 1.3 * v && perpX * perpX + perpZ * perpZ < 0.012 * 0.012) return 0f;
+        double rx = dx - dir.x * v, rz = dz - dir.z * v;
+        double r = Math.sqrt(rx * rx + rz * rz);
+        return r < 0.012 ? 0f : (float) r;
     }
 
     // ── Pausa por redstone con contagio ──

@@ -145,6 +145,8 @@ public class TelarBlockEntity extends BlockEntity implements SidedInventory, com
      * arriba"): la del lote en curso, del color de la lana que se gastó; vacía si la máquina no está tejiendo.
      */
     public ItemStack prendaTejiendo() {
+        // 2026-10-07, "la prenda debe aparecer arriba hasta que se la saque del slot de salida": terminada se queda ahí.
+        if (!items.get(SLOT_SALIDA).isEmpty()) return items.get(SLOT_SALIDA);
         if (estado != Estado.PROCESANDO) return ItemStack.EMPTY;
         int clave = prendaEnCurso * 0x1000000 + (colorEnCurso & 0xFFFFFF);
         if (clave != tejiendoClave || tejiendo.isEmpty()) {
@@ -159,6 +161,9 @@ public class TelarBlockEntity extends BlockEntity implements SidedInventory, com
         s.set(DataComponentTypes.DYED_COLOR, new DyedColorComponent(rgb, true));
         return s;
     }
+
+    public int lana() { return items.get(SLOT_LANA).getCount(); }
+    public int hilo() { return items.get(SLOT_HILO).getCount(); }
 
     public boolean hayInsumos() { return proxima() >= 0; }
 

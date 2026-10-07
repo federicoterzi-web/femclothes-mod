@@ -17,8 +17,5 @@ public class TelarRenderer extends GeoBlockRenderer<TelarBlockEntity> {
         // "la representacion grafica de la prenda arriba"); el hueso "base" no se mueve, así que el centro es fijo.
         addRenderLayer(new PrendaEnMaquinaLayer<>(this, "base", TelarBlockEntity::prendaTejiendo,
                 0f, 13.8f, -0.5f, 8.4f, PrendaEnMaquinaLayer.Apoyo.ACOSTADA_FRENTE_MENOS_Z));
-        // La prenda tejida sobre la bandeja de salida (el hueso "cargo").
-        addRenderLayer(new PrendaEnMaquinaLayer<>(this, "cargo", TelarBlockEntity::salidaVisible,
-                5.6f, 5.08f, 0f, 2.4f, PrendaEnMaquinaLayer.Apoyo.ACOSTADA_FRENTE_MENOS_Z));
     }
 }
