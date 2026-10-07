@@ -737,7 +737,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 if (f >= desde && f < hasta) {
                     // Silueta en A del hoodie (2026-10-04, "que arriba sea mas pegado al cuerpo y se ensanche hacia
                     // abajo"): el torso arranca al 35 % de la holgura en la primera fila y llega al 100 % en la última.
-                    if (pieza.elastico() && parte == Parte.TORSO && hasta - desde > 1) {
+                    if (pieza.elastico() && parte == Parte.TORSO && pieza.capa() == Capa.CHAQUETA && hasta - desde > 1) {
                         float tt = (f - desde + 1) / (float) (hasta - desde);
                         d = base * (0.35F + 0.65F * tt);
                     }
@@ -745,6 +745,8 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                         float t = (f - desde + 1) / (float) (hasta - desde);
                         d += caida * t * (float) Math.sqrt(t);
                     }
+                    // Ruedo en campana (2026-10-07): las últimas 3 filas se abren hacia afuera, 0,6 px más cada una.
+                    if (pieza.campana() && hasta - desde > 3 && f >= hasta - 3) d += 0.6F * (f - (hasta - 3) + 1);
                     // La banda elástica aprieta: 40 % de la holgura, nunca por
                     // dentro del cuerpo (0.05 de aire).
                     if (pieza.elastico() && f == hasta - 1) d = Math.max(0.05F, base * 0.4F);

@@ -40,14 +40,15 @@ public final class DetallesHoodie {
     }
 
     /**
-     * Con el corte modular de la chaqueta (2026-10-07): {@code rib} = puños y ruedo elásticos, {@code canguro} = el
+     * Con el corte modular de la chaqueta (2026-10-07): {@code ribTorso}/{@code ribIzq}/{@code ribDer} = ruedo y puños
+     * ajustados (2026-10-07: cada borde con su propio {@code Ruedo}), {@code canguro} = el
      * bolsillo de hoodie (sin capucha no lleva: los bolsillos van por apliques) y {@code abierta} = el frente abierto,
      * una franja del medio de la cara de adelante del torso queda transparente (se ve lo de abajo) con las dos
      * orillas más oscuras.
      */
     public static Identifier pintar(Identifier base, int filasTorso, int filasIzq, int filasDer,
-                                    boolean rib, boolean canguro, boolean abierta) {
-        String key = base + "#hoodie" + filasTorso + "_" + filasIzq + "_" + filasDer + (rib ? "r" : "") + (canguro ? "c" : "") + (abierta ? "a" : "");
+                                    boolean ribTorso, boolean ribIzq, boolean ribDer, boolean canguro, boolean abierta) {
+        String key = base + "#hoodie" + filasTorso + "_" + filasIzq + "_" + filasDer + (ribTorso ? "t" : "") + (ribIzq ? "i" : "") + (ribDer ? "d" : "") + (canguro ? "c" : "") + (abierta ? "a" : "");
         Identifier cacheada = CACHE.get(key);
         if (cacheada != null) return cacheada;
         NativeImage origen = ClothingTextureCache.imagenBase(base);
@@ -59,14 +60,12 @@ public final class DetallesHoodie {
 
         if (filasTorso > 0) {
             // Ruedo: la última fila del torso, alrededor de las 4 caras.
-            if (rib) rib(img, s, 16, 20 + filasTorso - 1, 24);
+            if (ribTorso) rib(img, s, 16, 20 + filasTorso - 1, 24);
             if (canguro) bolsillo(img, s, filasTorso);
             if (abierta) abrirFrente(img, s, filasTorso);
         }
-        if (rib) {
-            if (filasDer > 0) rib(img, s, 40, 20 + filasDer - 1, 16);
-            if (filasIzq > 0) rib(img, s, 32, 52 + filasIzq - 1, 16);
-        }
+        if (ribDer && filasDer > 0) rib(img, s, 40, 20 + filasDer - 1, 16);
+        if (ribIzq && filasIzq > 0) rib(img, s, 32, 52 + filasIzq - 1, 16);
 
         Identifier id = Identifier.of(Modamod.MOD_ID, "dynamic/hoodie_" + Integer.toHexString(key.hashCode()));
         MinecraftClient.getInstance().getTextureManager().registerTexture(id, new NativeImageBackedTexture(img));

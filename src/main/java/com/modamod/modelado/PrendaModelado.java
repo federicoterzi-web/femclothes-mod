@@ -200,11 +200,17 @@ public final class PrendaModelado {
             }
         }
 
-        // Borde decorativo del ruedo de la pollera (2026-10-05).
-        if (out.getItem() instanceof com.modamod.item.PolleraItem && combo.pollera().isPresent()
-                && combo.pollera().get().borde().isPresent()) {
-            com.modamod.item.PolleraItem.setBorde(out, combo.pollera().get().borde().get());
-            cambio = true;
+        // Ruedo de un borde libre (2026-10-07, fusiona el borde de la pollera y el remate de la chaqueta): un pin por zona.
+        if (combo.pollera().isPresent() && combo.pollera().get().ruedo().isPresent()) {
+            var r = combo.pollera().get().ruedo().get();
+            if (ruedoVale(out, r.zona(), r.ruedo())) {
+                com.modamod.item.Ruedos.set(out, r.zona(), r.ruedo());
+                cambio = true;
+            }
+            if (r.espejo() && ruedoVale(out, r.zona().opuesta(), r.ruedo())) {
+                com.modamod.item.Ruedos.set(out, r.zona().opuesta(), r.ruedo());
+                cambio = true;
+            }
         }
 
         // Banda (2026-10-05): zona, ancho y herraje.
@@ -224,7 +230,7 @@ public final class PrendaModelado {
             }
         }
 
-        // Chaqueta (2026-10-07): frente, capucha y remate de puños y ruedo (el cuello, las mangas y el largo salen del bloque de remera).
+        // Chaqueta (2026-10-07): frente, capucha y solapa (el cuello, las mangas y el largo salen del bloque de remera).
         if (out.getItem() instanceof com.modamod.item.ChaquetaItem && combo.pollera().isPresent()
                 && combo.pollera().get().chaqueta().isPresent()) {
             var c = combo.pollera().get().chaqueta().get();
@@ -234,10 +240,6 @@ public final class PrendaModelado {
             }
             if (c.capucha().isPresent()) {
                 com.modamod.item.ChaquetaItem.setConCapucha(out, c.capucha().get());
-                cambio = true;
-            }
-            if (c.remate().isPresent()) {
-                com.modamod.item.ChaquetaItem.setRemate(out, c.remate().get());
                 cambio = true;
             }
             if (c.solapa().isPresent()) {
@@ -250,4 +252,13 @@ public final class PrendaModelado {
     }
 
     private PrendaModelado() {}
+
+    /** Si el ruedo {@code r} tiene sentido en esa zona de esta prenda (el borde decorativo solo en la pollera). */
+    private static boolean ruedoVale(ItemStack prenda, com.modamod.item.ZonaRuedo zona, com.modamod.item.Ruedo r) {
+        return switch (zona) {
+            case TORSO, PUNO_IZQ, PUNO_DER -> prenda.getItem() instanceof com.modamod.sublimadora.RemeraItem && r.valeEnTela();
+            case POLLERA -> prenda.getItem() instanceof com.modamod.item.PolleraItem;
+            default -> false;
+        };
+    }
 }

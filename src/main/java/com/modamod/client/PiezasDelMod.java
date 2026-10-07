@@ -170,7 +170,7 @@ public final class PiezasDelMod {
      * sigue al cuerpo sin geometria extra y queda recortada a la tela sola.
      */
     private static List<Pieza> remera(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
-        return piezasDeRemera(stack, Capa.TORSO_EXTERIOR, false, null);
+        return piezasDeRemera(stack, Capa.TORSO_EXTERIOR, false, false);
     }
 
     /**
@@ -183,20 +183,13 @@ public final class PiezasDelMod {
      * ({@code GarmentFeatureRenderer#dibujarCapucha}).
      */
     private static List<Pieza> chaqueta(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
-        Variante variante = RemeraItem.variante(stack);
-        // Corte modular (2026-10-07): remate (elástico o recto), capucha (con ella, el bolsillo canguro) y frente.
-        boolean elastico = com.modamod.item.ChaquetaItem.remate(stack) == com.modamod.item.ChaquetaRemate.ELASTICO;
+        // Corte modular (2026-10-07): capucha (con ella, el bolsillo canguro) y frente; el ruedo y los puños salen de Ruedos.
         boolean canguro = com.modamod.item.ChaquetaItem.conCapucha(stack);
         boolean abierta = com.modamod.item.ChaquetaItem.frente(stack) == com.modamod.item.ChaquetaFrente.ABIERTA;
-        return piezasDeRemera(stack, Capa.CHAQUETA, elastico, textura -> com.modamod.render.DetallesHoodie.pintar(
-                textura, variante.largo().filas,
-                RemeraItem.manga(stack, Lado.IZQUIERDA).filas, RemeraItem.manga(stack, Lado.DERECHA).filas,
-                elastico, canguro, abierta));
+        return piezasDeRemera(stack, Capa.CHAQUETA, canguro, abierta);
     }
 
-    private static List<Pieza> piezasDeRemera(ItemStack stack, int capa, boolean elastico,
-                                              @org.jetbrains.annotations.Nullable
-                                              java.util.function.UnaryOperator<Identifier> detalles) {
+    private static List<Pieza> piezasDeRemera(ItemStack stack, int capa, boolean canguro, boolean abierta) {
         Variante variante = RemeraItem.variante(stack);
         Variante varianteBase = new Variante(variante.largo(), Variante.Manga.LARGA, variante.cuello());
         // La remera es Lado.AMBAS siempre para PATRON (un solo color, un
@@ -212,11 +205,22 @@ public final class PiezasDelMod {
         // Si todavia no se pudo componer -la foto no bajo- se usa la lisa,
         // que es lo correcto mientras tanto.
         if (textura == null) textura = varianteBase.texturaCuerpo();
-        if (detalles != null) textura = detalles.apply(textura);
+        // Ruedo de cada borde libre (2026-10-07): el torso y cada puño llevan el suyo.
+        com.modamod.item.Ruedo ruedoTorso = com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.TORSO);
+        com.modamod.item.Ruedo ruedoIzq = com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.PUNO_IZQ);
+        com.modamod.item.Ruedo ruedoDer = com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.PUNO_DER);
+        boolean ribTorso = ruedoTorso == com.modamod.item.Ruedo.AJUSTADO;
+        boolean ribIzq = ruedoIzq == com.modamod.item.Ruedo.AJUSTADO;
+        boolean ribDer = ruedoDer == com.modamod.item.Ruedo.AJUSTADO;
+        if (ribTorso || ribIzq || ribDer || canguro || abierta) {
+            textura = com.modamod.render.DetallesHoodie.pintar(textura, variante.largo().filas,
+                    RemeraItem.manga(stack, Lado.IZQUIERDA).filas, RemeraItem.manga(stack, Lado.DERECHA).filas,
+                    ribTorso, ribIzq, ribDer, canguro, abierta);
+        }
 
         float dilatacion = Calce.dilatacionEfectiva(stack);
         List<Pieza> piezas = new ArrayList<>(3);
-        piezas.add(new Pieza(Parte.TORSO, capa, textura, dilatacion, 0, variante.largo().filas, false, elastico));
+        piezas.add(new Pieza(Parte.TORSO, capa, textura, dilatacion, 0, variante.largo().filas, false, ruedoTorso));
         // Mangas POR LADO (2026-09-24, "vamos con mangas distintas") — cada
         // brazo lee su propio valor (RemeraItem#manga, izquierda vive en
         // Variante, derecha es un override aparte) y se recorta
@@ -226,11 +230,11 @@ public final class PiezasDelMod {
         com.modamod.item.PatronRed red = com.modamod.item.PatronRed.leer(stack);
         int filasIzq = RemeraItem.manga(stack, Lado.IZQUIERDA).filas;
         if (filasIzq > 0) {
-            piezas.add(new Pieza(Parte.BRAZO_IZQ, capa, recortarMangaYCachear(textura, Parte.BRAZO_IZQ, filasIzq, red), dilatacion, 0, filasIzq, false, elastico));
+            piezas.add(new Pieza(Parte.BRAZO_IZQ, capa, recortarMangaYCachear(textura, Parte.BRAZO_IZQ, filasIzq, red), dilatacion, 0, filasIzq, false, ruedoIzq));
         }
         int filasDer = RemeraItem.manga(stack, Lado.DERECHA).filas;
         if (filasDer > 0) {
-            piezas.add(new Pieza(Parte.BRAZO_DER, capa, recortarMangaYCachear(textura, Parte.BRAZO_DER, filasDer, red), dilatacion, 0, filasDer, false, elastico));
+            piezas.add(new Pieza(Parte.BRAZO_DER, capa, recortarMangaYCachear(textura, Parte.BRAZO_DER, filasDer, red), dilatacion, 0, filasDer, false, ruedoDer));
         }
         return piezas;
     }

@@ -53,17 +53,6 @@ public class ChaquetaItem extends RemeraItem {
         else stack.set(ModamodComponents.CHAQUETA_FRENTE, f);
     }
 
-    /** Puños y ruedo: elástico (el hoodie de siempre) o recto. */
-    public static ChaquetaRemate remate(ItemStack stack) {
-        ChaquetaRemate r = stack.get(ModamodComponents.CHAQUETA_REMATE);
-        return r == null ? ChaquetaRemate.ELASTICO : r;
-    }
-
-    public static void setRemate(ItemStack stack, ChaquetaRemate r) {
-        if (r == ChaquetaRemate.ELASTICO) stack.remove(ModamodComponents.CHAQUETA_REMATE);
-        else stack.set(ModamodComponents.CHAQUETA_REMATE, r);
-    }
-
     /** Solapas: ninguna (de siempre), en pico, redondas o chal. */
     public static ChaquetaSolapa solapa(ItemStack stack) {
         ChaquetaSolapa v = stack.get(ModamodComponents.CHAQUETA_SOLAPA);

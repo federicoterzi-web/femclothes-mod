@@ -201,9 +201,6 @@ public class Modamod implements ModInitializer {
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_POLLERA_CIRCULAR);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_VOLADO_RECTO);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_VOLADO_CIRCULAR);
-            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_BORDE_ONDULADO);
-            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_BORDE_FESTONEADO);
-            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_BORDE_PICO);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_CAPA_RUEDO_RECTO);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_CAPA_RUEDO_REDONDEADO);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_CAPA_RUEDO_COLA);
@@ -217,12 +214,16 @@ public class Modamod implements ModInitializer {
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_SOMBRERO_PUNTA_DOBLADA);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_BANDA_ZONA_CINTURA);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_BANDA_ZONA_CUELLO);
+            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_RUEDO_RECTO);
+            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_RUEDO_AJUSTADO);
+            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_RUEDO_CAMPANA);
+            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_RUEDO_ONDULADO);
+            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_RUEDO_FESTONEADO);
+            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_RUEDO_PICO);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_CHAQUETA_FRENTE_CERRADA);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_CHAQUETA_FRENTE_ABIERTA);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_CHAQUETA_CAPUCHA_CON);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_CHAQUETA_CAPUCHA_SIN);
-            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_CHAQUETA_REMATE_ELASTICO);
-            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_CHAQUETA_REMATE_RECTO);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_CHAQUETA_SOLAPA_NINGUNA);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_CHAQUETA_SOLAPA_PICO);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_CHAQUETA_SOLAPA_REDONDA);

@@ -1,7 +1,6 @@
 package com.modamod.modelado;
 
 import com.modamod.item.ChaquetaFrente;
-import com.modamod.item.ChaquetaRemate;
 import com.modamod.item.ChaquetaSolapa;
 import com.modamod.item.PrendaLore;
 import net.minecraft.item.Item;
@@ -14,29 +13,26 @@ import java.util.List;
 
 /**
  * Moldes de la chaqueta (2026-10-07, "como se te ocurre que mejor hacemos las chaquetas"): el frente (cerrada o
- * abierta), la capucha (con o sin) y el remate de puños y ruedo (elástico o recto) son moldes de la categoría
+ * abierta), la capucha (con o sin) son moldes de la categoría
  * Chaqueta de la Modeladora, cada uno en su pin. El cuello, las mangas, el largo y el calce usan los moldes de
  * siempre. Exclusivos de la chaqueta.
  */
 public class MoldeChaquetaItem extends Item {
 
     public enum Tipo {
-        FRENTE_CERRADA(ChaquetaFrente.CERRADA, null, null, null), FRENTE_ABIERTA(ChaquetaFrente.ABIERTA, null, null, null),
-        CAPUCHA_CON(null, true, null, null), CAPUCHA_SIN(null, false, null, null),
-        REMATE_ELASTICO(null, null, ChaquetaRemate.ELASTICO, null), REMATE_RECTO(null, null, ChaquetaRemate.RECTO, null),
+        FRENTE_CERRADA(ChaquetaFrente.CERRADA, null, null), FRENTE_ABIERTA(ChaquetaFrente.ABIERTA, null, null),
+        CAPUCHA_CON(null, true, null), CAPUCHA_SIN(null, false, null),
         // Solapas (2026-10-07, "traje separado... varios tipos de solapa"): nuevos al final.
-        SOLAPA_NINGUNA(null, null, null, ChaquetaSolapa.NINGUNA), SOLAPA_PICO(null, null, null, ChaquetaSolapa.PICO),
-        SOLAPA_REDONDA(null, null, null, ChaquetaSolapa.REDONDA), SOLAPA_CHAL(null, null, null, ChaquetaSolapa.CHAL);
+        SOLAPA_NINGUNA(null, null, ChaquetaSolapa.NINGUNA), SOLAPA_PICO(null, null, ChaquetaSolapa.PICO),
+        SOLAPA_REDONDA(null, null, ChaquetaSolapa.REDONDA), SOLAPA_CHAL(null, null, ChaquetaSolapa.CHAL);
 
         public final ChaquetaFrente frente;
         public final Boolean capucha;
-        public final ChaquetaRemate remate;
         public final ChaquetaSolapa solapa;
 
-        Tipo(ChaquetaFrente frente, Boolean capucha, ChaquetaRemate remate, ChaquetaSolapa solapa) {
+        Tipo(ChaquetaFrente frente, Boolean capucha, ChaquetaSolapa solapa) {
             this.frente = frente;
             this.capucha = capucha;
-            this.remate = remate;
             this.solapa = solapa;
         }
 
@@ -44,7 +40,6 @@ public class MoldeChaquetaItem extends Item {
 
         public boolean esFrente() { return frente != null; }
         public boolean esCapucha() { return capucha != null; }
-        public boolean esRemate() { return remate != null; }
     }
 
     public final Tipo tipo;

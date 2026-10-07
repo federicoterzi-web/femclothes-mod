@@ -475,14 +475,6 @@ public final class ModamodComponents {
                     .packetCodec(PacketCodecs.indexed(i -> PolleraVolado.values()[i], Enum::ordinal))
                     .build());
 
-    /** Borde decorativo del ruedo de la pollera (2026-10-05); ausente = recto. */
-    public static final ComponentType<PolleraBorde> POLLERA_BORDE = Registry.register(
-            Registries.DATA_COMPONENT_TYPE, Identifier.of("modamod", "pollera_borde"),
-            ComponentType.<PolleraBorde>builder()
-                    .codec(StringIdentifiable.createCodec(PolleraBorde::values))
-                    .packetCodec(PacketCodecs.indexed(i -> PolleraBorde.values()[i], Enum::ordinal))
-                    .build());
-
     /** Forma de la pollera (§{@link PolleraForma}); ausente = CAMPANA. */
     public static final ComponentType<PolleraForma> POLLERA_FORMA = Registry.register(
             Registries.DATA_COMPONENT_TYPE,
@@ -529,12 +521,12 @@ public final class ModamodComponents {
                     .codec(StringIdentifiable.createCodec(ChaquetaFrente::values))
                     .packetCodec(PacketCodecs.indexed(i -> ChaquetaFrente.values()[i], Enum::ordinal))
                     .build());
-    /** Remate de puños y ruedo de la chaqueta (2026-10-07); ausente = elástico. */
-    public static final ComponentType<ChaquetaRemate> CHAQUETA_REMATE = Registry.register(
-            Registries.DATA_COMPONENT_TYPE, Identifier.of("modamod", "chaqueta_remate"),
-            ComponentType.<ChaquetaRemate>builder()
-                    .codec(StringIdentifiable.createCodec(ChaquetaRemate::values))
-                    .packetCodec(PacketCodecs.indexed(i -> ChaquetaRemate.values()[i], Enum::ordinal))
+    /** Ruedo de cada borde libre de la prenda (2026-10-07, {@link Ruedos}); lo ausente vale el de fábrica. */
+    public static final ComponentType<java.util.Map<ZonaRuedo, Ruedo>> RUEDOS = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("modamod", "ruedos"),
+            ComponentType.<java.util.Map<ZonaRuedo, Ruedo>>builder()
+                    .codec(Ruedos.CODEC)
+                    .packetCodec(PacketCodecs.codec(Ruedos.CODEC))
                     .build());
     /** Solapas de la chaqueta (2026-10-07); ausente = ninguna. */
     public static final ComponentType<ChaquetaSolapa> CHAQUETA_SOLAPA = Registry.register(

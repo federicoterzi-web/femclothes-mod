@@ -142,12 +142,18 @@ public final class ModeladoMod {
     public static final MoldePolleraItem MOLDE_POLLERA_CIRCULAR = new MoldePolleraItem(new Item.Settings().maxCount(1),
             com.modamod.item.PolleraForma.CIRCULAR);
 
-    public static final MoldeBordeItem MOLDE_BORDE_ONDULADO = new MoldeBordeItem(new Item.Settings().maxCount(1),
-            com.modamod.item.PolleraBorde.ONDULADO);
-    public static final MoldeBordeItem MOLDE_BORDE_FESTONEADO = new MoldeBordeItem(new Item.Settings().maxCount(1),
-            com.modamod.item.PolleraBorde.FESTONEADO);
-    public static final MoldeBordeItem MOLDE_BORDE_PICO = new MoldeBordeItem(new Item.Settings().maxCount(1),
-            com.modamod.item.PolleraBorde.PICO);
+    public static final MoldeRuedoItem MOLDE_RUEDO_RECTO = new MoldeRuedoItem(new Item.Settings().maxCount(1),
+            com.modamod.item.Ruedo.RECTO);
+    public static final MoldeRuedoItem MOLDE_RUEDO_AJUSTADO = new MoldeRuedoItem(new Item.Settings().maxCount(1),
+            com.modamod.item.Ruedo.AJUSTADO);
+    public static final MoldeRuedoItem MOLDE_RUEDO_CAMPANA = new MoldeRuedoItem(new Item.Settings().maxCount(1),
+            com.modamod.item.Ruedo.CAMPANA);
+    public static final MoldeRuedoItem MOLDE_RUEDO_ONDULADO = new MoldeRuedoItem(new Item.Settings().maxCount(1),
+            com.modamod.item.Ruedo.ONDULADO);
+    public static final MoldeRuedoItem MOLDE_RUEDO_FESTONEADO = new MoldeRuedoItem(new Item.Settings().maxCount(1),
+            com.modamod.item.Ruedo.FESTONEADO);
+    public static final MoldeRuedoItem MOLDE_RUEDO_PICO = new MoldeRuedoItem(new Item.Settings().maxCount(1),
+            com.modamod.item.Ruedo.PICO);
 
     // ── moldes de la banda (2026-10-05, "correas y cintos") ──
     public static final MoldeBandaItem MOLDE_BANDA_ZONA_CINTURA = new MoldeBandaItem(new Item.Settings().maxCount(1),
@@ -176,10 +182,6 @@ public final class ModeladoMod {
             MoldeChaquetaItem.Tipo.CAPUCHA_CON);
     public static final MoldeChaquetaItem MOLDE_CHAQUETA_CAPUCHA_SIN = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
             MoldeChaquetaItem.Tipo.CAPUCHA_SIN);
-    public static final MoldeChaquetaItem MOLDE_CHAQUETA_REMATE_ELASTICO = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
-            MoldeChaquetaItem.Tipo.REMATE_ELASTICO);
-    public static final MoldeChaquetaItem MOLDE_CHAQUETA_REMATE_RECTO = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
-            MoldeChaquetaItem.Tipo.REMATE_RECTO);
 
     public static final MoldeChaquetaItem MOLDE_CHAQUETA_SOLAPA_NINGUNA = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
             MoldeChaquetaItem.Tipo.SOLAPA_NINGUNA);
@@ -234,9 +236,6 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_pollera_circular"), MOLDE_POLLERA_CIRCULAR);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_volado_recto"), MOLDE_VOLADO_RECTO);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_volado_circular"), MOLDE_VOLADO_CIRCULAR);
-        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_borde_ondulado"), MOLDE_BORDE_ONDULADO);
-        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_borde_festoneado"), MOLDE_BORDE_FESTONEADO);
-        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_borde_pico"), MOLDE_BORDE_PICO);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_capa_ruedo_recto"), MOLDE_CAPA_RUEDO_RECTO);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_capa_ruedo_redondeado"), MOLDE_CAPA_RUEDO_REDONDEADO);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_capa_ruedo_cola"), MOLDE_CAPA_RUEDO_COLA);
@@ -256,12 +255,16 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_banda_herraje_ninguno"), MOLDE_BANDA_HERRAJE_NINGUNO);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_banda_herraje_placa"), MOLDE_BANDA_HERRAJE_PLACA);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_banda_herraje_aro"), MOLDE_BANDA_HERRAJE_ARO);
+        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_ruedo_recto"), MOLDE_RUEDO_RECTO);
+        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_ruedo_ajustado"), MOLDE_RUEDO_AJUSTADO);
+        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_ruedo_campana"), MOLDE_RUEDO_CAMPANA);
+        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_ruedo_ondulado"), MOLDE_RUEDO_ONDULADO);
+        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_ruedo_festoneado"), MOLDE_RUEDO_FESTONEADO);
+        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_ruedo_pico"), MOLDE_RUEDO_PICO);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_chaqueta_frente_cerrada"), MOLDE_CHAQUETA_FRENTE_CERRADA);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_chaqueta_frente_abierta"), MOLDE_CHAQUETA_FRENTE_ABIERTA);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_chaqueta_capucha_con"), MOLDE_CHAQUETA_CAPUCHA_CON);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_chaqueta_capucha_sin"), MOLDE_CHAQUETA_CAPUCHA_SIN);
-        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_chaqueta_remate_elastico"), MOLDE_CHAQUETA_REMATE_ELASTICO);
-        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_chaqueta_remate_recto"), MOLDE_CHAQUETA_REMATE_RECTO);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_chaqueta_solapa_ninguna"), MOLDE_CHAQUETA_SOLAPA_NINGUNA);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_chaqueta_solapa_pico"), MOLDE_CHAQUETA_SOLAPA_PICO);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_chaqueta_solapa_redonda"), MOLDE_CHAQUETA_SOLAPA_REDONDA);

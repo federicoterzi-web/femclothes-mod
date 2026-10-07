@@ -31,7 +31,20 @@ import net.minecraft.util.Identifier;
  * (compat) asume pieza entera.
  */
 public record Pieza(Parte parte, int capa, Identifier textura, float dilatacion, int filaDesde, int filaHasta,
-                    boolean volumenPierna, boolean elastico) {
+                    boolean volumenPierna, com.modamod.item.Ruedo ruedo) {
+
+    /** Compat: {@code elastico} = ruedo AJUSTADO, si no RECTO. */
+    public Pieza(Parte parte, int capa, Identifier textura, float dilatacion, int filaDesde, int filaHasta,
+                 boolean volumenPierna, boolean elastico) {
+        this(parte, capa, textura, dilatacion, filaDesde, filaHasta, volumenPierna,
+                elastico ? com.modamod.item.Ruedo.AJUSTADO : com.modamod.item.Ruedo.RECTO);
+    }
+
+    /** El borde libre de esta pieza es elástico (puños y ruedo del hoodie): aprieta y no cuelga. */
+    public boolean elastico() { return ruedo == com.modamod.item.Ruedo.AJUSTADO; }
+
+    /** El borde libre se abre en campana. */
+    public boolean campana() { return ruedo == com.modamod.item.Ruedo.CAMPANA; }
 
     /**
      * Sin elástico. {@code elastico} (2026-09-30, hoodie: "puños y ruedo

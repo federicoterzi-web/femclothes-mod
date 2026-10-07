@@ -65,15 +65,10 @@ public class PolleraItem extends ClothingTrinketItem {
         else stack.set(ModamodComponents.POLLERA_VOLADO_TODO, v);
     }
 
-    /** Borde decorativo del ruedo (2026-10-05), o null (recto). */
+    /** Borde decorativo del ruedo (2026-10-05) que sale del {@link Ruedo} de la pollera, o null (sin borde decorativo). */
     @org.jetbrains.annotations.Nullable
     public static PolleraBorde borde(ItemStack stack) {
-        return stack.get(ModamodComponents.POLLERA_BORDE);
-    }
-
-    public static void setBorde(ItemStack stack, @org.jetbrains.annotations.Nullable PolleraBorde b) {
-        if (b == null) stack.remove(ModamodComponents.POLLERA_BORDE);
-        else stack.set(ModamodComponents.POLLERA_BORDE, b);
+        return Ruedos.get(stack, ZonaRuedo.POLLERA).borde();
     }
 
     @Override
@@ -85,8 +80,8 @@ public class PolleraItem extends ClothingTrinketItem {
         PolleraVolado ruedo = voladoRuedo(stack), todo = voladoTodo(stack);
         if (ruedo != null) tooltip.add(Text.translatable("modamod.pollera.tooltip.volado_ruedo", Text.translatable(ruedo.traduccion()))
                 .formatted(Formatting.GRAY));
-        PolleraBorde borde = borde(stack);
-        if (borde != null) tooltip.add(Text.translatable("modamod.pollera.tooltip.borde", Text.translatable(borde.traduccion()))
+        Ruedo hem = Ruedos.get(stack, ZonaRuedo.POLLERA);
+        if (hem != Ruedo.RECTO) tooltip.add(Text.translatable("modamod.pollera.tooltip.borde", Text.translatable(hem.traduccion()))
                 .formatted(Formatting.GRAY));
         if (todo != null) tooltip.add(Text.translatable("modamod.pollera.tooltip.volado_todo", Text.translatable(todo.traduccion()))
                 .formatted(Formatting.GRAY));

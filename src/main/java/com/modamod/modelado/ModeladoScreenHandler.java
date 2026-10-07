@@ -37,7 +37,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
      * centrado en cada slot dibujado. Público: ModeladoScreen lo usa.
      */
     public static final int[][][] PIN_POS = rellenar(new int[][][]{
-            {{113, 47}, {58, 51}, {167, 51}, {42, 84}, {113, 89}, {183, 84}, {57, 127}, {113, 149}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
+            {{113, 47}, {58, 51}, {167, 51}, {42, 84}, {113, 89}, {183, 84}, {57, 127}, {113, 149}, {167, 146}, {30, 110}, {190, 114}},
             {{112, 46}, {112, 79}, {112, 100}, {112, 122}, {47, 95}, {49, 143}, {175, 144}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             {{44, 52}, {180, 52}, {43, 142}, {184, 142}, {112, 142}, {28, 76}, {28, 94}, {28, 113}, {196, 76}, {196, 94}, {196, 113}, {0, 0}},
             {{38, 55}, {185, 55}, {37, 134}, {187, 135}, {112, 144}, {28, 77}, {28, 96}, {28, 115}, {196, 77}, {196, 96}, {196, 115}, {0, 0}},
@@ -49,8 +49,8 @@ public class ModeladoScreenHandler extends ScreenHandler {
             {{43, 110}, {182, 58}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             // Banda (2026-10-05): Zona, Ancho, Herraje — sobre esquema_banda.png (tools/generar_esquema_banda.py).
             {{43, 110}, {182, 58}, {179, 91}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
-            // Chaqueta (2026-10-07): los 8 de la remera + Frente, Capucha y Remate — sobre esquema_chaqueta.png (tools/generar_esquema_chaqueta.py).
-            {{113, 47}, {58, 51}, {167, 51}, {42, 84}, {113, 89}, {183, 84}, {57, 127}, {113, 149}, {190, 114}, {30, 110}, {167, 146}, {20, 139}},
+            // Chaqueta (2026-10-07): los 8 de la remera + Frente, Capucha, Ruedo, Solapa y los 2 puños — sobre esquema_chaqueta.png (tools/generar_esquemas_top.py).
+            {{113, 47}, {58, 51}, {167, 51}, {42, 84}, {113, 89}, {183, 84}, {57, 127}, {113, 149}, {207, 60}, {17, 60}, {167, 146}, {20, 139}, {30, 110}, {190, 114}},
     });
 
     /**
@@ -60,7 +60,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
      * (arte sin chinchetas) es la esquina superior derecha del slot.
      */
     public static final int[][][] PIN_BTN = rellenar(new int[][][]{
-            {{130, 46}, {75, 50}, {184, 50}, {59, 83}, {130, 88}, {200, 83}, {74, 126}, {130, 148}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
+            {{130, 46}, {75, 50}, {184, 50}, {59, 83}, {130, 88}, {200, 83}, {74, 126}, {130, 148}, {184, 145}, {47, 109}, {207, 113}},
             {{129, 45}, {129, 78}, {129, 99}, {129, 121}, {64, 94}, {66, 142}, {192, 143}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             {{61, 51}, {197, 51}, {60, 141}, {201, 141}, {129, 141}, {45, 75}, {45, 93}, {45, 112}, {213, 75}, {213, 93}, {213, 112}, {0, 0}},
             {{55, 54}, {202, 54}, {54, 133}, {204, 134}, {129, 143}, {45, 76}, {45, 95}, {45, 114}, {213, 76}, {213, 95}, {213, 114}, {0, 0}},
@@ -68,7 +68,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
             {{207, 99}, {65, 127}, {192, 53}, {65, 55}, {65, 88}, {207, 131}, {207, 75}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             {{60, 109}, {199, 57}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             {{60, 109}, {199, 57}, {196, 90}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
-            {{130, 46}, {75, 50}, {184, 50}, {59, 83}, {130, 88}, {200, 83}, {74, 126}, {130, 148}, {207, 113}, {47, 109}, {184, 145}, {37, 138}},
+            {{130, 46}, {75, 50}, {184, 50}, {59, 83}, {130, 88}, {200, 83}, {74, 126}, {130, 148}, {224, 59}, {34, 59}, {184, 145}, {37, 138}, {47, 109}, {207, 113}},
     });
 
     /** Completa cada fila hasta {@code PINES_POR_CATEGORIA} con pines fuera de pantalla (0, 0). */
@@ -297,7 +297,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
                 if (!be.cargarTijera(stack)) return ItemStack.EMPTY;
             } else {
                 ModeladoBlockEntity.Categoria catExclusiva = ModeladoBlockEntity.categoriaExclusivaDe(stack);
-                if (catExclusiva != null && catExclusiva == be.categoria()) {
+                if ((catExclusiva != null && catExclusiva == be.categoria()) || ModeladoBlockEntity.sirveEnBanco(stack, be.categoria())) {
                     if (!this.insertItem(stack, SLOT_PORPRENDA_INICIO,
                             SLOT_PORPRENDA_INICIO + ModeladoBlockEntity.PORPRENDA_TOTAL, false)) {
                         return ItemStack.EMPTY;
