@@ -1007,5 +1007,19 @@
   "item.femclothes.molde_chaqueta_remate_recto": "Molde de Chaqueta: Remate recto",
   "femclothes.modelado.rol.frente_chaqueta": "Frente",
   "femclothes.modelado.rol.capucha_chaqueta": "Capucha",
-  "femclothes.modelado.rol.remate_chaqueta": "Remate"
+  "femclothes.modelado.rol.remate_chaqueta": "Remate",
+  "femclothes.modelado.rol.solapa_chaqueta": "Solapa",
+  "femclothes.chaqueta.solapa.ninguna": "Sin solapas",
+  "femclothes.chaqueta.solapa.pico": "Solapas en pico",
+  "femclothes.chaqueta.solapa.redonda": "Solapas redondas",
+  "femclothes.chaqueta.solapa.chal": "Solapas chal",
+  "item.femclothes.chaqueta.saco": "Saco",
+  "item.femclothes.chaqueta.saco_cruzado": "Saco cerrado",
+  "item.femclothes.molde_chaqueta_solapa_ninguna": "Molde de Chaqueta: Sin solapas",
+  "item.femclothes.molde_chaqueta_solapa_pico": "Molde de Chaqueta: Solapas en pico",
+  "item.femclothes.molde_chaqueta_solapa_redonda": "Molde de Chaqueta: Solapas redondas",
+  "item.femclothes.molde_chaqueta_solapa_chal": "Molde de Chaqueta: Solapas chal",
+  "item.femclothes.molde_cuello_camisa": "Molde de Cuello: Camisa",
+  "femclothes.sublimadora.cuello.camisa": "camisa",
+  "femclothes.corte.camisa": "Camisa"
 }

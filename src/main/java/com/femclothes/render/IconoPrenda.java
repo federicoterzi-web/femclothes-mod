@@ -86,7 +86,10 @@ public final class IconoPrenda {
     private static String plantillaDe(ItemStack stack) {
         var item = stack.getItem();
         if (item instanceof com.femclothes.sublimadora.RemeraItem) { // la chaqueta usa la plantilla de la remera
-            return "remera_" + com.femclothes.sublimadora.RemeraItem.variante(stack).cuello().asString();
+            var cuello = com.femclothes.sublimadora.RemeraItem.variante(stack).cuello();
+            // La camisa usa la plantilla del cuello en V (2026-10-07).
+            if (cuello == com.femclothes.sublimadora.Variante.Cuello.CAMISA) cuello = com.femclothes.sublimadora.Variante.Cuello.V;
+            return "remera_" + cuello.asString();
         }
         if (item == com.femclothes.item.FemclothesItems.PANTALON) return "pantalon";
         if (item instanceof PolleraItem) return "pollera";

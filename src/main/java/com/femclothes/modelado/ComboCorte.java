@@ -237,26 +237,33 @@ public record ComboCorte(
 
     /** Los ejes propios de la chaqueta (2026-10-07): frente, capucha (true = con) y remate de puños y ruedo. */
     public record ChaquetaCorte(Optional<com.femclothes.item.ChaquetaFrente> frente, Optional<Boolean> capucha,
-                                Optional<com.femclothes.item.ChaquetaRemate> remate) {
+                                Optional<com.femclothes.item.ChaquetaRemate> remate,
+                                Optional<com.femclothes.item.ChaquetaSolapa> solapa) {
         static final Codec<ChaquetaCorte> CODEC = RecordCodecBuilder.create(i -> i.group(
                 StringIdentifiable.createCodec(com.femclothes.item.ChaquetaFrente::values).optionalFieldOf("frente")
                         .forGetter(ChaquetaCorte::frente),
                 Codec.BOOL.optionalFieldOf("capucha").forGetter(ChaquetaCorte::capucha),
                 StringIdentifiable.createCodec(com.femclothes.item.ChaquetaRemate::values).optionalFieldOf("remate")
-                        .forGetter(ChaquetaCorte::remate)
+                        .forGetter(ChaquetaCorte::remate),
+                StringIdentifiable.createCodec(com.femclothes.item.ChaquetaSolapa::values).optionalFieldOf("solapa")
+                        .forGetter(ChaquetaCorte::solapa)
         ).apply(i, ChaquetaCorte::new));
     }
 
     public static ComboCorte chaquetaFrente(com.femclothes.item.ChaquetaFrente v) {
-        return conChaqueta(new ChaquetaCorte(Optional.of(v), Optional.empty(), Optional.empty()));
+        return conChaqueta(new ChaquetaCorte(Optional.of(v), Optional.empty(), Optional.empty(), Optional.empty()));
     }
 
     public static ComboCorte chaquetaCapucha(boolean v) {
-        return conChaqueta(new ChaquetaCorte(Optional.empty(), Optional.of(v), Optional.empty()));
+        return conChaqueta(new ChaquetaCorte(Optional.empty(), Optional.of(v), Optional.empty(), Optional.empty()));
     }
 
     public static ComboCorte chaquetaRemate(com.femclothes.item.ChaquetaRemate v) {
-        return conChaqueta(new ChaquetaCorte(Optional.empty(), Optional.empty(), Optional.of(v)));
+        return conChaqueta(new ChaquetaCorte(Optional.empty(), Optional.empty(), Optional.of(v), Optional.empty()));
+    }
+
+    public static ComboCorte chaquetaSolapa(com.femclothes.item.ChaquetaSolapa v) {
+        return conChaqueta(new ChaquetaCorte(Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(v)));
     }
 
     private static ComboCorte conChaqueta(ChaquetaCorte c) {
@@ -607,6 +614,7 @@ public record ComboCorte(
                         writeOptEnum(buf, c.frente());
                         writeOptBool(buf, c.capucha());
                         writeOptEnum(buf, c.remate());
+                        writeOptEnum(buf, c.solapa());
                     });
                 });
             },
@@ -645,7 +653,8 @@ public record ComboCorte(
                             buf.readBoolean() ? Optional.of(new ChaquetaCorte(
                                     readOptEnum(buf, com.femclothes.item.ChaquetaFrente.values()),
                                     readOptBool(buf),
-                                    readOptEnum(buf, com.femclothes.item.ChaquetaRemate.values()))) : Optional.empty()))
+                                    readOptEnum(buf, com.femclothes.item.ChaquetaRemate.values()),
+                                    readOptEnum(buf, com.femclothes.item.ChaquetaSolapa.values()))) : Optional.empty()))
                             : Optional.empty()));
 
     private static void writeOptBool(ByteBuf buf, Optional<Boolean> value) {

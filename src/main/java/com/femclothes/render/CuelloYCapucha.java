@@ -86,6 +86,7 @@ public final class CuelloYCapucha {
                 }
             }
         }
+        dibujarSolapasYCamisa(prendas, biped, matrices, vertexConsumers, luz);
         // La capucha de la capa, puesta con la misma tecla (2026-09-30, "lo mismo
         // con la capucha de la capa activada por tecla"); caída la dibuja CapaMalla.
         ItemStack capa = GarmentFeatureRenderer.capaDe(prendas);
@@ -114,6 +115,118 @@ public final class CuelloYCapucha {
                         texturaLisa(CORDON, false), biped.body, matrices, vertexConsumers, luz);
             }
         }
+    }
+
+    // ── solapas y cuello de camisa (2026-10-07, "traje separado... varios tipos de solapa") ────────────
+
+    /** Una fila (1 px de alto) de una solapa: desde {@code xin} (borde de adentro, hacia el medio) {@code w} px hacia afuera. */
+    private record Fila(float xin, float w) {}
+
+    private static final Fila[] SOLAPA_PICO = {
+            new Fila(3.0F, 1.0F), new Fila(2.7F, 1.1F), new Fila(2.4F, 1.2F), new Fila(2.0F, 2.2F),
+            new Fila(1.5F, 1.4F), new Fila(1.0F, 1.0F), new Fila(0.5F, 0.9F)};
+    private static final Fila[] SOLAPA_REDONDA = {
+            new Fila(3.0F, 1.0F), new Fila(2.7F, 1.5F), new Fila(2.4F, 1.7F), new Fila(2.0F, 1.9F),
+            new Fila(1.5F, 1.8F), new Fila(1.0F, 1.5F), new Fila(0.5F, 1.1F)};
+    private static final Fila[] SOLAPA_CHAL = {
+            new Fila(3.0F, 1.2F), new Fila(2.6F, 1.5F), new Fila(2.2F, 1.5F), new Fila(1.8F, 1.5F), new Fila(1.5F, 1.5F),
+            new Fila(1.2F, 1.5F), new Fila(0.9F, 1.4F), new Fila(0.7F, 1.2F), new Fila(0.5F, 1.0F)};
+    /** Las puntas del cuello de camisa: tres filas que apenas bajan del cuello. */
+    private static final Fila[] CUELLO_CAMISA = {new Fila(1.4F, 1.9F), new Fila(1.1F, 1.9F), new Fila(0.8F, 1.4F)};
+
+    private static final float LIMITE_X = 4.1F;
+    private static final float GROSOR_SOLAPA = 0.7F;
+    /** Cuánto sobresale la solapa de la tela (px). */
+    private static final float SALE = 0.55F;
+
+    private static Fila[] filasDe(com.femclothes.item.ChaquetaSolapa tipo) {
+        return switch (tipo) {
+            case PICO -> SOLAPA_PICO;
+            case REDONDA -> SOLAPA_REDONDA;
+            case CHAL -> SOLAPA_CHAL;
+            case NINGUNA -> new Fila[0];
+        };
+    }
+
+    /**
+     * Dibuja las solapas de la chaqueta y el cuello de camisa de la remera (en el marco del torso). Cada fila es una
+     * caja de 1 px de alto; con busto cada una sube hasta apoyarse sobre la cúpula ({@code BustoRender.sobreBusto}).
+     * El cuello de camisa va un poco más afuera que cualquier otra tela, para que asome por encima de un saco.
+     */
+    private static void dibujarSolapasYCamisa(List<ItemStack> prendas, BipedEntityModel<?> biped, MatrixStack matrices,
+                                              VertexConsumerProvider vertexConsumers, int luz) {
+        if (!biped.body.visible) return;
+        float dMax = 0F;
+        for (ItemStack s : prendas) if (s.getItem() instanceof RemeraItem) dMax = Math.max(dMax, Calce.dilatacionEfectiva(s));
+        for (ItemStack s : prendas) {
+            if (!(s.getItem() instanceof RemeraItem)) continue;
+            if (s.getItem() instanceof ChaquetaItem
+                    && com.femclothes.item.ChaquetaItem.solapa(s) != com.femclothes.item.ChaquetaSolapa.NINGUNA) {
+                float d = Math.max(0F, Calce.dilatacionEfectiva(s));
+                Fila[] filas = filasDe(com.femclothes.item.ChaquetaItem.solapa(s));
+                int color = RemeraItem.color(s);
+                dibujarFilas("solapa" + com.femclothes.item.ChaquetaItem.solapa(s), filas, d + 0.1F, s,
+                        oscurecer(color, 0.88F), biped, matrices, vertexConsumers, luz);
+            }
+            if (RemeraItem.variante(s).cuello() == Variante.Cuello.CAMISA) {
+                float d = Math.max(0F, Calce.dilatacionEfectiva(s));
+                float dc = Math.max(d, dMax) + 0.3F;
+                int color = RemeraItem.color(s);
+                Identifier tela = texturaLisa(color, false);
+                // El aro del cuello, por encima del torso (como el cuello partido de la polera).
+                GarmentFeatureRenderer.dibujarModelPart(cuelloAro(dc * 0.5F), CuerpoGeometria.Superficie.CUERPO,
+                        tela, biped.body, matrices, vertexConsumers, luz);
+                dibujarFilas("camisa", CUELLO_CAMISA, dc, s, color, biped, matrices, vertexConsumers, luz);
+            }
+        }
+    }
+
+    private static int oscurecer(int rgb, float f) {
+        int r = (int) (((rgb >> 16) & 0xFF) * f), g = (int) (((rgb >> 8) & 0xFF) * f), b = (int) ((rgb & 0xFF) * f);
+        return (r << 16) | (g << 8) | b;
+    }
+
+    private static void dibujarFilas(String clave, Fila[] filas, float d, ItemStack ropa, int color,
+                                     BipedEntityModel<?> biped, MatrixStack matrices,
+                                     VertexConsumerProvider vertexConsumers, int luz) {
+        if (filas.length == 0) return;
+        com.femclothes.render.relieve.BustoRender.Busto busto = com.femclothes.render.relieve.BustoRender.actual;
+        float carpa = com.femclothes.render.relieve.BustoRender.carpaDe(Calce.leer(ropa));
+        float[] zD = new float[filas.length], zI = new float[filas.length];
+        boolean elevado = false;
+        if (busto != null) {
+            for (int i = 0; i < filas.length; i++) {
+                float mid = filas[i].xin + filas[i].w / 2F;
+                zD[i] = elevacion(busto, mid, i + 0.5F, d, carpa);
+                zI[i] = elevacion(busto, -mid, i + 0.5F, d, carpa);
+                elevado |= zD[i] != 0F || zI[i] != 0F;
+            }
+        }
+        ModelPart parte;
+        String key = clave + "|" + d;
+        if (!elevado && CACHE.containsKey(key)) parte = CACHE.get(key);
+        else {
+            List<ModelPart.Cuboid> cs = new ArrayList<>();
+            for (int i = 0; i < filas.length; i++) {
+                Fila f = filas[i];
+                float w = Math.min(f.w, LIMITE_X - f.xin);
+                float z0 = -2 - d - SALE;
+                cs.add(caja(0, 0, f.xin, i, z0 + zD[i], w, 1.02F, GROSOR_SOLAPA, 0, 0, 0, TODAS));
+                cs.add(caja(0, 0, -f.xin - w, i, z0 + zI[i], w, 1.02F, GROSOR_SOLAPA, 0, 0, 0, TODAS));
+            }
+            if (elevado) parte = new ModelPart(cs, Map.of());
+            else parte = parte(key, cs);
+        }
+        GarmentFeatureRenderer.dibujarModelPart(parte, CuerpoGeometria.Superficie.CUERPO, texturaLisa(color, false),
+                biped.body, matrices, vertexConsumers, luz);
+    }
+
+    /** Cuánto más adelante (px, ≤ 0) está la cúpula del busto en (x, y) del frente que la tela plana. */
+    private static float elevacion(com.femclothes.render.relieve.BustoRender.Busto busto, float x, float y, float d,
+                                   float carpa) {
+        com.femclothes.render.relieve.BustoRender.Punto p =
+                com.femclothes.render.relieve.BustoRender.sobreBusto(busto, x, y, d, carpa);
+        return p == null ? 0F : Math.min(0F, p.pos().z + 2 + d);
     }
 
     // ── geometría ─────────────────────────────────────────────────────────

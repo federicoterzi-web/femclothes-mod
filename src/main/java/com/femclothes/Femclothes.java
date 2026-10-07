@@ -158,6 +158,7 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_POLERA);
             entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_CUADRADO);
             entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_CORAZON);
+            entries.add(com.femclothes.sublimadora.ModItems.MOLDE_CUELLO_CAMISA);
             // Los 8 presets de combo directo (cobertura de torso/extremidad)
             // se sacaron de la pestaña — traen los anclajes horneados de
             // fábrica e ignoran Anclaje/Lado por completo, lo que generaba
@@ -222,6 +223,10 @@ public class Femclothes implements ModInitializer {
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CHAQUETA_CAPUCHA_SIN);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CHAQUETA_REMATE_ELASTICO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CHAQUETA_REMATE_RECTO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CHAQUETA_SOLAPA_NINGUNA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CHAQUETA_SOLAPA_PICO);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CHAQUETA_SOLAPA_REDONDA);
+            entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_CHAQUETA_SOLAPA_CHAL);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_ANCHO_FINO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_ANCHO_MEDIO);
             entries.add(com.femclothes.modelado.ModeladoMod.MOLDE_BANDA_ANCHO_ANCHO);

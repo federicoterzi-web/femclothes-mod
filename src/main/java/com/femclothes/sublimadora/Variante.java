@@ -101,7 +101,9 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
         POLERA("polera"),
         /** Cuadrado y corazón (2026-10-04): al FINAL, el cuello viaja por red y se guarda por ordinal. */
         CUADRADO("cuadrado"),
-        CORAZON("corazon");
+        CORAZON("corazon"),
+        /** Cuello de camisa (2026-10-07, "traje separado"): escote en V chico + solapitas 3D (CuelloYCapucha). */
+        CAMISA("camisa");
 
         public final String clave;
 
@@ -155,7 +157,8 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
 
     /** La clave de archivo: los largos nuevos usan la textura y el modelo del largo de siempre que los contiene. */
     public String claveBase() {
-        return largo.base().clave + "_" + manga.clave + "_" + cuello.clave;
+        // La camisa no tiene sprites ni modelos propios (2026-10-07): usa los del cuello en V.
+        return largo.base().clave + "_" + manga.clave + "_" + (cuello == Cuello.CAMISA ? Cuello.V : cuello).clave;
     }
 
     public boolean tieneMangas() {
@@ -170,6 +173,8 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
     }
 
     public Identifier modeloItem() {
+        // La camisa no tiene modelos propios (2026-10-07): usa los del cuello en V.
+        if (cuello == Cuello.CAMISA) return new Variante(largo, manga, Cuello.V).modeloItem();
         return Identifier.of(Femclothes.MOD_ID, "item/corte_" + claveBase());
     }
 
@@ -184,6 +189,7 @@ public record Variante(Largo largo, Manga manga, Cuello cuello) {
         if (largo.filas <= Largo.CORTO.filas) return "croptop";
         if (manga == Manga.SIN) return "musculosa";
         if (cuello == Cuello.POLERA) return "polera";
+        if (cuello == Cuello.CAMISA) return "camisa";
         if (largo == Largo.LARGO) return "remeron";
         return "remera";
     }

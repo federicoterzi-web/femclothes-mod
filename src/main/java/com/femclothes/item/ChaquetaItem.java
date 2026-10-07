@@ -64,6 +64,17 @@ public class ChaquetaItem extends RemeraItem {
         else stack.set(FemclothesComponents.CHAQUETA_REMATE, r);
     }
 
+    /** Solapas: ninguna (de siempre), en pico, redondas o chal. */
+    public static ChaquetaSolapa solapa(ItemStack stack) {
+        ChaquetaSolapa v = stack.get(FemclothesComponents.CHAQUETA_SOLAPA);
+        return v == null ? ChaquetaSolapa.NINGUNA : v;
+    }
+
+    public static void setSolapa(ItemStack stack, ChaquetaSolapa v) {
+        if (v == ChaquetaSolapa.NINGUNA) stack.remove(FemclothesComponents.CHAQUETA_SOLAPA);
+        else stack.set(FemclothesComponents.CHAQUETA_SOLAPA, v);
+    }
+
     /** ¿Lleva capucha (con sus cordones y el bolsillo canguro de hoodie)? Por defecto sí. */
     public static boolean conCapucha(ItemStack stack) {
         return !Boolean.TRUE.equals(stack.get(FemclothesComponents.CHAQUETA_SIN_CAPUCHA));
@@ -84,7 +95,9 @@ public class ChaquetaItem extends RemeraItem {
         boolean sinMangas = RemeraItem.manga(stack, com.femclothes.region.Lado.IZQUIERDA).filas == 0
                 && RemeraItem.manga(stack, com.femclothes.region.Lado.DERECHA).filas == 0;
         boolean abierta = frente(stack) == ChaquetaFrente.ABIERTA;
+        boolean saco = solapa(stack) != ChaquetaSolapa.NINGUNA && !conCapucha(stack);
         String clave = sinMangas ? (abierta ? "chaleco_abierto" : "chaleco")
+                : saco ? (abierta ? "saco" : "saco_cruzado")
                 : conCapucha(stack) ? (abierta ? "hoodie_abierto" : "hoodie")
                 : (abierta ? "campera" : "buzo");
         return Text.translatable("item.femclothes.chaqueta." + clave);

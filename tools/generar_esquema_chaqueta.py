@@ -1,7 +1,7 @@
 """Esquema de la Modeladora para la chaqueta (2026-10-07, "como se te ocurre que mejor hacemos las chaquetas"): parte
 del esquema de la remera (los 8 marcos de siempre: cuello, 3 materiales, mangas, calce y torso) y le suma tres marcos
 con su línea y su punto fucsia: Frente, Capucha y Remate. Escribe `esquema_chaqueta.png` e imprime los PIN_POS/PIN_BTN
-de esos tres para `ModeladoScreenHandler` (origen del ítem = centro/4 - 8; la Y de PIN_POS es absoluta: +36).
+de esos cuatro para `ModeladoScreenHandler` (origen del ítem = centro/4 - 8; la Y de PIN_POS es absoluta: +36).
 
 Uso: python tools/generar_esquema_chaqueta.py
 """
@@ -21,6 +21,8 @@ NUEVOS = [
     ("FRENTE", "der", (790, 345), (592, 322)),
     ("CAPUCHA", "izq", (150, 330), (392, 178)),
     ("REMATE", "der", (700, 470), (586, 402)),
+    # Solapa (2026-10-07, "traje separado... varios tipos de solapa"): abajo a la izquierda, apunta al pecho.
+    ("SOLAPA", "izq", (110, 445), (420, 212)),
 ]
 
 

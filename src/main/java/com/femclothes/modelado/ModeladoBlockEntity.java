@@ -208,7 +208,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         /** Banda (2026-10-05): zona, ancho y herraje (MoldeBandaItem). */
         ZONA_BANDA, ANCHO_BANDA, HERRAJE_BANDA,
         /** Chaqueta (2026-10-07): frente, capucha y remate (MoldeChaquetaItem). */
-        FRENTE_CHAQUETA, CAPUCHA_CHAQUETA, REMATE_CHAQUETA }
+        FRENTE_CHAQUETA, CAPUCHA_CHAQUETA, REMATE_CHAQUETA, SOLAPA_CHAQUETA }
 
     /** Rol de cada uno de los 8 pines por categoría — MISMO orden que {@code ModeladoScreenHandler#PIN_POS}. */
     public static final Rol[][] ROLES = {
@@ -235,7 +235,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                     Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
             // Chaqueta (2026-10-07): lo de la remera (cuello, 3 materiales, mangas, calce, torso) + Frente, Capucha y Remate.
             {Rol.CUELLO, Rol.MAT1, Rol.MAT2, Rol.MANGA_IZQ, Rol.MAT3, Rol.MANGA_DER, Rol.CALCE, Rol.TORSO,
-                    Rol.FRENTE_CHAQUETA, Rol.CAPUCHA_CHAQUETA, Rol.REMATE_CHAQUETA, Rol.NINGUNO},
+                    Rol.FRENTE_CHAQUETA, Rol.CAPUCHA_CHAQUETA, Rol.REMATE_CHAQUETA, Rol.SOLAPA_CHAQUETA},
     };
 
     /** 15s a 20 ticks — a pedido (2026-09-21, "que cada maquina tome su tiempo... 15 la modeladora"). */
@@ -926,6 +926,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
             case REMATE_CHAQUETA -> {
                 if (item instanceof MoldeChaquetaItem m && m.tipo.esRemate()) c = comboDeMoldeChaqueta(item);
             }
+            case SOLAPA_CHAQUETA -> {
+                if (item instanceof MoldeChaquetaItem m && m.tipo.esSolapa()) c = comboDeMoldeChaqueta(item);
+            }
             case ZONA_BANDA -> {
                 if (item instanceof MoldeBandaItem m && m.tipo.esZona()) c = comboDeMoldeBanda(item);
             }
@@ -971,6 +974,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         if (!(item instanceof MoldeChaquetaItem m)) return null;
         if (m.tipo.esFrente()) return ComboCorte.chaquetaFrente(m.tipo.frente);
         if (m.tipo.esCapucha()) return ComboCorte.chaquetaCapucha(m.tipo.capucha);
+        if (m.tipo.esSolapa()) return ComboCorte.chaquetaSolapa(m.tipo.solapa);
         return ComboCorte.chaquetaRemate(m.tipo.remate);
     }
 

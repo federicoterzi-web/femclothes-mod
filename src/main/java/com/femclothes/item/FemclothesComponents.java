@@ -536,6 +536,13 @@ public final class FemclothesComponents {
                     .codec(StringIdentifiable.createCodec(ChaquetaRemate::values))
                     .packetCodec(PacketCodecs.indexed(i -> ChaquetaRemate.values()[i], Enum::ordinal))
                     .build());
+    /** Solapas de la chaqueta (2026-10-07); ausente = ninguna. */
+    public static final ComponentType<ChaquetaSolapa> CHAQUETA_SOLAPA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "chaqueta_solapa"),
+            ComponentType.<ChaquetaSolapa>builder()
+                    .codec(StringIdentifiable.createCodec(ChaquetaSolapa::values))
+                    .packetCodec(PacketCodecs.indexed(i -> ChaquetaSolapa.values()[i], Enum::ordinal))
+                    .build());
     /** La chaqueta SIN capucha (2026-10-07): solo se guarda cuando es false; ausente = con capucha (el hoodie de siempre). */
     public static final ComponentType<Boolean> CHAQUETA_SIN_CAPUCHA = Registry.register(
             Registries.DATA_COMPONENT_TYPE, Identifier.of("femclothes", "chaqueta_sin_capucha"),

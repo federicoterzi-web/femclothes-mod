@@ -23,7 +23,7 @@ public final class CuelloRecorte {
     private static final float CORAZON_BAJA = 5.0f;
 
     public static boolean recortaEnRuntime(Variante.Cuello cuello) {
-        return cuello == Variante.Cuello.CUADRADO || cuello == Variante.Cuello.CORAZON;
+        return cuello == Variante.Cuello.CUADRADO || cuello == Variante.Cuello.CORAZON || cuello == Variante.Cuello.CAMISA;
     }
 
     /** x, y en texeles del frente: ¿ese punto queda recortado? */
@@ -31,6 +31,9 @@ public final class CuelloRecorte {
         switch (cuello) {
             case CUADRADO:
                 return x >= 2f && x <= 6f && y < 1.75f;
+            case CAMISA:
+                // V chica (2026-10-07): 3 texeles de ancho arriba, punta a 3 de hondo.
+                return y < 3f && Math.abs(x - 4f) < 1.5f * (1f - y / 3f);
             case CORAZON: {
                 if (x < 1f || x > 7f) return false;
                 float cx = x <= 4f ? 2f : 6f;
@@ -44,7 +47,8 @@ public final class CuelloRecorte {
 
     /** Ancho (texeles, de 0 a 8) del agujero de la tapa de arriba. */
     private static float[] anchoTapa(Variante.Cuello cuello) {
-        return cuello == Variante.Cuello.CORAZON ? new float[]{1f, 7f} : new float[]{2f, 6f};
+        return cuello == Variante.Cuello.CORAZON ? new float[]{1f, 7f}
+                : cuello == Variante.Cuello.CAMISA ? new float[]{2.5f, 5.5f} : new float[]{2f, 6f};
     }
 
     /** Recorta {@code img} (la textura del cuello redondo, del atlas de la skin) con el escote de {@code cuello}. */

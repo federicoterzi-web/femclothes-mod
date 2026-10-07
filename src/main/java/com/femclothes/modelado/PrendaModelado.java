@@ -240,6 +240,10 @@ public final class PrendaModelado {
                 com.femclothes.item.ChaquetaItem.setRemate(out, c.remate().get());
                 cambio = true;
             }
+            if (c.solapa().isPresent()) {
+                com.femclothes.item.ChaquetaItem.setSolapa(out, c.solapa().get());
+                cambio = true;
+            }
         }
 
         return cambio ? out : prenda;

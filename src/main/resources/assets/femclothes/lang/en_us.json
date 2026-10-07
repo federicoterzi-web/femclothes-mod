@@ -1007,5 +1007,19 @@
   "item.femclothes.molde_chaqueta_remate_recto": "Jacket Template: Straight trim",
   "femclothes.modelado.rol.frente_chaqueta": "Front",
   "femclothes.modelado.rol.capucha_chaqueta": "Hood",
-  "femclothes.modelado.rol.remate_chaqueta": "Trim"
+  "femclothes.modelado.rol.remate_chaqueta": "Trim",
+  "femclothes.modelado.rol.solapa_chaqueta": "Lapel",
+  "femclothes.chaqueta.solapa.ninguna": "No lapels",
+  "femclothes.chaqueta.solapa.pico": "Peak lapels",
+  "femclothes.chaqueta.solapa.redonda": "Rounded lapels",
+  "femclothes.chaqueta.solapa.chal": "Shawl lapels",
+  "item.femclothes.chaqueta.saco": "Blazer",
+  "item.femclothes.chaqueta.saco_cruzado": "Closed blazer",
+  "item.femclothes.molde_chaqueta_solapa_ninguna": "Jacket Template: No lapels",
+  "item.femclothes.molde_chaqueta_solapa_pico": "Jacket Template: Peak lapels",
+  "item.femclothes.molde_chaqueta_solapa_redonda": "Jacket Template: Rounded lapels",
+  "item.femclothes.molde_chaqueta_solapa_chal": "Jacket Template: Shawl lapels",
+  "item.femclothes.molde_cuello_camisa": "Neckline Mould: Shirt collar",
+  "femclothes.sublimadora.cuello.camisa": "shirt collar",
+  "femclothes.corte.camisa": "Shirt"
 }

@@ -180,6 +180,8 @@ public final class ModItems {
             moldeCuello("molde_cuello_cuadrado", Variante.Cuello.CUADRADO);
     public static final MoldeCuelloItem MOLDE_CUELLO_CORAZON =
             moldeCuello("molde_cuello_corazon", Variante.Cuello.CORAZON);
+    public static final MoldeCuelloItem MOLDE_CUELLO_CAMISA =
+            moldeCuello("molde_cuello_camisa", Variante.Cuello.CAMISA);
 
     private static MoldeItem molde(String nombre, MoldeItem.Eje eje) {
         return Registry.register(Registries.ITEM,
