@@ -968,5 +968,16 @@
   "femclothes.estilado.ayuda_acabado": "Poné el molde y el material y apretá el botón de acabado.",
   "femclothes.acabado.tooltip": "Acabado: %s",
   "femclothes.estilista.resumen_base": "%s apliques, %s correas",
-  "femclothes.estilista.resumen_colores": "colores"
+  "femclothes.estilista.resumen_colores": "colores",
+  "block.femclothes.telar": "Telar automático",
+  "block.femclothes.telar_creativa": "Telar automático creativo",
+  "femclothes.telar.lana": "Lana",
+  "femclothes.telar.hilo": "Hilo",
+  "femclothes.telar.costo": "Gasta: %s lana, %s hilo",
+  "femclothes.telar.prenda.remera": "Remera",
+  "femclothes.telar.prenda.pantalon": "Pantalón",
+  "femclothes.telar.prenda.medias": "Medias",
+  "femclothes.telar.prenda.calientabrazos": "Calientab.",
+  "femclothes.telar.prenda.pollera": "Pollera",
+  "femclothes.telar.prenda.capa": "Capa"
 }

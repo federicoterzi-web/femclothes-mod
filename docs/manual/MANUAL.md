@@ -453,6 +453,17 @@ Con un **molde de máscara** en su slot (columna derecha, abajo) la foto se esta
 
 Con máscara, una prenda que ya tiene las dos caras estampadas puede volver a entrar para sumarle capas.
 
+## 8b. Telar automático
+
+El **Telar automático** teje **prendas básicas lisas** con **lana e hilo**: remera, pantalón, medias, calientabrazos, pollera y capa. Tiene la misma base que las otras máquinas de la línea textil y la tapa del telar arriba.
+
+1. Cargá **lana** (cualquiera de las 16 de Minecraft) e **hilo** (string) en sus dos casilleros, a mano, con shift-click, con el ítem en la mano sobre el bloque, o por tolva o cinta desde cualquier lado menos la derecha.
+2. Elegí la **prenda** con los seis botones. La pantallita del frente muestra la prenda elegida ya teñida con la lana.
+3. Mientras haya insumos y la bandeja esté libre, teje solo: **el color de la prenda es el de la lana**. Cuesta: remera 4 lana + 2 hilo, pantalón 5 + 2, medias 2 + 1, calientabrazos 2 + 1, pollera 3 + 2, capa 6 + 3.
+4. La prenda sale por la **derecha** (hacia la cinta o la próxima máquina: Tintes, Modeladora…) o se retira con la mano vacía.
+
+La versión **creativa** no gasta insumos y teje en un tick. Con redstone la máquina se detiene.
+
 ## 9. Guardarropas
 
 El Guardarropas sirve para **combinar prendas**: tiene 4 lugares por categoría (remera, pantalón/pollera, medias, calientabrazos, chaqueta) y una columna de **armadura** (casco, pechera, pantalones, botas), así se pueden probar juntas varias prendas del mismo tipo (un croptop sobre un remerón, un pantalón con una pollera y una calza), con vista previa. **Guardar outfit** y **Equipar** guardan y se ponen la combinación, armadura incluida (lo que tenías puesto en ese lugar vuelve a tu inventario; un lugar vacío no te saca nada). La vista previa muestra también la armadura.

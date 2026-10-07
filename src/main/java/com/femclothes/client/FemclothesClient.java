@@ -41,6 +41,7 @@ public class FemclothesClient implements ClientModInitializer {
         HandledScreens.register(FemclothesScreenHandlers.GUARDARROPAS, GuardarropasScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.MANIQUI, ManiquiScreen::new);
         HandledScreens.register(FemclothesScreenHandlers.ROPA, RopaScreen::new);
+        HandledScreens.<com.femclothes.telar.TelarScreenHandler, TelarScreen>register(FemclothesScreenHandlers.TELAR, TelarScreen::new);
         HandledScreens.<com.femclothes.estilado.EstiladoScreenHandler, EstilistaScreen>register(FemclothesScreenHandlers.ESTILISTA,
                 (h, inv, titulo) -> new EstilistaScreen((com.femclothes.estilista.EstilistaScreenHandler) h, inv, titulo));
         HandledScreens.register(FemclothesScreenHandlers.ESTILADO, EstiladoScreen::new);
@@ -77,6 +78,8 @@ public class FemclothesClient implements ClientModInitializer {
                 ctx -> new com.femclothes.modelado.ModeladoRenderer());
         net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(
                 com.femclothes.estilista.EstilistaMod.ESTILISTA_BLOCK_ENTITY, ctx -> new com.femclothes.estilista.EstilistaRenderer());
+        net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(
+                com.femclothes.telar.TelarMod.TELAR_BLOCK_ENTITY, ctx -> new com.femclothes.telar.TelarRenderer());
         // garment_shaper_atlas.png tiene alfa (huecos reales entre piezas del
         // modelo) — sin cutout el recorte se rellena y queda un cuadrado.
         net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(

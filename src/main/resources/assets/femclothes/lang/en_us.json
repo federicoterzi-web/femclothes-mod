@@ -968,5 +968,16 @@
   "femclothes.estilado.ayuda_acabado": "Put in the template and the material, then press the finish button.",
   "femclothes.acabado.tooltip": "Finish: %s",
   "femclothes.estilista.resumen_base": "%s appliqués, %s straps",
-  "femclothes.estilista.resumen_colores": "colors"
+  "femclothes.estilista.resumen_colores": "colors",
+  "block.femclothes.telar": "Automatic Loom",
+  "block.femclothes.telar_creativa": "Creative Automatic Loom",
+  "femclothes.telar.lana": "Wool",
+  "femclothes.telar.hilo": "Thread",
+  "femclothes.telar.costo": "Uses: %s wool, %s thread",
+  "femclothes.telar.prenda.remera": "Shirt",
+  "femclothes.telar.prenda.pantalon": "Pants",
+  "femclothes.telar.prenda.medias": "Socks",
+  "femclothes.telar.prenda.calientabrazos": "Armwarm.",
+  "femclothes.telar.prenda.pollera": "Skirt",
+  "femclothes.telar.prenda.capa": "Cape"
 }

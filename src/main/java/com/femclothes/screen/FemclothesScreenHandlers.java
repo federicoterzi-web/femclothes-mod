@@ -87,4 +87,13 @@ public final class FemclothesScreenHandlers {
             new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<>(
                     (syncId, inv, pos) -> com.femclothes.estilista.EstilistaScreenHandler.deCliente(syncId, inv, pos),
                     net.minecraft.util.math.BlockPos.PACKET_CODEC));
+
+    /** Pantalla del Telar automático (2026-10-07). */
+    public static final net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<
+            com.femclothes.telar.TelarScreenHandler, net.minecraft.util.math.BlockPos> TELAR = Registry.register(
+            Registries.SCREEN_HANDLER,
+            Identifier.of("femclothes", "telar"),
+            new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<>(
+                    (syncId, inv, pos) -> com.femclothes.telar.TelarScreenHandler.deCliente(syncId, inv, pos),
+                    net.minecraft.util.math.BlockPos.PACKET_CODEC));
 }
