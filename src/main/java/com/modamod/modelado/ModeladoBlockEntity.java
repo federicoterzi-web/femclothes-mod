@@ -85,8 +85,13 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
     // inventario, al final de la lista (así los índices de las partidas
     // viejas no se corren) — el molde se queda en el pin y se ve.
     public static final int PINES_INICIO = SALIDA + 1;
-    /** 12 pines por categoría (la remera ocupa los primeros 8, así las partidas viejas no se corren). */
-    public static final int PINES_POR_CATEGORIA = 12;
+    /**
+     * 14 pines por categoría (2026-10-07, "porque tenemos el limite de 12?" → subir a 14 para el ruedo/puño/bordes;
+     * reset de Modeladoras con el renombre a ModaMod, sin migración). Las filas de {@link #ROLES} y de
+     * {@code PIN_POS}/{@code PIN_BTN} se rellenan solas hasta este largo con pines NINGUNO.
+     * La lista NBT {@code pollera_items} sigue bajo el tope de 255 (5 categorías x 51 = 255 slots como mucho).
+     */
+    public static final int PINES_POR_CATEGORIA = 14;
     public static final int PINES_TAMANO = PINES_POR_CATEGORIA * 4;
     public static final int PINES_FIN = PINES_INICIO + PINES_TAMANO;
     /**
@@ -211,7 +216,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         FRENTE_CHAQUETA, CAPUCHA_CHAQUETA, REMATE_CHAQUETA, SOLAPA_CHAQUETA }
 
     /** Rol de cada uno de los 8 pines por categoría — MISMO orden que {@code ModeladoScreenHandler#PIN_POS}. */
-    public static final Rol[][] ROLES = {
+    public static final Rol[][] ROLES = rellenarRoles(new Rol[][]{
             {Rol.CUELLO, Rol.MAT1, Rol.MAT2, Rol.MANGA_IZQ, Rol.MAT3, Rol.MANGA_DER, Rol.CALCE, Rol.TORSO,
                     Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
             {Rol.TIRO, Rol.MAT1, Rol.MAT2, Rol.MAT3, Rol.CALCE, Rol.BOTA_IZQ, Rol.BOTA_DER, Rol.NINGUNO,
@@ -236,7 +241,15 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
             // Chaqueta (2026-10-07): lo de la remera (cuello, 3 materiales, mangas, calce, torso) + Frente, Capucha y Remate.
             {Rol.CUELLO, Rol.MAT1, Rol.MAT2, Rol.MANGA_IZQ, Rol.MAT3, Rol.MANGA_DER, Rol.CALCE, Rol.TORSO,
                     Rol.FRENTE_CHAQUETA, Rol.CAPUCHA_CHAQUETA, Rol.REMATE_CHAQUETA, Rol.SOLAPA_CHAQUETA},
-    };
+    });
+
+    private static Rol[][] rellenarRoles(Rol[][] filas) {
+        Rol[][] r = new Rol[filas.length][PINES_POR_CATEGORIA];
+        for (int c = 0; c < filas.length; c++) {
+            for (int i = 0; i < PINES_POR_CATEGORIA; i++) r[c][i] = i < filas[c].length ? filas[c][i] : Rol.NINGUNO;
+        }
+        return r;
+    }
 
     /** 15s a 20 ticks — a pedido (2026-09-21, "que cada maquina tome su tiempo... 15 la modeladora"). */
     public static final int TICKS_PROCESO = 300;

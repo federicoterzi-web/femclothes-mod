@@ -36,7 +36,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
      * el PNG de esa categoría; x/y ya son el origen del ítem de 16x16,
      * centrado en cada slot dibujado. Público: ModeladoScreen lo usa.
      */
-    public static final int[][][] PIN_POS = {
+    public static final int[][][] PIN_POS = rellenar(new int[][][]{
             {{113, 47}, {58, 51}, {167, 51}, {42, 84}, {113, 89}, {183, 84}, {57, 127}, {113, 149}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             {{112, 46}, {112, 79}, {112, 100}, {112, 122}, {47, 95}, {49, 143}, {175, 144}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             {{44, 52}, {180, 52}, {43, 142}, {184, 142}, {112, 142}, {28, 76}, {28, 94}, {28, 113}, {196, 76}, {196, 94}, {196, 113}, {0, 0}},
@@ -51,7 +51,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
             {{43, 110}, {182, 58}, {179, 91}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             // Chaqueta (2026-10-07): los 8 de la remera + Frente, Capucha y Remate — sobre esquema_chaqueta.png (tools/generar_esquema_chaqueta.py).
             {{113, 47}, {58, 51}, {167, 51}, {42, 84}, {113, 89}, {183, 84}, {57, 127}, {113, 149}, {190, 114}, {30, 110}, {167, 146}, {20, 139}},
-    };
+    });
 
     /**
      * Centro de la chincheta de cada pin (mismo esquema que {@link #PIN_POS}):
@@ -59,7 +59,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
      * (se borró del PNG, ver tools/procesar_assets_esquemas.py); en remera
      * (arte sin chinchetas) es la esquina superior derecha del slot.
      */
-    public static final int[][][] PIN_BTN = {
+    public static final int[][][] PIN_BTN = rellenar(new int[][][]{
             {{130, 46}, {75, 50}, {184, 50}, {59, 83}, {130, 88}, {200, 83}, {74, 126}, {130, 148}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             {{129, 45}, {129, 78}, {129, 99}, {129, 121}, {64, 94}, {66, 142}, {192, 143}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             {{61, 51}, {197, 51}, {60, 141}, {201, 141}, {129, 141}, {45, 75}, {45, 93}, {45, 112}, {213, 75}, {213, 93}, {213, 112}, {0, 0}},
@@ -69,7 +69,16 @@ public class ModeladoScreenHandler extends ScreenHandler {
             {{60, 109}, {199, 57}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             {{60, 109}, {199, 57}, {196, 90}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
             {{130, 46}, {75, 50}, {184, 50}, {59, 83}, {130, 88}, {200, 83}, {74, 126}, {130, 148}, {207, 113}, {47, 109}, {184, 145}, {37, 138}},
-    };
+    });
+
+    /** Completa cada fila hasta {@code PINES_POR_CATEGORIA} con pines fuera de pantalla (0, 0). */
+    private static int[][][] rellenar(int[][][] filas) {
+        int[][][] r = new int[filas.length][ModeladoBlockEntity.PINES_POR_CATEGORIA][];
+        for (int c = 0; c < filas.length; c++) {
+            for (int i = 0; i < r[c].length; i++) r[c][i] = i < filas[c].length ? filas[c][i] : new int[]{0, 0};
+        }
+        return r;
+    }
 
     /** Slots grandes de prenda base / resultado (coordenadas del slot 16x16; el marco de 32x32 se hornea en la textura). */
     public static final int ENTRADA_X = 48, SALIDA_X = 176, SLOT_Y_IO = 184;
