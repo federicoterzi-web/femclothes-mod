@@ -13,7 +13,7 @@
       "Bash(javap -p -c dev/tr7zw/skinlayers/SkinUtil.class)",
       "Bash(awk '/public static net.minecraft.class_1011 getTexture/,/public static boolean setup3dLayers\\\\\\(net.minecraft.class_742/' /tmp/checkjar/skinutil_full.txt)",
       "Bash(rm -f 'com/modamod/render/SkinLayersCompat$Puente.class')",
-      "Bash(unzip -o -q /c/mods/femclothes-mod/build/libs/modamod-0.1.0.jar 'com/modamod/render/SkinLayersCompat$Puente.class')",
+      "Bash(unzip -o -q /c/mods/modamod/build/libs/modamod-0.1.0.jar 'com/modamod/render/SkinLayersCompat$Puente.class')",
       "Read(//c/Program Files \\\\\\(x86\\\\\\)/**)",
       "Bash(where.exe ModrinthApp)"
     ],
