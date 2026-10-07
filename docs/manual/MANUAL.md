@@ -458,7 +458,7 @@ Con máscara, una prenda que ya tiene las dos caras estampadas puede volver a en
 El **Telar automático** teje **prendas básicas lisas** con **lana e hilo**: remera, pantalón, medias, calientabrazos, pollera y capa. Tiene la misma base que las otras máquinas de la línea textil y la tapa del telar arriba.
 
 1. Cargá **lana** (cualquiera de las 16 de Minecraft) e **hilo** (string) en sus dos casilleros, a mano, con shift-click, con el ítem en la mano sobre el bloque, o por tolva o cinta desde cualquier lado menos la derecha.
-2. **Tildá las prendas** que querés (los seis botones son casillas: podés tener varias). La máquina las teje **de a una, en orden fijo** (remera, pantalón, medias, calientabrazos, pollera, capa) y salta la que no alcance con los insumos. La pantallita del frente muestra la que sigue, teñida con la lana.
+2. **Tildá las prendas** que querés (los seis botones son casillas: podés tener varias). La máquina las teje **de a una, en orden fijo** (remera, pantalón, medias, calientabrazos, pollera, capa) y salta la que no alcance con los insumos. La pantallita del frente muestra la que sigue, teñida con la lana, y mientras teje se ve la prenda tendida sobre los hilos del telar.
 3. El **lote** es la cantidad total de prendas (botones −10 − + +10; 0 = sin límite). Al terminarlo la máquina se detiene; **↻** lo reinicia con la misma cantidad. **El color de cada prenda es el de la lana.** Cuesta: remera 4 lana + 2 hilo, pantalón 5 + 2, medias 2 + 1, calientabrazos 2 + 1, pollera 3 + 2, capa 6 + 3.
 4. La prenda sale por la **derecha** (hacia la cinta o la próxima máquina: Tintes, Modeladora…) o se retira con la mano vacía.
 

@@ -137,6 +137,23 @@ public class TelarBlockEntity extends BlockEntity implements SidedInventory, com
         return previa;
     }
 
+    private ItemStack tejiendo = ItemStack.EMPTY;
+    private int tejiendoClave = -1;
+
+    /**
+     * La prenda que se está tejiendo, para dibujarla sobre el telar (2026-10-07, "la representacion grafica de la prenda
+     * arriba"): la del lote en curso, del color de la lana que se gastó; vacía si la máquina no está tejiendo.
+     */
+    public ItemStack prendaTejiendo() {
+        if (estado != Estado.PROCESANDO) return ItemStack.EMPTY;
+        int clave = prendaEnCurso * 0x1000000 + (colorEnCurso & 0xFFFFFF);
+        if (clave != tejiendoClave || tejiendo.isEmpty()) {
+            tejiendoClave = clave;
+            tejiendo = tejer(TelarPrenda.values()[prendaEnCurso], colorEnCurso);
+        }
+        return tejiendo;
+    }
+
     private static ItemStack tejer(TelarPrenda p, int rgb) {
         ItemStack s = new ItemStack(p.item());
         s.set(DataComponentTypes.DYED_COLOR, new DyedColorComponent(rgb, true));
