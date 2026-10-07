@@ -103,6 +103,16 @@ public final class CintaFisica {
         return direccion(p, s, e) != null ? p : null;
     }
 
+    /** La cinta o el empalme PARADO (redstone o contagio) que tenés bajo los pies, o null (para la fricción, ver {@code EntityCintaParadaMixin}). */
+    public static BlockPos paradaBajo(Entity e) {
+        if (!e.isOnGround()) return null;
+        BlockPos p = BlockPos.ofFloored(e.getX(), e.getY() - 0.2, e.getZ());
+        BlockState s = e.getWorld().getBlockState(p);
+        if (s.getBlock() instanceof CintaBlock && s.get(CintaBlock.POWERED)) return p;
+        if (s.getBlock() instanceof EmpalmeBlock && s.get(EmpalmeBlock.POWERED)) return p;
+        return null;
+    }
+
     /** El jugador local si este tick no toca las teclas (lo fija el mixin del cliente; en el servidor queda null). */
     public static volatile Entity jugadorQuieto;
 
