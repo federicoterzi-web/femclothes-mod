@@ -229,7 +229,7 @@ public final class CapaMalla {
                     xb, l[c + 1], 0, ub, 1 / 64f, xa, l[c], 0, ua, 1 / 64f, 0, 1, 0);
         }
         // Con la capucha puesta (tecla, 2026-09-30) la dibuja CuelloYCapucha en la cabeza.
-        if (CapaItem.capucha(stack) && !sinCapucha && !com.modamod.item.ChaquetaItem.capuchaArriba(stack)) dibujarCapucha(vc, e, luz);
+        if (CapaItem.capucha(stack) && !sinCapucha && !com.modamod.item.TopCorte.capuchaArriba(stack)) dibujarCapucha(vc, e, luz);
     }
 
     /**

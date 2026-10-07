@@ -2,7 +2,7 @@ package com.modamod.render;
 
 import com.modamod.Modamod;
 import com.modamod.item.Calce;
-import com.modamod.item.ChaquetaItem;
+import com.modamod.item.TopCorte;
 import com.modamod.sublimadora.RemeraItem;
 import com.modamod.sublimadora.Variante;
 import net.minecraft.client.MinecraftClient;
@@ -31,7 +31,7 @@ import java.util.Set;
  *       cabeza, atado al TORSO (no gira con la cabeza, como un cuello de
  *       verdad);</li>
  *   <li>la <b>capucha</b> del hoodie, caída en la espalda (atada al torso)
- *       o puesta (atada a la cabeza) según {@link ChaquetaItem#capuchaArriba};</li>
+ *       o puesta (atada a la cabeza) según {@link TopCorte#capuchaArriba};</li>
  *   <li>los <b>cordones</b> con sus puntitas, colgando del escote.</li>
  * </ul>
  * Todo en píxeles de skin (escala 1, {@code Superficie.CUERPO}) con una
@@ -66,7 +66,7 @@ public final class CuelloYCapucha {
         for (ItemStack s : prendas) {
             if (!(s.getItem() instanceof RemeraItem)) continue;
             if (RemeraItem.variante(s).cuello() == Variante.Cuello.POLERA) polera = s;
-            if (ChaquetaItem.tieneCapucha(s)) chaqueta = s; // sin capucha no hay capucha ni cordones (2026-10-07)
+            if (TopCorte.tieneCapucha(s)) chaqueta = s; // sin capucha no hay capucha ni cordones (2026-10-07)
         }
         if (polera != null && biped.body.visible) {
             float d = Math.max(0F, Calce.dilatacionEfectiva(polera));
@@ -91,7 +91,7 @@ public final class CuelloYCapucha {
         // con la capucha de la capa activada por tecla"); caída la dibuja CapaMalla.
         ItemStack capa = GarmentFeatureRenderer.capaDe(prendas);
         if (chaqueta == null && capa != null && com.modamod.item.CapaItem.capucha(capa)
-                && ChaquetaItem.capuchaArriba(capa) && biped.head.visible) {
+                && TopCorte.capuchaArriba(capa) && biped.head.visible) {
             int color = com.modamod.region.RegionResolver.colorBase(capa, com.modamod.region.Lado.IZQUIERDA);
             GarmentFeatureRenderer.dibujarModelPart(capuchaPuesta(0F), CuerpoGeometria.Superficie.CUERPO,
                     texturaLisa(color, false), biped.head, matrices, vertexConsumers, luz);
@@ -99,7 +99,7 @@ public final class CuelloYCapucha {
         if (chaqueta != null) {
             float d = Math.max(0F, Calce.dilatacionEfectiva(chaqueta));
             Identifier tela = texturaLisa(RemeraItem.color(chaqueta), false);
-            if (ChaquetaItem.capuchaArriba(chaqueta)) {
+            if (TopCorte.capuchaArriba(chaqueta)) {
                 if (biped.head.visible) {
                     GarmentFeatureRenderer.dibujarModelPart(capuchaPuesta(d), CuerpoGeometria.Superficie.CUERPO,
                             tela, biped.head, matrices, vertexConsumers, luz);
@@ -160,12 +160,12 @@ public final class CuelloYCapucha {
         for (ItemStack s : prendas) if (s.getItem() instanceof RemeraItem) dMax = Math.max(dMax, Calce.dilatacionEfectiva(s));
         for (ItemStack s : prendas) {
             if (!(s.getItem() instanceof RemeraItem)) continue;
-            if (s.getItem() instanceof ChaquetaItem
-                    && com.modamod.item.ChaquetaItem.solapa(s) != com.modamod.item.ChaquetaSolapa.NINGUNA) {
+            if (s.getItem() instanceof RemeraItem
+                    && com.modamod.item.TopCorte.solapa(s) != com.modamod.item.ChaquetaSolapa.NINGUNA) {
                 float d = Math.max(0F, Calce.dilatacionEfectiva(s));
-                Fila[] filas = filasDe(com.modamod.item.ChaquetaItem.solapa(s));
+                Fila[] filas = filasDe(com.modamod.item.TopCorte.solapa(s));
                 int color = RemeraItem.color(s);
-                dibujarFilas("solapa" + com.modamod.item.ChaquetaItem.solapa(s), filas, d + 0.1F, s,
+                dibujarFilas("solapa" + com.modamod.item.TopCorte.solapa(s), filas, d + 0.1F, s,
                         oscurecer(color, 0.88F), biped, matrices, vertexConsumers, luz);
             }
             if (RemeraItem.variante(s).cuello() == Variante.Cuello.CAMISA) {

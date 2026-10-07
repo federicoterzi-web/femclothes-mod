@@ -1,10 +1,8 @@
-"""Esquemas de la Modeladora de la remera y la chaqueta (la "Top"; 2026-10-07, "un solo top" + "dejemos la posibilidad de
+"""Esquema de la Modeladora del Top (remera + chaqueta fusionadas; 2026-10-07, "un solo top" + "dejemos la posibilidad de
 construir asimetricamente"): parte del esquema ORIGINAL de la remera (los 8 marcos de siempre: cuello, 3 materiales,
-mangas, calce y torso, guardado en assets_viejos/esquemas_modeladora_2026-10-07/) y le suma marcos con su línea y su
-punto fucsia:
-  - remera: Ruedo del torso y Puño de cada manga;
-  - chaqueta: lo mismo + Frente, Capucha y Solapa.
-Escribe `esquema_remera.png` y `esquema_chaqueta.png` e imprime los PIN_POS/PIN_BTN de los marcos nuevos para
+mangas, calce y torso, guardado en assets_viejos/esquemas_modeladora_2026-10-07/) y le suma 6 marcos con su línea y su
+punto fucsia: Ruedo del torso, Puño de cada manga, Frente, Capucha y Solapa.
+Escribe `esquema_remera.png` e imprime los PIN_POS/PIN_BTN de los marcos nuevos para
 `ModeladoScreenHandler` (origen del ítem = centro/4 - 8; la Y de PIN_POS es absoluta: +36).
 
 Uso: python tools/generar_esquemas_top.py
@@ -79,12 +77,8 @@ def main():
     mascara = mascara.filter(ImageFilter.MaxFilter(3))
 
     remera = original.copy()
-    salida = agregar(remera, marco, punto, mascara, color, RUEDOS)
+    salida = agregar(remera, marco, punto, mascara, color, RUEDOS + EXTRA_CHAQUETA)
     guardar(remera, "esquema_remera.png", salida)
-
-    chaqueta = remera.copy()
-    salida = agregar(chaqueta, marco, punto, mascara, color, EXTRA_CHAQUETA)
-    guardar(chaqueta, "esquema_chaqueta.png", salida)
 
 
 if __name__ == "__main__":

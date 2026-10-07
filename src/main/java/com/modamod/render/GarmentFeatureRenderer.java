@@ -502,7 +502,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
 
     /** ¿Hay un hoodie (chaqueta con capucha) entre las prendas? */
     private static boolean conHoodie(List<ItemStack> prendas) {
-        for (ItemStack s : prendas) if (com.modamod.item.ChaquetaItem.tieneCapucha(s)) return true;
+        for (ItemStack s : prendas) if (com.modamod.item.TopCorte.tieneCapucha(s)) return true;
         return false;
     }
 
@@ -521,7 +521,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 float caida = calce == null ? 0f : calce.caida;
                 extra = Math.max(extra, Math.max(0f, p.dilatacion()) + caida * 0.6f + 0.1f);
             }
-            if (com.modamod.item.ChaquetaItem.tieneCapucha(s) && !com.modamod.item.ChaquetaItem.capuchaArriba(s)) {
+            if (com.modamod.item.TopCorte.tieneCapucha(s) && !com.modamod.item.TopCorte.capuchaArriba(s)) {
                 // La bolsa de la capucha caída (CuelloYCapucha.capuchaCaida): 2.4 de grosor desde 2 + d + 0.2.
                 extra = Math.max(extra, Math.max(0f, com.modamod.item.Calce.dilatacionEfectiva(s)) + 2.7f);
             }
@@ -1397,7 +1397,13 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         TrinketsApi.getTrinketComponent(entidad).ifPresent(c -> {
             for (var par : c.getAllEquipped()) {
                 ItemStack stack = par.getRight();
-                if (Garments.esPrenda(stack)) out.add(stack);
+                if (!Garments.esPrenda(stack)) continue;
+                // Un Top en el slot de chaqueta se dibuja en la capa exterior (2026-10-07, "un solo top").
+                if (stack.getItem() instanceof com.modamod.sublimadora.RemeraItem
+                        && "chaqueta".equals(par.getLeft().inventory().getSlotType().getName())) {
+                    stack = com.modamod.item.TopCorte.comoExterior(stack);
+                }
+                out.add(stack);
             }
         });
         return out;

@@ -115,6 +115,8 @@ public class GuardarropasBlockEntity extends BlockEntity
             return equipo != null && equipo.getSlotType() == SLOTS_ARMADURA[i];
         }
         int categoria = categoriaDe(stack);
+        // Un Top vale también en la columna de chaquetas (2026-10-07, "un solo top").
+        if (categoria == REMERA && slot / POR_CATEGORIA == CHAQUETA) return true;
         return categoria >= 0 && categoria == slot / POR_CATEGORIA;
     }
 
@@ -153,8 +155,6 @@ public class GuardarropasBlockEntity extends BlockEntity
      * con una pollera y una calza". Compartido con el Maniquí.
      */
     public static int categoriaDe(ItemStack stack) {
-        // Antes que RemeraItem: la chaqueta hereda de la remera pero va en su columna.
-        if (stack.getItem() instanceof com.modamod.item.ChaquetaItem) return CHAQUETA;
         if (stack.getItem() instanceof RemeraItem) return REMERA;
         if (stack.getItem() instanceof PantalonItem || stack.getItem() instanceof PolleraItem) return PANTALON;
         if (stack.isOf(ModamodItems.SOCKS_SOLID)) return MEDIAS;

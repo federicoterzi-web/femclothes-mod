@@ -139,16 +139,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
     public static final int BANDA_ACTIVO = SOMBRERO_PORPRENDA_INICIO + PORPRENDA_TOTAL;
     public static final int BANDA_PINES_INICIO = BANDA_ACTIVO + 1;
     public static final int BANDA_PORPRENDA_INICIO = BANDA_PINES_INICIO + PINES_POR_CATEGORIA;
-    /**
-     * Categoría Chaqueta (2026-10-07, "como se te ocurre que mejor hacemos las chaquetas"): mismo bloque, a
-     * continuación de la Banda. La lista NBT {@code pollera_items} llega a 245 slots (tope 255: no entra otra categoría).
-     */
-    public static final int CHAQUETA_ACTIVO = BANDA_PORPRENDA_INICIO + PORPRENDA_TOTAL;
-    public static final int CHAQUETA_PINES_INICIO = CHAQUETA_ACTIVO + 1;
-    public static final int CHAQUETA_PORPRENDA_INICIO = CHAQUETA_PINES_INICIO + PINES_POR_CATEGORIA;
-    public static final int TAMANO = CHAQUETA_PORPRENDA_INICIO + PORPRENDA_TOTAL;
+    public static final int TAMANO = BANDA_PORPRENDA_INICIO + PORPRENDA_TOTAL;
     /** Pines "lógicos": 12 por categoría, p = categoría*12 + i (ver {@link #pinSlot}). */
-    public static final int PINES_LOGICOS = PINES_POR_CATEGORIA * 9;
+    public static final int PINES_LOGICOS = PINES_POR_CATEGORIA * 8;
 
     /** Primer slot de pin de una categoría de las del final (Pollera, Capa); -1 para las 4 de siempre. */
     private static int pinesInicioExtra(Categoria cat) {
@@ -157,7 +150,6 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
             case CAPA -> CAPA_PINES_INICIO;
             case SOMBRERO -> SOMBRERO_PINES_INICIO;
             case BANDA -> BANDA_PINES_INICIO;
-            case CHAQUETA -> CHAQUETA_PINES_INICIO;
             default -> -1;
         };
     }
@@ -171,7 +163,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
     /** Pin lógico de un slot real, o -1 si no es un pin. */
     public static int pinDeSlot(int slot) {
         if (slot >= PINES_INICIO && slot < PINES_FIN) return slot - PINES_INICIO;
-        for (Categoria cat : new Categoria[]{Categoria.POLLERA, Categoria.CAPA, Categoria.SOMBRERO, Categoria.BANDA, Categoria.CHAQUETA}) {
+        for (Categoria cat : new Categoria[]{Categoria.POLLERA, Categoria.CAPA, Categoria.SOMBRERO, Categoria.BANDA}) {
             int inicio = pinesInicioExtra(cat);
             if (slot >= inicio && slot < inicio + PINES_POR_CATEGORIA) {
                 return cat.ordinal() * PINES_POR_CATEGORIA + (slot - inicio);
@@ -187,14 +179,13 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
             case CAPA -> CAPA_ACTIVO;
             case SOMBRERO -> SOMBRERO_ACTIVO;
             case BANDA -> BANDA_ACTIVO;
-            case CHAQUETA -> CHAQUETA_ACTIVO;
             default -> ACTIVO_INICIO + cat.ordinal();
         };
     }
 
     /** Qué prenda está configurando ahora el jugador — cicla con {@link #BTN_CATEGORIA}. */
     /** POLLERA al final (2026-09-29): sus slots van al final del inventario, ver {@link #POLLERA_ACTIVO}. */
-    public enum Categoria { REMERA, PANTALON, MEDIAS, CALIENTABRAZOS, POLLERA, CAPA, SOMBRERO, BANDA, CHAQUETA }
+    public enum Categoria { REMERA, PANTALON, MEDIAS, CALIENTABRAZOS, POLLERA, CAPA, SOMBRERO, BANDA }
 
     /** Qué hace cada pin del esquema (2026-09-26, pines para las 4 prendas). NINGUNO = pin sin usar en esa categoría. */
     public enum Rol { CUELLO, MAT1, MAT2, MAT3, MANGA_IZQ, MANGA_DER, CALCE, TORSO, TIRO, BOTA_IZQ, BOTA_DER,
@@ -218,7 +209,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
     /** Rol de cada uno de los 8 pines por categoría — MISMO orden que {@code ModeladoScreenHandler#PIN_POS}. */
     public static final Rol[][] ROLES = rellenarRoles(new Rol[][]{
             {Rol.CUELLO, Rol.MAT1, Rol.MAT2, Rol.MANGA_IZQ, Rol.MAT3, Rol.MANGA_DER, Rol.CALCE, Rol.TORSO,
-                    Rol.RUEDO_TORSO, Rol.RUEDO_PUNO_IZQ, Rol.RUEDO_PUNO_DER},
+                    Rol.RUEDO_TORSO, Rol.RUEDO_PUNO_IZQ, Rol.RUEDO_PUNO_DER,
+                    // El Top (2026-10-07, "un solo top"): frente, capucha y solapa también en la remera.
+                    Rol.FRENTE_CHAQUETA, Rol.CAPUCHA_CHAQUETA, Rol.SOLAPA_CHAQUETA},
             {Rol.TIRO, Rol.MAT1, Rol.MAT2, Rol.MAT3, Rol.CALCE, Rol.BOTA_IZQ, Rol.BOTA_DER, Rol.NINGUNO,
                     Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
             {Rol.SUP_IZQ, Rol.SUP_DER, Rol.INF_IZQ, Rol.INF_DER, Rol.CALCE, Rol.PERS_IZQ1, Rol.PERS_IZQ2,
@@ -237,11 +230,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                     Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
             // Banda (2026-10-05): Zona, Ancho y Herraje.
             {Rol.ZONA_BANDA, Rol.ANCHO_BANDA, Rol.HERRAJE_BANDA, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO,
-                    Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
-            // Chaqueta (2026-10-07): lo de la remera (cuello, 3 materiales, mangas, calce, torso) + Frente, Capucha, Ruedo, Solapa y los puños.
-            {Rol.CUELLO, Rol.MAT1, Rol.MAT2, Rol.MANGA_IZQ, Rol.MAT3, Rol.MANGA_DER, Rol.CALCE, Rol.TORSO,
-                    Rol.FRENTE_CHAQUETA, Rol.CAPUCHA_CHAQUETA, Rol.RUEDO_TORSO, Rol.SOLAPA_CHAQUETA,
-                    Rol.RUEDO_PUNO_IZQ, Rol.RUEDO_PUNO_DER},
+                    Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO}
     });
 
     private static Rol[][] rellenarRoles(Rol[][] filas) {
@@ -422,7 +411,6 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         if (cat == Categoria.CAPA) return CAPA_PORPRENDA_INICIO + i;
         if (cat == Categoria.SOMBRERO) return SOMBRERO_PORPRENDA_INICIO + i;
         if (cat == Categoria.BANDA) return BANDA_PORPRENDA_INICIO + i;
-        if (cat == Categoria.CHAQUETA) return CHAQUETA_PORPRENDA_INICIO + i;
         return i < PORPRENDA_POR_CATEGORIA ? porPrendaInicio(cat) + i
                 : PORPRENDA_EXTRA_INICIO + cat.ordinal() * PORPRENDA_EXTRA_POR_CATEGORIA + (i - PORPRENDA_POR_CATEGORIA);
     }
@@ -451,6 +439,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         // 27 lugares) y no tienen nada que hacer en el corte.
         return switch (cat) {
             case REMERA -> item instanceof MoldeCuelloItem
+                    || item instanceof MoldeChaquetaItem
                     || (item instanceof MoldeItem m && m.eje == MoldeItem.Eje.MANGA)
                     || (item instanceof MoldeRuedoItem r && r.valor.valeEnTela());
             case PANTALON, MEDIAS -> false;
@@ -459,7 +448,6 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
             case CAPA -> item instanceof MoldeCapaItem;
             case SOMBRERO -> item instanceof MoldeSombreroItem;
             case BANDA -> item instanceof MoldeBandaItem;
-            case CHAQUETA -> item instanceof MoldeChaquetaItem || (item instanceof MoldeRuedoItem r && r.valor.valeEnTela());
         };
     }
 
@@ -800,7 +788,8 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                 // las demás.
                 if (activo.getItem() instanceof MoldeRangoItem m) yield ComboCorte.remeraManga(mangaRemeraDeRango(m.rango));
                 if (activo.getItem() instanceof MoldeCuelloItem m) yield ComboCorte.remeraCuello(m.valor);
-                yield ComboCorte.VACIO;
+                ComboCorte chaqueta = comboDeMoldeChaqueta(activo.getItem());
+                yield chaqueta == null ? ComboCorte.VACIO : chaqueta;
             }
             case PANTALON -> {
                 // Solo el corte INFERIOR (2026-09-23, "pantalones se fija
@@ -841,13 +830,6 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
             }
             case BANDA -> {
                 ComboCorte c = comboDeMoldeBanda(activo.getItem());
-                yield c == null ? ComboCorte.VACIO : c;
-            }
-            case CHAQUETA -> {
-                // Cuello y mangas salen como en la remera; frente, capucha y solapa de los moldes propios.
-                if (activo.getItem() instanceof MoldeRangoItem m) yield ComboCorte.remeraManga(mangaRemeraDeRango(m.rango));
-                if (activo.getItem() instanceof MoldeCuelloItem m) yield ComboCorte.remeraCuello(m.valor);
-                ComboCorte c = comboDeMoldeChaqueta(activo.getItem());
                 yield c == null ? ComboCorte.VACIO : c;
             }
         };
@@ -1206,8 +1188,6 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                 for (Categoria c : Categoria.values()) {
                     if (sirveEnBanco(molde, c) && !guardarMolde(c, molde.copy())) sinLugar.add(item.getName());
                 }
-                // La chaqueta también guarda su cuello y su manga (2026-10-07).
-                if (esMoldePropioDeRemeraParaChaqueta(molde) && !guardarMolde(Categoria.CHAQUETA, molde.copy())) sinLugar.add(item.getName());
             }
         }
         markDirty();
@@ -1228,22 +1208,13 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         }
     }
 
-    /**
-     * El cuello y la manga serían "de la remera" (exclusivos de su banco); la chaqueta los usa también y los guarda en
-     * el suyo, sin pasarlos al almacén general (que ya está casi lleno de moldes compartidos).
-     */
-    private static boolean esMoldePropioDeRemeraParaChaqueta(ItemStack stack) {
-        return stack.getItem() instanceof MoldeCuelloItem
-                || (stack.getItem() instanceof MoldeItem m && m.eje == MoldeItem.Eje.MANGA);
-    }
-
     /** Devuelve un molde al storage que le corresponde (mismas reglas que isValid: compartido -> almacén general, exclusivo de remera -> su banco). */
     private boolean guardarMolde(Categoria cat, ItemStack molde) {
         int[] lugares;
         if (esMoldeCompartido(molde)) {
             lugares = new int[ALMACEN_TAMANO];
             for (int i = 0; i < ALMACEN_TAMANO; i++) lugares[i] = ALMACEN_INICIO + i;
-        } else if (sirveEnBanco(molde, cat) || (cat == Categoria.CHAQUETA && esMoldePropioDeRemeraParaChaqueta(molde))) {
+        } else if (sirveEnBanco(molde, cat)) {
             lugares = new int[PORPRENDA_TOTAL];
             for (int i = 0; i < PORPRENDA_TOTAL; i++) lugares[i] = porPrendaSlot(cat, i);
         } else {
@@ -1322,8 +1293,6 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
     /** A qué categoría pertenece esta prenda de verdad — mismo chequeo de tipo que {@link PrendaModelado#aplicar}. */
     @Nullable
     private static Categoria categoriaDe(ItemStack stack) {
-        // Antes que la remera: la chaqueta hereda de ella pero tiene su propia categoría (2026-10-07).
-        if (stack.getItem() instanceof com.modamod.item.ChaquetaItem) return Categoria.CHAQUETA;
         if (stack.getItem() instanceof com.modamod.sublimadora.RemeraItem) return Categoria.REMERA;
         if (stack.getItem() instanceof com.modamod.item.PantalonItem) return Categoria.PANTALON;
         if (stack.getItem() == com.modamod.item.ModamodItems.SOCKS_SOLID) return Categoria.MEDIAS;
@@ -1648,7 +1617,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                     ROLES[cat.ordinal()][p % PINES_POR_CATEGORIA]);
             return ok;
         }
-        if (slot == POLLERA_ACTIVO || slot == CAPA_ACTIVO || slot == SOMBRERO_ACTIVO || slot == BANDA_ACTIVO || slot == CHAQUETA_ACTIVO) return false; // sin uso, igual que los otros (ver abajo)
+        if (slot == POLLERA_ACTIVO || slot == CAPA_ACTIVO || slot == SOMBRERO_ACTIVO || slot == BANDA_ACTIVO) return false; // sin uso, igual que los otros (ver abajo)
         if (slot >= ACTIVO_INICIO && slot < ACTIVO_FIN) {
             Categoria cat = Categoria.values()[slot - ACTIVO_INICIO];
             // El Activo de REMERA quedó sin uso (2026-09-24, esquema de
@@ -1665,10 +1634,6 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         }
         if (slot >= BANDA_PORPRENDA_INICIO && slot < BANDA_PORPRENDA_INICIO + PORPRENDA_TOTAL) {
             return sirveEnBanco(stack, Categoria.BANDA) || categoriaDe(stack) == Categoria.BANDA;
-        }
-        if (slot >= CHAQUETA_PORPRENDA_INICIO && slot < CHAQUETA_PORPRENDA_INICIO + PORPRENDA_TOTAL) {
-            return sirveEnBanco(stack, Categoria.CHAQUETA) || categoriaDe(stack) == Categoria.CHAQUETA
-                    || esMoldePropioDeRemeraParaChaqueta(stack);
         }
         if (slot >= SOMBRERO_PORPRENDA_INICIO && slot < SOMBRERO_PORPRENDA_INICIO + PORPRENDA_TOTAL) {
             return sirveEnBanco(stack, Categoria.SOMBRERO) || categoriaDe(stack) == Categoria.SOMBRERO;

@@ -49,7 +49,6 @@ public final class PiezasDelMod {
         PiezasDePrenda.registrar(ModamodItems.SOCKS_SOLID, PiezasDelMod::medias);
         PiezasDePrenda.registrar(ModamodItems.PANTALON, PiezasDelMod::pantalon);
         PiezasDePrenda.registrar(ModItems.REMERA, PiezasDelMod::remera);
-        PiezasDePrenda.registrar(ModamodItems.CHAQUETA, PiezasDelMod::chaqueta);
         PiezasDePrenda.registrar(ModamodItems.CALIENTABRAZOS, PiezasDelMod::calientabrazos);
         PiezasDePrenda.registrar(ModamodItems.POLLERA, PiezasDelMod::pollera);
     }
@@ -170,23 +169,10 @@ public final class PiezasDelMod {
      * sigue al cuerpo sin geometria extra y queda recortada a la tela sola.
      */
     private static List<Pieza> remera(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
-        return piezasDeRemera(stack, Capa.TORSO_EXTERIOR, false, false);
-    }
-
-    /**
-     * Hoodie (2026-09-30, categoría Chaqueta): las mismas piezas que la
-     * remera — comparte tela, corte y todo lo de las máquinas, ver
-     * {@code ChaquetaItem} — pero en {@code Capa.CHAQUETA}, con puños y
-     * ruedo elásticos y el bolsillo canguro y los ribs pintados sobre la
-     * tela ya compuesta ({@link com.modamod.render.DetallesHoodie}). La
-     * capucha y los cordones son geometría aparte
-     * ({@code GarmentFeatureRenderer#dibujarCapucha}).
-     */
-    private static List<Pieza> chaqueta(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
-        // Corte modular (2026-10-07): capucha (con ella, el bolsillo canguro) y frente; el ruedo y los puños salen de Ruedos.
-        boolean canguro = com.modamod.item.ChaquetaItem.conCapucha(stack);
-        boolean abierta = com.modamod.item.ChaquetaItem.frente(stack) == com.modamod.item.ChaquetaFrente.ABIERTA;
-        return piezasDeRemera(stack, Capa.CHAQUETA, canguro, abierta);
+        // El slot decide la capa (2026-10-07, "un solo top"): en el de chaqueta la copia viene marcada como exterior.
+        boolean abierta = com.modamod.item.TopCorte.frente(stack) == com.modamod.item.ChaquetaFrente.ABIERTA;
+        int capa = com.modamod.item.TopCorte.exterior(stack) ? Capa.CHAQUETA : Capa.TORSO_EXTERIOR;
+        return piezasDeRemera(stack, capa, com.modamod.item.TopCorte.conCapucha(stack), abierta);
     }
 
     private static List<Pieza> piezasDeRemera(ItemStack stack, int capa, boolean canguro, boolean abierta) {

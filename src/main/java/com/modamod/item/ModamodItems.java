@@ -102,17 +102,6 @@ public final class ModamodItems {
     public static final com.modamod.aplique.RetazoApliqueItem RETAZO_APLIQUE = register("retazo_aplique",
             new com.modamod.aplique.RetazoApliqueItem(new Item.Settings().maxCount(64)));
 
-    /**
-     * Hoodie oversize, primera prenda de la categoría Chaqueta (2026-09-30).
-     * Sale de fábrica largo, con manga larga, cuello redondo y calce
-     * Oversize — todo cambiable en la Modeladora como una remera.
-     */
-    public static final ChaquetaItem CHAQUETA = register("chaqueta", new ChaquetaItem(new Item.Settings().maxCount(16)
-            .component(com.modamod.sublimadora.ModItems.VARIANTE, new com.modamod.sublimadora.Variante(
-                    com.modamod.sublimadora.Variante.Largo.LARGO, com.modamod.sublimadora.Variante.Manga.LARGA,
-                    com.modamod.sublimadora.Variante.Cuello.REDONDO))
-            .component(ModamodComponents.CALCE, Calce.OVERSIZE)));
-
     /** Muestra de color de la Estación de Tintes (2026-09-30), ver {@link MuestraColorItem}. */
     /** Estrógenos (2026-10-01): cada dosis sube un talle el busto del relieve. */
     public static final EstrogenosItem ESTROGENOS = register("estrogenos",

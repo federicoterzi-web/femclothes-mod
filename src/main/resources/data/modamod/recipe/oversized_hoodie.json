@@ -1,5 +1,5 @@
 {
-  "_comment": "2026-09-30: el Buzo Oversize viejo (armadura) se reemplaza por el hoodie de la categoría Chaqueta — misma receta, sale el nuevo (largo, manga larga, calce oversize: son los componentes por defecto del ítem).",
+  "_comment": "2026-09-30: el Buzo Oversize viejo (armadura) se reemplaza por el hoodie de la categoría Chaqueta — misma receta, sale el nuevo (una remera larga, de manga larga, oversize, con capucha y ruedo y puños ajustados: ahora los componentes van en la receta).",
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "pattern": [
@@ -9,10 +9,14 @@
   ],
   "key": { "W": { "item": "minecraft:white_wool" } },
   "result": {
-    "id": "modamod:chaqueta",
+    "id": "modamod:remera",
     "count": 1,
     "components": {
-      "minecraft:dyed_color": { "rgb": 16383998, "show_in_tooltip": false }
+      "minecraft:dyed_color": { "rgb": 16383998, "show_in_tooltip": false },
+      "modamod:variante": { "largo": "largo", "manga": "larga", "cuello": "redondo" },
+      "modamod:calce": "oversize",
+      "modamod:con_capucha": true,
+      "modamod:ruedos": { "torso": "ajustado", "puno_izq": "ajustado", "puno_der": "ajustado" }
     }
   }
 }

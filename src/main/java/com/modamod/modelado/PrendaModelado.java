@@ -231,19 +231,19 @@ public final class PrendaModelado {
         }
 
         // Chaqueta (2026-10-07): frente, capucha y solapa (el cuello, las mangas y el largo salen del bloque de remera).
-        if (out.getItem() instanceof com.modamod.item.ChaquetaItem && combo.pollera().isPresent()
+        if (out.getItem() instanceof com.modamod.sublimadora.RemeraItem && combo.pollera().isPresent()
                 && combo.pollera().get().chaqueta().isPresent()) {
             var c = combo.pollera().get().chaqueta().get();
             if (c.frente().isPresent()) {
-                com.modamod.item.ChaquetaItem.setFrente(out, c.frente().get());
+                com.modamod.item.TopCorte.setFrente(out, c.frente().get());
                 cambio = true;
             }
             if (c.capucha().isPresent()) {
-                com.modamod.item.ChaquetaItem.setConCapucha(out, c.capucha().get());
+                com.modamod.item.TopCorte.setConCapucha(out, c.capucha().get());
                 cambio = true;
             }
             if (c.solapa().isPresent()) {
-                com.modamod.item.ChaquetaItem.setSolapa(out, c.solapa().get());
+                com.modamod.item.TopCorte.setSolapa(out, c.solapa().get());
                 cambio = true;
             }
         }

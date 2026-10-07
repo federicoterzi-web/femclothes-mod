@@ -194,7 +194,12 @@ public class ManiquiBlockEntity extends BlockEntity
     public List<ItemStack> prendasPuestas() {
         List<ItemStack> out = new ArrayList<>();
         for (int i = 0; i < GuardarropasBlockEntity.PRENDAS; i++) {
-            if (!items.get(i).isEmpty()) out.add(items.get(i));
+            ItemStack s = items.get(i);
+            if (s.isEmpty()) continue;
+            // La columna de chaquetas se dibuja en la capa exterior (2026-10-07, "un solo top").
+            if (i / GuardarropasBlockEntity.POR_CATEGORIA == GuardarropasBlockEntity.CHAQUETA
+                    && s.getItem() instanceof com.modamod.sublimadora.RemeraItem) s = com.modamod.item.TopCorte.comoExterior(s);
+            out.add(s);
         }
         return out;
     }

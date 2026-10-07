@@ -2,7 +2,7 @@ package com.modamod.util;
 
 import com.modamod.Modamod;
 import com.modamod.item.CapaItem;
-import com.modamod.item.ChaquetaItem;
+import com.modamod.item.TopCorte;
 import dev.emi.trinkets.api.SlotReference;
 import dev.emi.trinkets.api.TrinketsApi;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -46,7 +46,7 @@ public final class RedCapucha {
     }
 
     private static boolean tieneCapucha(ItemStack stack) {
-        return ChaquetaItem.tieneCapucha(stack)
+        return TopCorte.tieneCapucha(stack)
                 || (stack.getItem() instanceof CapaItem && CapaItem.capucha(stack));
     }
 
@@ -55,10 +55,10 @@ public final class RedCapucha {
             List<Pair<SlotReference, ItemStack>> conCapucha =
                     componente.getEquipped(RedCapucha::tieneCapucha);
             if (conCapucha.isEmpty()) return;
-            boolean algunaArriba = conCapucha.stream().anyMatch(p -> ChaquetaItem.capuchaArriba(p.getRight()));
+            boolean algunaArriba = conCapucha.stream().anyMatch(p -> TopCorte.capuchaArriba(p.getRight()));
             for (Pair<SlotReference, ItemStack> par : conCapucha) {
                 ItemStack copia = par.getRight().copy();
-                ChaquetaItem.setCapuchaArriba(copia, !algunaArriba);
+                TopCorte.setCapuchaArriba(copia, !algunaArriba);
                 // setStack (y no cambiar el stack en el lugar) para que Trinkets lo sincronice.
                 par.getLeft().inventory().setStack(par.getLeft().index(), copia);
             }

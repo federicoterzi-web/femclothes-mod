@@ -9,8 +9,7 @@ import java.util.Map;
 
 /**
  * Los {@link Ruedo} de una prenda, uno por {@link ZonaRuedo} (componente {@code modamod:ruedos}). Lo que no está
- * anotado vale el de fábrica de la prenda: recto, salvo en la chaqueta, donde el ruedo y los puños son ajustados
- * (el hoodie de siempre).
+ * anotado vale el de fábrica de la prenda: recto.
  */
 public final class Ruedos {
     private Ruedos() {}
@@ -18,12 +17,8 @@ public final class Ruedos {
     public static final Codec<Map<ZonaRuedo, Ruedo>> CODEC = Codec.unboundedMap(
             StringIdentifiable.createCodec(ZonaRuedo::values), StringIdentifiable.createCodec(Ruedo::values));
 
-    /** El ruedo de fábrica de {@code zona} en esta prenda. */
+    /** El ruedo de fábrica de {@code zona}: recto (el hoodie lo trae ajustado, ver {@link TopCorte#hoodie}). */
     public static Ruedo deFabrica(ItemStack stack, ZonaRuedo zona) {
-        if (stack.getItem() instanceof ChaquetaItem
-                && (zona == ZonaRuedo.TORSO || zona == ZonaRuedo.PUNO_IZQ || zona == ZonaRuedo.PUNO_DER)) {
-            return Ruedo.AJUSTADO;
-        }
         return Ruedo.RECTO;
     }
 

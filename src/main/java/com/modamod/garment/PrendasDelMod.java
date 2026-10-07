@@ -28,8 +28,6 @@ public final class PrendasDelMod {
         Garments.registrar(ModamodItems.CALIENTABRAZOS, CALIENTABRAZOS);
         Garments.registrar(ModamodItems.POLLERA, POLLERA);
         Garments.registrar(ModamodItems.CAPA, CAPA);
-        // La chaqueta gobierna las mismas partes que la remera (torso y brazos).
-        Garments.registrar(ModamodItems.CHAQUETA, REMERA);
     }
 
     /**

@@ -93,6 +93,19 @@ public class RemeraItem extends Item {
      */
     @Override
     public Text getName(ItemStack stack) {
+        // Con capucha, solapas o frente abierto es una chaqueta (2026-10-07, "un solo top"): hoodie, saco, campera...
+        if (com.modamod.item.TopCorte.conRasgosDeChaqueta(stack)) {
+            boolean sinMangas = manga(stack, com.modamod.region.Lado.IZQUIERDA).filas == 0
+                    && manga(stack, com.modamod.region.Lado.DERECHA).filas == 0;
+            boolean abierta = com.modamod.item.TopCorte.frente(stack) == com.modamod.item.ChaquetaFrente.ABIERTA;
+            boolean capucha = com.modamod.item.TopCorte.conCapucha(stack);
+            boolean saco = com.modamod.item.TopCorte.solapa(stack) != com.modamod.item.ChaquetaSolapa.NINGUNA && !capucha;
+            String clave = sinMangas ? (abierta ? "chaleco_abierto" : "chaleco")
+                    : saco ? (abierta ? "saco" : "saco_cruzado")
+                    : capucha ? (abierta ? "hoodie_abierto" : "hoodie")
+                    : (abierta ? "campera" : "buzo");
+            return Text.translatable("item.modamod.chaqueta." + clave);
+        }
         return Text.translatable("modamod.corte." + variante(stack).nombre());
     }
 
@@ -171,6 +184,11 @@ public class RemeraItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
+
+        if (com.modamod.item.TopCorte.conCapucha(stack)) {
+            tooltip.add(Text.translatable("modamod.chaqueta.tooltip.capucha",
+                    Text.keybind("key.modamod.capucha")).formatted(Formatting.GRAY));
+        }
 
         // El corte completo, porque el nombre solo dice el rasgo dominante:
         // dos "remeras" pueden diferir en mangas y en cuello.

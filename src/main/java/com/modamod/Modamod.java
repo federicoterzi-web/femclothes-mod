@@ -86,7 +86,7 @@ public class Modamod implements ModInitializer {
             for (ItemStack kit : com.modamod.util.KitsCreativos.todos()) entries.add(kit);
             // Prendas.
             entries.add(com.modamod.sublimadora.ModItems.REMERA);
-            entries.add(ModamodItems.CHAQUETA);
+            entries.add(com.modamod.item.TopCorte.hoodie());
             // Apliques (2026-10-01): los 3 moldes y retazos de prueba con colores
             // de fábrica, hasta que Tintes los tiña (fase 4).
             entries.add(ModamodItems.MOLDE_APLIQUE_MONO);

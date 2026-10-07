@@ -535,9 +535,13 @@ public final class ModamodComponents {
                     .codec(StringIdentifiable.createCodec(ChaquetaSolapa::values))
                     .packetCodec(PacketCodecs.indexed(i -> ChaquetaSolapa.values()[i], Enum::ordinal))
                     .build());
-    /** La chaqueta SIN capucha (2026-10-07): solo se guarda cuando es false; ausente = con capucha (el hoodie de siempre). */
-    public static final ComponentType<Boolean> CHAQUETA_SIN_CAPUCHA = Registry.register(
-            Registries.DATA_COMPONENT_TYPE, Identifier.of("modamod", "chaqueta_sin_capucha"),
+    /** El Top con capucha (2026-10-07, "un solo top"): solo se guarda cuando es true; ausente = sin capucha. */
+    public static final ComponentType<Boolean> CON_CAPUCHA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("modamod", "con_capucha"),
+            ComponentType.<Boolean>builder().codec(com.mojang.serialization.Codec.BOOL).packetCodec(PacketCodecs.BOOL).build());
+    /** Marca de la copia que se dibuja en la capa exterior (el Top llevado en el slot de chaqueta); no se guarda en la prenda. */
+    public static final ComponentType<Boolean> CAPA_EXTERIOR = Registry.register(
+            Registries.DATA_COMPONENT_TYPE, Identifier.of("modamod", "capa_exterior"),
             ComponentType.<Boolean>builder().codec(com.mojang.serialization.Codec.BOOL).packetCodec(PacketCodecs.BOOL).build());
 
     /** La plantilla de un molde de aplique personalizado (2026-10-04) — ver {@code aplique/MoldeApliquePersonalizadoItem}. */
