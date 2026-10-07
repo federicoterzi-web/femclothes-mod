@@ -18,7 +18,9 @@ public abstract class ClientPlayerEntityCintaMixin {
     @Inject(method = "tickMovement()V", at = @At("TAIL"))
     private void femclothes$sinBamboleo(CallbackInfo ci) {
         ClientPlayerEntity yo = (ClientPlayerEntity) (Object) this;
-        if (yo.input != null && yo.input.getMovementInput().lengthSquared() < 1e-4f && CintaFisica.llevada(yo)) {
+        boolean quieto = yo.input != null && yo.input.getMovementInput().lengthSquared() < 1e-4f;
+        CintaFisica.jugadorQuieto = quieto ? yo : null;
+        if (quieto && CintaFisica.llevada(yo)) {
             yo.strideDistance = 0f;
         }
     }

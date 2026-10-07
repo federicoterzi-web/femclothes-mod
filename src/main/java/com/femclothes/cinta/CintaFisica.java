@@ -103,6 +103,9 @@ public final class CintaFisica {
         return direccion(p, s, e) != null ? p : null;
     }
 
+    /** El jugador local si este tick no toca las teclas (lo fija el mixin del cliente; en el servidor queda null). */
+    public static volatile Entity jugadorQuieto;
+
     /** ¿Lo está llevando una cinta ahora? (para quitarle el vaivén de la cámara al jugador quieto). */
     public static boolean llevada(Entity e) { return cintaBajo(e) != null; }
 
@@ -115,12 +118,18 @@ public final class CintaFisica {
         if (p == null) return posDelta;
         BlockState s = e.getWorld().getBlockState(p);
         Vec3d dir = direccion(p, s, e);
-        double v = velocidadBanda(e.getWorld(), p, s);
+        double f = s.getBlock().getSlipperiness() * 0.91;
+        // Lo que la banda mueve la posición POR TICK: la velocidad de régimen dividida por el rozamiento (se mide después
+        // de multiplicar por f), no la de régimen a secas (2026-10-07, "en 3era persona se lo ve caminar": con v a secas
+        // el desplazamiento real era ~1,8 v y caía siempre en "camina").
+        double v = velocidadBanda(e.getWorld(), p, s) / f;
+        // El jugador local, sin tocar teclas, no camina: se desliza.
+        if (e == jugadorQuieto) return 0f;
         double dx = e.getX() - e.prevX, dz = e.getZ() - e.prevZ;
         double along = dx * dir.x + dz * dir.z;
         double perpX = dx - along * dir.x, perpZ = dz - along * dir.z;
-        // Llevado: avanza como la banda (con un poco de margen al arrancar) y casi nada al costado.
-        if (along >= -0.25 * v && along <= 1.3 * v && perpX * perpX + perpZ * perpZ < 0.012 * 0.012) return 0f;
+        // Llevado: avanza como la banda (con margen al arrancar y al frenar) y casi nada al costado.
+        if (along >= -0.3 * v && along <= 1.5 * v && perpX * perpX + perpZ * perpZ < 0.02 * 0.02) return 0f;
         double rx = dx - dir.x * v, rz = dz - dir.z * v;
         double r = Math.sqrt(rx * rx + rz * rz);
         return r < 0.012 ? 0f : (float) r;
