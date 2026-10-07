@@ -36,7 +36,7 @@ public final class DetallesHoodie {
      * lo pueda volver a leer.
      */
     public static Identifier pintar(Identifier base, int filasTorso, int filasIzq, int filasDer) {
-        return pintar(base, filasTorso, filasIzq, filasDer, true, true, false);
+        return pintar(base, filasTorso, filasIzq, filasDer, true, true, true, true, false);
     }
 
     /**
