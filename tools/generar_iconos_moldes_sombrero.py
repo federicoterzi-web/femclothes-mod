@@ -4,7 +4,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter
 
 RAIZ = Path(__file__).resolve().parent.parent
-TEX = RAIZ / "src/main/resources/assets/femclothes/textures/item"
+TEX = RAIZ / "src/main/resources/assets/modamod/textures/item"
 papel_src = Image.open(TEX / "molde_capa_ruedo_recto.png").convert("RGBA")
 S = 8  # supersampling
 LINEA = (190, 34, 98, 255)

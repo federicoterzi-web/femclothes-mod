@@ -2,13 +2,13 @@
 
 Hoja de papel kraft (los colores de los moldes de "Taller de sastrería") con
 la forma calada al medio y la chinche de bronce de los otros moldes.
-Salida: src/main/resources/assets/femclothes/textures/item/molde_mascara_<forma>.png (64x64).
+Salida: src/main/resources/assets/modamod/textures/item/molde_mascara_<forma>.png (64x64).
 """
 import math
 import os
 from PIL import Image
 
-RAIZ = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "femclothes", "textures", "item")
+RAIZ = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "modamod", "textures", "item")
 BASE = Image.open(os.path.join(RAIZ, "molde_cuello_v.png")).convert("RGBA")
 
 # Colores tomados del molde de cuello (relleno, borde oscuro, sombra).

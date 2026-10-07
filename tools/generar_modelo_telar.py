@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import generar_modelo_estilista as est   # recortar_cubo / bajar_uv / CORTE / DESPLAZAR_V
 
 RAIZ = os.path.join(os.path.dirname(__file__), "..")
-RES = os.path.join(RAIZ, "src", "main", "resources", "assets", "femclothes")
+RES = os.path.join(RAIZ, "src", "main", "resources", "assets", "modamod")
 NUEVO = os.path.join(RAIZ, "assets_nuevos_prueba", "telar")
 # Texels propios y libres del atlas (2026-10-07, "el telar automatico tiene q tener la barra de progreso y dos barras de
 # insumos como la autoestiladora"): barra de progreso granate y las de lana (blanca) e hilo (dorado).

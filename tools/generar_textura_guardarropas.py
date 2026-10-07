@@ -29,7 +29,7 @@ CATEGORIAS, CAPAS, ARMADURAS = 5, 3, 4
 X_ARMADURA = M_MEDIO + CATEGORIAS * 20 + 6
 X_SLIDERS = M_MEDIO + 170          # ManiquiScreen: sliders de pose a la derecha
 
-GUI = Path(__file__).resolve().parent.parent / "src/main/resources/assets/femclothes/textures/gui/container"
+GUI = Path(__file__).resolve().parent.parent / "src/main/resources/assets/modamod/textures/gui/container"
 
 # Mismos valores que EstiloPergamino.Tema.PLATA / AZUL en Java.
 base.TEMAS["plata"] = dict(pergamino=[214, 200, 170], claro=[230, 234, 240], medio=[150, 157, 168], oscuro=[66, 72, 84])

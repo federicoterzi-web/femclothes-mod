@@ -170,8 +170,8 @@ if __name__ == "__main__":
     import pathlib
 
     base_dir = pathlib.Path(__file__).resolve().parent.parent
-    src_path = base_dir / "src/main/resources/assets/femclothes/textures/entity/cuerpo_normal_larga_redondo.png"
-    out_dir = base_dir / "src/main/resources/assets/femclothes/textures/models/armor"
+    src_path = base_dir / "src/main/resources/assets/modamod/textures/entity/cuerpo_normal_larga_redondo.png"
+    out_dir = base_dir / "src/main/resources/assets/modamod/textures/models/armor"
 
     src = Image.open(src_path).convert("RGBA")
     assert src.size == (512, 512), src.size

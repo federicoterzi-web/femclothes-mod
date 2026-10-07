@@ -3,7 +3,7 @@
 > **Estado: la FASE 1 está implementada** (§1, §3 y §7); §2 y §4–§6 siguen
 > siendo diseño. Es la bajada de una charla de diseño (2026-09-06) para que se
 > pueda retomar sin el historial. El mapa general está en
-> [FEMCLOTHES.md](../FEMCLOTHES.md); las máquinas de confección en
+> [MODAMOD.md](../MODAMOD.md); las máquinas de confección en
 > [MAQUINAS.md](MAQUINAS.md).
 
 Objetivo: pasar de "ropa ceñida que no es armadura" a un guardarropa
@@ -26,7 +26,7 @@ shorts, el traje de maid, y cualquier layering.
 
 ### Solución: capa de piel separada + orden de capa explícito — ✅ hecho
 
-**Camino A del FEMCLOTHES.md, con la pieza que faltaba (el ordinal).**
+**Camino A del MODAMOD.md, con la pieza que faltaba (el ordinal).**
 
 Implementado como `GarmentFeatureRenderer` (un solo punto de dibujo para toda
 la ropa), `Capa` (los ordinales), `Parte`, `Garment`/`Garments` (servidor) y
@@ -101,7 +101,7 @@ Dentro y entre slots de una región, el **ordinal `layer`** decide el orden
 de dibujo.
 
 ¹ `piernas/exterior` ya existe (`pantalon`, con eje de largo — de pantalón
-completo a tanga, ver FEMCLOTHES.md). Las medias siguen en el slot viejo
+completo a tanga, ver MODAMOD.md). Las medias siguen en el slot viejo
 `socks/pair` y no en `piernas/media` — renombrarlo es aparte, no hacía falta
 para probar el layering.
 
@@ -151,7 +151,7 @@ componentes se llaman `right_dyed_color` (inglés) y `estampa_frente`
 
 **IZQUIERDA = la del jugador** (anatómica), no la del que mira. La resolución
 textura/modelo ya está verificada (`PlayerEntityModel.getTexturedModelData`,
-ver FEMCLOTHES.md §Texturas). El widget y el enum coinciden con eso.
+ver MODAMOD.md §Texturas). El widget y el enum coinciden con eso.
 
 ### La prenda declara sus regiones por operación
 
@@ -216,7 +216,7 @@ archivos de la sublimadora (el selector físico y su NBT).
 
 ### Rotar la prenda entera — `orientacion` — ✅ el dato y la resolución, hechos
 
-Terminó siendo un **componente propio** (`femclothes:orientacion`) y no un
+Terminó siendo un **componente propio** (`modamod:orientacion`) y no un
 campo de `variante`: `variante` es de la remera y esto vale para cualquier
 prenda. Se borra al volver a la normal, para que una prenda sin girar siga
 apilando con otra igual.
@@ -241,7 +241,7 @@ de forma (buzo con capucha, vestido con cola) declaran
 ### Lo que habilita
 
 Cortes **asimétricos** salen gratis: manga 3/4 en un brazo y larga en el
-otro, flare distinto por pierna. `femclothes:variante` pasaría a tener split
+otro, flare distinto por pierna. `modamod:variante` pasaría a tener split
 por `Lado` como ya lo tienen las medias (mismos componentes opcionales,
 mismo `RegionResolver`).
 
@@ -249,7 +249,7 @@ mismo `RegionResolver`).
 
 ## 4. Los cortes de remera — cómo construirlos de verdad
 
-El data-model de los 3 ejes ya existe (36 combos, `femclothes:variante`).
+El data-model de los 3 ejes ya existe (36 combos, `modamod:variante`).
 Falta que las variantes se **vean** bien; hoy son todas generadas por script.
 
 ### Mangas — `sin / cortas / 3-4 / largas`
@@ -431,7 +431,7 @@ lápiz casi no se mueve, la circular se abre.
 
 ## 6. Personalizable sin explotar en combos
 
-### `femclothes:variante` agnóstico de prenda
+### `modamod:variante` agnóstico de prenda
 
 Hoy `variante` es `{largo, manga, cuello}` hardcodeado para remera. Cada
 familia tiene sus ejes:
@@ -452,7 +452,7 @@ familia tiene sus ejes:
 `PantalonLargo` + `MoldePantalonItem`, no el `Map<Eje,Valor>` genérico de acá
 arriba— y con valores distintos a los especulados en esta tabla:
 **pantalón · tres cuartos · bermudas · shorts · calzoncillos · slip · tanga**
-(7, no 4). Ver FEMCLOTHES.md, "El largo del pantalón". Cuando este sistema
+(7, no 4). Ver MODAMOD.md, "El largo del pantalón". Cuando este sistema
 genérico se construya, es el punto donde se pliega.
 
 - **Moldes de eje** = llaves **universales**. El molde `manga` desbloquea el
@@ -511,7 +511,7 @@ las costuras del cubo. Las orientaciones se hacen como máscaras separadas
 
 Hoy `SkinToneSampler` / `ComposedSkin` / `SkinRegions` reconstruyen la piel
 desnuda leyendo la skin real, con toda la lista de "trampas que costaron
-tiempo" de FEMCLOTHES.md. Un **cuerpo base elegido a mano** borra eso.
+tiempo" de MODAMOD.md. Un **cuerpo base elegido a mano** borra eso.
 
 ### Qué es
 
@@ -520,7 +520,7 @@ tiempo" de FEMCLOTHES.md. Un **cuerpo base elegido a mano** borra eso.
   Implementado a **1×** (una skin común de 64×64) y no a 8× como la tela: el
   cuerpo nunca recibe una foto ni un patrón, así que no necesita más
   resolución que un pixel de skin. Las dos escalas conviven sin desalinearse
-  — ver "El cuerpo va a 1×" en FEMCLOTHES.md.
+  — ver "El cuerpo va a 1×" en MODAMOD.md.
 - Trae **ropa interior básica** baked, o engancha con los slots
   `torso/interior` + `piernas/interior` (§1) — viene un default, se cambia
   (slip / boxer / bralette). El censurado es el fallback si no elegís nada.
@@ -542,7 +542,7 @@ elegís cuerpo base, tono, ropa interior, preview.
 **Lo que sí está**: el perfil (`PerfilCuerpo`) como attachment persistente,
 sincronizado a **todos** los clientes y no solo al dueño —los demás también
 tienen que dibujarte el mismo cuerpo—, con `copyOnDeath`. Mientras no haya
-GUI se cambia con `/femclothes cuerpo|tono|interior|reset|ver`.
+GUI se cambia con `/modamod cuerpo|tono|interior|reset|ver`.
 
 **Lo que falta además de la GUI**: el arte. `textures/entity/cuerpo/<id>.png`
 (mapa de sombras, se multiplica) e `interior_<ropa>.png` (se compone encima)
@@ -611,7 +611,7 @@ Después, dos tracks independientes:
    a `pantalon`**: Trinket, slot `piernas/exterior`, `Capa.PIERNA_EXTERIOR`
    (20) arriba de la media. Eje de largo (`PantalonLargo`, 7 valores de
    pantalón completo a tanga) vía molde, mismo mecanismo que el corte de
-   remera — ver FEMCLOTHES.md. Sin patrón todavía. Después fishnet y
+   remera — ver MODAMOD.md. Sin patrón todavía. Después fishnet y
    socks_34 caen con el mismo mecanismo.
 3. ~~Fusionar `RemeraTrinketRenderer` + `BodyPartTrinketRenderer`~~ — hecho en
    la fase 1 (`CuerpoGeometria` + `GarmentFeatureRenderer`).

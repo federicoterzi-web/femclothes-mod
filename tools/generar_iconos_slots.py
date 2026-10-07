@@ -13,7 +13,7 @@ from pathlib import Path
 
 from PIL import Image
 
-RAIZ = Path(__file__).resolve().parent.parent / "src/main/resources/assets/femclothes/textures"
+RAIZ = Path(__file__).resolve().parent.parent / "src/main/resources/assets/modamod/textures"
 ICONOS = RAIZ / "item/icono"
 SALIDA = RAIZ / "gui/slot"
 

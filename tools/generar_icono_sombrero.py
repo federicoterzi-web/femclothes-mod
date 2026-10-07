@@ -8,7 +8,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-RAIZ = Path(__file__).resolve().parent.parent / "src/main/resources/assets/femclothes/textures"
+RAIZ = Path(__file__).resolve().parent.parent / "src/main/resources/assets/modamod/textures"
 TINTA = (59, 36, 16, 255)
 CONO = (84, 58, 112, 255)
 CONO_LUZ = (112, 82, 146, 255)

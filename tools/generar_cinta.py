@@ -19,7 +19,7 @@ import random
 
 from PIL import Image
 
-RAIZ = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "femclothes")
+RAIZ = os.path.join(os.path.dirname(__file__), "..", "src", "main", "resources", "assets", "modamod")
 TEX = os.path.join(RAIZ, "textures", "block")
 MOD = os.path.join(RAIZ, "models", "block")
 ITEM = os.path.join(RAIZ, "models", "item")
@@ -135,8 +135,8 @@ def plano_banda(textura):
 
 def modelo_recta(q=""):
     return {
-        "textures": {"marco": "femclothes:block/cinta_marco", "banda": "femclothes:block/cinta_banda" + q,
-                     "particle": "femclothes:block/cinta_marco"},
+        "textures": {"marco": "modamod:block/cinta_marco", "banda": "modamod:block/cinta_banda" + q,
+                     "particle": "modamod:block/cinta_marco"},
         "elements": [
             caja([0, 0, 0], [16, 4.3, 16]),
             caja([0, 4, 0], [2, 6, 16]),
@@ -166,8 +166,8 @@ def modelo_curva(espejo, q=""):
         xs = x_(c, c + 1)
         elementos.append(caja([xs[0], 4, round(z_in, 2)], [xs[1], 6, round(z_out, 2)]))
     return nombre + q, {
-        "textures": {"marco": "femclothes:block/cinta_marco", "banda": f"femclothes:block/{nombre}{q}",
-                     "particle": "femclothes:block/cinta_marco"},
+        "textures": {"marco": "modamod:block/cinta_marco", "banda": f"modamod:block/{nombre}{q}",
+                     "particle": "modamod:block/cinta_marco"},
         "elements": elementos + [plano_banda("#banda")],
     }
 
@@ -204,8 +204,8 @@ def modelo_rampa(sube, q=""):
             elementos.append(caja([x0, techo, z0], [x1, alto, z0 + 1]))
     elementos.append(plano_rampa("#banda", 12.05, 45 * signo))
     return {
-        "textures": {"marco": "femclothes:block/cinta_marco", "banda": "femclothes:block/cinta_banda" + q,
-                     "particle": "femclothes:block/cinta_marco"},
+        "textures": {"marco": "modamod:block/cinta_marco", "banda": "modamod:block/cinta_banda" + q,
+                     "particle": "modamod:block/cinta_marco"},
         "elements": elementos,
     }
 
@@ -220,8 +220,8 @@ def modelo_empalme(q=""):
             elementos.append(caja([x0, 4, z0], [x0 + 2, 5.5, z0 + 2]))   # postes bajitos: "bajale un poquito al bordecito" (2026-10-05)
     elementos.append(plano_banda("#banda"))
     return {
-        "textures": {"marco": "femclothes:block/cinta_marco", "banda": "femclothes:block/cinta_banda" + q,
-                     "particle": "femclothes:block/cinta_marco"},
+        "textures": {"marco": "modamod:block/cinta_marco", "banda": "modamod:block/cinta_banda" + q,
+                     "particle": "modamod:block/cinta_marco"},
         "elements": elementos,
     }
 
@@ -257,23 +257,23 @@ def main():
                            ("rampa_sube", "cinta_rampa_sube"), ("rampa_baja", "cinta_rampa_baja")):
         for lado, y in giros.items():
             for powered, q in (("false", ""), ("true", "_quieta")):
-                v = {"model": f"femclothes:block/{modelo}{q}"}
+                v = {"model": f"modamod:block/{modelo}{q}"}
                 if y:
                     v["y"] = y
                 variantes[f"facing={lado},forma={forma},powered={powered}"] = v
     escribir(os.path.join(ESTADOS, "cinta.json"), {"variants": variantes})
-    escribir(os.path.join(ITEM, "cinta.json"), {"parent": "femclothes:block/cinta_recta"})
+    escribir(os.path.join(ITEM, "cinta.json"), {"parent": "modamod:block/cinta_recta"})
 
     # El empalme: la salida es el frente (-Z en el modelo), así que se gira igual que la cinta.
     variantes = {}
     for lado, y in giros.items():
         for powered, q in (("false", ""), ("true", "_quieta")):
-            v = {"model": f"femclothes:block/empalme{q}"}
+            v = {"model": f"modamod:block/empalme{q}"}
             if y:
                 v["y"] = y
             variantes[f"facing={lado},powered={powered}"] = v
     escribir(os.path.join(ESTADOS, "empalme.json"), {"variants": variantes})
-    escribir(os.path.join(ITEM, "empalme.json"), {"parent": "femclothes:block/empalme"})
+    escribir(os.path.join(ITEM, "empalme.json"), {"parent": "modamod:block/empalme"})
 
 
 if __name__ == "__main__":

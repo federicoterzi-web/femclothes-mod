@@ -26,7 +26,7 @@ from pathlib import Path
 
 from PIL import Image
 
-RAIZ = Path(__file__).resolve().parent.parent / "src/main/resources/assets/femclothes"
+RAIZ = Path(__file__).resolve().parent.parent / "src/main/resources/assets/modamod"
 ENT = RAIZ / "textures/entity"
 ITEM = RAIZ / "textures/item"
 MODELOS = RAIZ / "models/item"
@@ -101,7 +101,7 @@ def modelos():
         corte = ruta.name[len("corte_"):-len("_redondo.json")]
         for cuello in ("cuadrado", "corazon"):
             datos = json.loads(ruta.read_text(encoding="utf-8"))
-            datos["textures"]["layer0"] = f"femclothes:item/corte_{corte}_{cuello}"
+            datos["textures"]["layer0"] = f"modamod:item/corte_{corte}_{cuello}"
             (MODELOS / f"corte_{corte}_{cuello}.json").write_text(json.dumps(datos, indent=2) + "\n", encoding="utf-8")
 
 

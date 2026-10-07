@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "id": "femclothes",
+  "id": "modamod",
   "version": "${version}",
-  "name": "FemClothes",
+  "name": "ModaMod",
   "description": "Ropa craftable, tenible y compatible con cualquier tono de piel, y una sublimadora que le estampa fotos.",
   "environment": "*",
   "entrypoints": {
     "main": [
-      "com.femclothes.Femclothes",
-      "com.femclothes.sublimadora.SublimadoraMod"
+      "com.modamod.Modamod",
+      "com.modamod.sublimadora.SublimadoraMod"
     ],
     "client": [
-      "com.femclothes.client.FemclothesClient",
-      "com.femclothes.sublimadora.SublimadoraModClient"
+      "com.modamod.client.ModamodClient",
+      "com.modamod.sublimadora.SublimadoraModClient"
     ]
   },
   "depends": {
@@ -22,9 +22,9 @@
     "trinkets": "*",
     "geckolib": ">=4.5.0"
   },
-  "accessWidener": "femclothes.accesswidener",
+  "accessWidener": "modamod.accesswidener",
   "mixins": [
-    "femclothes.mixins.json"
+    "modamod.mixins.json"
   ],
   "suggests": {
     "camerapture": "*"

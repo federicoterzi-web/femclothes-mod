@@ -17,7 +17,7 @@ Paleta: papel `#D9A066`, luz `#E8B982`, sombra de pliegue `#B9824A`, contorno `#
 rojo cuero `#A3263A`, dorado `#D6B05C`.
 
 Cada ícono de abajo es "estilo base + este dibujo". Nombre de archivo y ruta al final de cada línea
-(`src/main/resources/assets/femclothes/textures/item/<archivo>.png`).
+(`src/main/resources/assets/modamod/textures/item/<archivo>.png`).
 
 ## 1. Chaqueta (10) — nuevos, hoy copias provisorias
 

@@ -19,7 +19,7 @@ from PIL import Image, ImageFilter
 RAIZ = os.path.join(os.path.dirname(__file__), "..")
 ORIGEN = os.path.join(RAIZ, "assets_nuevos_prueba")
 SALIDA = os.path.join(ORIGEN, "ajustados")
-ITEMS = os.path.join(RAIZ, "src", "main", "resources", "assets", "femclothes", "textures", "item")
+ITEMS = os.path.join(RAIZ, "src", "main", "resources", "assets", "modamod", "textures", "item")
 RESPALDO = os.path.join(RAIZ, "assets_viejos", "molde_rango_2026-10-04")
 NOMBRES = ["cero", "minimo", "corto", "medio", "mediolargo", "largo", "maximo"]
 

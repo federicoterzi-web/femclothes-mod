@@ -12,7 +12,7 @@ from PIL import Image
 
 RAIZ = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 FUENTE = os.path.join(RAIZ, "assets_nuevos_prueba", "assets_2026-10-06")
-ITEMS = os.path.join(RAIZ, "src", "main", "resources", "assets", "femclothes", "textures", "item")
+ITEMS = os.path.join(RAIZ, "src", "main", "resources", "assets", "modamod", "textures", "item")
 VIEJOS = os.path.join(RAIZ, "assets_viejos", "iconos_assets_2026-10-06")
 
 # tira -> nombres de ítem en el orden de la imagen

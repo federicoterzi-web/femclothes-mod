@@ -1,0 +1,7 @@
+{
+  "_comment": "El aspecto real del corte. Reusa el icono de manga sin (sleeveless) del mismo largo/cuello como placeholder -- no hay arte propia todavia para minima.",
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "modamod:item/corte_crop_sin_polera"
+  }
+}

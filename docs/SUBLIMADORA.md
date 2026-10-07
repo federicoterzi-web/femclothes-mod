@@ -3,13 +3,13 @@
 Prensa térmica que estampa fotos de [Camerapture](https://modrinth.com/mod/camerapture)
 sobre remeras en blanco.
 
-El mapa general del proyecto está en [FEMCLOTHES.md](../FEMCLOTHES.md);
+El mapa general del proyecto está en [MODAMOD.md](../MODAMOD.md);
 esto es el detalle de la máquina.
 
-Empezó como un mod aparte y hoy es parte de FemClothes: un solo jar, un solo
-namespace. La máquina es `femclothes:sublimadora` y la prenda
-`femclothes:remera`. El código sigue viviendo en el paquete
-`com.femclothes.sublimadora` porque el ciclo de prensado no tiene nada que
+Empezó como un mod aparte y hoy es parte de ModaMod: un solo jar, un solo
+namespace. La máquina es `modamod:sublimadora` y la prenda
+`modamod:remera`. El código sigue viviendo en el paquete
+`com.modamod.sublimadora` porque el ciclo de prensado no tiene nada que
 ver con el resto de las prendas, pero nada de eso se ve desde el juego.
 
 ## El ciclo
@@ -130,7 +130,7 @@ I F I          L L L     → remera de ese color
 La remera sale en los **16 colores**, uno por color de lana. El color viaja
 en el componente `dyed_color` de vanilla, puesto desde la receta: no hace
 falta código ni un ítem por color. Los RGB son los `DyeColor.getFireworkColor()`,
-los mismos que usa el telar de FemClothes, así que craftear rojo y teñir de
+los mismos que usa el telar de ModaMod, así que craftear rojo y teñir de
 rojo dan el color idéntico.
 
 ### El corte: tres ejes, y se cambia en el telar
@@ -147,7 +147,7 @@ tres ejes independientes:
 Son **36 combinaciones**. Por eso el corte no se craftea: una receta por
 corte y por color serían 576, y ninguna grilla de 3x3 distingue una manga
 3/4 de una larga. Se craftea la remera base —16 recetas, una por color de
-lana— y el corte se cambia después, en el **telar de FemClothes**, con un
+lana— y el corte se cambia después, en el **telar de ModaMod**, con un
 **molde** en el slot de patrón.
 
 Hay tres moldes, uno por eje, y cada uno **cicla** su eje: pasar el molde de
@@ -485,11 +485,11 @@ anidados de `modLocalRuntime`: sacar una foto moría con
 subproyectos y levanta dos instancias, cada una con su propio mundo. Usar
 siempre `gradlew.bat :runClient` desde la raíz.
 
-## El slot de torso, compartido con FemClothes
+## El slot de torso, compartido con ModaMod
 
-El slot `torso/prenda` lo define FemClothes; la sublimadora sólo declara
+El slot `torso/prenda` lo define ModaMod; la sublimadora sólo declara
 su remera en el tag. **Los tags se fusionan entre datapacks**, así que
-ninguno de los dos depende de que el otro esté instalado: sin FemClothes,
+ninguno de los dos depende de que el otro esté instalado: sin ModaMod,
 el tag de la sublimadora simplemente no aplica.
 
 Que el croptop y la remera compartan slot es a propósito: dos prendas

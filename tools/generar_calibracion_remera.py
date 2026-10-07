@@ -81,7 +81,7 @@ def pintar_tapas(img, rect):
 
 def main():
     base_dir = pathlib.Path(__file__).resolve().parent.parent
-    out_dir = base_dir / "src/main/resources/assets/femclothes/textures/entity"
+    out_dir = base_dir / "src/main/resources/assets/modamod/textures/entity"
     calib_dir = base_dir / "calibracion"
     calib_dir.mkdir(exist_ok=True)
 

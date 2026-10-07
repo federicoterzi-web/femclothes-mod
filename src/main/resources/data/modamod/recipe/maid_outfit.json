@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "WWW",
+    "WBW",
+    "WWW"
+  ],
+  "key": {
+    "W": { "item": "minecraft:white_wool" },
+    "B": { "item": "minecraft:black_wool" }
+  },
+  "result": { "id": "modamod:maid_outfit", "count": 1 }
+}

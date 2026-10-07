@@ -36,7 +36,7 @@ Reglas:
 - Si dos sesiones editan a la vez y hay conflicto de merge en este archivo,
   quien mergea deja las **dos** entradas, ambas con su `vN` original.
 - Los docs de diseño (`PRENDAS.md`, `MAQUINAS.md`, `SUBLIMADORA.md`,
-  `FEMCLOTHES.md`) son la fuente de verdad del *qué*. Este archivo es el
+  `MODAMOD.md`) son la fuente de verdad del *qué*. Este archivo es el
   *estado*: qué se hizo, qué sigue, qué está trabado.
 
 ---
@@ -51,8 +51,8 @@ antes de dar con la causa real) de una mancha/línea en la muñeca que vale
 la pena leer entera si aparece de nuevo algo parecido.
 
 - **Molde de Calce** (5 niveles: Pegado/Ajustado/Normal/Suelto/Oversize,
-  `com.femclothes.item.Calce`) — transversal a las 4 categorías, sin
-  anclaje ni lado, un componente compartido (`FemclothesComponents.CALCE`).
+  `com.modamod.item.Calce`) — transversal a las 4 categorías, sin
+  anclaje ni lado, un componente compartido (`ModamodComponents.CALCE`).
   No recorta tela: cambia la DILATACIÓN de la geometría 3D
   (`CuerpoGeometria`). Pegado/Ajustado necesitan achicar el CUERPO (piel)
   además de la tela para que la prenda no quede tapada por una piel más
@@ -150,7 +150,7 @@ la pena leer entera si aparece de nuevo algo parecido.
   una flechita de anclaje (arriba/abajo) y otra de lado (izquierda/
   derecha/ambas) dibujadas a mano en las esquinas — sin arte nueva, un
   `BotonFijada extends ButtonWidget` con `renderWidget` propio.
-- **Comando de debug `/femclothesdebug`** (cliente-only, solo el jugador
+- **Comando de debug `/modamoddebug`** (cliente-only, solo el jugador
   local) — a pedido, para probar Calce/geometría sobre distintos cuerpos
   sin tocar la cuenta real: `skin` cicla entre 5 skins default de
   Minecraft (steve/alex/zuri/noor/kai, reusa `DefaultSkinHelper`, cero
@@ -378,7 +378,7 @@ a utilizable de punta a punta, con varios bugs reales encontrados jugando
   (`ModeladoBlockEntity#activoEsComboDirecto`), para que no se repita la
   confusión con otro molde de este tipo.
 - Logging de diagnóstico agregado (`LoggerFactory.getLogger
-  ("femclothes-modelado")`) en `ModeladoBlockEntity#onButtonClick`/
+  ("modamod-modelado")`) en `ModeladoBlockEntity#onButtonClick`/
   `fijar`/`agregarFijada`/`procesar` y `PrendaModelado#aplicar` — se
   mantiene (no es debug temporal), fue clave para diagnosticar los bugs
   reales #1 y #2 sin depender de que el jugador describiera síntomas por
@@ -423,7 +423,7 @@ tiro" — resuelve TODA la confusión de v14-v15 de un saque.
   por prenda y el diagrama de flujo completo (prenda base → mesa de
   modelado → estación de tintes → sublimadora → prenda final).
 - **Tiro retirado de calientabrazos, código real, no solo docs:**
-  `CalientabrazosItem` perdió `tiro()`/`setTiro()`; `FemclothesComponents`
+  `CalientabrazosItem` perdió `tiro()`/`setTiro()`; `ModamodComponents`
   perdió el registro `CALIENTABRAZOS_TIRO` (un mundo viejo con el dato
   guardado simplemente lo ignora al leer, no rompe nada); `PiezasDelMod`
   perdió `calientabrazos()`'s lógica de banda y los helpers `borrarManga`/
@@ -432,8 +432,8 @@ tiro" — resuelve TODA la confusión de v14-v15 de un saque.
   .reformarCalientabrazos` perdió el manejo de `MoldeTiroItem`. **Bug real
   encontrado de paso**: `MoldeTiroItem`'s tooltip seguía anunciando
   `seUsaEn("pantalon", "calientabrazos")` — corregido a solo `"pantalon"`.
-  Lang keys `femclothes.calientabrazos.tiro` retiradas de `es_ar.json` y
-  `en_us.json`. `FEMCLOTHES.md` actualizado (tabla resumen + sección
+  Lang keys `modamod.calientabrazos.tiro` retiradas de `es_ar.json` y
+  `en_us.json`. `MODAMOD.md` actualizado (tabla resumen + sección
   "Calientabrazos: 4ta prenda del eje" + nota del molde de tiro compartido)
   para reflejar el diseño final: cobertura sola, mismo patrón que medias.
 - Las 4 texturas de cobertura (`calientabrazos_*_layer_1.png`, con el fix
@@ -557,8 +557,8 @@ jugando (no solo compilando):
   `SOCKS_SOLID`, `PANTALON` y `CALIENTABRAZOS` (antes `maxCount(1)`), a
   pedido explícito del dueño: "las prendas base sí me gustaría que
   stackeen a 16".
-- **Todos los ítems de `FemclothesItems` (antes solo remera+sus moldes)
-  ahora aparecen en la pestaña creativa** — `Femclothes.onInitialize`
+- **Todos los ítems de `ModamodItems` (antes solo remera+sus moldes)
+  ahora aparecen en la pestaña creativa** — `Modamod.onInitialize`
   registra un `ItemGroupEvents` propio. Sin esto, pantalón/medias/
   calientabrazos/los 16 moldes/los 3 patrones solo eran alcanzables
   sabiendo la receta de memoria.
@@ -574,14 +574,14 @@ jugando (no solo compilando):
   inventario general).
 - **Herramienta nueva, para quedarse: `ClothingTextureCache.DEBUG_DUMP`**
   (flag estático, default `false`) — prendido, cada textura compuesta se
-  vuelca a `run/femclothes_debug/<hash>.png` con la clave de compose en el
+  vuelca a `run/modamod_debug/<hash>.png` con la clave de compose en el
   log. Fue lo que finalmente permitió diagnosticar el bug de cache sin
   seguir adivinando desde capturas de pantalla borrosas — mucho más
   confiable que screenshots. Usar esto ANTES que pedir capturas la próxima
   vez que algo "se vea mal" y no se entienda por qué.
 - **F3+T NO sirve para ver cambios de textura in-game** en esta sesión —
   se agregó un `SimpleSynchronousResourceReloadListener` que limpia
-  `ClothingTextureCache` en cada recarga (`FemclothesClient.java`), pero
+  `ClothingTextureCache` en cada recarga (`ModamodClient.java`), pero
   el dueño reportó repetidas veces que igual no se actualizaba nada.
   **Sin diagnosticar por qué** — puede que el listener no se esté
   disparando, o que haya otro cache no contemplado. Hasta que se
@@ -597,7 +597,7 @@ jugando (no solo compilando):
   `build.gradle`) — no tocar sin investigar el choque primero.
 - **Pendiente, sin tocar:** el eje "Borde" (forma de escote/cintura/borde
   superior) y el eje "fit" (skin tight/regular/oversize) — ambos
-  discutidos, ninguno implementado, ver notas en `FEMCLOTHES.md`.
+  discutidos, ninguno implementado, ver notas en `MODAMOD.md`.
 - **Pendiente, sin resolver:** el bug original de "línea/piel en los
   puños" de la manga de REMERA (el que motivó `SIETE_OCTAVOS` en v12)
   sigue sin diagnosticarse — nunca se consiguió una captura que lo
@@ -614,12 +614,12 @@ dibujado de verdad, con dos ejes que **reusan moldes que ya existían para
 otras prendas** — a pedido explícito del dueño ("separar todos los patrones
 ya era"): cero ítems nuevos que craftear.
 
-- **`FemclothesItems.CALIENTABRAZOS` (`CalientabrazosItem extends
+- **`ModamodItems.CALIENTABRAZOS` (`CalientabrazosItem extends
   ClothingTrinketItem`)** reemplaza a `ARMWARMERS`/`ArmWarmerItem`. Corte
   limpio, sin migración: como el viejo no renderizaba nada, un stack de
   antes de este cambio queda como ítem desconocido, no rompe nada — mismo
   criterio que cuando `shorts` se retiró al nacer `PantalonItem`.
-- **Cobertura** (`FemclothesComponents.CALIENTABRAZOS_COBERTURA`, tipo
+- **Cobertura** (`ModamodComponents.CALIENTABRAZOS_COBERTURA`, tipo
   `Variante.Manga`): reusa el MISMO molde cíclico de la manga de remera
   (`MOLDE_MANGA`), pero llena desde la MUÑECA hacia arriba — dirección
   invertida respecto de remera (hombro hacia abajo), mismo patrón ya
@@ -627,7 +627,7 @@ ya era"): cero ítems nuevos que craftear.
   helper público `siguienteManga(Variante.Manga)` para que el telar cicle
   sin pasar por un `Variante` completo (antes esa lógica vivía inline en
   `aplicar()`, exclusiva de remera).
-- **Tiro** (`FemclothesComponents.CALIENTABRAZOS_TIRO`, tipo `PantalonTiro`):
+- **Tiro** (`ModamodComponents.CALIENTABRAZOS_TIRO`, tipo `PantalonTiro`):
   reusa el MISMO molde fijo del tiro de pantalón. Pinta una banda extra
   hacia el hombro/torso, técnica idéntica a `pintarCintura` pero espejada
   (`pintarHombro`: primeras filas del torso en vez de las últimas).
@@ -698,7 +698,7 @@ la textura validada por recorte. Apliqué la misma técnica acá.
   como placeholder (mismo criterio que los moldes de v11) — visualmente
   indistinguibles de su combinación larga hasta que alguien dibuje el
   sprite real.
-- FEMCLOTHES.md actualizado: la tabla de "El eje cobertura" ya no dice
+- MODAMOD.md actualizado: la tabla de "El eje cobertura" ya no dice
   "remera pendiente", el corte de remera pasa de 36 a 45 en todos los
   lugares que hacían una afirmación factual (no todos los "36" sueltos del
   documento, algunos son menciones históricas/ilustrativas sin importancia).
@@ -781,7 +781,7 @@ parcialmente implementado:**
 - **Remera manga (4→5 valores, "un corte un poco más arriba del puño")
   QUEDÓ SIN TOCAR a propósito**: implicaría regenerar 45 combinaciones de
   textura de remera (3 largo × 5 manga × 3 cuello) y no hay generador de
-  esos assets en este repo. Anotado en FEMCLOTHES.md con el camino más
+  esos assets en este repo. Anotado en MODAMOD.md con el camino más
   seguro para cuando se haga (derivar por recorte de "larga", no generar de
   cero).
 - Los tres ejes NO comparten moldes físicos (se evaluó y se descartó
@@ -830,13 +830,13 @@ puesto todavía**.
 2. **`shorts` se reemplazó por `pantalon`**, a pedido del dueño: la prenda
    larga de pierna es la base (igual que la remera con el torso), y se
    recorta después con molde — de pantalón completo a tanga, 7 valores.
-   - `PantalonLargo` (enum, clave+filas, en `com.femclothes.item` — NO en
+   - `PantalonLargo` (enum, clave+filas, en `com.modamod.item` — NO en
      `sublimadora`, porque no tiene nada que ver con estampar) +
      `PantalonItem` (`ClothingTrinketItem`, nombre por valor) +
      `MoldePantalonItem` (cicla el eje, no consume, mismo mecanismo que los
      moldes de remera pero clase propia — el `MoldeItem.Eje` de remera está
      tipado a `Variante`, que es de otra prenda).
-   - Componente nuevo `femclothes:pantalon_largo`. Ausente = pantalón
+   - Componente nuevo `modamod:pantalon_largo`. Ausente = pantalón
      completo (default del crafteo, igual que remera con `Variante.BASE`).
    - **Rama propia en el telar** (`reformarPantalon`), pero MÁS CHICA que la
      de remera: el pantalón es bilateral para el tinte (cada pierna su
@@ -862,7 +862,7 @@ puesto todavía**.
      tag de `piernas/exterior`. `PrendasDelMod`/`PiezasDelMod` actualizados.
 
 **Cliente probado dos veces tras el cambio** (arranca limpio, sin warnings de
-femclothes) pero **el pantalón en sí — puesto, con el molde cicleando los 7
+modamod) pero **el pantalón en sí — puesto, con el molde cicleando los 7
 largos — todavía NO se probó en persona.** Solo shorts (el valor que ya
 tenía, filas=4) se vio andando.
 
@@ -874,7 +874,7 @@ bloqueando.
 
 **Para el otro Claude:**
 - `PantalonLargo`/`PantalonItem`/`MoldePantalonItem` viven en
-  `com.femclothes.item`, NO en `sublimadora` — a diferencia de
+  `com.modamod.item`, NO en `sublimadora` — a diferencia de
   `Variante`/`MoldeItem` de remera. Si generalizás el `Map<Eje,Valor>` de
   PRENDAS.md §6 algún día, este es el segundo caso concreto (después de
   remera) para chequear que el diseño generalice de verdad.
@@ -895,7 +895,7 @@ borrarlas, que es exactamente lo que el sistema viejo no podía hacer). El
 cliente arranca limpio con el nuevo slot cargado, sin probar puesto en el
 juego todavía.
 
-- `FemclothesItems.SHORTS`: de `ClothingArmorItem` (geometría de armadura,
+- `ModamodItems.SHORTS`: de `ClothingArmorItem` (geometría de armadura,
   **sin textura de armadura siquiera** — `cloth_layer_1.png` nunca existió,
   así que puesto no se veía nada) a `ClothingTrinketItem`. No había
   comportamiento previo que preservar.
@@ -913,7 +913,7 @@ juego todavía.
   matemática de `CajaSkin`/`LayoutSkin` que el renderer para no adivinar
   coordenadas: cubre las 4 filas de arriba de las 12 del cuboide de pierna
   (waist → medio muslo) más la tapa de arriba, con una fila de dobladillo un
-  poco más oscura en el borde — mismo principio que pide FEMCLOTHES.md para
+  poco más oscura en el borde — mismo principio que pide MODAMOD.md para
   las mangas ("no cortado con tijera"). 512×512, blanco puro + gris de
   dobladillo, para que el tinte multiplicativo de siempre funcione.
 - **Ícono**: recoloreado a blanco/gris tintables (mismo patrón que
@@ -922,7 +922,7 @@ juego todavía.
   el `ColorProviderRegistry` de las medias (mismo callback, dos ítems).
 - Slot icon (`gui/slot/shorts.png`) generado con la misma convención: gris
   al 45% de alpha.
-- FEMCLOTHES.md y PRENDAS.md actualizados: tabla de prendas, la mención
+- MODAMOD.md y PRENDAS.md actualizados: tabla de prendas, la mención
   vieja a `BodyPartTrinketRenderer` en la sección de layouts (que ya no
   existe desde la fase 1 y quedó sin corregir hasta ahora), roadmap.
 
@@ -977,7 +977,7 @@ que faltaba era quien lo aplicara y quien lo pintara.
   trabajo de arte. Y falta el PNG de la máscara en sí
   (`textures/models/armor/patterns/remera/*.png`); sin él cae a la prenda
   tenida lisa, como cualquier máscara faltante del mod.
-- FEMCLOTHES.md: tabla del telar con las filas nuevas, sección de la
+- MODAMOD.md: tabla del telar con las filas nuevas, sección de la
   máscara compartida, y tres ítems nuevos en "Lo que falta".
 
 **Próximo:** sin cambios de fondo — migrar shorts sigue primero. Nada de
@@ -1022,7 +1022,7 @@ tocaron**: el cambio quedó contenido en `ClothingTextureCache`.
   print) que `SUBLIMADORA.md` marca como frágil, y el dueño señaló que
   todavía pinta el puño cuando la doc dice que no debería — señal de que ese
   pipeline tiene deuda propia sin resolver antes de tocarlo.
-- FEMCLOTHES.md: nueva sección "Tres resoluciones de tela, no una" +
+- MODAMOD.md: nueva sección "Tres resoluciones de tela, no una" +
   corregida la afirmación de v6 sobre qué controla `ESCALA_*`.
 
 **Próximo:** sin cambios de fondo respecto de v6 — migrar shorts sigue
@@ -1064,7 +1064,7 @@ en vez de 64×64 por cuerpo).
 - De yapa: el arte del cuerpo (`textures/entity/cuerpo/*.png`) pasa a ser una
   skin común de 64×64 pintable en cualquier editor de skins, y de 1 MB a
   16 KB por cuerpo.
-- FEMCLOTHES.md y PRENDAS.md §7 actualizados (la v5 decía "8×" para el
+- MODAMOD.md y PRENDAS.md §7 actualizados (la v5 decía "8×" para el
   cuerpo, que ya no es cierto).
 
 **Próximo:** sin cambios respecto de v5 — migrar shorts sigue siendo lo
@@ -1094,7 +1094,7 @@ y el cliente arranca limpio (63 mods, sin excepciones nuestras).
   prenda NO te cambia el cuerpo.
 - **RegionResolver (§3)**: `Lado`/`Cara`/`Region`/`Operacion`/`Orientacion`.
   Absorbió `ClothingStyle`, que ya no existe. El telar dejó su enum `Target` y
-  usa `Lado`. Componente nuevo `femclothes:orientacion`.
+  usa `Lado`. Componente nuevo `modamod:orientacion`.
 - **Se fueron**: `ClothingStyle`, `BodyPartTrinketRenderer`,
   `RemeraTrinketRenderer`, `TrinketsClientCompat`. La fusión de los dos
   renderers (punto 3 del roadmap) se adelantó porque el ordinal la exige.
@@ -1104,14 +1104,14 @@ y el cliente arranca limpio (63 mods, sin excepciones nuestras).
   perdió `Tones`/`Paleta`. `composeGarment` perdió el parámetro de piel: lo
   que la prenda no cubre queda TRANSPARENTE, que es el contrato del sistema.
   `LayoutSkin`/`CajaSkin` calculan el desdoblado en vez de tenerlo escrito.
-- Docs: `FEMCLOTHES.md` y `PRENDAS.md` actualizados con lo hecho y lo que no.
+- Docs: `MODAMOD.md` y `PRENDAS.md` actualizados con lo hecho y lo que no.
 
 **Próximo:** lo que quedó explícitamente afuera de la fase 1, en este orden:
 1. **Migrar shorts** — es la primera prueba REAL del layering (short sobre
    media) y ya no está bloqueado. Hasta que eso ande, el sistema de capas
    está implementado pero no ejercitado.
 2. **GUI de primera interacción** del cuerpo base. Hoy se cambia solo con
-   `/femclothes cuerpo|tono|interior|reset|ver`.
+   `/modamod cuerpo|tono|interior|reset|ver`.
 3. **Arte del cuerpo base**: `textures/entity/cuerpo/<id>.png` (mapa de
    sombras, se multiplica) e `interior_<ropa>.png` (encima). Los dos son
    OPCIONALES: sin ellos sale el cuerpo liso sombreado por cara, o sea lo
@@ -1175,7 +1175,7 @@ tela en la capa externa (§8) sin tener que rediseñarlo.
   profunda). **Mangas/armwarmers = un garment con eje de banda** (armwarmers
   = preset, no prenda). **Botamanga = eje del pantalón**, no slot.
   **Calzado = slot nuevo `pies`**.
-- §6: `femclothes:variante` **agnóstico de prenda** (`Map<Eje,Valor>`,
+- §6: `modamod:variante` **agnóstico de prenda** (`Map<Eje,Valor>`,
   `ejes()` por prenda, moldes de eje universales, molde de corte = spec
   parcial, migración del formato viejo). Patrones de tinte: **agrupar por
   topología de región** + largo plazo **proyector body-space**. **Combinar
@@ -1216,7 +1216,7 @@ UI de estación o el per-lado de medias, pasá por ahí, no dupliques.
   polleras/pantalones acampanados/babuchas via `FLARE_MESH` paramétrico
   anclado a un hueso de pelvis, mesa de tinturas + mesa de sastrería,
   auto-io modular, convención de caras de máquina.
-- `FEMCLOTHES.md` ahora apunta a los dos docs nuevos desde el encabezado.
+- `MODAMOD.md` ahora apunta a los dos docs nuevos desde el encabezado.
 - Creado este canal.
 - **Nada de código tocado.** Todo es diseño.
 
@@ -1227,7 +1227,7 @@ UI de estación o el per-lado de medias, pasá por ahí, no dupliques.
   en paralelo por la mesa de tinturas.
 
 **Para el otro Claude:**
-- Antes de implementar nada, leé `FEMCLOTHES.md` + `PRENDAS.md` +
+- Antes de implementar nada, leé `MODAMOD.md` + `PRENDAS.md` +
   `MAQUINAS.md` enteros. Las trampas de render están marcadas ahí y en
   `SUBLIMADORA.md`.
 - Decisiones ya cerradas con el dueño, no las re-litigues: 2 mesas nuevas
@@ -1235,6 +1235,6 @@ UI de estación o el per-lado de medias, pasá por ahí, no dupliques.
   discretos, **no** mezclador CMYK; GUI de config rara + aplicación por
   click derecho; se saca el hook del telar; `largo` de remera = B1 (ceñido),
   el oversize que flota es prenda aparte.
-- Pendientes viejos del mod (sección "Lo que falta" de `FEMCLOTHES.md`)
+- Pendientes viejos del mod (sección "Lo que falta" de `MODAMOD.md`)
   siguen vigentes: arte de verdad, ícono de medias estampadas, la prenda
   sobre la plancha de la sublimadora no muestra estampa/tinte.

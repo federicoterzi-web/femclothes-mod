@@ -5,13 +5,13 @@ reales son botones), y para MEDIAS y CALIENTABRAZOS reubica los slots de
 personalización en 2 columnas (izquierda/derecha) redibujando las líneas.
 
 Uso: python3 tools/componer_esquemas.py — lee de Descargas, escribe en
-src/main/resources/assets/femclothes/textures/gui/container/esquema_*.png y
+src/main/resources/assets/modamod/textures/gui/container/esquema_*.png y
 en .scratch_mpm/posiciones.json (centros de slot en píxeles fuente).
 """
 import cv2, json, numpy as np
 
 D = 'C:/Users/feder/Downloads/'
-OUT = 'src/main/resources/assets/femclothes/textures/gui/container/'
+OUT = 'src/main/resources/assets/modamod/textures/gui/container/'
 FUENTES = {
     'remera': 'ChatGPT Image 24 sept 2026, 12_50_36.png',
     'pantalon': 'pantalon.png',

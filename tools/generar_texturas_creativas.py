@@ -21,7 +21,7 @@ from pathlib import Path
 
 from PIL import Image
 
-CARPETA = Path(__file__).resolve().parent.parent / "src/main/resources/assets/femclothes/textures/block"
+CARPETA = Path(__file__).resolve().parent.parent / "src/main/resources/assets/modamod/textures/block"
 ATLAS = ["garment_shaper_atlas", "dye_station_atlas", "sublimator_atlas", "styling_table_atlas", "estilista_atlas", "telar_atlas"]
 
 

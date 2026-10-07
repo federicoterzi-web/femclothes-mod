@@ -23,7 +23,7 @@ from pathlib import Path
 
 from PIL import Image
 
-RAIZ = Path(__file__).resolve().parent.parent / "src/main/resources/assets/femclothes"
+RAIZ = Path(__file__).resolve().parent.parent / "src/main/resources/assets/modamod"
 GEO = RAIZ / "geo"
 ATLAS = RAIZ / "textures/entity/aplique_atlas.png"
 TEX_W, TEX_H, ZONA = 96, 32, 32

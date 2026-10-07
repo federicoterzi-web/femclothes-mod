@@ -10,7 +10,7 @@ from pathlib import Path
 
 from PIL import Image
 
-SALIDA = Path(__file__).resolve().parent.parent / "src/main/resources/assets/femclothes/textures/item"
+SALIDA = Path(__file__).resolve().parent.parent / "src/main/resources/assets/modamod/textures/item"
 
 T = (0, 0, 0, 0)
 # Papel kraft (mismos tonos que los moldes).
