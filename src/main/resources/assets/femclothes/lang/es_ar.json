@@ -979,5 +979,12 @@
   "femclothes.telar.prenda.medias": "Medias",
   "femclothes.telar.prenda.calientabrazos": "Calientab.",
   "femclothes.telar.prenda.pollera": "Pollera",
-  "femclothes.telar.prenda.capa": "Capa"
+  "femclothes.telar.prenda.capa": "Capa",
+  "femclothes.telar.lote": "Lote",
+  "femclothes.telar.lote_sin_limite": "Lote: sin límite",
+  "femclothes.telar.lote_n": "Lote: %s (faltan %s)",
+  "femclothes.telar.sigue": "Sigue: %s (%s lana, %s hilo)",
+  "femclothes.telar.nada_tildado": "Tildá al menos una prenda",
+  "femclothes.telar.tooltip.prenda": "Tildá las prendas que querés. Se tejen de a una, en orden. Gasta %s lana y %s hilo.",
+  "femclothes.telar.tooltip.reiniciar": "Reiniciar el lote con la misma cantidad"
 }

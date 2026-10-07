@@ -9,14 +9,14 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.math.BlockPos;
 
 /**
- * Pantalla del Telar (2026-10-07): lana, hilo y la prenda tejida, más el inventario; la prenda se elige con botones
- * ({@link TelarBlockEntity#BTN_PRENDA_BASE}). Dibujada por código en {@link com.femclothes.client.TelarScreen}.
+ * Pantalla del Telar (2026-10-07): lana, hilo y la prenda tejida, más el inventario; las prendas se tildan con botones
+ * ({@link TelarBlockEntity#BTN_PRENDA_BASE}) y el lote se configura debajo. Dibujada por código en {@link com.femclothes.client.TelarScreen}.
  */
 public class TelarScreenHandler extends ScreenHandler {
 
-    public static final int ANCHO = 176, ALTO = 188;
+    public static final int ANCHO = 176, ALTO = 226;
     public static final int X_LANA = 22, Y_LANA = 34, X_HILO = 22, Y_HILO = 62, X_SALIDA = 138, Y_SALIDA = 48;
-    private static final int Y_INV = 106;
+    public static final int Y_INV = 146;
 
     public final TelarBlockEntity host;
 
@@ -45,10 +45,7 @@ public class TelarScreenHandler extends ScreenHandler {
 
     @Override
     public boolean onButtonClick(PlayerEntity player, int id) {
-        if (id >= TelarBlockEntity.BTN_PRENDA_BASE && id < TelarBlockEntity.BTN_PRENDA_BASE + TelarPrenda.values().length) {
-            return host.elegir(id - TelarBlockEntity.BTN_PRENDA_BASE);
-        }
-        return false;
+        return host.boton(id);
     }
 
     @Override

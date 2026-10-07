@@ -35,8 +35,13 @@ import software.bernie.geckolib.util.GeckoLibUtil;
  * El Telar automático (2026-10-07, "la idea es q produzca prendas basicas a base de lana e hilo"; charlado: remera,
  * pantalón, medias, calientabrazos, pollera y capa; el color sale de la lana). Una máquina de la línea textil con la
  * misma base que la Estilista: entran lana e hilo (a mano, por tolva o por cinta, por cualquier lado menos la
- * derecha), se elige la prenda en la pantalla y, mientras haya insumos y la bandeja esté libre, teje una prenda lisa
- * del color de la lana y la empuja por la derecha a la próxima máquina (Tintes, Modeladora…).
+ * derecha) y, mientras haya insumos y la bandeja esté libre, teje una prenda lisa del color de la lana y la empuja
+ * por la derecha a la próxima máquina (Tintes, Modeladora…).
+ *
+ * Varias prendas y lote (2026-10-07, "se pueda seleccionar varias prendas y vaya alternando, y se le pueda configurar
+ * que cantidad de prenda se quiere que saque" → "cantidad por lote. orden fijo"): las prendas tildadas se tejen de a una
+ * en el orden fijo del enum, saltando la que no alcance con los insumos; el lote es el total de prendas (0 = sin límite)
+ * y la máquina se detiene al terminarlo.
  */
 public class TelarBlockEntity extends BlockEntity implements SidedInventory, com.femclothes.util.ConSalida,
         ExtendedScreenHandlerFactory<BlockPos>, GeoBlockEntity {
@@ -44,8 +49,12 @@ public class TelarBlockEntity extends BlockEntity implements SidedInventory, com
     public static final int SLOT_LANA = 0, SLOT_HILO = 1, SLOT_SALIDA = 2, TAMANO = 3;
     /** Lo que dura tejer: los 4 s de la animación `trabajo`, hasta tres pasadas (12 s) por prenda. */
     public static final int TICKS_PROCESO = 240;
-    /** Botones de la pantalla: elegir la prenda {@code BTN_PRENDA_BASE + ordinal}. */
+    /** Botones de la pantalla: tildar o destildar la prenda {@code BTN_PRENDA_BASE + ordinal}, y los del lote. */
     public static final int BTN_PRENDA_BASE = 620;
+    public static final int BTN_LOTE_MENOS = 630, BTN_LOTE_MAS = 631, BTN_LOTE_MENOS_10 = 632, BTN_LOTE_MAS_10 = 633,
+            BTN_LOTE_REINICIAR = 634;
+    /** Tope del lote (0 = sin límite). */
+    public static final int LOTE_MAX = 64;
 
     public enum Estado { REPOSO, PROCESANDO, LISTO }
 
@@ -56,7 +65,11 @@ public class TelarBlockEntity extends BlockEntity implements SidedInventory, com
     private final DefaultedList<ItemStack> items = DefaultedList.ofSize(TAMANO, ItemStack.EMPTY);
     private Estado estado = Estado.REPOSO;
     private int progreso;
-    private int prenda;
+    /** Prendas tildadas (un bit por ordinal de {@link TelarPrenda}), el lote, cuántas faltan arrancar y por dónde sigue la rotación. */
+    private int seleccion = 1;
+    private int lote;
+    private int restantes;
+    private int cursor;
     /** Lo que se está tejiendo (se anota al arrancar: la lana ya se gastó). */
     private int prendaEnCurso;
     private int colorEnCurso = 0xFFFFFF;
@@ -73,7 +86,35 @@ public class TelarBlockEntity extends BlockEntity implements SidedInventory, com
     public Estado estado() { return estado; }
     public int progreso() { return progreso; }
     public int duracion() { return com.femclothes.util.MaquinaCreativa.duracion(this, TICKS_PROCESO); }
-    public TelarPrenda prenda() { return TelarPrenda.values()[prenda]; }
+    public boolean elegida(int ordinal) { return (seleccion & (1 << ordinal)) != 0; }
+    public int lote() { return lote; }
+    public int restantes() { return restantes; }
+
+    private static boolean alcanzaCon(ItemStack lana, ItemStack hilo, TelarPrenda p) {
+        return lana.getCount() >= p.lana && hilo.getCount() >= p.hilo;
+    }
+
+    /** La próxima prenda a tejer (la rotación sigue el orden fijo desde {@code cursor}), o -1 si no hay: lote cumplido, nada tildado o faltan insumos. */
+    public int proxima() {
+        if (lote > 0 && restantes <= 0) return -1;
+        boolean gratis = com.femclothes.util.MaquinaCreativa.es(this);
+        int n = TelarPrenda.values().length;
+        for (int k = 0; k < n; k++) {
+            int i = (cursor + k) % n;
+            if (!elegida(i)) continue;
+            if (gratis || alcanzaCon(items.get(SLOT_LANA), items.get(SLOT_HILO), TelarPrenda.values()[i])) return i;
+        }
+        return -1;
+    }
+
+    /** La prenda que muestra la pantallita y el costo: la próxima, o si no alcanza la primera tildada que sigue en la rotación. */
+    public int prendaVista() {
+        int i = proxima();
+        if (i >= 0) return i;
+        int n = TelarPrenda.values().length;
+        for (int k = 0; k < n; k++) if (elegida((cursor + k) % n)) return (cursor + k) % n;
+        return -1;
+    }
     public ItemStack salidaVisible() { return items.get(SLOT_SALIDA); }
 
     /** El color que daría la lana cargada (blanco si no hay). */
@@ -86,10 +127,12 @@ public class TelarBlockEntity extends BlockEntity implements SidedInventory, com
     /** La prenda de la pantallita: la tejida si hay, si no la elegida teñida con la lana (se rearma solo si cambia algo). */
     public ItemStack vistaPrevia() {
         if (!items.get(SLOT_SALIDA).isEmpty()) return items.get(SLOT_SALIDA);
-        int clave = prenda * 0x1000000 + colorDeLaLana();
+        int v = prendaVista();
+        if (v < 0) return ItemStack.EMPTY;
+        int clave = v * 0x1000000 + colorDeLaLana();
         if (clave != previaClave || previa.isEmpty()) {
             previaClave = clave;
-            previa = tejer(prenda(), colorDeLaLana());
+            previa = tejer(TelarPrenda.values()[v], colorDeLaLana());
         }
         return previa;
     }
@@ -100,31 +143,52 @@ public class TelarBlockEntity extends BlockEntity implements SidedInventory, com
         return s;
     }
 
-    public boolean hayInsumos() {
-        if (com.femclothes.util.MaquinaCreativa.es(this)) return true;
-        TelarPrenda p = prenda();
-        return items.get(SLOT_LANA).getCount() >= p.lana && items.get(SLOT_HILO).getCount() >= p.hilo;
-    }
+    public boolean hayInsumos() { return proxima() >= 0; }
 
-    /** Elige la prenda (lo llama el handler). */
-    public boolean elegir(int ordinal) {
-        if (ordinal < 0 || ordinal >= TelarPrenda.values().length || ordinal == prenda) return false;
-        prenda = ordinal;
-        sincronizar();
-        return true;
+    /** Los botones de la pantalla (los llama el handler): tildar prendas y configurar el lote. */
+    public boolean boton(int id) {
+        int n = TelarPrenda.values().length;
+        if (id >= BTN_PRENDA_BASE && id < BTN_PRENDA_BASE + n) {
+            seleccion ^= 1 << (id - BTN_PRENDA_BASE);
+            sincronizar();
+            return true;
+        }
+        int delta = switch (id) {
+            case BTN_LOTE_MENOS -> -1;
+            case BTN_LOTE_MAS -> 1;
+            case BTN_LOTE_MENOS_10 -> -10;
+            case BTN_LOTE_MAS_10 -> 10;
+            default -> 0;
+        };
+        if (delta != 0) {
+            lote = Math.max(0, Math.min(LOTE_MAX, lote + delta));
+            restantes = lote;
+            sincronizar();
+            return true;
+        }
+        if (id == BTN_LOTE_REINICIAR) {
+            restantes = lote;
+            sincronizar();
+            return true;
+        }
+        return false;
     }
 
     // ── tejido ──
 
     private void arrancar() {
-        TelarPrenda p = prenda();
+        int elegida = proxima();
+        if (elegida < 0) return;
+        TelarPrenda p = TelarPrenda.values()[elegida];
         boolean creativa = com.femclothes.util.MaquinaCreativa.es(this);
         colorEnCurso = colorDeLaLana();
         if (!creativa) {
             items.get(SLOT_LANA).decrement(p.lana);
             items.get(SLOT_HILO).decrement(p.hilo);
         }
-        prendaEnCurso = prenda;
+        prendaEnCurso = elegida;
+        cursor = (elegida + 1) % TelarPrenda.values().length;
+        if (lote > 0) restantes--;
         estado = Estado.PROCESANDO;
         progreso = 0;
         sincronizar();
@@ -289,7 +353,10 @@ public class TelarBlockEntity extends BlockEntity implements SidedInventory, com
         Inventories.writeNbt(nbt, items, registries);
         nbt.putInt("estado", estado.ordinal());
         nbt.putInt("progreso", progreso);
-        nbt.putInt("prenda", prenda);
+        nbt.putInt("seleccion", seleccion);
+        nbt.putInt("lote", lote);
+        nbt.putInt("restantes", restantes);
+        nbt.putInt("cursor", cursor);
         nbt.putInt("prenda_en_curso", prendaEnCurso);
         nbt.putInt("color_en_curso", colorEnCurso);
     }
@@ -301,7 +368,12 @@ public class TelarBlockEntity extends BlockEntity implements SidedInventory, com
         estado = Estado.values()[Math.max(0, Math.min(Estado.values().length - 1, nbt.getInt("estado")))];
         progreso = nbt.getInt("progreso");
         int max = TelarPrenda.values().length - 1;
-        prenda = Math.max(0, Math.min(max, nbt.getInt("prenda")));
+        // Lo guardado con la versión de una sola prenda (clave "prenda") pasa a ser la única tildada.
+        seleccion = nbt.contains("seleccion") ? nbt.getInt("seleccion") & ((1 << (max + 1)) - 1)
+                : 1 << Math.max(0, Math.min(max, nbt.getInt("prenda")));
+        lote = Math.max(0, Math.min(LOTE_MAX, nbt.getInt("lote")));
+        restantes = Math.max(0, Math.min(LOTE_MAX, nbt.getInt("restantes")));
+        cursor = Math.max(0, Math.min(max, nbt.getInt("cursor")));
         prendaEnCurso = Math.max(0, Math.min(max, nbt.getInt("prenda_en_curso")));
         colorEnCurso = nbt.contains("color_en_curso") ? nbt.getInt("color_en_curso") : 0xFFFFFF;
     }

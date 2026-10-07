@@ -979,5 +979,12 @@
   "femclothes.telar.prenda.medias": "Socks",
   "femclothes.telar.prenda.calientabrazos": "Armwarm.",
   "femclothes.telar.prenda.pollera": "Skirt",
-  "femclothes.telar.prenda.capa": "Cape"
+  "femclothes.telar.prenda.capa": "Cape",
+  "femclothes.telar.lote": "Batch",
+  "femclothes.telar.lote_sin_limite": "Batch: unlimited",
+  "femclothes.telar.lote_n": "Batch: %s (%s left)",
+  "femclothes.telar.sigue": "Next: %s (%s wool, %s thread)",
+  "femclothes.telar.nada_tildado": "Tick at least one garment",
+  "femclothes.telar.tooltip.prenda": "Tick the garments you want. They are woven one at a time, in order. Uses %s wool and %s thread.",
+  "femclothes.telar.tooltip.reiniciar": "Restart the batch with the same amount"
 }
