@@ -52,7 +52,7 @@ public final class CuelloYCapucha {
      */
     public enum ModoCuello { TORSO, CABEZA, PARTIDO }
 
-    public static ModoCuello modoCuello = ModoCuello.PARTIDO;
+    public static ModoCuello modoCuello = ModoCuello.CABEZA;   // 2026-10-08: "la polera queda el modo fijado a la cabeza"
 
     private static final int TEX = 64;
     /** Por fuera de la segunda capa de la skin (sombrero), que infla 0.5. */
@@ -75,7 +75,7 @@ public final class CuelloYCapucha {
                 case TORSO -> GarmentFeatureRenderer.dibujarModelPart(cuello(d), CuerpoGeometria.Superficie.CUERPO,
                         tela, biped.body, matrices, vertexConsumers, luz);
                 case CABEZA -> {
-                    if (biped.head.visible) GarmentFeatureRenderer.dibujarModelPart(cuello(d), CuerpoGeometria.Superficie.CUERPO,
+                    if (biped.head.visible) GarmentFeatureRenderer.dibujarModelPart(cuelloCabeza(d), CuerpoGeometria.Superficie.CUERPO,
                             tela, biped.head, matrices, vertexConsumers, luz);
                 }
                 case PARTIDO -> {
@@ -351,6 +351,18 @@ public final class CuelloYCapucha {
         if (c != null) return c;
         float alto = 1.6F + d * 0.5F, dil = SOBRE_SOMBRERO + d * 0.5F;
         return parte(key, List.of(caja(0, 0, -4, -alto, -4, 8, alto, 8, dil, 0, dil, TODAS)));
+    }
+
+    /**
+     * El cuello fijado a la cabeza (2026-10-08, "extenderia un pixel mas abajo"): como {@link #cuello} pero con un
+     * píxel más hacia el pecho, para que no se abra una rendija al inclinar la cabeza.
+     */
+    private static ModelPart cuelloCabeza(float d) {
+        String key = "cuelloCabeza|" + d;
+        ModelPart c = CACHE.get(key);
+        if (c != null) return c;
+        float alto = 1.6F + d * 0.5F, dil = SOBRE_SOMBRERO + d * 0.5F;
+        return parte(key, List.of(caja(0, 0, -4, -alto, -4, 8, alto + 1F, 8, dil, 0, dil, TODAS)));
     }
 
     /** El aro bajo del cuello partido: 0,8 px sobre el torso, un poco más fino que la parte de la cabeza. */
