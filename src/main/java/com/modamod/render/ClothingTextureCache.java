@@ -52,9 +52,23 @@ public final class ClothingTextureCache {
      * el cliente entero para ver el cambio).
      */
     public static void limpiarCache() {
+        // Hallazgo H07 (2026-10-08): antes solo se vaciaban los mapas y las texturas registradas quedaban vivas (y las
+        // imágenes leídas de recursos sin cerrar). Cada textura compuesta se destruye en el TextureManager (cierra su
+        // imagen y la memoria de GPU); las imágenes del resource pack, que solo esta caché posee, se cierran acá. Las
+        // que llegan por registrarImagenCompuesta las posee su textura: no se tocan.
+        var texturas = MinecraftClient.getInstance().getTextureManager();
+        for (Identifier id : new java.util.HashSet<>(TINTED_CACHE.values())) texturas.destroyTexture(id);
+        for (Identifier id : IMAGENES_PROPIAS) {
+            NativeImage img = BASE_IMAGE_CACHE.get(id);
+            if (img != null) img.close();
+        }
+        IMAGENES_PROPIAS.clear();
         BASE_IMAGE_CACHE.clear();
         TINTED_CACHE.clear();
     }
+
+    /** Ids de {@link #BASE_IMAGE_CACHE} cuya imagen leyó {@link #imagenBase} del resource pack (las posee esta caché). */
+    private static final java.util.Set<Identifier> IMAGENES_PROPIAS = new java.util.HashSet<>();
 
     private static void volcarADisco(String key, NativeImage img) {
         try {
@@ -1345,6 +1359,7 @@ public final class ClothingTextureCache {
      * directo, sin tocar el resource pack.
      */
     public static void registrarImagenCompuesta(Identifier id, NativeImage img) {
+        IMAGENES_PROPIAS.remove(id);   // si antes era del resource pack, ahora la posee la textura registrada
         BASE_IMAGE_CACHE.put(id, img);
     }
 
@@ -1359,6 +1374,7 @@ public final class ClothingTextureCache {
             try (InputStream stream = resource.get().getInputStream()) {
                 NativeImage img = NativeImage.read(stream);
                 BASE_IMAGE_CACHE.put(id, img);
+                IMAGENES_PROPIAS.add(id);
                 return img;
             }
         } catch (IOException e) {
