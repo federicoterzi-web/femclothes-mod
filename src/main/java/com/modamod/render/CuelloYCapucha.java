@@ -165,10 +165,19 @@ public final class CuelloYCapucha {
                 float d = Math.max(0F, Calce.dilatacionEfectiva(s));
                 // Pegada al borde real del escote y de la apertura (2026-10-08, "las solapas no esten pegadas a la
                 // abertura del cuello ni de la chaqueta"): el borde de adentro de cada fila sale de la tela.
-                Fila[] filas = pegarAlBorde(filasDe(com.modamod.item.TopCorte.solapa(s)), bordeDelEscote(s));
-                int color = RemeraItem.color(s);
-                dibujarFilas("solapa" + com.modamod.item.TopCorte.solapa(s), filas, d + 0.1F, s,
-                        oscurecer(color, 0.88F), biped, matrices, vertexConsumers, luz);
+                float[] borde = bordeDelEscote(s);
+                Fila[] perfil = filasDe(com.modamod.item.TopCorte.solapa(s));
+                Identifier tela = telaDelTorso(s);
+                if (borde != null && tela != null) {
+                    float[] anchos = new float[perfil.length];
+                    for (int i = 0; i < perfil.length; i++) anchos[i] = perfil[i].w;
+                    SolapaMalla.dibujar(tela, borde, SUB, anchos, d, com.modamod.render.relieve.BustoRender.carpaDe(Calce.leer(s)),
+                            biped, matrices, vertexConsumers, luz);
+                } else {
+                    // Sin la tela compuesta todavía: las cajitas de siempre.
+                    dibujarFilas("solapa" + com.modamod.item.TopCorte.solapa(s), perfil, d + 0.1F, s,
+                            oscurecer(RemeraItem.color(s), 0.88F), biped, matrices, vertexConsumers, luz);
+                }
             }
             if (RemeraItem.variante(s).cuello() == Variante.Cuello.CAMISA) {
                 float d = Math.max(0F, Calce.dilatacionEfectiva(s));
@@ -186,12 +195,22 @@ public final class CuelloYCapucha {
 
     /** Perfiles del borde del escote por textura de tela (px del centro del frente al borde de la tela, fila por fila). */
     private static final Map<Identifier, float[]> BORDES = new HashMap<>();
+    /** Muestras por px de alto del perfil del borde: la textura es de 8x, así se aprecia la diagonal del escote. */
+    private static final int SUB = 4;
 
     /**
      * Distancia (px) del centro del frente al borde de la tela en cada fila del torso, leída de la textura de la
      * prenda: el escote (V, redondo, cuadrado, corazón, camisa) y, si el frente está abierto, la apertura. 0 = la tela
      * llega al centro (frente cerrado). {@code null} si la tela todavía no se compuso.
      */
+    /** La textura de la tela del torso de la prenda, o null. */
+    private static Identifier telaDelTorso(ItemStack ropa) {
+        for (com.modamod.render.Pieza p : PiezasDePrenda.de(ropa, null)) {
+            if (p.parte() == com.modamod.garment.Parte.TORSO) return p.textura();
+        }
+        return null;
+    }
+
     private static float[] bordeDelEscote(ItemStack ropa) {
         Identifier tela = null;
         int filasTorso = 0;
@@ -208,9 +227,9 @@ public final class CuelloYCapucha {
         NativeImage img = ClothingTextureCache.imagenBase(tela);
         if (img == null) return null;
         float k = img.getWidth() / 64F;
-        float[] borde = new float[Math.max(1, Math.min(filasTorso, 12))];
+        float[] borde = new float[Math.max(1, Math.min(filasTorso, 12)) * SUB];
         for (int r = 0; r < borde.length; r++) {
-            int y = Math.min(img.getHeight() - 1, (int) ((20 + r + 0.5F) * k));
+            int y = Math.min(img.getHeight() - 1, (int) ((20 + (r + 0.5F) / SUB) * k));
             float e = 4F;   // sin tela en toda la mitad: el borde queda en el costado
             for (int x = Math.round(24 * k); x < Math.round(28 * k); x++) {
                 if ((img.getColor(x, y) >>> 24) >= 128) { e = (x - 24 * k) / k; break; }
@@ -224,8 +243,10 @@ public final class CuelloYCapucha {
     /** Las filas de una solapa con el borde de adentro sobre el borde de la tela; sin tela leída quedan como están. */
     private static Fila[] pegarAlBorde(Fila[] base, float[] borde) {
         if (borde == null) return base;
-        Fila[] out = new Fila[Math.min(base.length, borde.length)];
-        for (int i = 0; i < out.length; i++) out[i] = new Fila(Math.max(0F, borde[i]), base[i].w);
+        Fila[] out = new Fila[Math.min(base.length, borde.length / SUB)];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = new Fila(Math.max(0F, borde[Math.min(borde.length - 1, i * SUB + SUB / 2)]), base[i].w);
+        }
         return out;
     }
 
@@ -271,7 +292,7 @@ public final class CuelloYCapucha {
     }
 
     /** Cuánto más adelante (px, ≤ 0) está la cúpula del busto en (x, y) del frente que la tela plana. */
-    private static float elevacion(com.modamod.render.relieve.BustoRender.Busto busto, float x, float y, float d,
+    static float elevacion(com.modamod.render.relieve.BustoRender.Busto busto, float x, float y, float d,
                                    float carpa) {
         com.modamod.render.relieve.BustoRender.Punto p =
                 com.modamod.render.relieve.BustoRender.sobreBusto(busto, x, y, d, carpa);
