@@ -111,6 +111,13 @@ public class ManiquiScreen extends HandledScreen<ManiquiScreenHandler> {
     }
 
     private net.minecraft.client.gui.widget.TextFieldWidget campoSkin;
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Con el cursor en el nombre del jugador, las teclas son del texto (la E no cierra la pantalla; 2026-10-08).
+        if (campoSkin != null && campoSkin.visible && (campoSkin.keyPressed(keyCode, scanCode, modifiers) || campoSkin.isActive())) return true;
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
     private ButtonWidget btnSkin;
     private ButtonWidget btnCandado;
 

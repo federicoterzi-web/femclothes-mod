@@ -742,6 +742,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
                 return;
             }
             items.set(SLOT_PRENDA, stack.copyWithCount(1));
+            muestraDesdeEntrada(stack);
             deCadena = true;
             iniciar();                                              // si faltan insumos queda esperando (el tick reintenta)
             sincronizar();
@@ -749,7 +750,29 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         }
         if (slot == SLOT_PRENDA) deCadena = false;
         items.set(slot, stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1));
+        if (slot == SLOT_PRENDA) muestraDesdeEntrada(stack);
         sincronizar();
+    }
+
+    /**
+     * La prenda de la entrada ES la muestra del editor (2026-10-08, "para el aplique de la estiladora que baste con
+     * poner la prenda en el input, saquemos el slot extra"): se copia con el último diseño de su tipo encima; si no hay
+     * último, lo que la prenda ya traía pasa a ser el último. Al irse la prenda (sale terminada) la muestra queda en el
+     * editor para seguir editando.
+     */
+    private void muestraDesdeEntrada(ItemStack entrada) {
+        if (world == null || world.isClient || entrada.isEmpty()) return;
+        ItemStack m = entrada.copyWithCount(1);
+        ItemStack ultimo = diseno(m);
+        if (ultimo != null) copiarDiseno(ultimo, m);
+        autoguardando = true;
+        try {
+            editor.setStack(EstiladoBlockEntity.SLOT_PRENDA, m);
+            muestraAnterior = m.getItem();
+        } finally {
+            autoguardando = false;
+        }
+        if (ultimo == null) escribirUltimo(m);
     }
 
     @Override public int getMaxCountPerStack() { return 64; }

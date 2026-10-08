@@ -44,6 +44,14 @@ public class EstilistaScreenHandler extends EstiladoScreenHandler {
     public EstilistaScreenHandler(int syncId, PlayerInventory inv, EstilistaBlockEntity host) {
         super(ModamodScreenHandlers.ESTILISTA, syncId, inv, host.editor());
         this.host = host;
+        // El slot de prenda del editor ya no se usa (2026-10-08): la muestra es la prenda de la entrada.
+        Slot muestra = new Slot(host.editor(), EstiladoBlockEntity.SLOT_PRENDA, -10000, -10000) {
+            @Override public boolean canInsert(ItemStack stack) { return false; }
+            @Override public boolean canTakeItems(PlayerEntity player) { return false; }
+            @Override public boolean isEnabled() { return false; }
+        };
+        muestra.id = EstiladoBlockEntity.SLOT_PRENDA;
+        slots.set(EstiladoBlockEntity.SLOT_PRENDA, muestra);
         host.alAbrirGui();
         int dy = (GRANDE - 16) / 2;
         addSlot(new Slot(host, EstilistaBlockEntity.SLOT_PRENDA, X_MARCO_ENTRADA + dy, Y_MARCO + dy) {

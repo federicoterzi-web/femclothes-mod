@@ -31,6 +31,9 @@ public class EstilistaScreen extends EstiladoScreen {
     }
 
     @Override
+    boolean sinSlotPrenda() { return true; }
+
+    @Override
     int panelExtra() { return 6 + EstilistaScreenHandler.ANCHO_PANEL + 6 + EstilistaScreenHandler.ANCHO_DISENOS; }
 
     @Override
@@ -60,8 +63,7 @@ public class EstilistaScreen extends EstiladoScreen {
         });
         guardar.setTooltip(Tooltip.of(Text.translatable("modamod.estilista.disenos.tooltip.guardar")));
         this.addDrawableChild(guardar);
-        boton("fijar", EstilistaBlockEntity.BTN_FIJAR, px + 8, this.y + EstilistaScreenHandler.Y_PANEL + 52, 54, 16);
-        boton("borrar", EstilistaBlockEntity.BTN_BORRAR, px + EstilistaScreenHandler.ANCHO_PANEL - 8 - 54, this.y + EstilistaScreenHandler.Y_PANEL + 52, 54, 16);
+        boton("borrar", EstilistaBlockEntity.BTN_BORRAR, px + 8, this.y + EstilistaScreenHandler.Y_PANEL + 52, EstilistaScreenHandler.ANCHO_PANEL - 16, 16);
     }
 
     private void boton(String clave, int id, int bx, int by, int w, int h) {

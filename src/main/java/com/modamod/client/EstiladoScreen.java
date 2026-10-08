@@ -259,6 +259,9 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
 
     /** Cuánto se corre a la derecha el panel de ajustes (la Estilista pone su panel de máquina primero). */
     int panelExtra() { return 0; }
+
+    /** La Estilista no usa el slot de prenda de la Mesa (2026-10-08): se tapa el marco que trae el fondo. */
+    boolean sinSlotPrenda() { return false; }
     private ButtonWidget btnPaginaColocacion, btnPaginaMovimiento, btnRestablecer, btnPivote, btnEje, btnCrearMolde;
     /** El slider de blandura de la Mesa normal (2026-10-04): como estaba antes del panel lateral. */
     private SliderAjuste sliderNormal;
@@ -1303,6 +1306,10 @@ public class EstiladoScreen extends HandledScreen<EstiladoScreenHandler> {
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         context.drawTexture(TEXTURE, this.x, this.y, 0, 0, this.backgroundWidth, this.backgroundHeight,
                 this.backgroundWidth, this.backgroundHeight);
+        if (sinSlotPrenda()) {
+            int sx = EstiladoScreenHandler.X_DERECHA - 1, sy = EstiladoScreenHandler.Y_SLOTS - 1;
+            context.drawTexture(TEXTURE, this.x + sx, this.y + sy, sx, sy + 24, 18, 18, this.backgroundWidth, this.backgroundHeight);
+        }
         // Marco del slot de objeto (2026-10-04), dibujado por código: el fondo no lo trae.
         int ox = this.x + X_DER + 3 * 26, oy = this.y + EstiladoScreenHandler.Y_SLOTS;
         if (creativa()) {
