@@ -90,6 +90,13 @@ public final class EscanearEstampa {
     }
 
     private static void recibir(ServerPlayerEntity jugador, Parte p) {
+        // Sin Camerapture no hay dónde guardar la foto, y tocar CameraptureCompat tiraría NoClassDefFoundError en el
+        // hilo del servidor (hallazgo H05, 2026-10-08).
+        if (!net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("camerapture")) {
+            SUBIDAS.remove(jugador.getUuid());
+            error(jugador, "modamod.sublimadora.escanear.sin_camerapture");
+            return;
+        }
         if (!(jugador.getWorld().getBlockEntity(p.pos()) instanceof SublimadoraBlockEntity be)
                 || !be.canPlayerUse(jugador) || p.total() <= 0) {
             SUBIDAS.remove(jugador.getUuid());

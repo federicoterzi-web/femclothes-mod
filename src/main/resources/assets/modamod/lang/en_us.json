@@ -697,6 +697,7 @@
   "modamod.sublimadora.escanear.enviando": "Scanning the print...",
   "modamod.sublimadora.escanear.listo": "Print scanned.",
   "modamod.sublimadora.escanear.sin_papel": "The Sublimator needs paper to scan.",
+  "modamod.sublimadora.escanear.sin_camerapture": "Scanning a print needs the Camerapture mod",
   "modamod.sublimadora.escanear.grande": "The image is too large.",
   "modamod.sublimadora.escanear.no_imagen": "That file is not a readable image.",
   "modamod.sublimadora.escanear.fallo": "Could not scan the print.",

@@ -126,7 +126,9 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
         // Línea de producción (2026-10-08): apagada de fábrica.
         this.addDrawableChild(new EstiloPergamino.BotonLinea(this.x + 8, this.y + 296, 86, 16,
                 () -> this.handler.be.linea(), b -> clickBoton(SublimadoraBlockEntity.BTN_LINEA)));
-        btnEscanear.setTooltip(Tooltip.of(Text.translatable("modamod.sublimadora.tooltip.escanear")));
+        btnEscanear.setTooltip(Tooltip.of(Text.translatable(EscanerEstampaCliente.disponible()
+                ? "modamod.sublimadora.tooltip.escanear" : "modamod.sublimadora.escanear.sin_camerapture")));
+        btnEscanear.active = EscanerEstampaCliente.disponible();
         this.addDrawableChild(btnEscanear);
 
         // Prensar, ENCIMA de la flecha Entrada -> Salida — como Teñir en Tintes.

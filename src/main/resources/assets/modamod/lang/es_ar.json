@@ -697,6 +697,7 @@
   "modamod.sublimadora.escanear.enviando": "Escaneando la estampa...",
   "modamod.sublimadora.escanear.listo": "Estampa escaneada.",
   "modamod.sublimadora.escanear.sin_papel": "Falta papel en la Sublimadora para escanear.",
+  "modamod.sublimadora.escanear.sin_camerapture": "Escanear estampa necesita el mod Camerapture",
   "modamod.sublimadora.escanear.grande": "La imagen es demasiado pesada.",
   "modamod.sublimadora.escanear.no_imagen": "Ese archivo no es una imagen que se pueda leer.",
   "modamod.sublimadora.escanear.fallo": "No se pudo escanear la estampa.",

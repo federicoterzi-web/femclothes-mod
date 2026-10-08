@@ -1,9 +1,6 @@
 package com.modamod.client;
 
 import com.modamod.sublimadora.EscanearEstampa;
-import me.chrr.camerapture.CameraptureClient;
-import me.chrr.camerapture.config.SyncedConfig;
-import me.chrr.camerapture.util.ImageUtil;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
@@ -17,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 
@@ -40,15 +36,24 @@ public final class EscanerEstampaCliente {
     private static volatile boolean ocupado = false;
     private static int subidas = 0;
 
+    /** ¿Está Camerapture? Sin él no hay dónde guardar la foto (hallazgo H05, 2026-10-08). */
+    public static boolean disponible() {
+        return net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("camerapture");
+    }
+
     /** Abre el explorador y, si se elige una imagen, la manda a la Sublimadora de {@code pos}. */
     public static void escanear(BlockPos pos) {
         if (ocupado) return;
+        if (!disponible()) {
+            avisar("modamod.sublimadora.escanear.sin_camerapture", Formatting.RED);
+            return;
+        }
         ocupado = true;
         Thread hilo = new Thread(() -> {
             try {
                 String ruta = elegirArchivo();
                 if (ruta != null) preparar(pos, Path.of(ruta));
-            } catch (Exception e) {
+            } catch (Exception | LinkageError e) {   // LinkageError: Camerapture de otra versión (no es una Exception)
                 LOG.error("No se pudo escanear la estampa", e);
                 avisar("modamod.sublimadora.escanear.fallo", Formatting.RED);
             } finally {
@@ -71,31 +76,8 @@ public final class EscanerEstampaCliente {
     }
 
     private static void preparar(BlockPos pos, Path archivo) throws Exception {
-        BufferedImage imagen = ImageIO.read(archivo.toFile());
-        if (imagen == null && archivo.toString().toLowerCase(java.util.Locale.ROOT).endsWith(".webp")) {
-            imagen = ImageUtil.decodeImageFromWebP(Files.readAllBytes(archivo));
-        }
-        if (imagen == null) {
-            avisar("modamod.sublimadora.escanear.no_imagen", Formatting.RED);
-            return;
-        }
-        // Los mismos límites que la cámara (los manda el servidor de Camerapture).
-        SyncedConfig config = CameraptureClient.syncedConfig;
-        int resolucion = config != null ? config.maxImageResolution() : 1280;
-        int maximo = config != null ? config.maxImageBytes() : 500_000;
-        imagen = ImageUtil.normalize(ImageUtil.clampSize(imagen, resolucion));
-        float calidad = 0.95f;
-        byte[] bytes = ImageUtil.compressIntoWebP(imagen, calidad);
-        while (bytes.length > maximo) {
-            calidad -= 0.05f;
-            if (calidad < 0.1f) {
-                avisar("modamod.sublimadora.escanear.grande", Formatting.RED);
-                return;
-            }
-            bytes = ImageUtil.compressIntoWebP(imagen, calidad);
-        }
-        byte[] listos = bytes;
-        MinecraftClient.getInstance().execute(() -> enviar(pos, listos));
+        byte[] listos = CameraptureEscanerCompat.comprimir(archivo);
+        if (listos != null) MinecraftClient.getInstance().execute(() -> enviar(pos, listos));
     }
 
     private static void enviar(BlockPos pos, byte[] bytes) {
@@ -109,7 +91,7 @@ public final class EscanerEstampaCliente {
         avisar("modamod.sublimadora.escanear.enviando", Formatting.GRAY);
     }
 
-    private static void avisar(String clave, Formatting color) {
+    static void avisar(String clave, Formatting color) {
         MinecraftClient cliente = MinecraftClient.getInstance();
         cliente.execute(() -> {
             if (cliente.player != null) cliente.player.sendMessage(Text.translatable(clave).formatted(color), true);
