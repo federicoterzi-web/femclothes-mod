@@ -36,6 +36,13 @@ final class SolapaMalla {
      */
     static void dibujar(Identifier tela, float[] borde, int sub, float[] anchos, float d, float carpa,
                         BipedEntityModel<?> biped, MatrixStack matrices, VertexConsumerProvider vcp, int luz) {
+        dibujar(tela, borde, sub, anchos, d, carpa, SALE_ADENTRO, SALE_AFUERA, biped, matrices, vcp, luz);
+    }
+
+    /** Con el doblez a gusto: {@code saleAdentro}/{@code saleAfuera} = cuánto se levanta cada borde de la tela (px). */
+    static void dibujar(Identifier tela, float[] borde, int sub, float[] anchos, float d, float carpa,
+                        float saleAdentro, float saleAfuera,
+                        BipedEntityModel<?> biped, MatrixStack matrices, VertexConsumerProvider vcp, int luz) {
         if (borde == null || borde.length == 0 || anchos.length == 0) return;
         int filas = Math.min(anchos.length, borde.length / sub);
         int n = filas * sub;                      // segmentos por lado
@@ -57,7 +64,7 @@ final class SolapaMalla {
                 float w = anchoEn(anchos, y);
                 float xout = Math.min(LIMITE_X, xin + w);
                 vale[j] = xout - xin > 0.05F;
-                float zin = zTela - SALE_ADENTRO, zout = zTela - SALE_AFUERA;
+                float zin = zTela - saleAdentro, zout = zTela - saleAfuera;
                 if (busto != null) {
                     zin += CuelloYCapucha.elevacion(busto, lado * xin, y, d, carpa);
                     zout += CuelloYCapucha.elevacion(busto, lado * xout, y, d, carpa);

@@ -688,3 +688,5 @@ Al componer, cada pixel parte del color base de la tela y cada capa se **funde**
 
 **Solapas de tela continua** (2026-10-08, "se pueden hacer mas de tela como las polleras y pegarlas al borde del cuello?"; sin probar en el juego): las solapas del Top (pico, redondas y chal) ya no son pilas de cajitas: son una **tira de tela continua** a cada lado, pegada al borde del escote (o de la apertura si el frente está abierto), con el borde de afuera levantado como un **doblez** y sus cantos cerrados. Toman la **textura de la prenda**, así que llevan sus patrones y estampas, un poco más oscuras para que se lea el doblez; con busto suben sobre la curva. Falta que la apertura del frente gane grosor real y que la solapa siga hasta el ruedo.
 
+**Cantos de la apertura** (2026-10-08; sin probar en el juego): con el **frente abierto**, cada borde de la apertura lleva ahora una **tira de tela fina** de arriba abajo, hasta el ruedo, con la textura de la prenda. Le da grosor a la abertura y continúa a las solapas (que van encima). Vale con y sin solapas. Falta que la apertura se adapte al calce y al busto, y los frentes **Cruzado** y **Abierto hasta el pecho**.
+

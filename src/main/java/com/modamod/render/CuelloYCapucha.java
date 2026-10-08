@@ -160,6 +160,19 @@ public final class CuelloYCapucha {
         for (ItemStack s : prendas) if (s.getItem() instanceof RemeraItem) dMax = Math.max(dMax, Calce.dilatacionEfectiva(s));
         for (ItemStack s : prendas) {
             if (!(s.getItem() instanceof RemeraItem)) continue;
+            if (com.modamod.item.TopCorte.frente(s) == com.modamod.item.ChaquetaFrente.ABIERTA) {
+                // Los cantos de la apertura (2026-10-08, "vamos por parte" → parte 3): una tira de tela fina a cada
+                // lado, de arriba abajo, que le da grosor a la abertura y sigue hasta el ruedo; las solapas van encima.
+                float[] bordeA = bordeDelEscote(s);
+                Identifier telaA = telaDelTorso(s);
+                if (bordeA != null && telaA != null) {
+                    float[] anchos = new float[Math.max(1, bordeA.length / SUB)];
+                    java.util.Arrays.fill(anchos, 0.9F);
+                    SolapaMalla.dibujar(telaA, bordeA, SUB, anchos, Math.max(0F, Calce.dilatacionEfectiva(s)),
+                            com.modamod.render.relieve.BustoRender.carpaDe(Calce.leer(s)), 0.15F, 0.4F,
+                            biped, matrices, vertexConsumers, luz);
+                }
+            }
             if (s.getItem() instanceof RemeraItem
                     && com.modamod.item.TopCorte.solapa(s) != com.modamod.item.ChaquetaSolapa.NINGUNA) {
                 float d = Math.max(0F, Calce.dilatacionEfectiva(s));
