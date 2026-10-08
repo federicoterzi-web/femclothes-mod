@@ -528,7 +528,7 @@ public final class RegionResolver {
         for (CapaPatron c : capas) if (c.region() == RegionPintura.SOLAPAS) { hay = true; break; }
         if (!hay) return capas;
         com.modamod.item.ChaquetaSolapa tipo = com.modamod.item.TopCorte.solapa(stack);
-        boolean abierta = com.modamod.item.TopCorte.frente(stack) == com.modamod.item.ChaquetaFrente.ABIERTA;
+        boolean abierta = com.modamod.item.TopCorte.frente(stack).abre();
         java.util.List<CapaPatron> out = new java.util.ArrayList<>(capas.size());
         for (CapaPatron c : capas) {
             if (c.region() != RegionPintura.SOLAPAS) { out.add(c); continue; }

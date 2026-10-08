@@ -77,7 +77,7 @@ public final class TopCorte {
 
     /** ¿Tiene algún rasgo de chaqueta (capucha, solapas o frente abierto)? Si no, es la remera de siempre. */
     public static boolean conRasgosDeChaqueta(ItemStack stack) {
-        return conCapucha(stack) || solapa(stack) != ChaquetaSolapa.NINGUNA || frente(stack) == ChaquetaFrente.ABIERTA;
+        return conCapucha(stack) || solapa(stack) != ChaquetaSolapa.NINGUNA || frente(stack) != ChaquetaFrente.CERRADA;
     }
 
     /**

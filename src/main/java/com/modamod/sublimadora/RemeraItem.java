@@ -97,7 +97,7 @@ public class RemeraItem extends Item {
         if (com.modamod.item.TopCorte.conRasgosDeChaqueta(stack)) {
             boolean sinMangas = manga(stack, com.modamod.region.Lado.IZQUIERDA).filas == 0
                     && manga(stack, com.modamod.region.Lado.DERECHA).filas == 0;
-            boolean abierta = com.modamod.item.TopCorte.frente(stack) == com.modamod.item.ChaquetaFrente.ABIERTA;
+            boolean abierta = com.modamod.item.TopCorte.frente(stack).abre();
             boolean capucha = com.modamod.item.TopCorte.conCapucha(stack);
             boolean saco = com.modamod.item.TopCorte.solapa(stack) != com.modamod.item.ChaquetaSolapa.NINGUNA && !capucha;
             String clave = sinMangas ? (abierta ? "chaleco_abierto" : "chaleco")

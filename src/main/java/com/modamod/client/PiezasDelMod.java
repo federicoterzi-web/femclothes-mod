@@ -170,7 +170,7 @@ public final class PiezasDelMod {
      */
     private static List<Pieza> remera(ItemStack stack, net.minecraft.entity.LivingEntity entidad) {
         // El slot decide la capa (2026-10-07, "un solo top"): en el de chaqueta la copia viene marcada como exterior.
-        boolean abierta = com.modamod.item.TopCorte.frente(stack) == com.modamod.item.ChaquetaFrente.ABIERTA;
+        boolean abierta = com.modamod.item.TopCorte.frente(stack) != com.modamod.item.ChaquetaFrente.CERRADA;
         int capa = com.modamod.item.TopCorte.exterior(stack) ? Capa.CHAQUETA : Capa.TORSO_EXTERIOR;
         return piezasDeRemera(stack, capa, com.modamod.item.TopCorte.conCapucha(stack), abierta);
     }
@@ -201,7 +201,7 @@ public final class PiezasDelMod {
         if (ribTorso || ribIzq || ribDer || canguro || abierta) {
             textura = com.modamod.render.DetallesHoodie.pintar(textura, variante.largo().filas,
                     RemeraItem.manga(stack, Lado.IZQUIERDA).filas, RemeraItem.manga(stack, Lado.DERECHA).filas,
-                    ribTorso, ribIzq, ribDer, canguro, abierta);
+                    ribTorso, ribIzq, ribDer, canguro, com.modamod.item.TopCorte.frente(stack), Calce.leer(stack));
         }
 
         float dilatacion = Calce.dilatacionEfectiva(stack);

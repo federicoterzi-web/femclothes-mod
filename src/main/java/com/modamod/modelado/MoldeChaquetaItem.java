@@ -24,7 +24,9 @@ public class MoldeChaquetaItem extends Item {
         CAPUCHA_CON(null, true, null), CAPUCHA_SIN(null, false, null),
         // Solapas (2026-10-07, "traje separado... varios tipos de solapa"): nuevos al final.
         SOLAPA_NINGUNA(null, null, ChaquetaSolapa.NINGUNA), SOLAPA_PICO(null, null, ChaquetaSolapa.PICO),
-        SOLAPA_REDONDA(null, null, ChaquetaSolapa.REDONDA), SOLAPA_CHAL(null, null, ChaquetaSolapa.CHAL);
+        SOLAPA_REDONDA(null, null, ChaquetaSolapa.REDONDA), SOLAPA_CHAL(null, null, ChaquetaSolapa.CHAL),
+        // Frentes nuevos (2026-10-08): al final.
+        FRENTE_CRUZADA(ChaquetaFrente.CRUZADA, null, null), FRENTE_ABIERTA_PECHO(ChaquetaFrente.ABIERTA_PECHO, null, null);
 
         public final ChaquetaFrente frente;
         public final Boolean capucha;

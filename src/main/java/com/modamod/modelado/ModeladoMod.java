@@ -189,6 +189,10 @@ public final class ModeladoMod {
             MoldeChaquetaItem.Tipo.SOLAPA_PICO);
     public static final MoldeChaquetaItem MOLDE_CHAQUETA_SOLAPA_REDONDA = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
             MoldeChaquetaItem.Tipo.SOLAPA_REDONDA);
+    public static final MoldeChaquetaItem MOLDE_CHAQUETA_FRENTE_CRUZADA = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
+            MoldeChaquetaItem.Tipo.FRENTE_CRUZADA);
+    public static final MoldeChaquetaItem MOLDE_CHAQUETA_FRENTE_ABIERTA_PECHO = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
+            MoldeChaquetaItem.Tipo.FRENTE_ABIERTA_PECHO);
     public static final MoldeChaquetaItem MOLDE_CHAQUETA_SOLAPA_CHAL = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
             MoldeChaquetaItem.Tipo.SOLAPA_CHAL);
 
@@ -269,6 +273,8 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_chaqueta_solapa_pico"), MOLDE_CHAQUETA_SOLAPA_PICO);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_chaqueta_solapa_redonda"), MOLDE_CHAQUETA_SOLAPA_REDONDA);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_chaqueta_solapa_chal"), MOLDE_CHAQUETA_SOLAPA_CHAL);
+        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_chaqueta_frente_cruzada"), MOLDE_CHAQUETA_FRENTE_CRUZADA);
+        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_chaqueta_frente_abierta_pecho"), MOLDE_CHAQUETA_FRENTE_ABIERTA_PECHO);
 
         // "Guardar diseño" con nombre (2026-09-27): el nombre viaja como paquete propio, ver GuardarDisenoPayload.
         PayloadTypeRegistry.playC2S().register(GuardarDisenoPayload.ID, GuardarDisenoPayload.CODEC);

@@ -36,7 +36,7 @@ public final class DetallesHoodie {
      * lo pueda volver a leer.
      */
     public static Identifier pintar(Identifier base, int filasTorso, int filasIzq, int filasDer) {
-        return pintar(base, filasTorso, filasIzq, filasDer, true, true, true, true, false);
+        return pintar(base, filasTorso, filasIzq, filasDer, true, true, true, true, com.modamod.item.ChaquetaFrente.CERRADA, com.modamod.item.Calce.NORMAL);
     }
 
     /**
@@ -48,7 +48,24 @@ public final class DetallesHoodie {
      */
     public static Identifier pintar(Identifier base, int filasTorso, int filasIzq, int filasDer,
                                     boolean ribTorso, boolean ribIzq, boolean ribDer, boolean canguro, boolean abierta) {
-        String key = base + "#hoodie" + filasTorso + "_" + filasIzq + "_" + filasDer + (ribTorso ? "t" : "") + (ribIzq ? "i" : "") + (ribDer ? "d" : "") + (canguro ? "c" : "") + (abierta ? "a" : "");
+        return pintar(base, filasTorso, filasIzq, filasDer, ribTorso, ribIzq, ribDer, canguro,
+                abierta ? com.modamod.item.ChaquetaFrente.ABIERTA : com.modamod.item.ChaquetaFrente.CERRADA, com.modamod.item.Calce.NORMAL);
+    }
+
+    /** Ancho de la apertura en píxeles de textura, según el calce (2026-10-08): más holgado = se abre más. */
+    public static int anchoApertura(com.modamod.item.Calce calce) {
+        return switch (calce) {
+            case PEGADO, AJUSTADO, NORMAL -> 2;
+            case SUELTO -> 3;
+            case OVERSIZE -> 4;
+        };
+    }
+
+    public static Identifier pintar(Identifier base, int filasTorso, int filasIzq, int filasDer,
+                                    boolean ribTorso, boolean ribIzq, boolean ribDer, boolean canguro,
+                                    com.modamod.item.ChaquetaFrente frente, com.modamod.item.Calce calce) {
+        boolean abierta = frente.abre();
+        String key = base + "#hoodie" + filasTorso + "_" + filasIzq + "_" + filasDer + (ribTorso ? "t" : "") + (ribIzq ? "i" : "") + (ribDer ? "d" : "") + (canguro ? "c" : "") + (frente != com.modamod.item.ChaquetaFrente.CERRADA ? "f" + frente.ordinal() + "_" + anchoApertura(calce) : "");
         Identifier cacheada = CACHE.get(key);
         if (cacheada != null) return cacheada;
         NativeImage origen = ClothingTextureCache.imagenBase(base);
@@ -62,7 +79,8 @@ public final class DetallesHoodie {
             // Ruedo: la última fila del torso, alrededor de las 4 caras.
             if (ribTorso) rib(img, s, 16, 20 + filasTorso - 1, 24);
             if (canguro) bolsillo(img, s, filasTorso);
-            if (abierta) abrirFrente(img, s, filasTorso);
+            if (abierta) abrirFrente(img, s, frente.filasAbiertas(filasTorso), anchoApertura(calce));
+            if (frente == com.modamod.item.ChaquetaFrente.CRUZADA) cruzarFrente(img, s, filasTorso);
         }
         if (ribDer && filasDer > 0) rib(img, s, 40, 20 + filasDer - 1, 16);
         if (ribIzq && filasIzq > 0) rib(img, s, 32, 52 + filasIzq - 1, 16);
@@ -110,13 +128,26 @@ public final class DetallesHoodie {
      * Frente abierto: 2 píxeles del medio de la cara de adelante del torso (u 23..25) transparentes en todo el
      * alto, con una orilla oscura de un cuarto de píxel a cada lado (la solapa).
      */
-    private static void abrirFrente(NativeImage img, int s, int filasTorso) {
-        int x0 = 23 * s, x1 = 25 * s;
+    private static void abrirFrente(NativeImage img, int s, int filasTorso, int ancho) {
+        // Centrada en u 24 (el medio de la cara de adelante, 20..28).
+        int x0 = (24 - ancho / 2) * s, x1 = x0 + ancho * s;
         int borde = Math.max(1, s / 4);
         for (int y = 20 * s; y < (20 + filasTorso) * s; y++) {
             for (int x = x0 - borde; x < x0; x++) oscurecer(img, x, y, 0.72F);
             for (int x = x1; x < x1 + borde; x++) oscurecer(img, x, y, 0.72F);
             for (int x = x0; x < x1; x++) img.setColor(x, y, 0);
+        }
+    }
+
+    /**
+     * Frente cruzado (2026-10-08): la tela cerrada con una solapa que monta sobre la otra. Una sombra de un píxel a la
+     * izquierda del centro (la solapa de abajo) y una costura oscura de un cuarto de píxel en el canto de la de arriba.
+     */
+    private static void cruzarFrente(NativeImage img, int s, int filasTorso) {
+        int borde = Math.max(1, s / 4);
+        for (int y = 20 * s; y < (20 + filasTorso) * s; y++) {
+            for (int x = 24 * s - s; x < 24 * s; x++) oscurecer(img, x, y, 0.90F);
+            for (int x = 24 * s; x < 24 * s + borde; x++) oscurecer(img, x, y, 0.66F);
         }
     }
 
