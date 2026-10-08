@@ -117,8 +117,9 @@ Máscaras de estampa, una forma recortada con un pedacito de foto adentro (un cu
 
 ## D. Estilista / Mesa de estilado — destaque lila
 
-**Apliques (3, OK):** `molde_aplique_mono` (moño rojo), `molde_aplique_mariposa` (mariposa violeta), `molde_aplique_flor`
-(flor rosa), sobre el papel.
+**Apliques (5):** `molde_aplique_mono` (moño rojo, OK), `molde_aplique_mariposa` (mariposa violeta, OK), `molde_aplique_flor`
+(flor rosa, OK), `molde_aplique_canguro` (bolsillo canguro: parche de tela con las dos bocas en diagonal y costura abajo; PROVISORIO),
+`molde_aplique_corbata` (corbata con nudo y hoja ancha hacia la punta; PROVISORIO), sobre el papel.
 **Correas (5, PROVISORIOS):** `molde_correa_lisa` (tira de cuero), `molde_correa_cadena` (cadena gruesa dorada),
 `molde_correa_cadena_fina`, `molde_correa_ojalillos` (tira con agujeros y ojalillos metálicos), `molde_correa_cordon`
 (cordón trenzado con puntas).

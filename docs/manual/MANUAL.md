@@ -696,3 +696,6 @@ Al componer, cada pixel parte del color base de la tela y cada capa se **funde**
 
 **Tintes: esquema propio y zona Solapas** (2026-10-08; sin probar en el juego): la Estación de Tintes ya no comparte el dibujo de la Modeladora. La **remera** (y el Top) muestra solo los lugares que pintan algo: **dos de prenda entera, pecho, cuello, manga izquierda, manga derecha, borde de abajo y Solapas**. La zona **Solapas** tiñe (color, patrón, mezcla, transparencia) la tela de las solapas por separado del resto: sigue su tipo (pico, redonda, chal) y su borde, también con el frente abierto; una remera sin solapas la ignora. El cuello de camisa no entra en esta zona.
 
+
+
+**Apliques: bolsillo canguro y corbata** (2026-10-08). Dos plantillas nuevas de aplique en la Mesa de estilado / Estilista: **Bolsillo canguro** (parche plano de 6,5 × 3,5 px con las bocas en diagonal y la costura de abajo, tres zonas de color: tela, vivo y costura; no se mueve, está pegado a la tela) y **Corbata** (nudo y hoja que se ensancha hacia la punta, con raya al medio; la hoja cuelga en tres tramos y se curva con el movimiento según la blandura). Se ponen como cualquier aplique (click en la prenda, giro, escala, tres colores del retazo); la corbata va bien sobre el torso de una remera con cuello de camisa.

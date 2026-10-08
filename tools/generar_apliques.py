@@ -135,6 +135,39 @@ def flor():
     ])
 
 
+def canguro():
+    """Bolsillo canguro (2026-10-08, "bolsillo de cangurito"): parche plano de tela de 6,5 x 3,5 px con las
+    bocas en diagonal a los costados y costura abajo. Zona 1: tela · Zona 2: bocas (el vivo) · Zona 3: costura.
+    Todo en el hueso "cuerpo" (no se mueve: es un parche pegado a la tela)."""
+    return modelo("canguro", [
+        hueso("cuerpo", [0, 0, 0], [
+            cubo([-3.25, -1.75, -0.3], [6.5, 3.5, 0.3], 1),
+            cubo([-3.9, -1.9, -0.38], [0.6, 2.3, 0.38], 2, [0, 0, -38], [-3.25, -0.7, -0.2]),
+            cubo([3.3, -1.9, -0.38], [0.6, 2.3, 0.38], 2, [0, 0, 38], [3.25, -0.7, -0.2]),
+            cubo([-3.1, -1.85, -0.34], [6.2, 0.22, 0.34], 3),
+        ]),
+    ])
+
+
+def corbata():
+    """Corbata (2026-10-08): nudo y hoja en tres tramos anidados que se ensanchan hacia la punta (huesos "cola*":
+    la tela blanda los curva). Zona 1: nudo · Zona 2: hoja · Zona 3: la raya del medio."""
+    anchos, altos = [1.1, 1.6, 1.9], [2.0, 2.2, 2.2]
+    huesos = [hueso("nudo", [0, 0, 0], [cubo([-0.8, -0.65, -0.95], [1.6, 1.3, 0.95], 1)])]
+    top = -0.5
+    for k in range(3):
+        w, a = anchos[k], altos[k]
+        cubos = [cubo([-w / 2, top - a, -0.6], [w, a, 0.35], 2),
+                 cubo([-0.18, top - a, -0.67], [0.36, a, 0.07], 3)]
+        nom = "cola" if k == 0 else f"cola_{k + 1}"
+        padre = "root" if k == 0 else ("cola" if k == 1 else f"cola_{k}")
+        huesos.append(hueso(nom, [0, -0.5, -0.5] if k == 0 else [0, top, -0.5], cubos, padre=padre))
+        top -= a
+    # La punta: un rombo chico girado, para que no termine plana.
+    huesos.append(hueso("cola_4", [0, top, -0.5], [cubo([-0.95, top - 0.6, -0.6], [1.9, 1.2, 0.35], 2, [0, 0, 45], [0, top, -0.5])], padre="cola_3"))
+    return modelo("corbata", huesos)
+
+
 def atlas():
     """Tres columnas de tela gris clara (se tiñen en runtime), con un tramado suave."""
     random.seed(11)
@@ -152,7 +185,7 @@ def atlas():
 
 def main():
     GEO.mkdir(parents=True, exist_ok=True)
-    for nombre, m in (("mono", mono()), ("mariposa", mariposa()), ("flor", flor())):
+    for nombre, m in (("mono", mono()), ("mariposa", mariposa()), ("flor", flor()), ("canguro", canguro()), ("corbata", corbata())):
         (GEO / f"aplique_{nombre}.geo.json").write_text(json.dumps(m, indent=2) + "\n")
     ATLAS.parent.mkdir(parents=True, exist_ok=True)
     atlas().save(ATLAS)

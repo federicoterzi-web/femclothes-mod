@@ -92,6 +92,8 @@ public class Modamod implements ModInitializer {
             entries.add(ModamodItems.MOLDE_APLIQUE_MONO);
             entries.add(ModamodItems.MOLDE_APLIQUE_MARIPOSA);
             entries.add(ModamodItems.MOLDE_APLIQUE_FLOR);
+            entries.add(ModamodItems.MOLDE_APLIQUE_CANGURO);
+            entries.add(ModamodItems.MOLDE_APLIQUE_CORBATA);
             entries.add(ModamodItems.MOLDE_TEXTURA_FRUNCIDO);
             entries.add(ModamodItems.MOLDE_TEXTURA_ACOLCHADO);
             entries.add(ModamodItems.ESTROGENOS);

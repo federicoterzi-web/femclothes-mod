@@ -95,6 +95,10 @@ public final class ModamodItems {
             new com.modamod.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.modamod.aplique.ModeloAplique.MARIPOSA));
     public static final com.modamod.aplique.MoldeApliqueItem MOLDE_APLIQUE_FLOR = register("molde_aplique_flor",
             new com.modamod.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.modamod.aplique.ModeloAplique.FLOR));
+    public static final com.modamod.aplique.MoldeApliqueItem MOLDE_APLIQUE_CANGURO = register("molde_aplique_canguro",
+            new com.modamod.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.modamod.aplique.ModeloAplique.CANGURO));
+    public static final com.modamod.aplique.MoldeApliqueItem MOLDE_APLIQUE_CORBATA = register("molde_aplique_corbata",
+            new com.modamod.aplique.MoldeApliqueItem(new Item.Settings().maxCount(1), com.modamod.aplique.ModeloAplique.CORBATA));
     /** Lo fabrica la Mesa de estilado creativa (2026-10-04); no está en la pestaña creativa. */
     public static final com.modamod.aplique.MoldeApliquePersonalizadoItem MOLDE_APLIQUE_PERSONALIZADO = register(
             "molde_aplique_personalizado",

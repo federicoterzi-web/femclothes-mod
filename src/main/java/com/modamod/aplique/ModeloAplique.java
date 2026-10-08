@@ -16,7 +16,11 @@ public enum ModeloAplique implements StringIdentifiable {
     MARIPOSA("mariposa"),
     FLOR("flor"),
     /** Un ítem o bloque cualquiera dibujado por Minecraft (2026-10-04); ver {@link ObjetoAplique}. No tiene .geo.json. */
-    OBJETO("objeto");
+    OBJETO("objeto"),
+    /** Bolsillo de canguro: parche plano de tela (2026-10-08). */
+    CANGURO("canguro"),
+    /** Corbata: nudo y hoja en tramos que cuelgan (2026-10-08). */
+    CORBATA("corbata");
 
     public final String clave;
 
