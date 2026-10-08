@@ -429,6 +429,10 @@ public class GuardarropasBlockEntity extends BlockEntity
 
     @Override public ItemStack removeStack(int slot) { return Inventories.removeStack(items, slot); }
 
+    /** Una prenda por casillero (2026-10-08, "limitemos a 1"): se equipa tal cual en un slot de Trinkets, que admite una. */
+    @Override
+    public int getMaxCountPerStack() { return 1; }
+
     @Override
     public void setStack(int slot, ItemStack stack) {
         items.set(slot, stack);
