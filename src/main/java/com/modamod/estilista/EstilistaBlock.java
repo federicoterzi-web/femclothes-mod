@@ -117,6 +117,14 @@ public class EstilistaBlock extends BlockWithEntity {
             world.playSound(null, pos, SoundEvents.UI_LOOM_TAKE_RESULT, SoundCategory.BLOCKS, 1.0f, 1.0f);
             return ActionResult.SUCCESS;
         }
+        if (be.trabajando()) {
+            // El pórtico en marcha golpea a quien meta la mano (2026-10-08, "las 5 maquinas... cierran y bloquean gui").
+            player.damage(world.getDamageSources().generic(), 3.0f);
+            world.playSound(null, pos, SoundEvents.BLOCK_PISTON_EXTEND, SoundCategory.BLOCKS, 1.0f, 1.2f);
+            player.sendMessage(net.minecraft.text.Text.translatable("modamod.estilista.aviso.procesando")
+                    .formatted(net.minecraft.util.Formatting.RED), true);
+            return ActionResult.SUCCESS;
+        }
         player.openHandledScreen(be);
         return ActionResult.SUCCESS;
     }

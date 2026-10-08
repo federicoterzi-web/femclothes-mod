@@ -124,6 +124,9 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     // ── estado visible ──
 
     public Estado estado() { return estado; }
+
+    /** Trabajando de verdad: la GUI se cierra y no se toca (2026-10-08). */
+    public boolean trabajando() { return estado == Estado.PROCESANDO; }
     public int progreso() { return progreso; }
 
     public ItemStack prendaVisible() {

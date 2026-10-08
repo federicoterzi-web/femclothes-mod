@@ -541,6 +541,9 @@ public class TinturasBlockEntity extends BlockEntity
     private int progreso = 0;
 
     public Estado estado() { return estado; }
+
+    /** Trabajando de verdad: la GUI se cierra y los controles quedan trabados (2026-10-08, hallazgo H03). */
+    public boolean trabajando() { return estado == Estado.TINIENDO; }
     public int progreso() { return progreso; }
     /** La prenda ya teñida esperando salir — "listo" de verdad es REPOSO + esto no vacío (no hay Estado.LISTO acá). */
     public ItemStack getSalida() { return salida; }
@@ -985,6 +988,8 @@ public class TinturasBlockEntity extends BlockEntity
             alternarLinea();
             return true;
         }
+        // El diseño pagado al iniciar no se toca mientras tiñe (H03).
+        if (trabajando()) return false;
         boolean cambio = aplicarBoton(id);
         if (cambio) sincronizar();
         return cambio;

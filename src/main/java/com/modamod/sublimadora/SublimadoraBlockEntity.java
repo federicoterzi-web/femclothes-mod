@@ -472,6 +472,9 @@ public class SublimadoraBlockEntity extends BlockEntity
         return estado;
     }
 
+    /** Trabajando de verdad: la GUI se cierra y no se toca (2026-10-08). */
+    public boolean trabajando() { return estado == Estado.PRENSANDO; }
+
     /** 0..1, para animar. */
     public float getProgreso() {
         return estado == Estado.PRENSANDO ? progreso / (float) TICKS_PRENSADO : 0f;

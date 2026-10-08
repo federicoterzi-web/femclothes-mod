@@ -243,7 +243,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        return be.canPlayerUse(player);
+        return be.canPlayerUse(player) && !be.trabajando();
     }
 
     /**

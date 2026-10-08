@@ -49,7 +49,7 @@ public class TelarScreenHandler extends ScreenHandler {
     }
 
     @Override
-    public boolean canUse(PlayerEntity player) { return host.canPlayerUse(player); }
+    public boolean canUse(PlayerEntity player) { return host.canPlayerUse(player) && !host.trabajando(); }
 
     @Override
     public ItemStack quickMove(PlayerEntity player, int index) {

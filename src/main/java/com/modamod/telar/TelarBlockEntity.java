@@ -84,6 +84,9 @@ public class TelarBlockEntity extends BlockEntity implements SidedInventory, com
     // ── estado visible ──
 
     public Estado estado() { return estado; }
+
+    /** Trabajando de verdad: la GUI se cierra y no se toca (2026-10-08). */
+    public boolean trabajando() { return estado == Estado.PROCESANDO; }
     public int progreso() { return progreso; }
     public int duracion() { return com.modamod.util.MaquinaCreativa.duracion(this, TICKS_PROCESO); }
     public boolean elegida(int ordinal) { return (seleccion & (1 << ordinal)) != 0; }

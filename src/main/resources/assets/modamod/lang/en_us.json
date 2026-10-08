@@ -374,6 +374,8 @@
   "modamod.preview.vista.izquierda": "Left",
   "modamod.tinturas.aviso.sin_color_activo": "Pick an active color first",
   "modamod.tinturas.aviso.no_es_prenda": "That's not a garment",
+  "modamod.estilista.aviso.procesando": "The gantry hit you! Don't reach in while it works",
+  "modamod.telar.aviso.procesando": "The shuttle caught you! Don't reach in while it weaves",
   "modamod.tinturas.aviso.procesando": "The fumes made you dizzy! Don't reach in while it's dyeing",
   "modamod.tinturas.aviso.entrada_ocupada": "There's already a garment waiting in the input",
   "modamod.tinturas.aviso.sin_patron_para_esta_prenda": "This garment can't take a pattern",

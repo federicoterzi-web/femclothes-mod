@@ -110,6 +110,16 @@ public class TelarBlock extends BlockWithEntity {
             world.playSound(null, pos, SoundEvents.UI_LOOM_TAKE_RESULT, SoundCategory.BLOCKS, 1.0f, 1.0f);
             return ActionResult.SUCCESS;
         }
+        if (be.trabajando()) {
+            // La lanzadera en marcha te engancha: daño y lentitud (2026-10-08, "las 5 maquinas... cierran y bloquean gui").
+            player.damage(world.getDamageSources().generic(), 2.0f);
+            player.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(
+                    net.minecraft.entity.effect.StatusEffects.SLOWNESS, 100, 1));
+            world.playSound(null, pos, SoundEvents.ENTITY_SHEEP_SHEAR, SoundCategory.BLOCKS, 1.0f, 0.8f);
+            player.sendMessage(net.minecraft.text.Text.translatable("modamod.telar.aviso.procesando")
+                    .formatted(net.minecraft.util.Formatting.RED), true);
+            return ActionResult.SUCCESS;
+        }
         player.openHandledScreen(be);
         return ActionResult.SUCCESS;
     }

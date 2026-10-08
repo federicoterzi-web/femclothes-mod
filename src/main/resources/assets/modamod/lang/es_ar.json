@@ -372,6 +372,8 @@
   "modamod.preview.vista.izquierda": "Izquierda",
   "modamod.tinturas.aviso.sin_color_activo": "Elegí un color activo primero",
   "modamod.tinturas.aviso.no_es_prenda": "Eso no es una prenda",
+  "modamod.estilista.aviso.procesando": "¡El pórtico te golpeó! No metas la mano mientras trabaja",
+  "modamod.telar.aviso.procesando": "¡La lanzadera te enganchó! No metas la mano mientras teje",
   "modamod.tinturas.aviso.procesando": "¡Los vapores te marean! No metas la mano mientras tiñe",
   "modamod.tinturas.aviso.entrada_ocupada": "Ya hay una prenda esperando en la entrada",
   "modamod.tinturas.aviso.sin_patron_para_esta_prenda": "Esta prenda no acepta patrón",

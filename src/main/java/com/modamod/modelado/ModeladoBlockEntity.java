@@ -644,6 +644,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
 
     public Estado estado() { return estado; }
 
+    /** Trabajando de verdad: la GUI se cierra y no se toca (2026-10-08, "las 5 maquinas... cierran y bloquean gui"). */
+    public boolean trabajando() { return estado == Estado.PROCESANDO; }
+
     /** El resultado esperando en la bandeja de salida (lo dibuja el hueso "cargo"). */
     public ItemStack salidaVisible() { return items.get(SALIDA); }
     public int progreso() { return progreso; }
