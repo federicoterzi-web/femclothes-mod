@@ -100,5 +100,24 @@ public final class EstiloPergamino {
         }
     }
 
+    /**
+     * Botón de la línea de producción (2026-10-08): el texto sale del estado de la máquina en cada cuadro
+     * ("Línea: sí" / "Línea: no"), así no hace falta sincronizar nada en el cliente aparte del block entity.
+     */
+    public static class BotonLinea extends BotonPergamino {
+        private final java.util.function.BooleanSupplier estado;
+
+        public BotonLinea(int x, int y, int w, int h, java.util.function.BooleanSupplier estado, PressAction onPress) {
+            super(x, y, w, h, Text.empty(), onPress);
+            this.estado = estado;
+            setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.translatable("modamod.linea.tooltip")));
+        }
+
+        @Override
+        public Text getMessage() {
+            return Text.translatable(estado.getAsBoolean() ? "modamod.linea.si" : "modamod.linea.no");
+        }
+    }
+
     private EstiloPergamino() {}
 }

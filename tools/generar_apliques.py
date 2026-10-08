@@ -84,6 +84,25 @@ def cadena(nombre, pivote, x0, ancho, y_arriba, largo, z0, prof, zona, rot, tram
     return huesos
 
 
+def cintas(nombre, lado, pivote):
+    """Cinta ancha del moño (2026-10-08, "el moño... en vez de cordones abajo que tenga cintas"): 1,5 px de ancho
+    en 3 tramos anidados (huesos "cola*", los curva la tela blanda), abierta hacia afuera y con la punta cortada en V."""
+    ancho, largo, tramos = 1.5, 3.4, 3
+    x0 = -0.75 + lado * 0.35
+    rot = [0, 0, lado * 22]
+    huesos = cadena(nombre, pivote, x0, ancho, -0.5, largo, -0.65, 0.2, 3, rot, tramos)
+    # Punta en V: el último tramo se parte en dos mitades que se abren un poco, con un hueco triangular al medio.
+    ultimo = huesos[-1]
+    alto = largo / tramos
+    top = -0.5 - (tramos - 1) * alto
+    mitad = ancho / 2
+    ultimo["cubes"] = [
+        cubo([x0, top - alto, -0.65], [mitad, alto, 0.2], 3, [0, 0, 10], [x0 + mitad / 2, top, -0.55]),
+        cubo([x0 + mitad, top - alto, -0.65], [mitad, alto, 0.2], 3, [0, 0, -10], [x0 + mitad * 1.5, top, -0.55]),
+    ]
+    return huesos
+
+
 def mono():
     # Zona 1: alas · Zona 2: nudo · Zona 3: colas.
     return modelo("mono", [
@@ -96,8 +115,8 @@ def mono():
             cubo([0.6, -1.1, -0.85], [2.4, 2.2, 0.7], 1),
             cubo([2.9, -0.6, -0.75], [0.3, 1.2, 0.5], 1),
         ]),
-        *cadena("cola_izq", [-0.3, -0.5, -0.5], -0.9, 0.6, -0.5, 2.6, -0.6, 0.25, 3, [0, 0, -18]),
-        *cadena("cola_der", [0.3, -0.5, -0.5], 0.3, 0.6, -0.5, 2.6, -0.6, 0.25, 3, [0, 0, 18]),
+        *cintas("cola_izq", -1, [-0.3, -0.5, -0.5]),
+        *cintas("cola_der", 1, [0.3, -0.5, -0.5]),
     ])
 
 

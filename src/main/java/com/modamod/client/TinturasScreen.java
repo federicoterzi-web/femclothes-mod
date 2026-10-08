@@ -146,6 +146,9 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
         txtNombreDiseno.setPlaceholder(Text.translatable("modamod.tinturas.nombre_diseno"));
         this.addDrawableChild(txtNombreDiseno);
 
+        // Línea de producción (2026-10-08): apagada de fábrica.
+        this.addDrawableChild(new EstiloPergamino.BotonLinea(this.x + 8, this.y + 276, 86, 16,
+                () -> this.handler.be.linea(), b -> clickBoton(TinturasBlockEntity.BTN_LINEA)));
         btnGuardarDiseno = new EstiloPergamino.BotonPergamino(this.x + 8, this.y + 256, 86, 16, Text.translatable("modamod.tinturas.boton.guardar_diseno"), b -> {
             net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
                     new com.modamod.tinturas.GuardarDisenoTinturasPayload(this.handler.be.getPos(), txtNombreDiseno.getText()));

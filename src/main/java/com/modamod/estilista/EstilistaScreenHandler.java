@@ -68,7 +68,7 @@ public class EstilistaScreenHandler extends EstiladoScreenHandler {
             if (!cursor.isOf(hilo ? net.minecraft.item.Items.STRING : net.minecraft.item.Items.LEATHER)) return false;
             return host.absorber(cursor) > 0;
         }
-        if (id >= EstilistaBlockEntity.BTN_APLICAR && id <= EstilistaBlockEntity.BTN_BORRAR) return host.onButtonClick(player, id);
+        if (id == EstilistaBlockEntity.BTN_LINEA || (id >= EstilistaBlockEntity.BTN_APLICAR && id <= EstilistaBlockEntity.BTN_BORRAR)) return host.onButtonClick(player, id);
         return super.onButtonClick(player, id);
     }
 

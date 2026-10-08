@@ -454,6 +454,10 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
 
     /** Botones de la pantalla (los atiende el handler porque necesitan al jugador para avisarle). */
     public boolean onButtonClick(PlayerEntity jugador, int id) {
+        if (id == BTN_LINEA) {
+            alternarLinea();
+            return true;
+        }
         if (id == BTN_FIJAR) return fijar(jugador);
         if (id == BTN_BORRAR) {
             // El tipo de la prenda de la entrada o, si no hay, el de la muestra del editor.
@@ -511,9 +515,26 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     @Override
     public Direction ladoSalida() { return ladoDerecho(); }
 
+    /**
+     * Línea de producción (2026-10-08, "un boton activador de la linea de produccion en la gui para que se los pueda
+     * usar individuales por default sin que se pasen los items"): apagada de fábrica, la máquina no empuja su salida
+     * al vecino ni saltea las prendas que le llegan por la cadena; la prenda queda para sacarla a mano.
+     */
+    private boolean linea;
+
+    public boolean linea() { return linea; }
+
+    public static final int BTN_LINEA = 900;
+
+    /** Alterna la línea de producción y avisa al cliente. */
+    private void alternarLinea() {
+        linea = !linea;
+        sincronizar();
+    }
+
     private void empujarSalida(World world, BlockPos pos) {
         ItemStack actual = items.get(SLOT_SALIDA);
-        if (actual.isEmpty()) return;
+        if (actual.isEmpty() || !linea) return;
         Direction derecha = ladoDerecho();
         ItemStack sobrante = InventarioUtil.empujarA(world, pos.offset(derecha), derecha.getOpposite(), actual);
         if (sobrante.getCount() != actual.getCount()) {
@@ -576,7 +597,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         }
         // Una prenda que llega por la cadena: con diseño para su tipo arranca sola (cuando haya insumos); sin diseño
         // pasa de largo (como en las otras máquinas).
-        if (slot == SLOT_PRENDA && !stack.isEmpty() && InventarioUtil.enCadena
+        if (slot == SLOT_PRENDA && !stack.isEmpty() && (InventarioUtil.enCadena && linea)
                 && items.get(SLOT_SALIDA).isEmpty() && estado == Estado.REPOSO) {
             if (diseno(stack) == null) {
                 items.set(SLOT_SALIDA, stack.copyWithCount(1));
@@ -645,6 +666,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.writeNbt(nbt, registries);
+        nbt.putBoolean("linea", linea);
         Inventories.writeNbt(nbt, items, registries);
         nbt.putInt("estado", estado.ordinal());
         nbt.putInt("progreso", progreso);
@@ -660,6 +682,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
+        linea = nbt.getBoolean("linea");
         Inventories.readNbt(nbt, items, registries);
         estado = Estado.values()[Math.max(0, Math.min(Estado.values().length - 1, nbt.getInt("estado")))];
         progreso = nbt.getInt("progreso");

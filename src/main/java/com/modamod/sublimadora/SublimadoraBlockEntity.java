@@ -821,7 +821,7 @@ public class SublimadoraBlockEntity extends BlockEntity
             }
             case SLOT_REMERA -> {
                 ItemStack nueva = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1);
-                if (!nueva.isEmpty() && com.modamod.util.InventarioUtil.enCadena && estado == Estado.REPOSO
+                if (!nueva.isEmpty() && (com.modamod.util.InventarioUtil.enCadena && linea) && estado == Estado.REPOSO
                         && remera.isEmpty() && salida.isEmpty() && !hayFijadas() && capas.isEmpty()) {
                     // Llegó por la cadena y no hay nada que estampar: pasa de
                     // largo (2026-10-04, "me parece perfecto que saltee").
@@ -989,8 +989,25 @@ public class SublimadoraBlockEntity extends BlockEntity
      * nada del otro lado (o está lleno) la remera simplemente se queda
      * en {@code salida}, recuperable como siempre.
      */
+    /**
+     * Línea de producción (2026-10-08, "un boton activador de la linea de produccion en la gui para que se los pueda
+     * usar individuales por default sin que se pasen los items"): apagada de fábrica, la máquina no empuja su salida
+     * al vecino ni saltea las prendas que le llegan por la cadena; la prenda queda para sacarla a mano.
+     */
+    private boolean linea;
+
+    public boolean linea() { return linea; }
+
+    public static final int BTN_LINEA = 900;
+
+    /** Alterna la línea de producción y avisa al cliente. */
+    private void alternarLinea() {
+        linea = !linea;
+        sincronizar();
+    }
+
     private void empujarSalida(net.minecraft.world.World world, BlockPos pos) {
-        if (salida.isEmpty()) return;
+        if (salida.isEmpty() || !linea) return;
         Direction derecha = ladoDerecho();
         ItemStack sobrante = com.modamod.util.InventarioUtil.empujarA(
                 world, pos.offset(derecha), derecha.getOpposite(), salida);
@@ -1255,6 +1272,10 @@ public class SublimadoraBlockEntity extends BlockEntity
     public static final int BTN_BORRAR_DISENO_BASE = 40; // .. + DISENOS_MAXIMO
 
     public boolean onButtonClick(int id) {
+        if (id == BTN_LINEA) {
+            alternarLinea();
+            return true;
+        }
         if (id == BTN_CATEGORIA) {
             cambiarCategoria();
             return true;
@@ -1626,6 +1647,7 @@ public class SublimadoraBlockEntity extends BlockEntity
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.writeNbt(nbt, registries);
+        nbt.putBoolean("linea", linea);
         for (int i = 0; i < 4; i++) {
             nbt.putFloat(CLAVES[i], tinta[i]);
             nbt.putInt(CLAVES[i] + "Cargas", cargas[i]);
@@ -1690,6 +1712,7 @@ public class SublimadoraBlockEntity extends BlockEntity
     @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
+        linea = nbt.getBoolean("linea");
         for (int i = 0; i < 4; i++) {
             if (nbt.contains(CLAVES[i] + "Cargas")) {
                 cargas[i] = nbt.getInt(CLAVES[i] + "Cargas");

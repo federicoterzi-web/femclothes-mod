@@ -981,6 +981,10 @@ public class TinturasBlockEntity extends BlockEntity
     public static final int BTN_BORRAR_DISENO_BASE = 320;
 
     public boolean onButtonClick(int id) {
+        if (id == BTN_LINEA) {
+            alternarLinea();
+            return true;
+        }
         boolean cambio = aplicarBoton(id);
         if (cambio) sincronizar();
         return cambio;
@@ -1692,7 +1696,7 @@ public class TinturasBlockEntity extends BlockEntity
                 ItemStack copia = stack.copyWithCount(1);
                 Categoria catCadena = categoriaDe(copia);
                 if (catCadena != null) categoria = catCadena;   // la GUI sigue a la prenda que entra (2026-10-04)
-                if (com.modamod.util.InventarioUtil.enCadena && estado == Estado.REPOSO
+                if ((com.modamod.util.InventarioUtil.enCadena && linea) && estado == Estado.REPOSO
                         && prendaEntrada.isEmpty() && salida.isEmpty()
                         && (catCadena == null || capasDe(catCadena, false).isEmpty())) {
                     // Llegó por la cadena y no hay nada que teñir: pasa de
@@ -1789,8 +1793,25 @@ public class TinturasBlockEntity extends BlockEntity
      * esta máquina) — si no hay dónde depositarla, se queda en
      * {@link #salida} para sacarla a mano o esperar el próximo intento.
      */
+    /**
+     * Línea de producción (2026-10-08, "un boton activador de la linea de produccion en la gui para que se los pueda
+     * usar individuales por default sin que se pasen los items"): apagada de fábrica, la máquina no empuja su salida
+     * al vecino ni saltea las prendas que le llegan por la cadena; la prenda queda para sacarla a mano.
+     */
+    private boolean linea;
+
+    public boolean linea() { return linea; }
+
+    public static final int BTN_LINEA = 900;
+
+    /** Alterna la línea de producción y avisa al cliente. */
+    private void alternarLinea() {
+        linea = !linea;
+        sincronizar();
+    }
+
     private void empujarSalida() {
-        if (salida.isEmpty() || world == null) return;
+        if (salida.isEmpty() || world == null || !linea) return;
         Direction derecha = ladoDerecho();
         ItemStack sobrante = com.modamod.util.InventarioUtil.empujarA(
                 world, pos.offset(derecha), derecha.getOpposite(), salida);
@@ -1879,6 +1900,7 @@ public class TinturasBlockEntity extends BlockEntity
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.writeNbt(nbt, registries);
+        nbt.putBoolean("linea", linea);
         net.minecraft.inventory.Inventories.writeNbt(nbt, items, registries);
         // Aparte, en su propio compuesto: Inventories escribe siempre en "Items".
         NbtCompound extra = new NbtCompound();
@@ -1940,6 +1962,7 @@ public class TinturasBlockEntity extends BlockEntity
     @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
+        linea = nbt.getBoolean("linea");
         items.clear();
         net.minecraft.inventory.Inventories.readNbt(nbt, items, registries);
         almacenExtra.clear();

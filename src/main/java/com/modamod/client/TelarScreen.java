@@ -50,6 +50,9 @@ public class TelarScreen extends net.minecraft.client.gui.screen.ingame.HandledS
         boton("-", this.x + 76, ly, 16, 16, TelarBlockEntity.BTN_LOTE_MENOS);
         boton("+", this.x + 94, ly, 16, 16, TelarBlockEntity.BTN_LOTE_MAS);
         boton("+10", this.x + 112, ly, 22, 16, TelarBlockEntity.BTN_LOTE_MAS_10);
+        this.addDrawableChild(new EstiloPergamino.BotonLinea(this.x + 112, this.y + 26, 56, 16,
+                () -> handler.host.linea(),
+                b -> this.client.interactionManager.clickButton(this.handler.syncId, TelarBlockEntity.BTN_LINEA)));
         ButtonWidget reiniciar = boton("↻", this.x + 138, ly, 18, 16, TelarBlockEntity.BTN_LOTE_REINICIAR);
         reiniciar.setTooltip(Tooltip.of(Text.translatable("modamod.telar.tooltip.reiniciar")));
     }

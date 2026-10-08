@@ -685,6 +685,12 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
 
     public boolean onButtonClick(int id) {
         LOG.info("onButtonClick(id={}) side={}", id, world != null && world.isClient ? "CLIENTE" : "SERVIDOR");
+        if (id == BTN_LINEA) {
+            linea = !linea;
+            markDirty();
+            if (world != null) world.updateListeners(pos, getCachedState(), getCachedState(), 3);
+            return true;
+        }
         if (encendida && id != BTN_ENCENDER) return false; // config bloqueada mientras produce
         boolean cambio;
         switch (id) {
@@ -1685,7 +1691,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
             pinCambio(pin, antesPin, stack);
         }
         if (stack.getCount() > getMaxCountPerStack()) stack.setCount(getMaxCountPerStack());
-        if (slot == PRENDA && !stack.isEmpty() && com.modamod.util.InventarioUtil.enCadena
+        if (slot == PRENDA && !stack.isEmpty() && (com.modamod.util.InventarioUtil.enCadena && linea)
                 && guiAbiertas == 0 && !hayFijadas() && estado == Estado.REPOSO
                 && !encendida && items.get(SALIDA).isEmpty()) {
             // Llegó por la cadena y no hay nada que cortar: la saltea
@@ -1784,9 +1790,20 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
      * maquinas hacen como el crafter..."), mismo mecanismo que
      * {@code SublimadoraBlockEntity#empujarSalida}.
      */
+    /**
+     * Línea de producción (2026-10-08, "un boton activador de la linea de produccion en la gui para que se los pueda
+     * usar individuales por default sin que se pasen los items"): apagada de fábrica, la máquina no empuja su salida
+     * al vecino ni saltea las prendas que le llegan por la cadena; la prenda queda para sacarla a mano.
+     */
+    private boolean linea;
+
+    public boolean linea() { return linea; }
+
+    public static final int BTN_LINEA = 900;
+
     private void empujarSalida(net.minecraft.world.World world, BlockPos pos) {
         ItemStack actual = items.get(SALIDA);
-        if (actual.isEmpty()) return;
+        if (actual.isEmpty() || !linea) return;
         net.minecraft.util.math.Direction derecha = ladoDerecho();
         ItemStack sobrante = com.modamod.util.InventarioUtil.empujarA(
                 world, pos.offset(derecha), derecha.getOpposite(), actual);
@@ -1870,6 +1887,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         ladoBorrador = Lado.values()[nbt.getInt("lado_borrador")];
         categoria = Categoria.values()[nbt.getInt("categoria")];
         remeraSimetria = !nbt.contains("remera_simetria") || nbt.getBoolean("remera_simetria");
+        linea = nbt.getBoolean("linea");
         cajones = nbt.getLong("cajones");
 
         for (Categoria cat : Categoria.values()) {
@@ -1939,6 +1957,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         nbt.putInt("lado_borrador", ladoBorrador.ordinal());
         nbt.putInt("categoria", categoria.ordinal());
         nbt.putBoolean("remera_simetria", remeraSimetria);
+        nbt.putBoolean("linea", linea);
         nbt.putLong("cajones", cajones);
 
         for (Categoria cat : Categoria.values()) {

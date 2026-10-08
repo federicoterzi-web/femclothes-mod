@@ -123,6 +123,9 @@ public class SublimadoraScreen extends HandledScreen<SublimadoraScreenHandler> {
         ButtonWidget btnEscanear = new EstiloPergamino.BotonPergamino(this.x + 8, this.y + 276, 86, 16,
                 Text.translatable("modamod.sublimadora.boton.escanear"),
                 b -> EscanerEstampaCliente.escanear(this.handler.be.getPos()));
+        // Línea de producción (2026-10-08): apagada de fábrica.
+        this.addDrawableChild(new EstiloPergamino.BotonLinea(this.x + 8, this.y + 296, 86, 16,
+                () -> this.handler.be.linea(), b -> clickBoton(SublimadoraBlockEntity.BTN_LINEA)));
         btnEscanear.setTooltip(Tooltip.of(Text.translatable("modamod.sublimadora.tooltip.escanear")));
         this.addDrawableChild(btnEscanear);
 

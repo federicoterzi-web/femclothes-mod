@@ -139,6 +139,10 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         btnSimetria.setTooltip(Tooltip.of(Text.translatable("modamod.modelado.tooltip.simetria")));
         this.addDrawableChild(btnSimetria);
 
+        // Línea de producción (2026-10-08): apagada de fábrica, la máquina no pasa las prendas a la siguiente.
+        this.addDrawableChild(new EstiloPergamino.BotonLinea(this.x + 8, this.y + 274, 86, 16,
+                () -> this.handler.be.linea(), b -> clickBoton(ModeladoBlockEntity.BTN_LINEA)));
+
         // Modelar, ENCIMA de la flecha Entrada -> Salida (2026-09-28, "a
         // modeladora le agreguemos el boton modelar") — como Teñir y Prensar.
         btnModelar = new EstiloPergamino.BotonPergamino(this.x + M_MEDIO + 96, this.y + 184, 48, 16,

@@ -39,6 +39,9 @@ public class EstilistaScreen extends EstiladoScreen {
         int px = this.x + EstilistaScreenHandler.X_PANEL;
         boton("aplicar", EstilistaBlockEntity.BTN_APLICAR, px + 8 + EstilistaScreenHandler.GRANDE + 4, this.y + EstilistaScreenHandler.Y_MARCO + 4,
                 EstilistaScreenHandler.ANCHO_PANEL - 16 - 2 * (EstilistaScreenHandler.GRANDE + 4), 18);
+        this.addDrawableChild(new EstiloPergamino.BotonLinea(px + 8, this.y + EstilistaScreenHandler.Y_PANEL + 84,
+                EstilistaScreenHandler.ANCHO_PANEL - 16, 16, () -> ((EstilistaScreenHandler) handler).host.linea(),
+                b -> this.client.interactionManager.clickButton(this.handler.syncId, EstilistaBlockEntity.BTN_LINEA)));
         boton("fijar", EstilistaBlockEntity.BTN_FIJAR, px + 8, this.y + EstilistaScreenHandler.Y_PANEL + 52, 54, 16);
         boton("borrar", EstilistaBlockEntity.BTN_BORRAR, px + EstilistaScreenHandler.ANCHO_PANEL - 8 - 54, this.y + EstilistaScreenHandler.Y_PANEL + 52, 54, 16);
     }
