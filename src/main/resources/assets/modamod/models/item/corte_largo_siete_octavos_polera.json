@@ -1,7 +1,6 @@
 {
-  "_comment": "El aspecto real del corte. Reusa el icono de manga larga del mismo largo/cuello como placeholder -- no hay arte propia todavia para siete_octavos.",
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "modamod:item/corte_largo_larga_polera"
+    "layer0": "modamod:item/corte_largo_siete_octavos_polera"
   }
 }
