@@ -102,6 +102,16 @@ public final class CorreaRenderer {
     /** Dibuja las correas de {@code item} que van sobre cajas; {@code marco} es la normal del cuerpo antes de la pose de cada parte. */
     public static void dibujar(ItemStack item, float dil, BipedEntityModel<?> biped, MatrixStack matrices,
                                VertexConsumerProvider vertexConsumers, int luz, Matrix3f marco) {
+        long t0 = com.modamod.render.Perf.ini();
+        try {
+            dibujar0(item, dil, biped, matrices, vertexConsumers, luz, marco);
+        } finally {
+            com.modamod.render.Perf.fin(com.modamod.render.Perf.Seccion.CORREAS, t0);
+        }
+    }
+
+    public static void dibujar0(ItemStack item, float dil, BipedEntityModel<?> biped, MatrixStack matrices,
+                               VertexConsumerProvider vertexConsumers, int luz, Matrix3f marco) {
         List<Correa> lista = item.get(ModamodComponents.CORREAS);
         if (lista == null || lista.isEmpty()) return;
         for (Correa c : lista) if (c.superficie() == Correa.Superficie.CAJA) una(item, c, dil, biped, matrices, vertexConsumers, luz, marco);

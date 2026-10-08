@@ -143,6 +143,13 @@ public final class EfectoTrim {
     private static int numero = 0;
     private static long ultimaGeneracion = 0;
 
+    /** Para el HUD de rendimiento: telas con efecto en caché y cuadros generados entre todas. */
+    public static int[] estadoCache() {
+        int cuadros = 0;
+        for (Cuadros c : CACHE.values()) cuadros += c.hechos;
+        return new int[]{CACHE.size(), cuadros};
+    }
+
     /** El cuadro del efecto que toca ahora (por el reloj real) sobre esa tela, o null si todavía no hay ninguno. */
     @Nullable
     private static Identifier cuadroActual(Tipo tipo, int material, Identifier base) {
@@ -183,6 +190,15 @@ public final class EfectoTrim {
 
     /** La tela con el efecto del cuadro {@code c.hechos} mezclado encima (solo donde hay tela, a la resolución de la tela). */
     private static void generarSiguiente(Cuadros c) {
+        long t0 = Perf.ini();
+        try {
+            generarSiguiente0(c);
+        } finally {
+            Perf.fin(Perf.Seccion.TRIM, t0);
+        }
+    }
+
+    private static void generarSiguiente0(Cuadros c) {
         int i = c.hechos;
         float t = i / (float) CUADROS;
         int w = c.base.getWidth(), h = c.base.getHeight();

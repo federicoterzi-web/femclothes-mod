@@ -83,6 +83,16 @@ public final class ApliqueRenderer {
      */
     public static void dibujar(ItemStack item, float dil, BipedEntityModel<?> biped, MatrixStack matrices,
                                VertexConsumerProvider vertexConsumers, int luz) {
+        long t0 = com.modamod.render.Perf.ini();
+        try {
+            dibujar0(item, dil, biped, matrices, vertexConsumers, luz);
+        } finally {
+            com.modamod.render.Perf.fin(com.modamod.render.Perf.Seccion.APLIQUES, t0);
+        }
+    }
+
+    public static void dibujar0(ItemStack item, float dil, BipedEntityModel<?> biped, MatrixStack matrices,
+                               VertexConsumerProvider vertexConsumers, int luz) {
         List<Aplique> apliques = item.get(ModamodComponents.APLIQUES);
         // El marco del cuerpo (antes de la pose de cada parte): a él pertenecen los desplazamientos de la tela blanda.
         Matrix3f marco = new Matrix3f(matrices.peek().getNormalMatrix());

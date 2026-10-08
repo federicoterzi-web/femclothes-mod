@@ -99,6 +99,7 @@ public class ModamodClient implements ClientModInitializer {
 
         PiezasDelMod.init();
         DebugApariencia.init();
+        PerfHud.init();
         ElegirCuerpoCliente.init();
         TwirlCliente.init();
         CapuchaCliente.init();

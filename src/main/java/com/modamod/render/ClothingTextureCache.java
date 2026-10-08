@@ -25,6 +25,13 @@ public final class ClothingTextureCache {
     private static final Map<Identifier, NativeImage> BASE_IMAGE_CACHE = new HashMap<>();
     private static final Map<String, Identifier> TINTED_CACHE = new HashMap<>();
 
+    /** Para el HUD de rendimiento: telas compuestas en caché, imágenes base y los MB de estas últimas. */
+    public static double[] estadoCache() {
+        long bytes = 0;
+        for (NativeImage i : BASE_IMAGE_CACHE.values()) bytes += (long) i.getWidth() * i.getHeight() * 4;
+        return new double[]{TINTED_CACHE.size(), BASE_IMAGE_CACHE.size(), bytes / 1048576.0};
+    }
+
     /**
      * Volcado a disco de cada textura compuesta, para diagnosticar sin
      * depender de lo que se alcanza a ver en una captura de pantalla.
@@ -722,6 +729,18 @@ public final class ClothingTextureCache {
      * mal": con patrón se achicaba a 4x y el motivo salía borroso).
      */
     public static Identifier composeGarmentCapas(Identifier baseTexture, int baseRgb,
+                                                 java.util.List<CapaMascara> capas,
+                                                 Shading shading,
+                                                 @Nullable Encima encima, boolean resolucionCompleta) {
+        long t0 = com.modamod.render.Perf.ini();
+        try {
+            return composeGarmentCapas0(baseTexture, baseRgb, capas, shading, encima, resolucionCompleta);
+        } finally {
+            com.modamod.render.Perf.fin(com.modamod.render.Perf.Seccion.TEXTURAS, t0);
+        }
+    }
+
+    public static Identifier composeGarmentCapas0(Identifier baseTexture, int baseRgb,
                                                  java.util.List<CapaMascara> capas,
                                                  Shading shading,
                                                  @Nullable Encima encima, boolean resolucionCompleta) {

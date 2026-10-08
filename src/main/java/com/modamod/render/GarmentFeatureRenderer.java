@@ -117,6 +117,17 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     public void render(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz,
                        T entidad, float limbAngle, float limbDistance, float tickDelta,
                        float animationProgress, float headYaw, float headPitch) {
+        long t0 = com.modamod.render.Perf.ini();
+        try {
+            render0(matrices, vertexConsumers, luz, entidad, limbAngle, limbDistance, tickDelta, animationProgress, headYaw, headPitch);
+        } finally {
+            com.modamod.render.Perf.fin(com.modamod.render.Perf.Seccion.ROPA, t0);
+        }
+    }
+
+    public void render0(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz,
+                       T entidad, float limbAngle, float limbDistance, float tickDelta,
+                       float animationProgress, float headYaw, float headPitch) {
 
         if (!(getContextModel() instanceof BipedEntityModel<?> biped)) return;
 
@@ -299,6 +310,17 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     private static void dibujarUnaPollera(ItemStack stack, int nivel, LivingEntity entidad, BipedEntityModel<?> biped,
                                           MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz,
                                           float tickDelta) {
+        long t0 = com.modamod.render.Perf.ini();
+        try {
+            dibujarUnaPollera0(stack, nivel, entidad, biped, matrices, vertexConsumers, luz, tickDelta);
+        } finally {
+            com.modamod.render.Perf.fin(com.modamod.render.Perf.Seccion.POLLERA, t0);
+        }
+    }
+
+    private static void dibujarUnaPollera0(ItemStack stack, int nivel, LivingEntity entidad, BipedEntityModel<?> biped,
+                                          MatrixStack matrices, VertexConsumerProvider vertexConsumers, int luz,
+                                          float tickDelta) {
         // La cintura de la pollera no puede apretar por dentro del cuerpo
         // (no es una Pieza: el cuerpo de abajo no se achica por ella) —
         // Ajustado pasó a -0.25 el 2026-09-30.
@@ -405,6 +427,18 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
      * ({@code CapeFeatureRendererMixin}).
      */
     private static void dibujarCapa(List<ItemStack> prendas, LivingEntity entidad, BipedEntityModel<?> biped,
+                                    MatrixStack matrices,
+                                    VertexConsumerProvider vertexConsumers, int luz, float tickDelta,
+                                    boolean translucidas) {
+        long t0 = com.modamod.render.Perf.ini();
+        try {
+            dibujarCapa0(prendas, entidad, biped, matrices, vertexConsumers, luz, tickDelta, translucidas);
+        } finally {
+            com.modamod.render.Perf.fin(com.modamod.render.Perf.Seccion.CAPA, t0);
+        }
+    }
+
+    private static void dibujarCapa0(List<ItemStack> prendas, LivingEntity entidad, BipedEntityModel<?> biped,
                                     MatrixStack matrices,
                                     VertexConsumerProvider vertexConsumers, int luz, float tickDelta,
                                     boolean translucidas) {
