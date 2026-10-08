@@ -175,6 +175,8 @@ public class TinturasBlock extends BlockWithEntity {
 
         boolean esPrenda = TinturasBlockEntity.aceptaEntrada(stack);
         if (!esPrenda) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        // Abajo se abre la pantalla aunque tengas la prenda en la mano (2026-10-08).
+        if (!com.modamod.util.ZonaMaquina.arriba(hit, pos, com.modamod.util.ZonaMaquina.ARRIBA_PX)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         if (world.isClient) return ItemActionResult.SUCCESS;
 
         // 2026-09-21, "que cada maquina tome su tiempo": ya no tiñe al

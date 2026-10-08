@@ -118,6 +118,8 @@ public class ModeladoBlock extends BlockWithEntity {
         boolean esPrenda = ModeladoBlockEntity.esPrendaModelable(stack);
         boolean esMolde = ModeladoBlockEntity.esMolde(stack);
         if (!esPrenda && !esMolde) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        // Abajo se abre la pantalla aunque tengas la prenda o el molde en la mano (2026-10-08).
+        if (!com.modamod.util.ZonaMaquina.arriba(hit, pos, com.modamod.util.ZonaMaquina.ARRIBA_PX)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
 
         if (world.isClient) return ItemActionResult.SUCCESS;
 

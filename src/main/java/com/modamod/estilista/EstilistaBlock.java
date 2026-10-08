@@ -95,6 +95,8 @@ public class EstilistaBlock extends BlockWithEntity {
         if (!(world.getBlockEntity(pos) instanceof EstilistaBlockEntity be) || !EstiladoBlockEntity.admite(stack)) {
             return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
+        // Toda la zona de arriba (el pórtico) toma la prenda; abajo se abre la pantalla (2026-10-08).
+        if (!com.modamod.util.ZonaMaquina.arriba(hit, pos, com.modamod.util.ZonaMaquina.ARRIBA_BAJA_PX)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         if (world.isClient) return ItemActionResult.SUCCESS;
         if (!be.isValid(EstilistaBlockEntity.SLOT_PRENDA, stack)) return ItemActionResult.FAIL;
         be.setStack(EstilistaBlockEntity.SLOT_PRENDA, stack.copyWithCount(1));

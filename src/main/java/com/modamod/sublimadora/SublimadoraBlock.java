@@ -78,6 +78,8 @@ public class SublimadoraBlock extends BlockWithEntity {
     protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world,
                                              BlockPos pos, PlayerEntity player, Hand hand,
                                              BlockHitResult hit) {
+        // Abajo (cualquier costado) se abre la pantalla aunque tengas algo en la mano (2026-10-08).
+        if (queControl(state, pos, hit) != 0) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         if (world.isClient) return ItemActionResult.SUCCESS;
         if (!(world.getBlockEntity(pos) instanceof SublimadoraBlockEntity be)) {
             return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
@@ -200,7 +202,7 @@ public class SublimadoraBlock extends BlockWithEntity {
      * click.
      */
     private static int queControl(BlockState state, BlockPos pos, BlockHitResult hit) {
-        if (hit.getSide() != state.get(FACING)) return 0;
+        if (hit.getSide() == Direction.UP) return 0;
         if (hit.getPos().y - pos.getY() >= 11.0 / 16.0) return 0;
         double lx = hit.getPos().x - pos.getX();
         double lz = hit.getPos().z - pos.getZ();
