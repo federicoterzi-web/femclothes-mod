@@ -163,7 +163,9 @@ public final class CuelloYCapucha {
             if (s.getItem() instanceof RemeraItem
                     && com.modamod.item.TopCorte.solapa(s) != com.modamod.item.ChaquetaSolapa.NINGUNA) {
                 float d = Math.max(0F, Calce.dilatacionEfectiva(s));
-                Fila[] filas = filasDe(com.modamod.item.TopCorte.solapa(s));
+                // Pegada al borde real del escote y de la apertura (2026-10-08, "las solapas no esten pegadas a la
+                // abertura del cuello ni de la chaqueta"): el borde de adentro de cada fila sale de la tela.
+                Fila[] filas = pegarAlBorde(filasDe(com.modamod.item.TopCorte.solapa(s)), bordeDelEscote(s));
                 int color = RemeraItem.color(s);
                 dibujarFilas("solapa" + com.modamod.item.TopCorte.solapa(s), filas, d + 0.1F, s,
                         oscurecer(color, 0.88F), biped, matrices, vertexConsumers, luz);
@@ -176,9 +178,55 @@ public final class CuelloYCapucha {
                 // El aro del cuello, por encima del torso (como el cuello partido de la polera).
                 GarmentFeatureRenderer.dibujarModelPart(cuelloAro(dc * 0.5F), CuerpoGeometria.Superficie.CUERPO,
                         tela, biped.body, matrices, vertexConsumers, luz);
-                dibujarFilas("camisa", CUELLO_CAMISA, dc, s, color, biped, matrices, vertexConsumers, luz);
+                dibujarFilas("camisa", pegarAlBorde(CUELLO_CAMISA, bordeDelEscote(s)), dc, s, color, biped, matrices,
+                        vertexConsumers, luz);
             }
         }
+    }
+
+    /** Perfiles del borde del escote por textura de tela (px del centro del frente al borde de la tela, fila por fila). */
+    private static final Map<Identifier, float[]> BORDES = new HashMap<>();
+
+    /**
+     * Distancia (px) del centro del frente al borde de la tela en cada fila del torso, leída de la textura de la
+     * prenda: el escote (V, redondo, cuadrado, corazón, camisa) y, si el frente está abierto, la apertura. 0 = la tela
+     * llega al centro (frente cerrado). {@code null} si la tela todavía no se compuso.
+     */
+    private static float[] bordeDelEscote(ItemStack ropa) {
+        Identifier tela = null;
+        int filasTorso = 0;
+        for (com.modamod.render.Pieza p : PiezasDePrenda.de(ropa, null)) {
+            if (p.parte() == com.modamod.garment.Parte.TORSO) {
+                tela = p.textura();
+                filasTorso = p.filaHasta() - p.filaDesde();
+                break;
+            }
+        }
+        if (tela == null) return null;
+        float[] cacheado = BORDES.get(tela);
+        if (cacheado != null) return cacheado;
+        NativeImage img = ClothingTextureCache.imagenBase(tela);
+        if (img == null) return null;
+        float k = img.getWidth() / 64F;
+        float[] borde = new float[Math.max(1, Math.min(filasTorso, 12))];
+        for (int r = 0; r < borde.length; r++) {
+            int y = Math.min(img.getHeight() - 1, (int) ((20 + r + 0.5F) * k));
+            float e = 4F;   // sin tela en toda la mitad: el borde queda en el costado
+            for (int x = Math.round(24 * k); x < Math.round(28 * k); x++) {
+                if ((img.getColor(x, y) >>> 24) >= 128) { e = (x - 24 * k) / k; break; }
+            }
+            borde[r] = e;
+        }
+        BORDES.put(tela, borde);
+        return borde;
+    }
+
+    /** Las filas de una solapa con el borde de adentro sobre el borde de la tela; sin tela leída quedan como están. */
+    private static Fila[] pegarAlBorde(Fila[] base, float[] borde) {
+        if (borde == null) return base;
+        Fila[] out = new Fila[Math.min(base.length, borde.length)];
+        for (int i = 0; i < out.length; i++) out[i] = new Fila(Math.max(0F, borde[i]), base[i].w);
+        return out;
     }
 
     private static int oscurecer(int rgb, float f) {
@@ -203,13 +251,14 @@ public final class CuelloYCapucha {
             }
         }
         ModelPart parte;
-        String key = clave + "|" + d;
+        String key = clave + "|" + d + "|" + java.util.Arrays.hashCode(filas);
         if (!elevado && CACHE.containsKey(key)) parte = CACHE.get(key);
         else {
             List<ModelPart.Cuboid> cs = new ArrayList<>();
             for (int i = 0; i < filas.length; i++) {
                 Fila f = filas[i];
                 float w = Math.min(f.w, LIMITE_X - f.xin);
+                if (w < 0.05F) continue;   // el borde del escote ya llegó al costado: nada que tapar en esta fila
                 float z0 = -2 - d - SALE;
                 cs.add(caja(0, 0, f.xin, i, z0 + zD[i], w, 1.02F, GROSOR_SOLAPA, 0, 0, 0, TODAS));
                 cs.add(caja(0, 0, -f.xin - w, i, z0 + zI[i], w, 1.02F, GROSOR_SOLAPA, 0, 0, 0, TODAS));
