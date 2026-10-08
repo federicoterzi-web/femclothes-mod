@@ -72,7 +72,7 @@ public class Modamod implements ModInitializer {
             entries.add(com.modamod.sublimadora.ModBlocks.SUBLIMADORA_ITEM);
             entries.add(com.modamod.guardarropas.GuardarropasMod.GUARDARROPAS_BLOCK_ITEM);
             entries.add(com.modamod.maniqui.ManiquiMod.MANIQUI_BLOCK_ITEM);
-            entries.add(com.modamod.estilado.EstiladoMod.ESTILADO_BLOCK_ITEM);
+            // Mesa de estilado jubilada (2026-10-08): la Estilista automática la reemplaza; sigue registrada.
             entries.add(com.modamod.cinta.CintaMod.CINTA_ITEM);
             entries.add(com.modamod.cinta.CintaMod.EMPALME_ITEM);
             // Máquinas creativas (2026-10-01): sin espera ni insumos, cargadas al colocarlas.
@@ -81,7 +81,6 @@ public class Modamod implements ModInitializer {
             entries.add(com.modamod.estilista.EstilistaMod.ESTILISTA_CREATIVA_ITEM);
             entries.add(com.modamod.tinturas.TinturasMod.TINTURAS_CREATIVA_ITEM);
             entries.add(com.modamod.sublimadora.ModBlocks.SUBLIMADORA_CREATIVA_ITEM);
-            entries.add(com.modamod.estilado.EstiladoMod.ESTILADO_CREATIVA_ITEM);
             // Kits (2026-10-01, antes /modamod debug patrones|moldes|insumos).
             for (ItemStack kit : com.modamod.util.KitsCreativos.todos()) entries.add(kit);
             // Prendas.
