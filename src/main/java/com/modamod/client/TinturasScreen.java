@@ -54,12 +54,12 @@ public class TinturasScreen extends HandledScreen<TinturasScreenHandler> {
     /** Color del líquido de cada tanque C/M/Y/K — los mismos que la Sublimadora. */
     private static final int[] COLOR_TANQUE = { 0xFF1FB3D6, 0xFFD6287F, 0xFFE8C21E, 0xFF2A2A2A };
 
-    /** Mismos esquemas que la Modeladora para las 4 primeras; Pollera y Capa con esquema propio de Tintes. */
+    /** Esquemas propios de Tintes para todas (2026-10-08: ya no comparte los de la Modeladora). */
     private static final Identifier[] TEXTURE_ESQUEMA = {
-            Identifier.of("modamod", "textures/gui/container/esquema_remera.png"),
-            Identifier.of("modamod", "textures/gui/container/esquema_pantalon.png"),
-            Identifier.of("modamod", "textures/gui/container/esquema_medias.png"),
-            Identifier.of("modamod", "textures/gui/container/esquema_calientabrazos.png"),
+            Identifier.of("modamod", "textures/gui/container/esquema_tintes_remera.png"),
+            Identifier.of("modamod", "textures/gui/container/esquema_tintes_pantalon.png"),
+            Identifier.of("modamod", "textures/gui/container/esquema_tintes_medias.png"),
+            Identifier.of("modamod", "textures/gui/container/esquema_tintes_calientabrazos.png"),
             // Pollera y capa tienen esquema propio de Tintes (2026-10-04, "capa y pollera no tienen asset"):
             // posiciones en TinturasScreenHandler#posCasilla.
             Identifier.of("modamod", "textures/gui/container/esquema_tintes_pollera.png"),

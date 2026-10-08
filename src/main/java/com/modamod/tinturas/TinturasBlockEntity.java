@@ -444,24 +444,32 @@ public class TinturasBlockEntity extends BlockEntity
                 default -> null;
             };
         }
-        boolean cruzado = cat == Categoria.MEDIAS || cat == Categoria.CALIENTABRAZOS;
-        return switch (com.modamod.modelado.ModeladoBlockEntity.ROLES[cat.ordinal()][i]) {
-            case CUELLO -> com.modamod.region.RegionPintura.CUELLO;
-            case MAT1, MAT2, PERS_IZQ1, PERS_IZQ2, PERS_IZQ3, PERS_DER1, PERS_DER2, PERS_DER3 -> com.modamod.region.RegionPintura.TODO;
-            case MAT3 -> cat == Categoria.REMERA ? com.modamod.region.RegionPintura.PECHO : com.modamod.region.RegionPintura.TODO;
-            case MANGA_IZQ -> com.modamod.region.RegionPintura.MANGA_IZQ;
-            case MANGA_DER -> com.modamod.region.RegionPintura.MANGA_DER;
-            case TORSO -> com.modamod.region.RegionPintura.BORDE_INFERIOR;
-            case TIRO -> com.modamod.region.RegionPintura.CINTURA;
-            case BOTA_IZQ -> com.modamod.region.RegionPintura.INF_IZQ;
-            case BOTA_DER -> com.modamod.region.RegionPintura.INF_DER;
-            case SUP_IZQ -> cruzado ? com.modamod.region.RegionPintura.SUP_DER : com.modamod.region.RegionPintura.SUP_IZQ;
-            case SUP_DER -> cruzado ? com.modamod.region.RegionPintura.SUP_IZQ : com.modamod.region.RegionPintura.SUP_DER;
-            case INF_IZQ -> cruzado ? com.modamod.region.RegionPintura.INF_DER : com.modamod.region.RegionPintura.INF_IZQ;
-            case INF_DER -> cruzado ? com.modamod.region.RegionPintura.INF_IZQ : com.modamod.region.RegionPintura.INF_DER;
+        if (cat == Categoria.REMERA) return i < ZONAS_REMERA.length ? ZONAS_REMERA[i] : null;
+        // Pantalón, medias y calientabrazos: la foto de los roles de la Modeladora al 2026-10-08 (2026-10-08,
+        // "fijate porque remera en la estacion de tintes tenia un monton de slots no usables": Tintes dejó de leer la
+        // Modeladora, que se está reordenando). Índice = el del cuadradito; null = no pinta nada.
+        return switch (cat) {
+            case PANTALON -> i < ZONAS_PANTALON.length ? ZONAS_PANTALON[i] : null;
+            case MEDIAS -> i < ZONAS_MEDIAS.length ? ZONAS_MEDIAS[i] : null;
+            case CALIENTABRAZOS -> i < ZONAS_MEDIAS.length ? ZONAS_MEDIAS[i] : null;
             default -> null;
         };
     }
+
+    private static final com.modamod.region.RegionPintura TODO = com.modamod.region.RegionPintura.TODO;
+    /** Remera / Top: 2 de prenda entera, pecho, cuello, mangas, borde de abajo y solapas (los 8 marcos de su esquema). */
+    private static final com.modamod.region.RegionPintura[] ZONAS_REMERA = {
+            TODO, TODO, com.modamod.region.RegionPintura.PECHO, com.modamod.region.RegionPintura.CUELLO,
+            com.modamod.region.RegionPintura.MANGA_IZQ, com.modamod.region.RegionPintura.MANGA_DER,
+            com.modamod.region.RegionPintura.BORDE_INFERIOR, com.modamod.region.RegionPintura.SOLAPAS};
+    private static final com.modamod.region.RegionPintura[] ZONAS_PANTALON = {
+            com.modamod.region.RegionPintura.CINTURA, TODO, TODO, TODO, null,
+            com.modamod.region.RegionPintura.INF_IZQ, com.modamod.region.RegionPintura.INF_DER};
+    /** Medias y calientabrazos (se leen de frente: la izquierda del dibujo es el lado derecho). */
+    private static final com.modamod.region.RegionPintura[] ZONAS_MEDIAS = {
+            com.modamod.region.RegionPintura.SUP_DER, com.modamod.region.RegionPintura.SUP_IZQ,
+            com.modamod.region.RegionPintura.INF_DER, com.modamod.region.RegionPintura.INF_IZQ, null,
+            TODO, TODO, TODO, TODO, TODO, TODO};
 
     private static int[] ordenInicial(Categoria cat) {
         int[] o = new int[CASILLAS];

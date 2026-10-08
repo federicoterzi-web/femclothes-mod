@@ -641,6 +641,48 @@ public final class ClothingTextureCache {
         return m;
     }
 
+    private static final java.util.Map<NativeImage, java.util.Map<String, NativeImage>> CACHE_SOLAPA = new java.util.WeakHashMap<>();
+
+    /**
+     * Máscara de la franja de tela que cubre una solapa (2026-10-08, "tintar las solapas por su propio lado"): en la
+     * cara del frente del torso, de cada lado, los pixeles a entre {@code e} y {@code e + w} del centro, con {@code e}
+     * el borde real de la tela (el escote; con frente abierto, al menos 1 px) y {@code w} el ancho de ese tipo de
+     * solapa a esa altura, el mismo perfil con el que {@code SolapaMalla} dibuja la malla. Cacheada por imagen y región.
+     */
+    public static NativeImage mascaraSolapa(NativeImage base, com.modamod.region.RegionPintura region) {
+        java.util.Map<String, NativeImage> porRegion = CACHE_SOLAPA.computeIfAbsent(base, b -> new java.util.HashMap<>());
+        NativeImage hecha = porRegion.get(region.clave);
+        if (hecha != null) return hecha;
+        int escala = CuerpoGeometria.ESCALA_TELA;
+        CajaSkin.Rect frente = LayoutSkin.base(com.modamod.garment.Parte.TORSO, false).escalada(escala).frente();
+        NativeImage m = new NativeImage(base.getWidth(), base.getHeight(), true);
+        for (int y = 0; y < m.getHeight(); y++) for (int x = 0; x < m.getWidth(); x++) m.setColor(x, y, 0);
+        float k = escala;
+        float[] anchos = CuelloYCapucha.anchosDe(region.solapa());
+        int centro = frente.x0() + frente.x1() >> 1;
+        for (int y = frente.y0(); y < Math.min(base.getHeight(), frente.y0() + Math.round(anchos.length * k)); y++) {
+            float py = (y - frente.y0() + 0.5F) / k;
+            float w = SolapaMalla.anchoEn(anchos, py);
+            for (int lado = -1; lado <= 1; lado += 2) {
+                // El borde de la tela de ESTE lado en esta fila: el primer pixel opaco yendo desde el centro.
+                int borde = -1;
+                for (int d = 0; d < (frente.x1() - frente.x0()) / 2; d++) {
+                    int x = lado < 0 ? centro - 1 - d : centro + d;
+                    if (((base.getColor(x, y) >>> 24) & 0xFF) >= 128) { borde = d; break; }
+                }
+                if (borde < 0) continue;
+                float e = Math.max(borde / k, region.solapaAbierta() ? 1F : 0F);
+                for (int d = Math.round(e * k); d < Math.round((e + w) * k); d++) {
+                    int x = lado < 0 ? centro - 1 - d : centro + d;
+                    if (x < frente.x0() || x >= frente.x1()) continue;
+                    if (((base.getColor(x, y) >>> 24) & 0xFF) >= 128) m.setColor(x, y, 0xFFFFFFFF);
+                }
+            }
+        }
+        porRegion.put(region.clave, m);
+        return m;
+    }
+
     /** Interpola a lo largo de los primeros {@code n} colores de la paleta, t en 0..1. */
     private static int degradar(int[] paleta, int n, float t) {
         float pos = Math.max(0f, Math.min(1f, t)) * (n - 1);

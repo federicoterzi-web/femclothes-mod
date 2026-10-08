@@ -1025,5 +1025,12 @@
   "modamod.modelado.rol.ruedo_torso": "Hem",
   "modamod.modelado.rol.ruedo_puno_izq": "Left cuff",
   "modamod.modelado.rol.ruedo_puno_der": "Right cuff",
-  "modamod.modelado.rol.ruedo_pollera": "Hem"
+  "modamod.modelado.rol.ruedo_pollera": "Hem",
+  "modamod.region_pintura.solapas": "Lapels",
+  "modamod.region_pintura.solapa_pico": "Lapels",
+  "modamod.region_pintura.solapa_pico_abierta": "Lapels",
+  "modamod.region_pintura.solapa_redonda": "Lapels",
+  "modamod.region_pintura.solapa_redonda_abierta": "Lapels",
+  "modamod.region_pintura.solapa_chal": "Lapels",
+  "modamod.region_pintura.solapa_chal_abierta": "Lapels"
 }

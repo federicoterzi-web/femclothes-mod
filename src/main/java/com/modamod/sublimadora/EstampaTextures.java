@@ -713,7 +713,9 @@ public final class EstampaTextures {
             // fundido (modo + opacidad) que ClothingTextureCache#composeGarmentCapas.
             // Cuello: además de su zona, solo el borde real del escote de ESTE corte.
             NativeImage bordeCuello = capa.region().requiereBordeCuello()
-                    ? com.modamod.render.ClothingTextureCache.mascaraBordeCuello(cruda) : null;
+                    ? com.modamod.render.ClothingTextureCache.mascaraBordeCuello(cruda)
+                    : capa.region().esSolapaConTipo()
+                    ? com.modamod.render.ClothingTextureCache.mascaraSolapa(cruda, capa.region()) : null;
             com.modamod.render.ClothingTextureCache.CapaMascara cm =
                     com.modamod.render.ClothingTextureCache.CapaMascara.de(capa, mascara, region, bordeCuello);
             int alto = mascara == null ? tela.getHeight() : Math.min(tela.getHeight(), mascara.getHeight());

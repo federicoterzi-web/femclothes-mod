@@ -159,6 +159,40 @@ public class TinturasScreenHandler extends ScreenHandler {
      * otra vez y todo quedaba 36px más abajo que el dibujo. Pollera no tiene
      * esquema: sus 3 van en una fila fija dentro del hueco del dibujo.
      */
+    /**
+     * Esquemas de Tintes propios (2026-10-08, "tenia un monton de slots no usables"): Tintes dejó de leer
+     * {@code ModeladoScreenHandler.PIN_POS}/{@code PIN_BTN}, que la Modeladora reordena a su gusto. Cada tabla es el
+     * origen del ítem (x relativo a la columna del medio, y absoluta) del cuadradito de ese índice sobre
+     * {@code esquema_tintes_<prenda>.png}; la chincheta va con su propia tabla. Remera: 2 de prenda entera, pecho,
+     * cuello, mangas, borde de abajo y solapas.
+     */
+    private static final int[][] POS_REMERA = {{58, 51}, {167, 51}, {113, 89}, {113, 47}, {42, 84}, {183, 84}, {113, 149}, {22, 110}};
+    private static final int[][] BTN_REMERA = {{75, 50}, {184, 50}, {130, 88}, {130, 46}, {59, 83}, {200, 83}, {130, 148}, {39, 109}};
+    private static final int[][] POS_PANTALON = {{112, 46}, {112, 79}, {112, 100}, {112, 122}, {47, 95}, {49, 143}, {175, 144}};
+    private static final int[][] BTN_PANTALON = {{129, 45}, {129, 78}, {129, 99}, {129, 121}, {64, 94}, {66, 142}, {192, 143}};
+    private static final int[][] POS_MEDIAS = {{44, 52}, {180, 52}, {43, 142}, {184, 142}, {112, 142}, {28, 76}, {28, 94}, {28, 113}, {196, 76}, {196, 94}, {196, 113}};
+    private static final int[][] BTN_MEDIAS = {{61, 51}, {197, 51}, {60, 141}, {201, 141}, {129, 141}, {45, 75}, {45, 93}, {45, 112}, {213, 75}, {213, 93}, {213, 112}};
+    private static final int[][] POS_CALIENTABRAZOS = {{38, 55}, {185, 55}, {37, 134}, {187, 135}, {112, 144}, {28, 77}, {28, 96}, {28, 115}, {196, 77}, {196, 96}, {196, 115}};
+    private static final int[][] BTN_CALIENTABRAZOS = {{55, 54}, {202, 54}, {54, 133}, {204, 134}, {129, 143}, {45, 76}, {45, 95}, {45, 114}, {213, 76}, {213, 95}, {213, 114}};
+
+    private static int[][] tablaPos(TinturasBlockEntity.Categoria cat) {
+        return switch (cat) {
+            case REMERA -> POS_REMERA;
+            case PANTALON -> POS_PANTALON;
+            case MEDIAS -> POS_MEDIAS;
+            default -> POS_CALIENTABRAZOS;
+        };
+    }
+
+    private static int[][] tablaBtn(TinturasBlockEntity.Categoria cat) {
+        return switch (cat) {
+            case REMERA -> BTN_REMERA;
+            case PANTALON -> BTN_PANTALON;
+            case MEDIAS -> BTN_MEDIAS;
+            default -> BTN_CALIENTABRAZOS;
+        };
+    }
+
     private static final int[][] POS_POLLERA = {{53, 19}, {181, 55}, {39, 98}};
     private static final int[][] POS_CAPA = {{48, 53}, {189, 96}, {175, 18}};
 
@@ -174,8 +208,10 @@ public class TinturasScreenHandler extends ScreenHandler {
             if (i >= p.length) return new int[]{-2000, -2000};
             return new int[]{M_MEDIO + p[i][0], ESQUEMA_Y + p[i][1]};
         }
-        int[] p = ModeladoScreenHandler.PIN_POS[cat.ordinal()][i];
-        return new int[]{M_MEDIO + p[0], p[1]};
+        // Los cuadraditos que el esquema no tiene quedan fuera de pantalla.
+        int[][] tabla = tablaPos(cat);
+        if (i >= tabla.length) return new int[]{-2000, -2000};
+        return new int[]{M_MEDIO + tabla[i][0], tabla[i][1]};
     }
 
     /** Centro de la chincheta del cuadradito {@code i} (relativo al panel) — {@code PIN_BTN} de la Modeladora, o arriba a la derecha del slot en Pollera. */
@@ -185,8 +221,9 @@ public class TinturasScreenHandler extends ScreenHandler {
             int[] s = posCasilla(cat, i);
             return new int[]{s[0] + 17, s[1] - 1};
         }
-        int[] p = ModeladoScreenHandler.PIN_BTN[cat.ordinal()][i];
-        return new int[]{M_MEDIO + p[0], p[1]};
+        int[][] tabla = tablaBtn(cat);
+        if (i >= tabla.length) return new int[]{-2000, -2000};
+        return new int[]{M_MEDIO + tabla[i][0], tabla[i][1]};
     }
 
     /** Un cuadradito solo existe (se ve/acepta moldes) mientras su categoría sea la que muestra la GUI y ese lugar pinte algo. */

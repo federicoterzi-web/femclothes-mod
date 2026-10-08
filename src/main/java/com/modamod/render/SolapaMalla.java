@@ -92,7 +92,7 @@ final class SolapaMalla {
     }
 
     /** Ancho de la solapa a la altura {@code y} (px), interpolado entre los centros de las filas. */
-    private static float anchoEn(float[] anchos, float y) {
+    static float anchoEn(float[] anchos, float y) {
         float t = y - 0.5F;
         int i = (int) Math.floor(t);
         float f = t - i;

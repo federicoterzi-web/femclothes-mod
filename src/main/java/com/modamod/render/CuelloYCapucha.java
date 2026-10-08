@@ -139,6 +139,14 @@ public final class CuelloYCapucha {
     /** Cuánto sobresale la solapa de la tela (px). */
     private static final float SALE = 0.55F;
 
+    /** Los anchos (px) por fila de 1 px de cada tipo de solapa: el perfil que comparten la malla y la zona de Tintes. */
+    static float[] anchosDe(com.modamod.item.ChaquetaSolapa tipo) {
+        Fila[] filas = filasDe(tipo);
+        float[] a = new float[filas.length];
+        for (int i = 0; i < a.length; i++) a[i] = filas[i].w;
+        return a;
+    }
+
     private static Fila[] filasDe(com.modamod.item.ChaquetaSolapa tipo) {
         return switch (tipo) {
             case PICO -> SOLAPA_PICO;

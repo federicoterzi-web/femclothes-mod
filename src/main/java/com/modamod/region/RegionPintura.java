@@ -31,7 +31,14 @@ public enum RegionPintura implements StringIdentifiable {
     // La capa (2026-09-29, "forro aparte"): exterior, forro y detalles
     // (capucha + cuello alto), cada uno con su cuadradito en Tintes. Rects
     // propios, no salen de una Parte (ver render.CapaMalla).
-    CAPA_EXTERIOR("capa_exterior"), CAPA_FORRO("capa_forro"), CAPA_DETALLES("capa_detalles");
+    CAPA_EXTERIOR("capa_exterior"), CAPA_FORRO("capa_forro"), CAPA_DETALLES("capa_detalles"),
+    // Las solapas del Top (2026-10-08, "se puedan tintar las solapas por su propio lado"): SOLAPAS es lo que elige el
+    // jugador en Tintes; al resolver las capas de una prenda se vuelve la variante de ESE tipo de solapa y con o sin
+    // frente abierto (RegionResolver#capasTinte), que son las que de verdad recortan (ver mascaraSolapa). Nuevos al final.
+    SOLAPAS("solapas"),
+    SOLAPA_PICO("solapa_pico"), SOLAPA_REDONDA("solapa_redonda"), SOLAPA_CHAL("solapa_chal"),
+    SOLAPA_PICO_ABIERTA("solapa_pico_abierta"), SOLAPA_REDONDA_ABIERTA("solapa_redonda_abierta"),
+    SOLAPA_CHAL_ABIERTA("solapa_chal_abierta");
 
     public final String clave;
 
@@ -52,12 +59,49 @@ public enum RegionPintura implements StringIdentifiable {
     private static final int FILAS_CUELLO = 2;
     private static final int FILAS_BORDE = 2;
 
+    /** Filas del frente donde puede caer una solapa (la más larga, el chal, baja 9). */
+    private static final int FILAS_SOLAPA = 10;
+
     /** Filas de frente/espalda donde puede caer el recorte del escote (la V baja hasta acá). */
     private static final int FILAS_ESCOTE = 6;
 
     /** El Cuello además de sus rects necesita la máscara del borde del escote (depende del molde de cuello de la prenda). */
     public boolean requiereBordeCuello() {
         return this == CUELLO;
+    }
+
+    /** ¿Es una de las variantes de solapa con tipo (las que recortan con {@code mascaraSolapa})? */
+    public boolean esSolapaConTipo() {
+        return switch (this) {
+            case SOLAPA_PICO, SOLAPA_REDONDA, SOLAPA_CHAL, SOLAPA_PICO_ABIERTA, SOLAPA_REDONDA_ABIERTA, SOLAPA_CHAL_ABIERTA -> true;
+            default -> false;
+        };
+    }
+
+    /** El tipo de solapa de una variante con tipo, o null. */
+    public com.modamod.item.ChaquetaSolapa solapa() {
+        return switch (this) {
+            case SOLAPA_PICO, SOLAPA_PICO_ABIERTA -> com.modamod.item.ChaquetaSolapa.PICO;
+            case SOLAPA_REDONDA, SOLAPA_REDONDA_ABIERTA -> com.modamod.item.ChaquetaSolapa.REDONDA;
+            case SOLAPA_CHAL, SOLAPA_CHAL_ABIERTA -> com.modamod.item.ChaquetaSolapa.CHAL;
+            default -> null;
+        };
+    }
+
+    /** ¿Con el frente abierto? (la solapa se pega al borde de la apertura, 1 px del centro). */
+    public boolean solapaAbierta() {
+        return this == SOLAPA_PICO_ABIERTA || this == SOLAPA_REDONDA_ABIERTA || this == SOLAPA_CHAL_ABIERTA;
+    }
+
+    /** La variante de esta región para una prenda con ese tipo de solapa y frente; null si no tiene solapas. */
+    public RegionPintura paraSolapa(com.modamod.item.ChaquetaSolapa tipo, boolean abierta) {
+        if (this != SOLAPAS) return this;
+        return switch (tipo) {
+            case PICO -> abierta ? SOLAPA_PICO_ABIERTA : SOLAPA_PICO;
+            case REDONDA -> abierta ? SOLAPA_REDONDA_ABIERTA : SOLAPA_REDONDA;
+            case CHAL -> abierta ? SOLAPA_CHAL_ABIERTA : SOLAPA_CHAL;
+            case NINGUNA -> null;
+        };
     }
 
     /** Filas de TORSO que cubre la cintura del pantalón — alcanza para el tiro más alto. */
@@ -73,7 +117,8 @@ public enum RegionPintura implements StringIdentifiable {
     public Parte parte(Categoria cat) {
         return switch (this) {
             case TODO, CAPA_EXTERIOR, CAPA_FORRO, CAPA_DETALLES -> null;
-            case CUELLO, BORDE_INFERIOR, PECHO, CINTURA -> Parte.TORSO;
+            case CUELLO, BORDE_INFERIOR, PECHO, CINTURA, SOLAPAS, SOLAPA_PICO, SOLAPA_REDONDA, SOLAPA_CHAL,
+                 SOLAPA_PICO_ABIERTA, SOLAPA_REDONDA_ABIERTA, SOLAPA_CHAL_ABIERTA -> Parte.TORSO;
             case MANGA_IZQ -> Parte.BRAZO_IZQ;
             case MANGA_DER -> Parte.BRAZO_DER;
             case SUP_IZQ, INF_IZQ -> cat == Categoria.CALIENTABRAZOS ? Parte.BRAZO_IZQ : Parte.PIERNA_IZQ;
@@ -92,6 +137,8 @@ public enum RegionPintura implements StringIdentifiable {
             // Desde la fila 0: el Cuello ya no es una banda de filas sino el
             // borde del escote (se pinta encima, ver requiereBordeCuello).
             case PECHO -> new int[]{0, 12 - FILAS_BORDE};
+            case SOLAPAS, SOLAPA_PICO, SOLAPA_REDONDA, SOLAPA_CHAL, SOLAPA_PICO_ABIERTA, SOLAPA_REDONDA_ABIERTA,
+                 SOLAPA_CHAL_ABIERTA -> new int[]{0, FILAS_SOLAPA};
             case CINTURA -> new int[]{12 - FILAS_CINTURA, 12};
         };
     }
@@ -129,6 +176,12 @@ public enum RegionPintura implements StringIdentifiable {
             return List.of(caja.todo());
         }
         List<CajaSkin.Rect> rects = new java.util.ArrayList<>(4);
+        if (this == SOLAPAS || esSolapaConTipo()) {
+            // Solo la cara de adelante: las solapas viven ahí (la máscara fina la arma mascaraSolapa).
+            CajaSkin.Rect frente = caja.frente();
+            rects.add(new CajaSkin.Rect(frente.x0(), frente.y0(), frente.x1(), frente.y0() + FILAS_SOLAPA * escala));
+            return rects;
+        }
         if (this == CUELLO) {
             // Zona CANDIDATA: la tapa de arriba y las primeras filas del
             // frente y la espalda (donde vive el recorte del escote, redondo

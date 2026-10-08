@@ -1025,5 +1025,12 @@
   "modamod.modelado.rol.ruedo_torso": "Ruedo",
   "modamod.modelado.rol.ruedo_puno_izq": "Puño izq.",
   "modamod.modelado.rol.ruedo_puno_der": "Puño der.",
-  "modamod.modelado.rol.ruedo_pollera": "Ruedo"
+  "modamod.modelado.rol.ruedo_pollera": "Ruedo",
+  "modamod.region_pintura.solapas": "Solapas",
+  "modamod.region_pintura.solapa_pico": "Solapas",
+  "modamod.region_pintura.solapa_pico_abierta": "Solapas",
+  "modamod.region_pintura.solapa_redonda": "Solapas",
+  "modamod.region_pintura.solapa_redonda_abierta": "Solapas",
+  "modamod.region_pintura.solapa_chal": "Solapas",
+  "modamod.region_pintura.solapa_chal_abierta": "Solapas"
 }

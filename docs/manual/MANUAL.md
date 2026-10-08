@@ -692,3 +692,5 @@ Al componer, cada pixel parte del color base de la tela y cada capa se **funde**
 
 **Cuellos más bajos** (2026-10-08, "bajarle un poco mas el cuello cuadrado y el redondo"; sin probar en el juego): el cuello **cuadrado** baja de 1,75 a 2,75 texeles de hondo, y el **redondo** (el cuello de fábrica de toda remera) gana un escote de media elipse de 1,5 texeles de hondo; antes solo tenía la abertura de arriba y el frente entero. Las solapas y el cuello de camisa siguen el escote nuevo.
 
+**Tintes: esquema propio y zona Solapas** (2026-10-08; sin probar en el juego): la Estación de Tintes ya no comparte el dibujo de la Modeladora. La **remera** (y el Top) muestra solo los lugares que pintan algo: **dos de prenda entera, pecho, cuello, manga izquierda, manga derecha, borde de abajo y Solapas**. La zona **Solapas** tiñe (color, patrón, mezcla, transparencia) la tela de las solapas por separado del resto: sigue su tipo (pico, redonda, chal) y su borde, también con el frente abierto; una remera sin solapas la ignora. El cuello de camisa no entra en esta zona.
+
