@@ -192,6 +192,8 @@ public class Modamod implements ModInitializer {
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_RED_ENCAJE);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_RED_RAYAS);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_RED_ESCOCESA);
+            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_MATERIAL_DENIM);
+            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_MATERIAL_CUERO);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_RED_ARNES_X);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_RED_ARNES_TIRANTES);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_RED_ARNES_BANDAS);

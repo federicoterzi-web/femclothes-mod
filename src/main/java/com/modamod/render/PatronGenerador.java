@@ -385,11 +385,11 @@ public final class PatronGenerador {
                 com.modamod.item.PolleraLargo.valueOf(partes[2]), partes.length > 3 ? Integer.parseInt(partes[3]) / 2f : 0f);
         int w = caja.x1() - caja.x0(), h = caja.alto();
         int centro = w / 3, mitad = w / 2;
-        float alto = perfil.largoTela / 12f;
+        float alto = perfil.largoTela / perfil.vAlto;   // px de tela por fila de textura (2026-10-08: solo usa vAlto filas)
         return (lx, ly) -> {
             int d = Math.floorMod(lx - centro + mitad, w) - mitad;
             if (simetria && d >= 0) d = -1 - d;
-            float q = Math.max(0f, Math.min(1f, (ly + 0.5f) / h));
+            float q = Math.max(0f, Math.min(1f, (ly + 0.5f) / perfil.vAlto));
             float ancho = perfil.circunferenciaEn(q) / 24f;
             return f.valor(centro + Math.round(d * ancho), Math.round(ly * alto));
         };

@@ -448,6 +448,13 @@ public final class PolleraMalla {
         final float[] fraccion = new float[FILAS + 1];
         /** Largo de la tela de la cintura al ruedo, en px. */
         public float largoTela;
+        /**
+         * Cuántas filas de la textura (de las 12 de la franja del torso) ocupa la tela (2026-10-08, "la textura en la
+         * pollera se ve muy estrechada cuando es mas corta... podemos adaptar las uvs?"): la misma densidad de
+         * texeles que a lo ancho de la cintura (24 por vuelta), entre 4 y 12 filas. Una pollera corta usa solo las de
+         * arriba (el contenido se recorta en vez de achatarse); una larga las estira un poco, como siempre.
+         */
+        public float vAlto = 12f;
 
         /** Vuelta (px de tela) a la fracción {@code q} (0 = cintura, 1 = ruedo) del largo de tela. */
         public float circunferenciaEn(float q) {
@@ -538,9 +545,10 @@ public final class PolleraMalla {
             bajada[f] = bajada[f - 1] + suma / COLUMNAS;
         }
         pf.largoTela = bajada[FILAS];
+        pf.vAlto = Math.max(4f, Math.min(12f, pf.largoTela * 24f / Math.max(1f, pf.vuelta[0])));
         for (int f = 0; f <= FILAS; f++) {
             pf.fraccion[f] = bajada[f] / pf.largoTela;
-            pf.v[f] = 20f + 12f * pf.fraccion[f];
+            pf.v[f] = 20f + pf.vAlto * pf.fraccion[f];
         }
         return pf;
     }

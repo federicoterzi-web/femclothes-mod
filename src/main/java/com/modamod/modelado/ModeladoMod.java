@@ -86,6 +86,8 @@ public final class ModeladoMod {
     /** Rayas caladas horizontales (2026-09-28). */
     public static final MoldeRedItem MOLDE_RED_RAYAS = new MoldeRedItem(new Item.Settings().maxCount(1), PatronRed.RAYAS);
     /** Cuadrícula recta estilo escocés (2026-09-28). */
+    public static final MoldeRedItem MOLDE_MATERIAL_DENIM = new MoldeRedItem(new Item.Settings().maxCount(1), PatronRed.DENIM);
+    public static final MoldeRedItem MOLDE_MATERIAL_CUERO = new MoldeRedItem(new Item.Settings().maxCount(1), PatronRed.CUERO);
     public static final MoldeRedItem MOLDE_RED_ESCOCESA = new MoldeRedItem(new Item.Settings().maxCount(1), PatronRed.ESCOCESA);
     /** Arnés cruzado en X (2026-09-28). */
     public static final MoldeRedItem MOLDE_RED_ARNES_X = new MoldeRedItem(new Item.Settings().maxCount(1), PatronRed.ARNES_X);
@@ -230,6 +232,8 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_red_encaje"), MOLDE_RED_ENCAJE);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_red_rayas"), MOLDE_RED_RAYAS);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_red_escocesa"), MOLDE_RED_ESCOCESA);
+        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_material_denim"), MOLDE_MATERIAL_DENIM);
+        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_material_cuero"), MOLDE_MATERIAL_CUERO);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_red_arnes_x"), MOLDE_RED_ARNES_X);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_red_arnes_tirantes"), MOLDE_RED_ARNES_TIRANTES);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_red_arnes_bandas"), MOLDE_RED_ARNES_BANDAS);

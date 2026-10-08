@@ -58,6 +58,9 @@ Ruta de cada archivo: `src/main/resources/assets/modamod/textures/item/<archivo>
 (agujeritos), `molde_red_encaje`, `molde_red_escocesa` (tartán), `molde_red_rayas`, `molde_red_arnes_bandas` (arnés de
 bandas), `molde_red_arnes_tirantes` (arnés de tirantes), `molde_red_arnes_x` (arnés cruzado en X). OK.
 
+### A4b. Materiales (2) — NUEVOS, PROVISORIOS (hoy copia de la trama escocesa)
+`molde_material_denim` (un retazo de tela vaquera azul con la sarga diagonal visible, costura de contraste naranja y un borde deshilachado) y `molde_material_cuero` (un retazo de cuero marrón con grano de poros, un brillo suave en el medio y una costura crema). Mismo papel y destaque cobre que las tramas.
+
 ### A5. Pollera (5 formas) + volados (2) + ruedo (6)
 Falda de frente, cada una con su silueta: `molde_pollera_campana`, `molde_pollera_tableada` (con tablas),
 `molde_pollera_tubo` (recta y ajustada), `molde_pollera_globo` (ancha al medio, cerrada abajo), `molde_pollera_circular`

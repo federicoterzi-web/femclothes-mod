@@ -42,10 +42,19 @@ public enum PatronRed implements StringIdentifiable {
     /** Dos tirantes verticales + banda horizontal al medio, anillos en los cruces. */
     ARNES_TIRANTES("arnes_tirantes", 0, 0, Dibujo.ARNES_TIRANTES),
     /** Solo bandas horizontales (a los tercios) + los bordes, un anillo por banda. */
-    ARNES_BANDAS("arnes_bandas", 0, 0, Dibujo.ARNES_BANDAS);
+    ARNES_BANDAS("arnes_bandas", 0, 0, Dibujo.ARNES_BANDAS),
+    // Materiales (2026-10-08, "un solo molde así como hay tramas que haya materiales"): no agujerean, le dan trama a
+    // la tela — ver render/MaterialTela.
+    /** Denim: sarga diagonal con desgaste. */
+    DENIM("denim", 0, 0, Dibujo.MATERIAL),
+    /** Cuero: grano de poros con brillo especular pintado. */
+    CUERO("cuero", 0, 0, Dibujo.MATERIAL);
 
     /** Qué forma tiene el enrejado — ver {@code ClothingTextureCache#esHilo}. */
-    public enum Dibujo { ROMBO, HEXAGONO, AGUJEROS, ENCAJE, RAYAS, CUADRICULA, ARNES_X, ARNES_TIRANTES, ARNES_BANDAS }
+    public enum Dibujo { ROMBO, HEXAGONO, AGUJEROS, ENCAJE, RAYAS, CUADRICULA, ARNES_X, ARNES_TIRANTES, ARNES_BANDAS, MATERIAL }
+
+    /** ¿Es un material (denim, cuero) en vez de un enrejado? Le da trama a la tela en lugar de perforarla. */
+    public boolean esMaterial() { return dibujo == Dibujo.MATERIAL; }
 
     public boolean esArnes() {
         return dibujo == Dibujo.ARNES_X || dibujo == Dibujo.ARNES_TIRANTES || dibujo == Dibujo.ARNES_BANDAS;

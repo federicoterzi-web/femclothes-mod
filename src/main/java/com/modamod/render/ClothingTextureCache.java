@@ -966,6 +966,10 @@ public final class ClothingTextureCache {
     private static void perforarRedEnCara(NativeImage img, com.modamod.item.PatronRed tipo,
                                      int x0, int y0, int x1, int y1,
                                      boolean llevaCorteVirtual, int yDesde, int yHasta, int rolArnes) {
+        if (tipo.esMaterial()) {
+            MaterialTela.aplicar(img, tipo, x0, y0, x1, y1);
+            return;
+        }
         int w = img.getWidth(), h = img.getHeight();
         x0 = Math.max(0, x0); y0 = Math.max(0, y0);
         x1 = Math.min(w, x1); y1 = Math.min(h, y1);
