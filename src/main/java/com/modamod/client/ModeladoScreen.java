@@ -358,7 +358,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         int cat = categoria.ordinal();
         for (int i = 0; i < btnPines.length; i++) {
             int p = cat * ModeladoBlockEntity.PINES_POR_CATEGORIA + i;
-            boolean usable = ModeladoBlockEntity.ROLES[cat][i] != ModeladoBlockEntity.Rol.NINGUNO;
+            boolean usable = be.pinVisible(categoria, i);
             boolean fijado = be.pinFijado(p);
             boolean conMolde = !be.getStack(ModeladoBlockEntity.pinSlot(p)).isEmpty();
             int[] c = ModeladoScreenHandler.PIN_BTN[cat][i];
@@ -560,6 +560,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         float escala = 0.62f;
         for (int i = 0; i < ModeladoBlockEntity.PINES_POR_CATEGORIA; i++) {
             ModeladoBlockEntity.Rol rol = ModeladoBlockEntity.ROLES[cat][i];
+            if (!this.handler.be.pinVisible(this.handler.be.categoria(), i)) continue;
             String clave = switch (rol) {
                 case NINGUNO, PERS_IZQ2, PERS_IZQ3, PERS_DER2, PERS_DER3 -> null;
                 // las columnas de 3 llevan UN título arriba, no uno por slot (los slots están casi pegados)
@@ -594,7 +595,7 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         int cat = be.categoria().ordinal();
         for (int i = 0; i < ModeladoBlockEntity.PINES_POR_CATEGORIA; i++) {
             int p = cat * ModeladoBlockEntity.PINES_POR_CATEGORIA + i;
-            if (ModeladoBlockEntity.ROLES[cat][i] == ModeladoBlockEntity.Rol.NINGUNO) continue;
+            if (!be.pinVisible(be.categoria(), i)) continue;
             if (!be.pinFijado(p) || !be.getStack(ModeladoBlockEntity.pinSlot(p)).isEmpty()) continue;
             ComboCorte combo = be.pinCombo(p);
             if (combo == null) continue;

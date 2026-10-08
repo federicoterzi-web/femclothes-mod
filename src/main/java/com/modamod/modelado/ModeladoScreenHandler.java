@@ -362,8 +362,7 @@ public class ModeladoScreenHandler extends ScreenHandler {
             int p = ModeladoBlockEntity.pinDeSlot(this.getIndex());
             int cat = p / ModeladoBlockEntity.PINES_POR_CATEGORIA;
             return be.categoria().ordinal() == cat
-                    && ModeladoBlockEntity.ROLES[cat][p % ModeladoBlockEntity.PINES_POR_CATEGORIA]
-                    != ModeladoBlockEntity.Rol.NINGUNO;
+                    && be.pinVisible(be.categoria(), p % ModeladoBlockEntity.PINES_POR_CATEGORIA);
         }
 
         @Override

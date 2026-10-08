@@ -208,22 +208,22 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
 
     /** Rol de cada uno de los 8 pines por categoría — MISMO orden que {@code ModeladoScreenHandler#PIN_POS}. */
     public static final Rol[][] ROLES = rellenarRoles(new Rol[][]{
-            {Rol.CUELLO, Rol.MAT1, Rol.MAT2, Rol.MANGA_IZQ, Rol.MAT3, Rol.MANGA_DER, Rol.CALCE, Rol.TORSO,
+            {Rol.CUELLO, Rol.MAT1, Rol.NINGUNO, Rol.MANGA_IZQ, Rol.NINGUNO, Rol.MANGA_DER, Rol.CALCE, Rol.TORSO,
                     Rol.RUEDO_TORSO, Rol.RUEDO_PUNO_IZQ, Rol.RUEDO_PUNO_DER,
                     // El Top (2026-10-07, "un solo top"): frente, capucha y solapa también en la remera.
                     Rol.FRENTE_CHAQUETA, Rol.CAPUCHA_CHAQUETA, Rol.SOLAPA_CHAQUETA},
-            {Rol.TIRO, Rol.MAT1, Rol.MAT2, Rol.MAT3, Rol.CALCE, Rol.BOTA_IZQ, Rol.BOTA_DER, Rol.NINGUNO,
+            {Rol.TIRO, Rol.MAT1, Rol.NINGUNO, Rol.NINGUNO, Rol.CALCE, Rol.BOTA_IZQ, Rol.BOTA_DER, Rol.NINGUNO,
                     Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
-            {Rol.SUP_IZQ, Rol.SUP_DER, Rol.INF_IZQ, Rol.INF_DER, Rol.CALCE, Rol.PERS_IZQ1, Rol.PERS_IZQ2,
-                    Rol.PERS_IZQ3, Rol.PERS_DER1, Rol.PERS_DER2, Rol.PERS_DER3, Rol.NINGUNO},
-            {Rol.SUP_IZQ, Rol.SUP_DER, Rol.INF_IZQ, Rol.INF_DER, Rol.CALCE, Rol.PERS_IZQ1, Rol.PERS_IZQ2,
-                    Rol.PERS_IZQ3, Rol.PERS_DER1, Rol.PERS_DER2, Rol.PERS_DER3, Rol.NINGUNO},
+            {Rol.SUP_IZQ, Rol.SUP_DER, Rol.INF_IZQ, Rol.INF_DER, Rol.CALCE, Rol.PERS_IZQ1, Rol.NINGUNO,
+                    Rol.NINGUNO, Rol.PERS_DER1, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
+            {Rol.SUP_IZQ, Rol.SUP_DER, Rol.INF_IZQ, Rol.INF_DER, Rol.CALCE, Rol.PERS_IZQ1, Rol.NINGUNO,
+                    Rol.NINGUNO, Rol.PERS_DER1, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
             // Pollera (2026-09-29): Forma, Largo, Calce y los 3 materiales.
-            {Rol.FORMA_POLLERA, Rol.LARGO_POLLERA, Rol.CALCE, Rol.MAT1, Rol.MAT2, Rol.MAT3,
+            {Rol.FORMA_POLLERA, Rol.LARGO_POLLERA, Rol.CALCE, Rol.MAT1, Rol.NINGUNO, Rol.NINGUNO,
                     Rol.VOLADO_INFERIOR, Rol.VOLADO_TOTAL, Rol.RUEDO_POLLERA},
             // Capa (2026-09-29, "podemos agregar todo eso como patrones de corte?"):
             // Largo, Ruedo, Capucha, Cuello y los 3 materiales.
-            {Rol.LARGO_CAPA, Rol.RUEDO_CAPA, Rol.CAPUCHA_CAPA, Rol.CUELLO_CAPA, Rol.MAT1, Rol.MAT2, Rol.MAT3,
+            {Rol.LARGO_CAPA, Rol.RUEDO_CAPA, Rol.CAPUCHA_CAPA, Rol.CUELLO_CAPA, Rol.MAT1, Rol.NINGUNO, Rol.NINGUNO,
                     Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
             // Sombrero (2026-10-05): Ala y Punta.
             {Rol.ALA_SOMBRERO, Rol.PUNTA_SOMBRERO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO,
@@ -868,6 +868,20 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
     private static ComboCorte comboDePin(Categoria cat, int i, ItemStack molde, Lado lado) {
         Rol rol = ROLES[cat.ordinal()][i];
         Item item = molde.getItem();
+        // Pares desplegables (2026-10-08, "el slot de ruedo de manga vaya a la par del corte de manga y se puedan
+        // usar los dos indistintamente", idem cuello y solapa): los dos casilleros del par aceptan cualquiera de
+        // los dos tipos de molde; el tipo del molde decide qué se aplica.
+        if (item instanceof MoldeRangoItem) {
+            if (rol == Rol.RUEDO_PUNO_IZQ) rol = Rol.MANGA_IZQ;
+            else if (rol == Rol.RUEDO_PUNO_DER) rol = Rol.MANGA_DER;
+        } else if (item instanceof MoldeRuedoItem) {
+            if (rol == Rol.MANGA_IZQ) rol = Rol.RUEDO_PUNO_IZQ;
+            else if (rol == Rol.MANGA_DER) rol = Rol.RUEDO_PUNO_DER;
+        } else if (item instanceof MoldeCuelloItem) {
+            if (rol == Rol.SOLAPA_CHAQUETA) rol = Rol.CUELLO;
+        } else if (item instanceof MoldeChaquetaItem m && m.tipo.esSolapa()) {
+            if (rol == Rol.CUELLO) rol = Rol.SOLAPA_CHAQUETA;
+        }
         ComboCorte c = null;
         switch (rol) {
             case CUELLO -> {
@@ -1021,6 +1035,32 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
             case CUELLO_ALTO -> ComboCorte.capaCuello(true);
             case SIN_CUELLO -> ComboCorte.capaCuello(false);
         };
+    }
+
+    /**
+     * Pin "principal" del que cuelga un casillero desplegable (2026-10-08): el del puño se abre con la manga de su
+     * lado y el de la solapa con el cuello. -1 si el pin no es un cajón.
+     */
+    public static int principalDeCajon(Categoria cat, int i) {
+        Rol principal = switch (ROLES[cat.ordinal()][i]) {
+            case RUEDO_PUNO_IZQ -> Rol.MANGA_IZQ;
+            case RUEDO_PUNO_DER -> Rol.MANGA_DER;
+            case SOLAPA_CHAQUETA -> Rol.CUELLO;
+            default -> null;
+        };
+        if (principal == null || cat != Categoria.REMERA) return -1;
+        for (int k = 0; k < PINES_POR_CATEGORIA; k++) if (ROLES[cat.ordinal()][k] == principal) return k;
+        return -1;
+    }
+
+    /** ¿Se ve y se puede usar el pin {@code i}? Un cajón se abre solo cuando su principal (o él) tiene molde o corte. */
+    public boolean pinVisible(Categoria cat, int i) {
+        if (ROLES[cat.ordinal()][i] == Rol.NINGUNO) return false;
+        int principal = principalDeCajon(cat, i);
+        if (principal < 0) return true;
+        int base = cat.ordinal() * PINES_POR_CATEGORIA;
+        return !getStack(pinSlot(base + principal)).isEmpty() || pinFijado[base + principal]
+                || !getStack(pinSlot(base + i)).isEmpty() || pinFijado[base + i];
     }
 
     /** El lado que le toca a un pin de lado; con simetría activa (o en pines sin lado) es AMBAS. */
