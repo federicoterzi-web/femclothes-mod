@@ -96,6 +96,10 @@ public class SublimadoraScreenHandler extends ScreenHandler {
             addSlot(new Slot(be, slotBe, FOTO_POS[cara][0], FOTO_POS[cara][1]) {
                 @Override
                 public boolean canInsert(ItemStack stack) { return be.isValid(slotBe, stack); }
+
+                // La máquina guarda 1 sola (2026-10-08, hallazgo H02): sin esto una pila entera se aceptaba y se perdía el resto.
+                @Override
+                public int getMaxItemCount() { return 1; }
             });
         }
 
@@ -104,6 +108,9 @@ public class SublimadoraScreenHandler extends ScreenHandler {
         addSlot(new Slot(be, SublimadoraBlockEntity.SLOT_REMERA, M_MEDIO + ENTRADA_X, SLOT_Y_IO) {
             @Override
             public boolean canInsert(ItemStack stack) { return be.isValid(SublimadoraBlockEntity.SLOT_REMERA, stack); }
+
+            @Override
+            public int getMaxItemCount() { return 1; }
         });
         addSlot(new Slot(be, SublimadoraBlockEntity.SLOT_SALIDA, M_MEDIO + SALIDA_X, SLOT_Y_IO) {
             @Override
