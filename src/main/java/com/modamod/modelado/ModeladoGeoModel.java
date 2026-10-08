@@ -89,6 +89,9 @@ public class ModeladoGeoModel extends GeoModel<ModeladoBlockEntity> {
     @Override
     public void setCustomAnimations(ModeladoBlockEntity be, long instanceId, AnimationState<ModeladoBlockEntity> state) {
         super.setCustomAnimations(be, instanceId, state);
+        // LED del botón de la línea de producción del frente (2026-10-08): visible solo con la línea encendida.
+        GeoBone ledLinea = getAnimationProcessor().getBone("led_linea");
+        if (ledLinea != null) ledLinea.setHidden(!be.linea());
 
         GeoBone progreso = getAnimationProcessor().getBone("progress");
         if (progreso != null) {

@@ -1004,7 +1004,7 @@ public class SublimadoraBlockEntity extends BlockEntity
     public static final int BTN_LINEA = 900;
 
     /** Alterna la línea de producción y avisa al cliente. */
-    private void alternarLinea() {
+    public void alternarLinea() {
         linea = !linea;
         sincronizar();
     }

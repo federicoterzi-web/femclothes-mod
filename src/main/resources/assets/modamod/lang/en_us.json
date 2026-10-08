@@ -1076,6 +1076,8 @@
   "modamod.region_pintura.solapa_redonda_abierta": "Lapels",
   "modamod.region_pintura.solapa_chal": "Lapels",
   "modamod.region_pintura.solapa_chal_abierta": "Lapels",
+  "modamod.maquina.linea.encendida": "Production line on",
+  "modamod.maquina.linea.apagada": "Production line off",
   "modamod.linea.si": "Line: on",
   "modamod.linea.no": "Line: off",
   "modamod.linea.tooltip": "Production line: on, the machine passes the finished garment to the next one and skips garments with no work. Off (default), it works alone and the garment stays in the output."

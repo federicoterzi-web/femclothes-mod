@@ -1808,6 +1808,13 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
 
     public boolean linea() { return linea; }
 
+    /** Alterna la línea de producción (botón del frente, 2026-10-08): igual que el botón de la pantalla. */
+    public void alternarLinea() {
+        linea = !linea;
+        markDirty();
+        if (world != null) world.updateListeners(pos, getCachedState(), getCachedState(), 3);
+    }
+
     public static final int BTN_LINEA = 900;
 
     private void empujarSalida(net.minecraft.world.World world, BlockPos pos) {

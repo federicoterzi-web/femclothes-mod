@@ -106,6 +106,14 @@ public class ModeladoBlock extends BlockWithEntity {
     @Override
     protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos,
                                               PlayerEntity player, Hand hand, net.minecraft.util.hit.BlockHitResult hit) {
+        // Botón de la línea de producción en el frente (2026-10-08): va primero, con o sin ítem en la mano.
+        if (com.modamod.util.BotonLinea.golpea(state.get(FACING), pos, hit)) {
+            if (!world.isClient && world.getBlockEntity(pos) instanceof ModeladoBlockEntity botonLinea) {
+                botonLinea.alternarLinea();
+                com.modamod.util.BotonLinea.avisar(world, pos, player, botonLinea.linea());
+            }
+            return ItemActionResult.SUCCESS;
+        }
         if (!(world.getBlockEntity(pos) instanceof ModeladoBlockEntity be)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
 
         if (stack.isOf(net.minecraft.item.Items.SHEARS)) {
@@ -169,6 +177,14 @@ public class ModeladoBlock extends BlockWithEntity {
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player,
                                   net.minecraft.util.hit.BlockHitResult hit) {
+        // Botón de la línea de producción en el frente (2026-10-08): va primero, con o sin ítem en la mano.
+        if (com.modamod.util.BotonLinea.golpea(state.get(FACING), pos, hit)) {
+            if (!world.isClient && world.getBlockEntity(pos) instanceof ModeladoBlockEntity botonLinea) {
+                botonLinea.alternarLinea();
+                com.modamod.util.BotonLinea.avisar(world, pos, player, botonLinea.linea());
+            }
+            return ActionResult.SUCCESS;
+        }
         if (world.isClient) return ActionResult.SUCCESS;
         if (!(world.getBlockEntity(pos) instanceof ModeladoBlockEntity be)) return ActionResult.PASS;
 

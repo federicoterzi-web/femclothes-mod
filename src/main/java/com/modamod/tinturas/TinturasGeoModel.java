@@ -210,6 +210,9 @@ public class TinturasGeoModel extends GeoModel<TinturasBlockEntity> {
     @Override
     public void setCustomAnimations(TinturasBlockEntity be, long instanceId, AnimationState<TinturasBlockEntity> state) {
         super.setCustomAnimations(be, instanceId, state);
+        // LED del botón de la línea de producción del frente (2026-10-08): visible solo con la línea encendida.
+        GeoBone ledLinea = getAnimationProcessor().getBone("led_linea");
+        if (ledLinea != null) ledLinea.setHidden(!be.linea());
         for (int i = 0; i < HUESOS.length; i++) {
             GeoBone barra = getAnimationProcessor().getBone(HUESOS[i]);
             if (barra == null) continue;

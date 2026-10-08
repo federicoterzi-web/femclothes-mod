@@ -82,6 +82,14 @@ public class TelarBlock extends BlockWithEntity {
     @Override
     protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos,
                                              PlayerEntity player, Hand hand, BlockHitResult hit) {
+        // Botón de la línea de producción en el frente (2026-10-08): va primero, con o sin ítem en la mano.
+        if (com.modamod.util.BotonLinea.golpea(state.get(FACING), pos, hit)) {
+            if (!world.isClient && world.getBlockEntity(pos) instanceof TelarBlockEntity botonLinea) {
+                botonLinea.alternarLinea();
+                com.modamod.util.BotonLinea.avisar(world, pos, player, botonLinea.linea());
+            }
+            return ItemActionResult.SUCCESS;
+        }
         if (!(world.getBlockEntity(pos) instanceof TelarBlockEntity be)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         int slot = be.isValid(TelarBlockEntity.SLOT_LANA, stack) ? TelarBlockEntity.SLOT_LANA
                 : be.isValid(TelarBlockEntity.SLOT_HILO, stack) ? TelarBlockEntity.SLOT_HILO : -1;
@@ -101,6 +109,14 @@ public class TelarBlock extends BlockWithEntity {
     /** Mano vacía: retira la prenda tejida si hay; si no, abre la pantalla. */
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        // Botón de la línea de producción en el frente (2026-10-08): va primero, con o sin ítem en la mano.
+        if (com.modamod.util.BotonLinea.golpea(state.get(FACING), pos, hit)) {
+            if (!world.isClient && world.getBlockEntity(pos) instanceof TelarBlockEntity botonLinea) {
+                botonLinea.alternarLinea();
+                com.modamod.util.BotonLinea.avisar(world, pos, player, botonLinea.linea());
+            }
+            return ActionResult.SUCCESS;
+        }
         if (world.isClient) return ActionResult.SUCCESS;
         if (!(world.getBlockEntity(pos) instanceof TelarBlockEntity be)) return ActionResult.PASS;
         ItemStack salida = be.getStack(TelarBlockEntity.SLOT_SALIDA);

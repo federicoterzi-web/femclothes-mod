@@ -96,6 +96,9 @@ public class SublimadoraGeoModel extends GeoModel<SublimadoraBlockEntity> {
     @Override
     public void setCustomAnimations(SublimadoraBlockEntity be, long instanceId, AnimationState<SublimadoraBlockEntity> state) {
         super.setCustomAnimations(be, instanceId, state);
+        // LED del botón de la línea de producción del frente (2026-10-08): visible solo con la línea encendida.
+        GeoBone ledLinea = getAnimationProcessor().getBone("led_linea");
+        if (ledLinea != null) ledLinea.setHidden(!be.linea());
 
         // LEDs del panel: rojo parpadeando mientras prensa, verde fijo cuando
         // esta lista, los dos apagados en reposo. Se prenden y apagan con

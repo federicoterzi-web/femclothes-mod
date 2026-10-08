@@ -57,6 +57,8 @@ def main():
                     continue
                 if nombre in ("estilista_atlas", "telar_atlas") and (x, y) in ((100, 60), (101, 60), (102, 60)):
                     continue                           # los acentos lila / hilo / cuero de la Estilista no se recolorean
+                if (x, y) in ((103, 60), (104, 60), (63, 63), (62, 63)):
+                    continue                           # botón y LED de la línea de producción (tools/agregar_boton_linea.py)
                 px[x, y] = (*recolorear(r, g, b, x, y), a)
         img.save(CARPETA / f"{nombre}_creativa.png")
     print("ok", CARPETA)

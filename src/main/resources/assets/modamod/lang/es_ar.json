@@ -1076,6 +1076,8 @@
   "modamod.region_pintura.solapa_redonda_abierta": "Solapas",
   "modamod.region_pintura.solapa_chal": "Solapas",
   "modamod.region_pintura.solapa_chal_abierta": "Solapas",
+  "modamod.maquina.linea.encendida": "Línea de producción encendida",
+  "modamod.maquina.linea.apagada": "Línea de producción apagada",
   "modamod.linea.si": "Línea: sí",
   "modamod.linea.no": "Línea: no",
   "modamod.linea.tooltip": "Línea de producción: encendida, la máquina pasa la prenda terminada a la siguiente y saltea las que no tienen trabajo. Apagada (de fábrica), se usa sola y la prenda queda en la salida."
