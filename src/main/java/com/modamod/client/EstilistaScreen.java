@@ -2,6 +2,7 @@ package com.modamod.client;
 
 import com.modamod.estilista.EstilistaBlockEntity;
 import com.modamod.estilista.EstilistaScreenHandler;
+import com.modamod.estilista.GuardarDisenoPayload;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -19,7 +20,9 @@ import net.minecraft.text.Text;
  */
 public class EstilistaScreen extends EstiladoScreen {
 
-    private static final int ANCHO_TOTAL = ANCHO + 6 + EstilistaScreenHandler.ANCHO_PANEL + 4;
+    private static final int ANCHO_TOTAL = ANCHO + 6 + EstilistaScreenHandler.ANCHO_PANEL + 6 + EstilistaScreenHandler.ANCHO_DISENOS + 4;
+    private static final int FILA = 24, Y_LISTA = 52;
+    private net.minecraft.client.gui.widget.TextFieldWidget txtNombre;
     private final EstilistaScreenHandler yo;
 
     public EstilistaScreen(EstilistaScreenHandler handler, PlayerInventory inventory, Text title) {
@@ -28,7 +31,7 @@ public class EstilistaScreen extends EstiladoScreen {
     }
 
     @Override
-    int panelExtra() { return 6 + EstilistaScreenHandler.ANCHO_PANEL; }
+    int panelExtra() { return 6 + EstilistaScreenHandler.ANCHO_PANEL + 6 + EstilistaScreenHandler.ANCHO_DISENOS; }
 
     @Override
     protected void init() {
@@ -42,6 +45,21 @@ public class EstilistaScreen extends EstiladoScreen {
         this.addDrawableChild(new EstiloPergamino.BotonLinea(px + 8, this.y + EstilistaScreenHandler.Y_PANEL + 84,
                 EstilistaScreenHandler.ANCHO_PANEL - 16, 16, () -> ((EstilistaScreenHandler) handler).host.linea(),
                 b -> this.client.interactionManager.clickButton(this.handler.syncId, EstilistaBlockEntity.BTN_LINEA)));
+        // Panel de diseños: nombre + Guardar abajo.
+        int dx = this.x + EstilistaScreenHandler.X_DISENOS, dy = this.y + EstilistaScreenHandler.Y_PANEL;
+        txtNombre = new net.minecraft.client.gui.widget.TextFieldWidget(this.textRenderer, dx + 6, dy + EstilistaScreenHandler.ALTO_PANEL - 40,
+                EstilistaScreenHandler.ANCHO_DISENOS - 12, 14, Text.translatable("modamod.estilista.disenos.nombre"));
+        txtNombre.setMaxLength(40);
+        txtNombre.setPlaceholder(Text.translatable("modamod.estilista.disenos.nombre"));
+        this.addDrawableChild(txtNombre);
+        ButtonWidget guardar = new EstiloPergamino.BotonPergamino(dx + 6, dy + EstilistaScreenHandler.ALTO_PANEL - 22,
+                EstilistaScreenHandler.ANCHO_DISENOS - 12, 16, Text.translatable("modamod.estilista.disenos.guardar"), btn -> {
+            net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+                    new GuardarDisenoPayload(yo.host.getPos(), txtNombre.getText()));
+            txtNombre.setText("");
+        });
+        guardar.setTooltip(Tooltip.of(Text.translatable("modamod.estilista.disenos.tooltip.guardar")));
+        this.addDrawableChild(guardar);
         boton("fijar", EstilistaBlockEntity.BTN_FIJAR, px + 8, this.y + EstilistaScreenHandler.Y_PANEL + 52, 54, 16);
         boton("borrar", EstilistaBlockEntity.BTN_BORRAR, px + EstilistaScreenHandler.ANCHO_PANEL - 8 - 54, this.y + EstilistaScreenHandler.Y_PANEL + 52, 54, 16);
     }
@@ -111,9 +129,88 @@ public class EstilistaScreen extends EstiladoScreen {
                 y += 10;
             }
         }
+        dibujarDisenos(c, be, mouseX, mouseY);
         contador(c, EstilistaScreenHandler.Y_HILO, "hilo", be.hilo(), 0xFFE8DCC8, "");
         contador(c, EstilistaScreenHandler.Y_CUERO, "cuero", be.cuero(), 0xFF8B5A2B, "");
         c.drawText(textRenderer, Text.translatable("modamod.estilista.almacen"), px + 6, py + 148, EstiloPergamino.TEXTO, false);
+    }
+
+    // ── panel de diseños (2026-10-08, "guarde setting por prenda de manera visible y clara") ──
+
+    private void dibujarDisenos(DrawContext c, EstilistaBlockEntity be, int mx, int my) {
+        int px = this.x + EstilistaScreenHandler.X_DISENOS, py = this.y + EstilistaScreenHandler.Y_PANEL;
+        int pw = EstilistaScreenHandler.ANCHO_DISENOS, ph = EstilistaScreenHandler.ALTO_PANEL;
+        c.fill(px - 2, py - 2, px + pw + 2, py + ph + 2, 0xFF2A180C);
+        c.fill(px, py, px + pw, py + ph, 0xFFE3CC9E);
+        net.minecraft.item.Item tipo = be.tipoDeReferencia();
+        c.drawText(textRenderer, Text.translatable("modamod.estilista.disenos"), px + 6, py + 5, EstiloPergamino.TEXTO, false);
+        if (tipo == null) {
+            int y = py + 22;
+            for (var linea : textRenderer.wrapLines(Text.translatable("modamod.estilista.disenos.sin_tipo"), pw - 12)) {
+                c.drawText(textRenderer, linea, px + 6, y, EstiloPergamino.TEXTO, false);
+                y += 10;
+            }
+            return;
+        }
+        ItemStack icono = new ItemStack(tipo);
+        c.drawItem(icono, px + 6, py + 16);
+        c.drawText(textRenderer, textRenderer.trimToWidth(icono.getName().getString(), pw - 34), px + 26, py + 21, EstiloPergamino.TEXTO, false);
+
+        // El último: automático, se usa al aplicar.
+        ItemStack u = be.diseno(icono);
+        int y0 = py + 40;
+        c.fill(px + 4, y0, px + pw - 4, y0 + FILA, 0xFFD2B47F);
+        c.fill(px + 4, y0, px + 6, y0 + FILA, 0xFF7B4FA8);
+        c.drawText(textRenderer, Text.translatable("modamod.estilista.disenos.ultimo"), px + 10, y0 + 3, EstiloPergamino.TEXTO, false);
+        Text res = u == null ? Text.translatable("modamod.estilista.disenos.ninguno") : EstilistaBlockEntity.resumen(u);
+        c.drawText(textRenderer, textRenderer.trimToWidth(res.getString(), pw - 18), px + 10, y0 + 13, u == null ? 0xFF7A6A52 : 0xFF4B2E83, false);
+
+        // Los guardados con nombre.
+        var lista = be.nombrados(tipo);
+        if (lista.isEmpty()) {
+            int y = py + Y_LISTA + FILA + 4;
+            for (var linea : textRenderer.wrapLines(Text.translatable("modamod.estilista.disenos.vacio_lista"), pw - 12)) {
+                c.drawText(textRenderer, linea, px + 6, y, 0xFF7A6A52, false);
+                y += 10;
+            }
+        }
+        for (int k = 0; k < lista.size() && k < EstilistaBlockEntity.MAX_NOMBRADOS; k++) {
+            int ry = py + Y_LISTA + FILA + 4 + k * (FILA - 2) - 2;
+            boolean sobre = mx >= px + 4 && mx < px + pw - 4 && my >= ry && my < ry + FILA - 3;
+            boolean sobreX = sobre && mx >= px + pw - 18;
+            c.fill(px + 4, ry, px + pw - 4, ry + FILA - 3, sobre ? 0xFFC9A877 : 0xFFD9BF8E);
+            ItemStack d = lista.get(k);
+            c.drawText(textRenderer, textRenderer.trimToWidth(d.getName().getString(), pw - 34), px + 8, ry + 2, EstiloPergamino.TEXTO, false);
+            c.drawText(textRenderer, textRenderer.trimToWidth(EstilistaBlockEntity.resumen(d).getString(), pw - 34), px + 8, ry + 11, 0xFF7A6A52, false);
+            c.drawText(textRenderer, "✕", px + pw - 14, ry + 7, sobreX ? 0xFFB02020 : 0xFF6B5136, false);
+        }
+        c.drawText(textRenderer, Text.translatable("modamod.estilista.disenos.ayuda"), px + 6,
+                py + ph - 54, 0xFF7A6A52, false);
+    }
+
+    /** Click en la lista de diseños con nombre: la fila carga, la ✕ borra. */
+    private boolean clickDisenos(double mx, double my) {
+        net.minecraft.item.Item tipo = yo.host.tipoDeReferencia();
+        if (tipo == null) return false;
+        int px = this.x + EstilistaScreenHandler.X_DISENOS, py = this.y + EstilistaScreenHandler.Y_PANEL;
+        int pw = EstilistaScreenHandler.ANCHO_DISENOS;
+        var lista = yo.host.nombrados(tipo);
+        for (int k = 0; k < lista.size() && k < EstilistaBlockEntity.MAX_NOMBRADOS; k++) {
+            int ry = py + Y_LISTA + FILA + 4 + k * (FILA - 2) - 2;
+            if (mx >= px + 4 && mx < px + pw - 4 && my >= ry && my < ry + FILA - 3) {
+                int id = mx >= px + pw - 18 ? EstilistaBlockEntity.BTN_DISENO_BORRAR_BASE + k : EstilistaBlockEntity.BTN_DISENO_CARGAR_BASE + k;
+                this.client.interactionManager.clickButton(this.handler.syncId, id);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Con el cursor en el nombre, las teclas son del texto (la E no cierra la pantalla).
+        if (txtNombre != null && (txtNombre.keyPressed(keyCode, scanCode, modifiers) || txtNombre.isActive())) return true;
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
@@ -125,6 +222,7 @@ public class EstilistaScreen extends EstiladoScreen {
             if (my >= hy && my < hy + h) { this.client.interactionManager.clickButton(this.handler.syncId, EstilistaBlockEntity.BTN_CARGAR_HILO); return true; }
             if (my >= cy && my < cy + h) { this.client.interactionManager.clickButton(this.handler.syncId, EstilistaBlockEntity.BTN_CARGAR_CUERO); return true; }
         }
+        if (clickDisenos(mx, my)) return true;
         return super.mouseClicked(mx, my, button);
     }
 
@@ -132,6 +230,8 @@ public class EstilistaScreen extends EstiladoScreen {
     protected boolean isClickOutsideBounds(double mx, double my, int left, int top, int button) {
         // El panel de la máquina está afuera de la ventana: tocarlo con un ítem en el cursor no lo tira.
         if (mx >= this.x + EstilistaScreenHandler.X_PANEL - 2 && mx < this.x + EstilistaScreenHandler.X_PANEL + EstilistaScreenHandler.ANCHO_PANEL + 2
+                && my >= this.y + EstilistaScreenHandler.Y_PANEL && my < this.y + EstilistaScreenHandler.Y_PANEL + EstilistaScreenHandler.ALTO_PANEL) return false;
+        if (mx >= this.x + EstilistaScreenHandler.X_DISENOS - 2 && mx < this.x + EstilistaScreenHandler.X_DISENOS + EstilistaScreenHandler.ANCHO_DISENOS + 2
                 && my >= this.y + EstilistaScreenHandler.Y_PANEL && my < this.y + EstilistaScreenHandler.Y_PANEL + EstilistaScreenHandler.ALTO_PANEL) return false;
         return super.isClickOutsideBounds(mx, my, left, top, button);
     }

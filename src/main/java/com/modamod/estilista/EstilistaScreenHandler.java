@@ -19,6 +19,8 @@ public class EstilistaScreenHandler extends EstiladoScreenHandler {
 
     /** Esquina del panel de la máquina, relativa a la ventana de la Mesa (queda afuera, a la derecha). */
     public static final int X_PANEL = 390, Y_PANEL = 18, ANCHO_PANEL = 130, ALTO_PANEL = 218;
+    /** El panel de diseños (a la derecha del de la máquina): último por prenda y los guardados con nombre. */
+    public static final int X_DISENOS = X_PANEL + ANCHO_PANEL + 6, ANCHO_DISENOS = 128;
     /** Marco grande de la entrada y la salida (26 px) con el slot de 16 px centrado adentro. */
     public static final int GRANDE = 26;
     public static final int X_MARCO_ENTRADA = X_PANEL + 8, X_MARCO_SALIDA = X_PANEL + ANCHO_PANEL - 8 - GRANDE, Y_MARCO = Y_PANEL + 20;
@@ -68,7 +70,8 @@ public class EstilistaScreenHandler extends EstiladoScreenHandler {
             if (!cursor.isOf(hilo ? net.minecraft.item.Items.STRING : net.minecraft.item.Items.LEATHER)) return false;
             return host.absorber(cursor) > 0;
         }
-        if (id == EstilistaBlockEntity.BTN_LINEA || (id >= EstilistaBlockEntity.BTN_APLICAR && id <= EstilistaBlockEntity.BTN_BORRAR)) return host.onButtonClick(player, id);
+        if (id == EstilistaBlockEntity.BTN_LINEA || (id >= EstilistaBlockEntity.BTN_APLICAR && id <= EstilistaBlockEntity.BTN_BORRAR)
+                || (id >= EstilistaBlockEntity.BTN_DISENO_CARGAR_BASE && id < EstilistaBlockEntity.BTN_DISENO_BORRAR_BASE + EstilistaBlockEntity.MAX_NOMBRADOS)) return host.onButtonClick(player, id);
         return super.onButtonClick(player, id);
     }
 

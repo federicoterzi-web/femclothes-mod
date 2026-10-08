@@ -49,7 +49,11 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     /** Cuánto rinde cada ítem (2026-10-05, "rinde más por ítem") y cuánto aguanta cada contador. */
     public static final int APLIQUES_POR_HILO = 4, CORREAS_POR_CUERO = 2, TOPE_CONTADOR = 64;
     /** Cuántos diseños (uno por tipo de prenda) guarda la máquina. */
-    public static final int MAX_DISENOS = 32;
+    public static final int MAX_DISENOS = 64;
+    /** Diseños con nombre por tipo de prenda (2026-10-08, "poder guardar varios pero principalmente el último por prenda"). */
+    public static final int MAX_NOMBRADOS = 8;
+    /** Cargar y borrar el diseño con nombre número k (0..7) del tipo de la prenda de referencia. */
+    public static final int BTN_DISENO_CARGAR_BASE = 640, BTN_DISENO_BORRAR_BASE = 660;
     /** Lo que dura el trabajo del pórtico: los 13 s de la animación. */
     public static final int TICKS_PROCESO = 260;
     /** Botones: aplicar el diseño a la prenda de la entrada, fijar esa prenda como muestra, olvidar el diseño de su tipo. */
@@ -109,7 +113,13 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     }
 
     /** Lo llama el editor cuando cambia algo: se guarda y se manda al cliente con el resto de la máquina. */
-    public void sincronizarEditor() { sincronizar(); }
+    public void sincronizarEditor() {
+        if (world != null && !world.isClient && !autoguardando) {
+            autoguardando = true;
+            try { autoGuardar(); } finally { autoguardando = false; }
+        }
+        sincronizar();
+    }
 
     // ── estado visible ──
 
@@ -137,8 +147,143 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
     @Nullable
     public ItemStack diseno(ItemStack prenda) {
         if (prenda.isEmpty()) return null;
-        for (ItemStack d : disenos) if (!d.isEmpty() && d.getItem() == prenda.getItem()) return d;
+        for (ItemStack d : disenos) if (!d.isEmpty() && d.getItem() == prenda.getItem() && !esNombrado(d)) return d;
         return null;
+    }
+
+    public static boolean esNombrado(ItemStack d) {
+        return d.contains(net.minecraft.component.DataComponentTypes.CUSTOM_NAME);
+    }
+
+    /** Los diseños con nombre de ese tipo de prenda, en el orden en que se guardaron. */
+    public java.util.List<ItemStack> nombrados(@Nullable net.minecraft.item.Item tipo) {
+        java.util.List<ItemStack> l = new java.util.ArrayList<>();
+        if (tipo == null) return l;
+        for (ItemStack d : disenos) if (!d.isEmpty() && d.getItem() == tipo && esNombrado(d)) l.add(d);
+        return l;
+    }
+
+    /** El tipo de prenda al que se refieren los diseños: el de la entrada o, si no hay, el de la muestra del editor. */
+    @Nullable
+    public net.minecraft.item.Item tipoDeReferencia() {
+        ItemStack ref = !items.get(SLOT_PRENDA).isEmpty() ? items.get(SLOT_PRENDA) : editor.getStack(EstiladoBlockEntity.SLOT_PRENDA);
+        return ref.isEmpty() ? null : ref.getItem();
+    }
+
+    private static boolean llevaDiseno(ItemStack s) {
+        for (net.minecraft.component.ComponentType<?> t : COMPONENTES_DE_DISENO) if (s.get(t) != null) return true;
+        return false;
+    }
+
+    private static ItemStack protoDe(ItemStack muestra) {
+        ItemStack proto = new ItemStack(muestra.getItem());
+        copiarDiseno(muestra, proto);
+        return proto;
+    }
+
+    // ── el último por prenda (automático) y los diseños con nombre (2026-10-08) ──
+
+    private boolean autoguardando;
+    @Nullable private net.minecraft.item.Item muestraAnterior;
+
+    /**
+     * Cada vez que cambia el editor: si apareció una muestra nueva sin diseño, se le carga el último de su tipo; si no,
+     * lo que lleva la muestra pasa a ser el último de su tipo (si no lleva nada, se olvida).
+     */
+    private void autoGuardar() {
+        ItemStack m = editor.getStack(EstiladoBlockEntity.SLOT_PRENDA);
+        net.minecraft.item.Item tipo = m.isEmpty() ? null : m.getItem();
+        boolean cambioTipo = tipo != muestraAnterior;
+        muestraAnterior = tipo;
+        if (tipo == null) return;
+        if (cambioTipo && !llevaDiseno(m)) {
+            ItemStack ultimo = diseno(m);
+            if (ultimo != null) copiarDiseno(ultimo, m);
+            return;
+        }
+        escribirUltimo(m);
+    }
+
+    private void escribirUltimo(ItemStack muestra) {
+        ItemStack proto = protoDe(muestra);
+        int libre = -1, propio = -1;
+        for (int i = 0; i < MAX_DISENOS; i++) {
+            ItemStack d = disenos.get(i);
+            if (d.isEmpty()) { if (libre < 0) libre = i; }
+            else if (d.getItem() == muestra.getItem() && !esNombrado(d)) propio = i;
+        }
+        if (!llevaDiseno(proto)) {
+            if (propio >= 0) disenos.set(propio, ItemStack.EMPTY);
+            return;
+        }
+        int donde = propio >= 0 ? propio : libre;
+        if (donde >= 0) disenos.set(donde, proto);
+    }
+
+    /** Guarda lo que lleva la muestra del editor con ese nombre (el mismo nombre en el mismo tipo lo reemplaza). */
+    public boolean guardarNombrado(PlayerEntity jugador, String nombre) {
+        ItemStack m = editor.getStack(EstiladoBlockEntity.SLOT_PRENDA);
+        if (m.isEmpty() || !llevaDiseno(m)) {
+            jugador.sendMessage(Text.translatable("modamod.estilista.muestra_vacia"), true);
+            return false;
+        }
+        String n = nombre == null ? "" : nombre.trim();
+        if (n.isEmpty()) n = Text.translatable("modamod.estilista.disenos.nombre_defecto", nombrados(m.getItem()).size() + 1).getString();
+        ItemStack proto = protoDe(m);
+        proto.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal(n));
+        int libre = -1, igual = -1, cuantos = 0;
+        for (int i = 0; i < MAX_DISENOS; i++) {
+            ItemStack d = disenos.get(i);
+            if (d.isEmpty()) { if (libre < 0) libre = i; continue; }
+            if (d.getItem() != m.getItem() || !esNombrado(d)) continue;
+            cuantos++;
+            if (d.getName().getString().equals(n)) igual = i;
+        }
+        int donde = igual >= 0 ? igual : libre;
+        if (donde < 0 || (igual < 0 && cuantos >= MAX_NOMBRADOS)) {
+            jugador.sendMessage(Text.translatable("modamod.estilista.disenos.lleno", MAX_NOMBRADOS), true);
+            return false;
+        }
+        disenos.set(donde, proto);
+        sincronizar();
+        jugador.sendMessage(Text.translatable("modamod.estilista.disenos.guardado", n), true);
+        return true;
+    }
+
+    private int indiceNombrado(int k) {
+        net.minecraft.item.Item tipo = tipoDeReferencia();
+        if (tipo == null) return -1;
+        int n = 0;
+        for (int i = 0; i < MAX_DISENOS; i++) {
+            ItemStack d = disenos.get(i);
+            if (!d.isEmpty() && d.getItem() == tipo && esNombrado(d)) { if (n == k) return i; n++; }
+        }
+        return -1;
+    }
+
+    /** Lleva el diseño con nombre al editor (y de ahí pasa a ser el último de su tipo). */
+    private boolean cargarNombrado(PlayerEntity jugador, int k) {
+        int i = indiceNombrado(k);
+        if (i < 0) return false;
+        ItemStack d = disenos.get(i);
+        ItemStack m = editor.getStack(EstiladoBlockEntity.SLOT_PRENDA);
+        if (m.isEmpty()) {
+            m = new ItemStack(d.getItem());
+            editor.setStack(EstiladoBlockEntity.SLOT_PRENDA, m);
+        }
+        copiarDiseno(d, m);
+        editor.markDirty();
+        jugador.sendMessage(Text.translatable("modamod.estilista.disenos.cargado", d.getName()), true);
+        return true;
+    }
+
+    private boolean borrarNombrado(PlayerEntity jugador, int k) {
+        int i = indiceNombrado(k);
+        if (i < 0) return false;
+        disenos.set(i, ItemStack.EMPTY);
+        sincronizar();
+        jugador.sendMessage(Text.translatable("modamod.estilista.borrado"), true);
+        return true;
     }
 
     public int cuantosDisenos() {
@@ -367,7 +512,7 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         int libre = -1, propio = -1;
         for (int i = 0; i < MAX_DISENOS; i++) {
             if (disenos.get(i).isEmpty()) { if (libre < 0) libre = i; }
-            else if (disenos.get(i).getItem() == muestra.getItem()) propio = i;
+            else if (disenos.get(i).getItem() == muestra.getItem() && !esNombrado(disenos.get(i))) propio = i;
         }
         int donde = propio >= 0 ? propio : libre;
         if (donde < 0) {
@@ -385,24 +530,8 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
         return true;
     }
 
-    /** Guarda como diseño de su tipo la muestra del editor si es del mismo tipo que {@code prenda} y lleva algo (sin avisos). */
-    private void fijarDeLaMuestraDelEditor(ItemStack prenda) {
-        ItemStack muestra = editor.getStack(EstiladoBlockEntity.SLOT_PRENDA);
-        if (muestra.isEmpty() || muestra.getItem() != prenda.getItem()) return;
-        ItemStack proto = new ItemStack(muestra.getItem());
-        copiarDiseno(muestra, proto);
-        boolean hayAlgo = false;
-        for (net.minecraft.component.ComponentType<?> t : COMPONENTES_DE_DISENO) hayAlgo |= proto.get(t) != null;
-        if (!hayAlgo) return;
-        int libre = -1;
-        for (int i = 0; i < MAX_DISENOS; i++) {
-            if (disenos.get(i).isEmpty()) { if (libre < 0) libre = i; }
-            else if (disenos.get(i).getItem() == muestra.getItem()) { libre = i; break; }
-        }
-        if (libre < 0) return;
-        disenos.set(libre, proto);
-        sincronizar();
-    }
+    /** El último de cada tipo ya se guarda solo al editar (ver {@link #autoGuardar}); queda por compatibilidad. */
+    private void fijarDeLaMuestraDelEditor(ItemStack prenda) { }
 
     // ── animación + ticker ──
 
@@ -458,13 +587,20 @@ public class EstilistaBlockEntity extends BlockEntity implements SidedInventory,
             alternarLinea();
             return true;
         }
+        if (id >= BTN_DISENO_CARGAR_BASE && id < BTN_DISENO_CARGAR_BASE + MAX_NOMBRADOS) return cargarNombrado(jugador, id - BTN_DISENO_CARGAR_BASE);
+        if (id >= BTN_DISENO_BORRAR_BASE && id < BTN_DISENO_BORRAR_BASE + MAX_NOMBRADOS) return borrarNombrado(jugador, id - BTN_DISENO_BORRAR_BASE);
         if (id == BTN_FIJAR) return fijar(jugador);
         if (id == BTN_BORRAR) {
             // El tipo de la prenda de la entrada o, si no hay, el de la muestra del editor.
             ItemStack ref = !items.get(SLOT_PRENDA).isEmpty() ? items.get(SLOT_PRENDA) : editor.getStack(EstiladoBlockEntity.SLOT_PRENDA);
             for (int i = 0; i < MAX_DISENOS; i++) {
-                if (!ref.isEmpty() && !disenos.get(i).isEmpty() && disenos.get(i).getItem() == ref.getItem()) {
+                if (!ref.isEmpty() && !disenos.get(i).isEmpty() && disenos.get(i).getItem() == ref.getItem() && !esNombrado(disenos.get(i))) {
                     disenos.set(i, ItemStack.EMPTY);
+                    ItemStack m = editor.getStack(EstiladoBlockEntity.SLOT_PRENDA);
+                    if (!m.isEmpty() && m.getItem() == ref.getItem()) {
+                        for (net.minecraft.component.ComponentType<?> t : COMPONENTES_DE_DISENO) m.remove(t);
+                        editor.markDirty();
+                    }
                     sincronizar();
                     jugador.sendMessage(Text.translatable("modamod.estilista.borrado"), true);
                     return true;

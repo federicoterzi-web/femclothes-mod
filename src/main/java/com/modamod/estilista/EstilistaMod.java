@@ -39,6 +39,16 @@ public final class EstilistaMod {
         Identifier creativa = Identifier.of(Modamod.MOD_ID, "estilista_creativa");
         Registry.register(Registries.BLOCK, creativa, ESTILISTA_CREATIVA);
         Registry.register(Registries.ITEM, creativa, ESTILISTA_CREATIVA_ITEM);
+
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S()
+                .register(GuardarDisenoPayload.ID, GuardarDisenoPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(GuardarDisenoPayload.ID,
+                (payload, context) -> context.server().execute(() -> {
+                    if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof EstilistaBlockEntity be
+                            && be.canPlayerUse(context.player())) {
+                        be.guardarNombrado(context.player(), payload.nombre());
+                    }
+                }));
     }
 
     private EstilistaMod() {}
