@@ -123,6 +123,8 @@ public final class PiezasDelMod {
         Parte piernaParte = lado == Lado.DERECHA ? Parte.PIERNA_DER : Parte.PIERNA_IZQ;
 
         com.modamod.item.PatronRed red = com.modamod.item.PatronRed.leer(stack);
+        boolean ribInf = com.modamod.item.Ruedos.get(stack, lado == Lado.DERECHA ? com.modamod.item.ZonaRuedo.INF_DER : com.modamod.item.ZonaRuedo.INF_IZQ) == com.modamod.item.Ruedo.AJUSTADO;
+        boolean ribSup = com.modamod.item.Ruedos.get(stack, lado == Lado.DERECHA ? com.modamod.item.ZonaRuedo.SUP_DER : com.modamod.item.ZonaRuedo.SUP_IZQ) == com.modamod.item.Ruedo.AJUSTADO;
 
         // Recorte de cobertura SIEMPRE; la estampa (sublimado sobre la
         // media) es opcional, encadenada en el mismo Encima.
@@ -136,7 +138,7 @@ public final class PiezasDelMod {
                 // primera SIN aplicarle su propio recorte — bug real
                 // reportado jugando ("una queda hasta la rodilla, la otra
                 // 3/4" con Ambas puesto).
-                String base = "media" + piernaParte + filas[0] + "_" + filas[1] + "_" + red;
+                String base = "media" + piernaParte + filas[0] + "_" + filas[1] + "_" + red + (ribInf ? "i" : "") + (ribSup ? "s" : "");
                 return EstampaTextures.tieneEstampa(stack) ? base + "_" + EstampaTextures.claveEstampas(stack) : base;
             }
             @Override
@@ -144,6 +146,7 @@ public final class PiezasDelMod {
                 if (EstampaTextures.tieneEstampa(stack)) EstampaTextures.estampar(destino, stack);
                 recortarFilas(destino, piernaParte, filas[0], filas[1]);
                 if (red != null) ClothingTextureCache.perforarRed(destino, red, piernaParte, filas[0], filas[1]);
+                com.modamod.render.DetallesHoodie.ribEnBorde(destino, piernaParte, filas[0], filas[1], ribInf, ribSup);
                 return true;
             }
         };
@@ -329,6 +332,7 @@ public final class PiezasDelMod {
         int[] filasPierna = PantalonItem.filasVisibles(stack, lado);
         Parte piernaParte = lado == Lado.DERECHA ? Parte.PIERNA_DER : Parte.PIERNA_IZQ;
         com.modamod.item.PatronRed red = com.modamod.item.PatronRed.leer(stack);
+        boolean ribBota = com.modamod.item.Ruedos.get(stack, lado == Lado.DERECHA ? com.modamod.item.ZonaRuedo.BOTA_DER : com.modamod.item.ZonaRuedo.BOTA_IZQ) == com.modamod.item.Ruedo.AJUSTADO;
         // Nota: usar Encima acá hace que reducirSiHaceFalta trate al
         // pantalón como si tuviera estampa (8x, sin achicar). Es una
         // sobra chica -12 filas de torso- frente a complicar esa deteccion
@@ -340,7 +344,7 @@ public final class PiezasDelMod {
                 // solo una se recorta de verdad. La pieza de TORSO reusa a
                 // propósito la clave de IZQUIERDA (mismo Lado.IZQUIERDA en
                 // su llamada), eso sigue igual.
-                String base = "pantalon" + piernaParte + filasTiro + "_" + filasPierna[0] + "_" + filasPierna[1] + "_" + red;
+                String base = "pantalon" + piernaParte + filasTiro + "_" + filasPierna[0] + "_" + filasPierna[1] + "_" + red + (ribBota ? "b" : "");
                 return EstampaTextures.tieneEstampa(stack) ? base + "_" + EstampaTextures.claveEstampas(stack) : base;
             }
             @Override public boolean aplicar(NativeImage destino) {
@@ -348,6 +352,7 @@ public final class PiezasDelMod {
                 pintarCintura(destino, colorBase, filasTiro, capas);
                 recortarFilas(destino, piernaParte, filasPierna[0], filasPierna[1]);
                 if (red != null) ClothingTextureCache.perforarRed(destino, red, piernaParte, filasPierna[0], filasPierna[1]);
+                com.modamod.render.DetallesHoodie.ribEnBorde(destino, piernaParte, filasPierna[0], filasPierna[1], ribBota, false);
                 return true;
             }
         };
@@ -472,16 +477,19 @@ public final class PiezasDelMod {
         int[] filas = CalientabrazosItem.filasVisibles(stack, lado);
         Parte brazoParte = lado == Lado.DERECHA ? Parte.BRAZO_DER : Parte.BRAZO_IZQ;
         com.modamod.item.PatronRed red = com.modamod.item.PatronRed.leer(stack);
+        boolean ribInf = com.modamod.item.Ruedos.get(stack, lado == Lado.DERECHA ? com.modamod.item.ZonaRuedo.INF_DER : com.modamod.item.ZonaRuedo.INF_IZQ) == com.modamod.item.Ruedo.AJUSTADO;
+        boolean ribSup = com.modamod.item.Ruedos.get(stack, lado == Lado.DERECHA ? com.modamod.item.ZonaRuedo.SUP_DER : com.modamod.item.ZonaRuedo.SUP_IZQ) == com.modamod.item.Ruedo.AJUSTADO;
         ClothingTextureCache.Encima recorte = new ClothingTextureCache.Encima() {
             // brazoParte en la clave — mismo bug/fix que medias/pantalón.
             @Override public String clave() {
-                String base = "brazo" + brazoParte + filas[0] + "_" + filas[1] + "_" + red;
+                String base = "brazo" + brazoParte + filas[0] + "_" + filas[1] + "_" + red + (ribInf ? "i" : "") + (ribSup ? "s" : "");
                 return EstampaTextures.tieneEstampa(stack) ? base + "_" + EstampaTextures.claveEstampas(stack) : base;
             }
             @Override public boolean aplicar(NativeImage destino) {
                 if (EstampaTextures.tieneEstampa(stack)) EstampaTextures.estampar(destino, stack);
                 recortarFilas(destino, brazoParte, filas[0], filas[1]);
                 if (red != null) ClothingTextureCache.perforarRed(destino, red, brazoParte, filas[0], filas[1]);
+                com.modamod.render.DetallesHoodie.ribEnBorde(destino, brazoParte, filas[0], filas[1], ribInf, ribSup);
                 return true;
             }
         };

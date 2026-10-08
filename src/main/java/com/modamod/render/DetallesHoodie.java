@@ -92,6 +92,26 @@ public final class DetallesHoodie {
         return id;
     }
 
+    /**
+     * Rib en el borde de abajo y/o de arriba de una pierna o un brazo ya recortado (2026-10-08, ruedo ajustado en
+     * botamangas, medias y calientabrazos): una fila de canales alrededor de las 4 caras en la última (o primera)
+     * fila con tela. Trabaja sobre la imagen compuesta, a su escala.
+     */
+    public static void ribEnBorde(NativeImage img, com.modamod.garment.Parte parte, int desde, int hasta, boolean inf, boolean sup) {
+        if (hasta <= desde) return;
+        int u, v;
+        switch (parte) {
+            case PIERNA_DER -> { u = 0; v = 16; }
+            case PIERNA_IZQ -> { u = 16; v = 48; }
+            case BRAZO_DER -> { u = 40; v = 16; }
+            case BRAZO_IZQ -> { u = 32; v = 48; }
+            default -> { return; }
+        }
+        int s = img.getWidth() / LayoutSkin.LADO;
+        if (inf) rib(img, s, u, v + 4 + hasta - 1, 16);
+        if (sup) rib(img, s, u, v + 4 + desde, 16);
+    }
+
     /** Una fila de skin ({@code v}) de {@code ancho} píxeles desde {@code u}, con canales verticales. */
     private static void rib(NativeImage img, int s, int u, int v, int ancho) {
         int paso = Math.max(2, s / 2);

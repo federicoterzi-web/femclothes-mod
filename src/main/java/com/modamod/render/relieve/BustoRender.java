@@ -284,7 +284,10 @@ public final class BustoRender {
      * dilatación de la pieza, con su caída hacia el ruedo): el manto se apoya
      * en esa superficie y termina en el ruedo de la pieza.
      */
-    public record Tela(float[] fila, int desde, int hasta) {
+    public record Tela(float[] fila, int desde, int hasta, int abertura) {
+        /** Sin apertura en el frente. */
+        public Tela(float[] fila, int desde, int hasta) { this(fila, desde, hasta, 0); }
+
         float en(float y) {
             if (hasta - desde <= 1) return fila[Math.max(0, desde)];
             float yy = Math.max(desde + 0.5f, Math.min(hasta - 0.5f, y)) - 0.5f;
@@ -296,7 +299,7 @@ public final class BustoRender {
         static Tela uniforme(float inflado) {
             float[] f = new float[12];
             java.util.Arrays.fill(f, inflado);
-            return new Tela(f, 0, 12);
+            return new Tela(f, 0, 12, 0);
         }
     }
 
@@ -461,8 +464,26 @@ public final class BustoRender {
         // Bordes pegados a la pieza: así no quedan rendijas con los costados ni con el ruedo.
         for (int ix = 0; ix <= nx; ix++) { h[ix][0] = 0f; h[ix][ny] = 0f; }
         for (int iy = 0; iy <= ny; iy++) { h[0][iy] = 0f; h[nx][iy] = 0f; }
+        // Frente abierto (2026-10-08, "cortar el manto del busto en el centro de la apertura"): la franja del medio no
+        // lleva tela, y cada mitad se tensa por separado, pegada a la pieza en el canto de la apertura.
+        int corte = tela.abertura() > 0 ? Math.round(tela.abertura() * 0.5f * PASO) : 0;
+        int mitad = nx / 2;
+        int izqFin = mitad - corte, derIni = mitad + corte;
+        if (corte > 0) for (int iy = 0; iy <= ny; iy++) {
+            for (int ix = izqFin; ix <= derIni; ix++) h[ix][iy] = 0f;
+        }
         float[] fila = new float[nx + 1];
         for (int iy = 0; iy <= ny; iy++) {
+            if (corte > 0) {
+                float[] izq = new float[izqFin + 1], der = new float[nx - derIni + 1];
+                for (int ix = 0; ix <= izqFin; ix++) izq[ix] = h[ix][iy];
+                for (int ix = derIni; ix <= nx; ix++) der[ix - derIni] = h[ix][iy];
+                tensar(izq);
+                tensar(der);
+                for (int ix = 0; ix <= izqFin; ix++) h[ix][iy] = izq[ix];
+                for (int ix = derIni; ix <= nx; ix++) h[ix][iy] = der[ix - derIni];
+                continue;
+            }
             for (int ix = 0; ix <= nx; ix++) fila[ix] = h[ix][iy];
             tensar(fila);
             for (int ix = 0; ix <= nx; ix++) h[ix][iy] = fila[ix];
@@ -494,6 +515,7 @@ public final class BustoRender {
         for (int ix = 0; ix < nx; ix++) {
             for (int iy = 0; iy < ny; iy++) {
                 // Lo que queda pegado a la pieza ya lo dibuja la pieza (y así no pelean en Z).
+                if (corte > 0 && ix >= izqFin && ix + 1 <= derIni) continue; // la apertura
                 if (h[ix][iy] <= 1e-4f && h[ix + 1][iy] <= 1e-4f && h[ix + 1][iy + 1] <= 1e-4f && h[ix][iy + 1] <= 1e-4f) continue;
                 q.add(new Vert[]{g[ix][iy], g[ix + 1][iy], g[ix + 1][iy + 1], g[ix][iy + 1]});
             }

@@ -650,6 +650,13 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
     /** Cuánto queda cada capa por fuera de la de abajo, en las filas donde se superponen (px de skin). */
     private static final float SEPARACION_CAPAS = 0.03F;
 
+    /** Ancho en px de la apertura del frente de esta prenda (0 si no tiene): el manto del busto se corta ahí. */
+    private static int aperturaDe(@Nullable ItemStack prenda) {
+        if (prenda == null || !(prenda.getItem() instanceof com.modamod.sublimadora.RemeraItem)) return 0;
+        if (!com.modamod.item.TopCorte.frente(prenda).abre()) return 0;
+        return com.modamod.render.DetallesHoodie.anchoApertura(com.modamod.item.Calce.leer(prenda));
+    }
+
     /**
      * Dibuja la tela de una parte, ya ordenada por {@link Capa}, con el
      * calce de cada pieza (2026-09-30, "quiero que resolvamos el calce para
@@ -825,7 +832,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 // Suelto y Oversize: un manto apoyado en la tela de cada fila (2026-10-02,
                 // "se marca demasiado en el hoodie no se deberian ver asi como dos tetas").
                 com.modamod.render.relieve.BustoRender.Tela tela =
-                        new com.modamod.render.relieve.BustoRender.Tela(fila.clone(), desde, hasta);
+                        new com.modamod.render.relieve.BustoRender.Tela(fila.clone(), desde, hasta, aperturaDe(origen.get(pieza)));
                 dibujarBusto(pieza.textura(), delModelo, infladoBusto, carpa, 20f, false, tela, hasta,
                         matrices, vertexConsumers, luz);
             }
