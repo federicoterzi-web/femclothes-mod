@@ -19,7 +19,7 @@ rojo cuero `#A3263A`, dorado `#D6B05C`.
 Cada ícono de abajo es "estilo base + este dibujo". Nombre de archivo y ruta al final de cada línea
 (`src/main/resources/assets/modamod/textures/item/<archivo>.png`).
 
-## 1. Chaqueta (10) — nuevos, hoy copias provisorias
+## 1. Chaqueta (8) — nuevos, hoy copias provisorias
 
 Una campera de frente (siluetas de prenda superior con mangas largas):
 
@@ -29,8 +29,6 @@ Una campera de frente (siluetas de prenda superior con mangas largas):
 | `molde_chaqueta_frente_abierta` | la misma campera con el frente abierto: una franja vertical del medio vacía (se ve el papel) con las dos orillas marcadas |
 | `molde_chaqueta_capucha_con` | campera con una capucha caída detrás del cuello |
 | `molde_chaqueta_capucha_sin` | campera con cuello simple, sin capucha, y una cruz roja chica en la esquina |
-| `molde_chaqueta_remate_elastico` | puño y ruedo de una campera con tejido acanalado (canales verticales) |
-| `molde_chaqueta_remate_recto` | puño y ruedo de una campera con borde liso y una costura simple |
 | `molde_chaqueta_solapa_ninguna` | cuello de saco liso, sin solapas, y una cruz roja chica en la esquina |
 | `molde_chaqueta_solapa_pico` | saco con solapas en pico (la punta de cada solapa sale hacia afuera) |
 | `molde_chaqueta_solapa_redonda` | saco con solapas redondeadas y anchas |
@@ -52,13 +50,19 @@ Debe parecerse en estilo a los otros moldes de cuello (`molde_cuello_redondo`, `
 | `molde_capa_sin_capucha` | capa sin capucha, cuello liso |
 | `molde_capa_sin_cuello` | capa con borde de cuello recto y bajo |
 
-## 4. Pollera (3 bordes de ruedo)
+## 4. Ruedo (6) — reemplaza a los viejos moldes de borde de pollera y de remate de chaqueta
+
+Un molde de ruedo sirve para el borde de abajo de remera, puños, pollera, etc. Dibujá el borde de una prenda genérica (una
+falda o el ruedo de una remera) en primer plano:
 
 | Archivo | Dibujo |
 |---|---|
-| `molde_borde_ondulado` | ruedo de pollera con borde ondulado suave |
-| `molde_borde_festoneado` | ruedo con festones (semicírculos repetidos) |
-| `molde_borde_pico` | ruedo con picos triangulares (dientes de sierra) |
+| `molde_ruedo_recto` | borde inferior liso y recto con una costura simple |
+| `molde_ruedo_ajustado` | borde con banda elástica acanalada (canales verticales) que aprieta la tela |
+| `molde_ruedo_campana` | borde que se abre hacia afuera en campana |
+| `molde_ruedo_ondulado` | ruedo con borde ondulado suave |
+| `molde_ruedo_festoneado` | ruedo con festones (semicírculos repetidos) |
+| `molde_ruedo_pico` | ruedo con picos triangulares (dientes de sierra) |
 
 ## 5. Máscaras de sublimado (5)
 
