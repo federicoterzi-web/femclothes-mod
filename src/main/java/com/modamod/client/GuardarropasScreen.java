@@ -131,13 +131,13 @@ public class GuardarropasScreen extends HandledScreen<GuardarropasScreenHandler>
         int seleccionado = be.fijadaSeleccionada();
         int cantidad = be.fijadas().size();
         boolean toca = handler.puedeTocar();
-        btnFijar.active = toca;
+        btnFijar.active = toca && seleccionado < 0 && be.hayPrendas() && cantidad < GuardarropasBlockEntity.FIJADAS_MAXIMO;
         btnEquipar.active = toca;
         btnCandado.active = com.modamod.util.Candado.puedeAlternar(handler.estado());
         btnCandado.setMessage(Text.translatable(com.modamod.util.Candado.cerrado(handler.estado())
                 ? "modamod.candado.cerrado" : "modamod.candado.abierto"));
         for (int i = 0; i < btnFijadas.length; i++) {
-            btnFijadas[i].active = toca && i <= cantidad;
+            btnFijadas[i].active = toca && i < cantidad && (seleccionado >= 0 || !be.hayPrendas());
             btnFijadas[i].setMessage(Text.literal(i == seleccionado ? "[" + (i + 1) + "]" : Integer.toString(i + 1)));
         }
     }

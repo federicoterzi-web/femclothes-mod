@@ -231,29 +231,56 @@ public class GuardarropasBlockEntity extends BlockEntity
     public List<OutfitFijado> fijadas() { return fijadas; }
     public int fijadaSeleccionada() { return fijadaSeleccionada; }
 
-    /** Guarda el borrador actual (las {@link #TAMANO} prendas) como un outfit nuevo. */
-    private void fijar() {
-        if (fijadas.size() >= FIJADAS_MAXIMO) return;
-        List<ItemStack> copia = new ArrayList<>(TAMANO);
-        for (ItemStack s : items) copia.add(s.copy());
-        fijadas.add(new OutfitFijado(copia));
-        fijadaSeleccionada = fijadas.size() - 1;
-        markDirty();
+    public boolean hayPrendas() {
+        for (ItemStack s : items) if (!s.isEmpty()) return true;
+        return false;
+    }
+
+    /** Mueve la grilla al almacén del outfit {@code idx} (la grilla queda vacía). */
+    private void guardarGrillaEn(int idx) {
+        OutfitFijado f = fijadas.get(idx);
+        for (int i = 0; i < TAMANO; i++) {
+            f.prendas().set(i, items.get(i));
+            items.set(i, ItemStack.EMPTY);
+        }
     }
 
     /**
-     * Click en un outfit guardado: si NO es el seleccionado, carga sus
-     * prendas al borrador (mismo criterio que Tinturas/Sublimadora:
-     * clickear el ya seleccionado lo vacía en vez de recargarlo).
+     * Crea un outfit nuevo con lo que hay en la grilla (2026-10-08, hallazgo
+     * H01 de ChatGPT: "copias y borrado de prendas al cargar conjuntos"): las
+     * prendas se MUEVEN, no se copian. Mientras un outfit está seleccionado
+     * sus prendas viven en la grilla y su almacén queda vacío; solo se puede
+     * fijar con la grilla suelta (sin outfit seleccionado) y con algo adentro.
+     */
+    private boolean fijar() {
+        if (fijadas.size() >= FIJADAS_MAXIMO || fijadaSeleccionada >= 0 || !hayPrendas()) return false;
+        List<ItemStack> vacias = new ArrayList<>(TAMANO);
+        for (int i = 0; i < TAMANO; i++) vacias.add(ItemStack.EMPTY);
+        fijadas.add(new OutfitFijado(vacias));
+        fijadaSeleccionada = fijadas.size() - 1;
+        markDirty();
+        return true;
+    }
+
+    /**
+     * Click en un outfit guardado: el seleccionado devuelve sus prendas a su
+     * almacén (la grilla queda vacía); otro se carga moviendo sus prendas a la
+     * grilla, y el anterior guarda lo que había. Con prendas sueltas y ningún
+     * outfit seleccionado no carga nada (se perderían o se pisarían).
      */
     private boolean aplicarOQuitarFijada(int idx) {
         if (idx < 0 || idx >= fijadas.size()) return false;
         if (idx == fijadaSeleccionada) {
-            for (int i = 0; i < TAMANO; i++) items.set(i, ItemStack.EMPTY);
+            guardarGrillaEn(idx);
             fijadaSeleccionada = -1;
         } else {
+            if (fijadaSeleccionada >= 0 && fijadaSeleccionada < fijadas.size()) guardarGrillaEn(fijadaSeleccionada);
+            else if (hayPrendas()) return false;
             OutfitFijado f = fijadas.get(idx);
-            for (int i = 0; i < TAMANO; i++) items.set(i, f.de(i).copy());
+            for (int i = 0; i < TAMANO; i++) {
+                items.set(i, f.de(i));
+                f.prendas().set(i, ItemStack.EMPTY);
+            }
             fijadaSeleccionada = idx;
         }
         markDirty();
@@ -300,8 +327,7 @@ public class GuardarropasBlockEntity extends BlockEntity
      */
     public boolean onButtonClick(int id) {
         if (id == BTN_FIJAR) {
-            fijar();
-            return true;
+            return fijar();
         }
         if (id >= BTN_FIJADA_BASE && id < BTN_FIJADA_BASE + FIJADAS_MAXIMO) {
             return aplicarOQuitarFijada(id - BTN_FIJADA_BASE);
