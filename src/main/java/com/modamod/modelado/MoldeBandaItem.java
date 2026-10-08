@@ -24,7 +24,9 @@ public class MoldeBandaItem extends Item {
         ANCHO_FINO(null, BandaAncho.FINO, null), ANCHO_MEDIO(null, BandaAncho.MEDIO, null),
         ANCHO_ANCHO(null, BandaAncho.ANCHO, null),
         HERRAJE_NINGUNO(null, null, BandaHerraje.NINGUNO), HERRAJE_PLACA(null, null, BandaHerraje.PLACA),
-        HERRAJE_ARO(null, null, BandaHerraje.ARO);
+        HERRAJE_ARO(null, null, BandaHerraje.ARO),
+        HERRAJE_CAMPANA(null, null, BandaHerraje.CAMPANA), HERRAJE_HUESO(null, null, BandaHerraje.HUESO),
+        HERRAJE_CORAZON(null, null, BandaHerraje.CORAZON), HERRAJE_MEDALLA(null, null, BandaHerraje.MEDALLA);
 
         public final BandaZona zona;
         public final BandaAncho ancho;

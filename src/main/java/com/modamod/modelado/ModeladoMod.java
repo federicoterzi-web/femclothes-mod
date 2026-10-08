@@ -174,6 +174,14 @@ public final class ModeladoMod {
             MoldeBandaItem.Tipo.HERRAJE_PLACA);
     public static final MoldeBandaItem MOLDE_BANDA_HERRAJE_ARO = new MoldeBandaItem(new Item.Settings().maxCount(1),
             MoldeBandaItem.Tipo.HERRAJE_ARO);
+    public static final MoldeBandaItem MOLDE_BANDA_HERRAJE_CAMPANA = new MoldeBandaItem(new Item.Settings().maxCount(1),
+            MoldeBandaItem.Tipo.HERRAJE_CAMPANA);
+    public static final MoldeBandaItem MOLDE_BANDA_HERRAJE_HUESO = new MoldeBandaItem(new Item.Settings().maxCount(1),
+            MoldeBandaItem.Tipo.HERRAJE_HUESO);
+    public static final MoldeBandaItem MOLDE_BANDA_HERRAJE_CORAZON = new MoldeBandaItem(new Item.Settings().maxCount(1),
+            MoldeBandaItem.Tipo.HERRAJE_CORAZON);
+    public static final MoldeBandaItem MOLDE_BANDA_HERRAJE_MEDALLA = new MoldeBandaItem(new Item.Settings().maxCount(1),
+            MoldeBandaItem.Tipo.HERRAJE_MEDALLA);
 
     // ── moldes de la chaqueta (2026-10-07) ──
     public static final MoldeChaquetaItem MOLDE_CHAQUETA_FRENTE_CERRADA = new MoldeChaquetaItem(new Item.Settings().maxCount(1),
@@ -263,6 +271,10 @@ public final class ModeladoMod {
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_banda_herraje_ninguno"), MOLDE_BANDA_HERRAJE_NINGUNO);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_banda_herraje_placa"), MOLDE_BANDA_HERRAJE_PLACA);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_banda_herraje_aro"), MOLDE_BANDA_HERRAJE_ARO);
+        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_banda_herraje_campana"), MOLDE_BANDA_HERRAJE_CAMPANA);
+        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_banda_herraje_hueso"), MOLDE_BANDA_HERRAJE_HUESO);
+        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_banda_herraje_corazon"), MOLDE_BANDA_HERRAJE_CORAZON);
+        Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_banda_herraje_medalla"), MOLDE_BANDA_HERRAJE_MEDALLA);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_ruedo_recto"), MOLDE_RUEDO_RECTO);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_ruedo_ajustado"), MOLDE_RUEDO_AJUSTADO);
         Registry.register(Registries.ITEM, Identifier.of(Modamod.MOD_ID, "molde_ruedo_campana"), MOLDE_RUEDO_CAMPANA);

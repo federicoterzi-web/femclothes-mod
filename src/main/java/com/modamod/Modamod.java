@@ -239,6 +239,10 @@ public class Modamod implements ModInitializer {
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_BANDA_HERRAJE_NINGUNO);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_BANDA_HERRAJE_PLACA);
             entries.add(com.modamod.modelado.ModeladoMod.MOLDE_BANDA_HERRAJE_ARO);
+            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_BANDA_HERRAJE_CAMPANA);
+            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_BANDA_HERRAJE_HUESO);
+            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_BANDA_HERRAJE_CORAZON);
+            entries.add(com.modamod.modelado.ModeladoMod.MOLDE_BANDA_HERRAJE_MEDALLA);
             })
             .build();
 

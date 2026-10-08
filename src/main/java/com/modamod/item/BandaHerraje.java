@@ -6,7 +6,13 @@ import net.minecraft.util.StringIdentifiable;
 public enum BandaHerraje implements StringIdentifiable {
     NINGUNO("ninguno"),
     PLACA("placa"),
-    ARO("aro");
+    ARO("aro"),
+    // Colgantes del collar (2026-10-08, "los colgantes... 3 o 4 fijos"): modelos de cubitos que cuelgan del frente y se
+    // balancean con la inercia.
+    CAMPANA("campana"),
+    HUESO("hueso"),
+    CORAZON("corazon"),
+    MEDALLA("medalla");
 
     public final String clave;
 
@@ -14,6 +20,9 @@ public enum BandaHerraje implements StringIdentifiable {
 
     @Override
     public String asString() { return clave; }
+
+    /** ¿Es un colgante que se balancea (collar) en vez de un herraje fijo? */
+    public boolean esColgante() { return ordinal() >= CAMPANA.ordinal(); }
 
     public String traduccion() { return "modamod.banda.herraje." + clave; }
 }
