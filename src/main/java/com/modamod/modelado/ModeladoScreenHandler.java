@@ -200,6 +200,10 @@ public class ModeladoScreenHandler extends ScreenHandler {
         addSlot(new Slot(be, ModeladoBlockEntity.PRENDA, mMedio + ENTRADA_X, SLOT_Y_IO) {
             @Override
             public boolean canInsert(ItemStack stack) { return ModeladoBlockEntity.esPrendaModelable(stack); }
+
+            // Una prenda por vez (2026-10-08, hallazgo H02 ampliado): una pila entera se cortaría junta con un solo uso de tijera.
+            @Override
+            public int getMaxItemCount() { return 1; }
         });
         addSlot(new Slot(be, ModeladoBlockEntity.SALIDA, mMedio + SALIDA_X, SLOT_Y_IO) {
             @Override
