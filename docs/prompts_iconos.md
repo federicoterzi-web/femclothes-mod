@@ -77,6 +77,11 @@ Motivo repetido adentro de un aro de bordado de madera, **sin papel de fondo**: 
 
 ## 7. Sombrero de bruja (5)
 
+El sombrero de bruja es el primero de la familia: más adelante habrá **sombreros paramétricos** (forma de copa, ala y
+cinta configurables con moldes), así que conviene que el estilo de estos íconos admita una serie. `sombrero_bruja.png`
+hoy lo dibuja un script por código (`tools/generar_icono_sombrero.py`, forma simple): **hay que rehacerlo con el arte
+nuevo** y pasarlo a 64×64 como el resto.
+
 `sombrero_bruja` (sombrero de bruja entero, puntiagudo, con cinta), `molde_sombrero_ala_ancha`, `molde_sombrero_ala_corta`
 (sombrero visto de lado con el ala marcada), `molde_sombrero_punta_recta` (cono derecho), `molde_sombrero_punta_doblada`
 (cono con la punta caída).
@@ -93,7 +98,13 @@ otra), `molde_banda_herraje_ninguno` (tira lisa con cruz roja), `molde_banda_her
 `molde_correa_lisa` (tira de cuero), `molde_correa_cadena` (cadena gruesa dorada), `molde_correa_cadena_fina` (cadena fina),
 `molde_correa_ojalillos` (tira con agujeros y ojalillos metálicos), `molde_correa_cordon` (cordón trenzado con puntas).
 
-## 10. Otros
+## 10. Retazo de aplique (1)
+
+`retazo_aplique`: hoy es una lana blanca teñida provisoria. Dibujo: un **retazo de tela** chico, cuadrado, con el borde
+deshilachado y una puntada, doblado una vez, en tonos claros (se tiñe por código con el color de la zona, así que dibujalo
+**casi en escala de grises / crema** para que tome bien el tinte). Sin papel de fondo, igual que los patrones.
+
+## 11. Otros
 
 `molde_volado_recto` / `molde_volado_circular` ya tienen sprite; el **primer volante** (falda lisa con puntada) sigue con el
 anterior. `molde_textura_acolchado` y `molde_textura_fruncido` están bien por ahora.
