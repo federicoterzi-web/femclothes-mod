@@ -890,6 +890,8 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         } else if (item instanceof MoldeRuedoItem) {
             Rol par = parDeCajon(rol);
             if (par != null && !esRolRuedoDeCajon(rol) && rol != Rol.CUELLO) rol = par;
+        } else if (item instanceof MoldeVoladoItem) {
+            if (rol == Rol.RUEDO_POLLERA) rol = Rol.VOLADO_INFERIOR;
         } else if (item instanceof MoldeCuelloItem) {
             if (rol == Rol.SOLAPA_CHAQUETA) rol = Rol.CUELLO;
         } else if (item instanceof MoldeChaquetaItem m && m.tipo.esSolapa()) {
@@ -1069,6 +1071,8 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
             case INF_IZQ -> Rol.RUEDO_INF_IZQ; case RUEDO_INF_IZQ -> Rol.INF_IZQ;
             case INF_DER -> Rol.RUEDO_INF_DER; case RUEDO_INF_DER -> Rol.INF_DER;
             case CUELLO -> Rol.SOLAPA_CHAQUETA; case SOLAPA_CHAQUETA -> Rol.CUELLO;
+            case TORSO -> Rol.RUEDO_TORSO; case RUEDO_TORSO -> Rol.TORSO;
+            case VOLADO_INFERIOR -> Rol.RUEDO_POLLERA; case RUEDO_POLLERA -> Rol.VOLADO_INFERIOR;
             default -> null;
         };
     }
@@ -1077,7 +1081,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
     static boolean esRolRuedoDeCajon(Rol r) {
         return switch (r) {
             case RUEDO_PUNO_IZQ, RUEDO_PUNO_DER, RUEDO_BOTA_IZQ, RUEDO_BOTA_DER, RUEDO_SUP_IZQ, RUEDO_SUP_DER,
-                 RUEDO_INF_IZQ, RUEDO_INF_DER, SOLAPA_CHAQUETA -> true;
+                 RUEDO_INF_IZQ, RUEDO_INF_DER, SOLAPA_CHAQUETA, RUEDO_TORSO, RUEDO_POLLERA -> true;
             default -> false;
         };
     }
