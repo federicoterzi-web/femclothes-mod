@@ -31,7 +31,16 @@ import net.minecraft.util.Identifier;
  * (compat) asume pieza entera.
  */
 public record Pieza(Parte parte, int capa, Identifier textura, float dilatacion, int filaDesde, int filaHasta,
-                    boolean volumenPierna, com.modamod.item.Ruedo ruedo) {
+                    boolean volumenPierna, com.modamod.item.Ruedo ruedo, com.modamod.item.Ruedo ruedoSup) {
+
+    /** Sin ruedo propio en el borde de arriba. */
+    public Pieza(Parte parte, int capa, Identifier textura, float dilatacion, int filaDesde, int filaHasta,
+                 boolean volumenPierna, com.modamod.item.Ruedo ruedo) {
+        this(parte, capa, textura, dilatacion, filaDesde, filaHasta, volumenPierna, ruedo, com.modamod.item.Ruedo.RECTO);
+    }
+
+    /** El borde de arriba (la primera fila con tela) es elástico: aprieta (2026-10-08, borde superior de medias y calientabrazos). */
+    public boolean elasticoSup() { return ruedoSup == com.modamod.item.Ruedo.AJUSTADO; }
 
     /** Compat: {@code elastico} = ruedo AJUSTADO, si no RECTO. */
     public Pieza(Parte parte, int capa, Identifier textura, float dilatacion, int filaDesde, int filaHasta,

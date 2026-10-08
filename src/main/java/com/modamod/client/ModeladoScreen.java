@@ -93,6 +93,8 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
     private ButtonWidget btnSimetria;
     private ButtonWidget btnModelar;
     private ButtonWidget btnVista;
+    /** Botón ▾/▴ de cada pin principal que tiene un casillero desplegable (2026-10-08, "un slot con dos slots desplegables"). */
+    private final ButtonWidget[] btnCajon = new ButtonWidget[ModeladoBlockEntity.PINES_POR_CATEGORIA];
     private ButtonWidget btnGuardarDiseno;
     private net.minecraft.client.gui.widget.TextFieldWidget txtNombreDiseno;
     private final BotonChincheta[] btnPines = new BotonChincheta[ModeladoBlockEntity.PINES_POR_CATEGORIA];
@@ -163,6 +165,27 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         for (int i = 0; i < btnPines.length; i++) {
             btnPines[i] = new BotonChincheta(0, 0, b -> { });
             this.addSelectableChild(btnPines[i]); // se dibujan a mano en render(), encima del ícono fantasma
+        }
+
+        for (int i = 0; i < btnCajon.length; i++) {
+            int idx = i;
+            btnCajon[i] = new ButtonWidget(0, 0, 9, 9, Text.empty(), b -> clickBoton(ModeladoBlockEntity.BTN_CAJON_BASE + idx),
+                    d -> Text.empty()) {
+                @Override
+                protected void renderWidget(DrawContext c, int mx, int my, float d) {
+                    ModeladoBlockEntity be = handler.be;
+                    int sec = ModeladoBlockEntity.cajonDe(be.categoria(), idx);
+                    boolean abierto = sec >= 0 && be.cajonAbierto(be.categoria().ordinal() * ModeladoBlockEntity.PINES_POR_CATEGORIA + idx);
+                    c.getMatrices().push();
+                    c.getMatrices().translate(0, 0, 400);
+                    c.fill(getX(), getY(), getX() + 9, getY() + 9, active ? (isHovered() ? 0xFFFFE0A8 : 0xFFE8D2A4) : 0xFFB9A98A);
+                    c.drawBorder(getX(), getY(), 9, 9, 0xFF6B4423);
+                    c.drawCenteredTextWithShadow(textRenderer, abierto ? "▴" : "▾", getX() + 5, getY() + 1, 0xFFFFFFFF);
+                    c.getMatrices().pop();
+                }
+            };
+            btnCajon[i].setTooltip(Tooltip.of(Text.translatable("modamod.modelado.tooltip.cajon")));
+            this.addDrawableChild(btnCajon[i]);
         }
 
         // Un solo botón que cicla las 4 perspectivas — a pedido (2026-09-20,
@@ -356,6 +379,15 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         }
 
         int cat = categoria.ordinal();
+        for (int i = 0; i < btnCajon.length; i++) {
+            boolean hay = ModeladoBlockEntity.cajonDe(categoria, i) >= 0;
+            btnCajon[i].visible = hay;
+            btnCajon[i].active = hay && !prendida;
+            if (hay) {
+                int[] pos = ModeladoScreenHandler.PIN_POS[cat][i];
+                btnCajon[i].setPosition(this.x + M_MEDIO + pos[0] + 10, this.y + pos[1] + 15);
+            }
+        }
         for (int i = 0; i < btnPines.length; i++) {
             int p = cat * ModeladoBlockEntity.PINES_POR_CATEGORIA + i;
             boolean usable = be.pinVisible(categoria, i);
@@ -461,6 +493,21 @@ public class ModeladoScreen extends HandledScreen<ModeladoScreenHandler> {
         context.drawTexture(TEXTURE, this.x, this.y, 0, 0,
                 this.backgroundWidth, this.backgroundHeight, this.backgroundWidth, this.backgroundHeight);
         dibujarEsquema(context);
+        dibujarMarcosDeCajones(context);
+    }
+
+    /** Marco de los casilleros desplegables abiertos (sin arte nueva: el esquema no los trae). */
+    private void dibujarMarcosDeCajones(DrawContext context) {
+        ModeladoBlockEntity be = this.handler.be;
+        int cat = be.categoria().ordinal();
+        for (int i = 0; i < ModeladoBlockEntity.PINES_POR_CATEGORIA; i++) {
+            if (ModeladoBlockEntity.principalDeCajon(be.categoria(), i) < 0 || !be.pinVisible(be.categoria(), i)) continue;
+            int[] pos = ModeladoScreenHandler.PIN_POS[cat][i];
+            int x = this.x + M_MEDIO + pos[0] - 3, y = this.y + pos[1] - 3;
+            context.fill(x, y, x + 22, y + 22, 0xFFE8D2A4);
+            context.drawBorder(x, y, 22, 22, 0xFF6B4423);
+            context.fill(x + 3, y + 3, x + 19, y + 19, 0xFF8A6A44);
+        }
     }
 
     // Mismo tamaño/posición que tools/generar_esquema_remera.py — si se

@@ -330,7 +330,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
         MallaCapturada malla = grabar("pollera", !apliques.isEmpty() || CorreaRenderer.hayEn(stack, com.modamod.correa.Correa.Superficie.POLLERA), () -> PolleraMalla.dibujar(matrices, buffer, luz,
                 com.modamod.item.PolleraItem.forma(stack), com.modamod.item.PolleraItem.largo(stack),
                 com.modamod.item.PolleraItem.voladoRuedo(stack), com.modamod.item.PolleraItem.voladoTodo(stack),
-                com.modamod.item.PolleraItem.borde(stack), dilatacion, new PolleraMalla.Piernas(biped.body, biped.rightLeg, biped.leftLeg), mov,
+                com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.POLLERA), dilatacion, new PolleraMalla.Piernas(biped.body, biped.rightLeg, biped.leftLeg), mov,
                 twirl, cola, delJugador.pitch));
         matrices.pop();
         if (malla != null) { ApliqueRenderer.dibujarEnMalla(stack, com.modamod.aplique.Aplique.Superficie.POLLERA, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix());
@@ -750,6 +750,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                     // La banda elástica aprieta: 40 % de la holgura, nunca por
                     // dentro del cuerpo (0.05 de aire).
                     if (pieza.elastico() && f == hasta - 1) d = Math.max(0.05F, base * 0.4F);
+                    if (pieza.elasticoSup() && f == desde) d = Math.max(0.05F, base * 0.4F);
                     if (exterior[f] != Float.NEGATIVE_INFINITY) d = Math.max(d, exterior[f] + SEPARACION_CAPAS);
                     // Lo que va encima de la pollera (el hoodie) se abre por fuera de
                     // ella (2026-10-02, "el hoodie se abre por fuera"): la cintura de

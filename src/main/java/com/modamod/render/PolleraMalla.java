@@ -120,9 +120,10 @@ public final class PolleraMalla {
      */
     public static void dibujar(MatrixStack matrices, VertexConsumer vc, int luz, PolleraForma forma,
                                PolleraLargo largo, @Nullable PolleraVolado voladoRuedo, @Nullable PolleraVolado voladoTodo,
-                               @Nullable PolleraBorde borde, float dil, @Nullable Piernas piernas,
+                               com.modamod.item.Ruedo hem, float dil, @Nullable Piernas piernas,
                                CapaMalla.Movimiento mov, float twirl, float cola, float inclinacion) {
         float[][][] p = new float[FILAS + 1][COLUMNAS + 1][];
+        PolleraBorde borde = hem.borde();
         float l = largo.pixeles;
         // Nunca más pegada que Normal: la cintura (sección casi recta) tiene
         // que pasar por fuera de las esquinas del torso.
@@ -163,6 +164,14 @@ public final class PolleraMalla {
             float[][] anillo = anillo(t, a0, b0, l, abrir, forma, voladoRuedo, voladoTodo);
             for (int c = 0; c <= COLUMNAS; c++) {
                 float x = anillo[c][0], z = anillo[c][1];
+                // Ruedo ajustado / campana (2026-10-08, "un ruedo ajustado que podria servir hasta para polleras"): las
+                // filas de abajo se cierran contra la pierna o se abren hacia afuera, más cuanto más abajo.
+                if (t > 0.8f && (hem == com.modamod.item.Ruedo.AJUSTADO || hem == com.modamod.item.Ruedo.CAMPANA)) {
+                    float w = (t - 0.8f) / 0.2f;
+                    float k = hem == com.modamod.item.Ruedo.AJUSTADO ? 1f - 0.35f * w * w : 1f + 0.5f * w * w;
+                    x *= k;
+                    z *= k;
+                }
                 // Vaivén del paso: la tela se retuerce un poco alrededor del eje del cuerpo.
                 float xg = x * cosG - z * sinG, zg = x * sinG + z * cosG;
                 x = xg;

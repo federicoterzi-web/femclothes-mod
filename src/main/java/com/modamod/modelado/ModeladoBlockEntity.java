@@ -204,7 +204,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         /** Banda (2026-10-05): zona, ancho y herraje (MoldeBandaItem). */
         ZONA_BANDA, ANCHO_BANDA, HERRAJE_BANDA,
         /** Chaqueta (2026-10-07): frente, capucha y solapa (MoldeChaquetaItem). */
-        FRENTE_CHAQUETA, CAPUCHA_CHAQUETA, SOLAPA_CHAQUETA }
+        FRENTE_CHAQUETA, CAPUCHA_CHAQUETA, SOLAPA_CHAQUETA,
+        /** Ruedo de la botamanga, del borde de arriba y del de abajo de medias y calientabrazos (2026-10-08, tanda 2). */
+        RUEDO_BOTA_IZQ, RUEDO_BOTA_DER, RUEDO_SUP_IZQ, RUEDO_SUP_DER, RUEDO_INF_IZQ, RUEDO_INF_DER }
 
     /** Rol de cada uno de los 8 pines por categoría — MISMO orden que {@code ModeladoScreenHandler#PIN_POS}. */
     public static final Rol[][] ROLES = rellenarRoles(new Rol[][]{
@@ -212,12 +214,12 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                     Rol.RUEDO_TORSO, Rol.RUEDO_PUNO_IZQ, Rol.RUEDO_PUNO_DER,
                     // El Top (2026-10-07, "un solo top"): frente, capucha y solapa también en la remera.
                     Rol.FRENTE_CHAQUETA, Rol.CAPUCHA_CHAQUETA, Rol.SOLAPA_CHAQUETA},
-            {Rol.TIRO, Rol.MAT1, Rol.NINGUNO, Rol.NINGUNO, Rol.CALCE, Rol.BOTA_IZQ, Rol.BOTA_DER, Rol.NINGUNO,
-                    Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
-            {Rol.SUP_IZQ, Rol.SUP_DER, Rol.INF_IZQ, Rol.INF_DER, Rol.CALCE, Rol.PERS_IZQ1, Rol.NINGUNO,
-                    Rol.NINGUNO, Rol.PERS_DER1, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
-            {Rol.SUP_IZQ, Rol.SUP_DER, Rol.INF_IZQ, Rol.INF_DER, Rol.CALCE, Rol.PERS_IZQ1, Rol.NINGUNO,
-                    Rol.NINGUNO, Rol.PERS_DER1, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
+            {Rol.TIRO, Rol.MAT1, Rol.NINGUNO, Rol.NINGUNO, Rol.CALCE, Rol.BOTA_IZQ, Rol.BOTA_DER, Rol.RUEDO_BOTA_IZQ,
+                    Rol.RUEDO_BOTA_DER, Rol.NINGUNO, Rol.NINGUNO, Rol.NINGUNO},
+            {Rol.SUP_IZQ, Rol.SUP_DER, Rol.INF_IZQ, Rol.INF_DER, Rol.CALCE, Rol.PERS_IZQ1, Rol.RUEDO_SUP_IZQ,
+                    Rol.RUEDO_INF_IZQ, Rol.PERS_DER1, Rol.RUEDO_SUP_DER, Rol.RUEDO_INF_DER, Rol.NINGUNO},
+            {Rol.SUP_IZQ, Rol.SUP_DER, Rol.INF_IZQ, Rol.INF_DER, Rol.CALCE, Rol.PERS_IZQ1, Rol.RUEDO_SUP_IZQ,
+                    Rol.RUEDO_INF_IZQ, Rol.PERS_DER1, Rol.RUEDO_SUP_DER, Rol.RUEDO_INF_DER, Rol.NINGUNO},
             // Pollera (2026-09-29): Forma, Largo, Calce y los 3 materiales.
             {Rol.FORMA_POLLERA, Rol.LARGO_POLLERA, Rol.CALCE, Rol.MAT1, Rol.NINGUNO, Rol.NINGUNO,
                     Rol.VOLADO_INFERIOR, Rol.VOLADO_TOTAL, Rol.RUEDO_POLLERA},
@@ -675,6 +677,8 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
     /** + índice de pin (0..7): la chincheta de cada slot de corte de remera. */
     public static final int BTN_PIN_BASE = 200;
     /** + índice de diseño (0..{@link #DISENOS_MAXIMO}-1): click directo en el casillero numerado carga ese diseño. */
+    /** Abre/cierra el cajón del pin principal {@code i} de la categoría actual (2026-10-08). */
+    public static final int BTN_CAJON_BASE = 500;
     public static final int BTN_CARGAR_DISENO_BASE = 400; // (era 300: chocaba con los pines desde la 9.ª categoría, 2026-10-07)
     /** + índice de diseño: click derecho en el casillero lo borra. */
     public static final int BTN_BORRAR_DISENO_BASE = 420;
@@ -711,7 +715,16 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                 cambio = true;
             }
             default -> {
-                if (id >= BTN_PIN_BASE && id < BTN_PIN_BASE + PINES_LOGICOS) {
+                if (id >= BTN_CAJON_BASE && id < BTN_CAJON_BASE + PINES_POR_CATEGORIA) {
+                    int pc = categoria.ordinal() * PINES_POR_CATEGORIA + (id - BTN_CAJON_BASE);
+                    int sec = cajonDe(categoria, id - BTN_CAJON_BASE);
+                    if (sec < 0) return false;
+                    int ps = categoria.ordinal() * PINES_POR_CATEGORIA + sec;
+                    // No se cierra con algo adentro: el molde quedaría invisible.
+                    if (cajonAbierto(pc) && (pinFijado[ps] || !getStack(pinSlot(ps)).isEmpty())) return false;
+                    cajones ^= 1L << pc;
+                    cambio = true;
+                } else if (id >= BTN_PIN_BASE && id < BTN_PIN_BASE + PINES_LOGICOS) {
                     cambio = chinchetaPin(id - BTN_PIN_BASE);
                     if (!cambio) return false;
                 } else if (id >= BTN_CARGAR_DISENO_BASE && id < BTN_CARGAR_DISENO_BASE + DISENOS_MAXIMO) {
@@ -872,11 +885,11 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         // usar los dos indistintamente", idem cuello y solapa): los dos casilleros del par aceptan cualquiera de
         // los dos tipos de molde; el tipo del molde decide qué se aplica.
         if (item instanceof MoldeRangoItem) {
-            if (rol == Rol.RUEDO_PUNO_IZQ) rol = Rol.MANGA_IZQ;
-            else if (rol == Rol.RUEDO_PUNO_DER) rol = Rol.MANGA_DER;
+            Rol par = parDeCajon(rol);
+            if (par != null && esRolRuedoDeCajon(rol) && rol != Rol.SOLAPA_CHAQUETA) rol = par;
         } else if (item instanceof MoldeRuedoItem) {
-            if (rol == Rol.MANGA_IZQ) rol = Rol.RUEDO_PUNO_IZQ;
-            else if (rol == Rol.MANGA_DER) rol = Rol.RUEDO_PUNO_DER;
+            Rol par = parDeCajon(rol);
+            if (par != null && !esRolRuedoDeCajon(rol) && rol != Rol.CUELLO) rol = par;
         } else if (item instanceof MoldeCuelloItem) {
             if (rol == Rol.SOLAPA_CHAQUETA) rol = Rol.CUELLO;
         } else if (item instanceof MoldeChaquetaItem m && m.tipo.esSolapa()) {
@@ -915,6 +928,13 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
                 if (item instanceof MoldeRuedoItem m && m.valor.valeEnTela()) {
                     c = ComboCorte.ruedo(lado == Lado.DERECHA ? com.modamod.item.ZonaRuedo.PUNO_DER : com.modamod.item.ZonaRuedo.PUNO_IZQ,
                             m.valor, lado == Lado.AMBAS);
+                }
+            }
+            case RUEDO_BOTA_IZQ, RUEDO_BOTA_DER, RUEDO_SUP_IZQ, RUEDO_SUP_DER, RUEDO_INF_IZQ, RUEDO_INF_DER -> {
+                // Como el puño: el lado sale de ladoDePin; AMBAS = los dos lados.
+                if (item instanceof MoldeRuedoItem m && m.valor.valeEnTela()) {
+                    com.modamod.item.ZonaRuedo z = zonaDeRol(rol, lado == Lado.DERECHA);
+                    c = ComboCorte.ruedo(z, m.valor, lado == Lado.AMBAS);
                 }
             }
             case RUEDO_POLLERA -> {
@@ -1037,38 +1057,83 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         };
     }
 
-    /**
-     * Pin "principal" del que cuelga un casillero desplegable (2026-10-08): el del puño se abre con la manga de su
-     * lado y el de la solapa con el cuello. -1 si el pin no es un cajón.
-     */
-    public static int principalDeCajon(Categoria cat, int i) {
-        Rol principal = switch (ROLES[cat.ordinal()][i]) {
-            case RUEDO_PUNO_IZQ -> Rol.MANGA_IZQ;
-            case RUEDO_PUNO_DER -> Rol.MANGA_DER;
-            case SOLAPA_CHAQUETA -> Rol.CUELLO;
+    /** El rol "gemelo" de un casillero desplegable (manga ↔ puño, cuello ↔ solapa...), o null si no es de un par. */
+    static Rol parDeCajon(Rol r) {
+        return switch (r) {
+            case MANGA_IZQ -> Rol.RUEDO_PUNO_IZQ; case RUEDO_PUNO_IZQ -> Rol.MANGA_IZQ;
+            case MANGA_DER -> Rol.RUEDO_PUNO_DER; case RUEDO_PUNO_DER -> Rol.MANGA_DER;
+            case BOTA_IZQ -> Rol.RUEDO_BOTA_IZQ; case RUEDO_BOTA_IZQ -> Rol.BOTA_IZQ;
+            case BOTA_DER -> Rol.RUEDO_BOTA_DER; case RUEDO_BOTA_DER -> Rol.BOTA_DER;
+            case SUP_IZQ -> Rol.RUEDO_SUP_IZQ; case RUEDO_SUP_IZQ -> Rol.SUP_IZQ;
+            case SUP_DER -> Rol.RUEDO_SUP_DER; case RUEDO_SUP_DER -> Rol.SUP_DER;
+            case INF_IZQ -> Rol.RUEDO_INF_IZQ; case RUEDO_INF_IZQ -> Rol.INF_IZQ;
+            case INF_DER -> Rol.RUEDO_INF_DER; case RUEDO_INF_DER -> Rol.INF_DER;
+            case CUELLO -> Rol.SOLAPA_CHAQUETA; case SOLAPA_CHAQUETA -> Rol.CUELLO;
             default -> null;
         };
-        if (principal == null || cat != Categoria.REMERA) return -1;
+    }
+
+    /** ¿Es el casillero SECUNDARIO (el que se despliega) de un par? */
+    static boolean esRolRuedoDeCajon(Rol r) {
+        return switch (r) {
+            case RUEDO_PUNO_IZQ, RUEDO_PUNO_DER, RUEDO_BOTA_IZQ, RUEDO_BOTA_DER, RUEDO_SUP_IZQ, RUEDO_SUP_DER,
+                 RUEDO_INF_IZQ, RUEDO_INF_DER, SOLAPA_CHAQUETA -> true;
+            default -> false;
+        };
+    }
+
+    /** La zona de ruedo de un rol de ruedo de cajón; {@code derecha} elige el lado cuando el rol no lo trae. */
+    static com.modamod.item.ZonaRuedo zonaDeRol(Rol r, boolean derecha) {
+        return switch (r) {
+            case RUEDO_BOTA_IZQ, RUEDO_BOTA_DER -> derecha ? com.modamod.item.ZonaRuedo.BOTA_DER : com.modamod.item.ZonaRuedo.BOTA_IZQ;
+            case RUEDO_SUP_IZQ, RUEDO_SUP_DER -> derecha ? com.modamod.item.ZonaRuedo.SUP_DER : com.modamod.item.ZonaRuedo.SUP_IZQ;
+            case RUEDO_INF_IZQ, RUEDO_INF_DER -> derecha ? com.modamod.item.ZonaRuedo.INF_DER : com.modamod.item.ZonaRuedo.INF_IZQ;
+            default -> derecha ? com.modamod.item.ZonaRuedo.PUNO_DER : com.modamod.item.ZonaRuedo.PUNO_IZQ;
+        };
+    }
+
+    /**
+     * Pin "principal" del que cuelga un casillero desplegable (2026-10-08): el del puño se abre con la manga de su
+     * lado, el de la solapa con el cuello, el del ruedo de la botamanga/borde con su corte. -1 si no es un cajón.
+     */
+    public static int principalDeCajon(Categoria cat, int i) {
+        Rol rol = ROLES[cat.ordinal()][i];
+        if (!esRolRuedoDeCajon(rol)) return -1;
+        Rol principal = parDeCajon(rol);
         for (int k = 0; k < PINES_POR_CATEGORIA; k++) if (ROLES[cat.ordinal()][k] == principal) return k;
         return -1;
     }
 
-    /** ¿Se ve y se puede usar el pin {@code i}? Un cajón se abre solo cuando su principal (o él) tiene molde o corte. */
+    /** Si el pin {@code i} es un principal con cajón, el índice del pin secundario; si no, -1. */
+    public static int cajonDe(Categoria cat, int i) {
+        Rol par = parDeCajon(ROLES[cat.ordinal()][i]);
+        if (par == null || !esRolRuedoDeCajon(par)) return -1;
+        for (int k = 0; k < PINES_POR_CATEGORIA; k++) if (ROLES[cat.ordinal()][k] == par) return k;
+        return -1;
+    }
+
+    /** Cajones abiertos a mano (un bit por pin lógico), con el botón ▾ del pin principal. */
+    private long cajones;
+
+    public boolean cajonAbierto(int p) { return (cajones & (1L << p)) != 0; }
+
+    /** ¿Se ve y se puede usar el pin {@code i}? Un cajón se abre a mano o solo cuando él o su principal tienen molde o corte. */
     public boolean pinVisible(Categoria cat, int i) {
         if (ROLES[cat.ordinal()][i] == Rol.NINGUNO) return false;
         int principal = principalDeCajon(cat, i);
         if (principal < 0) return true;
         int base = cat.ordinal() * PINES_POR_CATEGORIA;
-        return !getStack(pinSlot(base + principal)).isEmpty() || pinFijado[base + principal]
-                || !getStack(pinSlot(base + i)).isEmpty() || pinFijado[base + i];
+        return cajonAbierto(base + principal) || pinFijado[base + i] || !getStack(pinSlot(base + i)).isEmpty();
     }
 
     /** El lado que le toca a un pin de lado; con simetría activa (o en pines sin lado) es AMBAS. */
     private Lado ladoDePin(Categoria cat, int i) {
         if (remeraSimetria) return Lado.AMBAS;
         Lado lado = switch (ROLES[cat.ordinal()][i]) {
-            case MANGA_IZQ, BOTA_IZQ, SUP_IZQ, INF_IZQ, PERS_IZQ1, PERS_IZQ2, PERS_IZQ3, RUEDO_PUNO_IZQ -> Lado.IZQUIERDA;
-            case MANGA_DER, BOTA_DER, SUP_DER, INF_DER, PERS_DER1, PERS_DER2, PERS_DER3, RUEDO_PUNO_DER -> Lado.DERECHA;
+            case MANGA_IZQ, BOTA_IZQ, SUP_IZQ, INF_IZQ, PERS_IZQ1, PERS_IZQ2, PERS_IZQ3, RUEDO_PUNO_IZQ,
+                 RUEDO_BOTA_IZQ, RUEDO_SUP_IZQ, RUEDO_INF_IZQ -> Lado.IZQUIERDA;
+            case MANGA_DER, BOTA_DER, SUP_DER, INF_DER, PERS_DER1, PERS_DER2, PERS_DER3, RUEDO_PUNO_DER,
+                 RUEDO_BOTA_DER, RUEDO_SUP_DER, RUEDO_INF_DER -> Lado.DERECHA;
             default -> Lado.AMBAS;
         };
         // Todos los esquemas se leen "de frente" (izquierda del dibujo = izquierda de pantalla), pero la Izq.
@@ -1801,6 +1866,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         ladoBorrador = Lado.values()[nbt.getInt("lado_borrador")];
         categoria = Categoria.values()[nbt.getInt("categoria")];
         remeraSimetria = !nbt.contains("remera_simetria") || nbt.getBoolean("remera_simetria");
+        cajones = nbt.getLong("cajones");
 
         for (Categoria cat : Categoria.values()) {
             List<ComboCorte> destino = fijadasPorCategoria.get(cat);
@@ -1869,6 +1935,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         nbt.putInt("lado_borrador", ladoBorrador.ordinal());
         nbt.putInt("categoria", categoria.ordinal());
         nbt.putBoolean("remera_simetria", remeraSimetria);
+        nbt.putLong("cajones", cajones);
 
         for (Categoria cat : Categoria.values()) {
             NbtList lista = new NbtList();

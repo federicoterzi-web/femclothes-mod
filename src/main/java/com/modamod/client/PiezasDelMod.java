@@ -83,8 +83,10 @@ public final class PiezasDelMod {
         int[] filasIzq = MediasLargo.filasVisibles(stack, Lado.IZQUIERDA);
         int[] filasDer = MediasLargo.filasVisibles(stack, Lado.DERECHA);
         return List.of(
-                new Pieza(Parte.PIERNA_IZQ, Capa.MEDIA, texturaMedia(base, stack, Lado.IZQUIERDA), dilatacion, filasIzq[0], filasIzq[1], VOLUMEN_MEDIAS),
-                new Pieza(Parte.PIERNA_DER, Capa.MEDIA, texturaMedia(base, stack, Lado.DERECHA), dilatacion, filasDer[0], filasDer[1], VOLUMEN_MEDIAS));
+                new Pieza(Parte.PIERNA_IZQ, Capa.MEDIA, texturaMedia(base, stack, Lado.IZQUIERDA), dilatacion, filasIzq[0], filasIzq[1], VOLUMEN_MEDIAS,
+                        com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.INF_IZQ), com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.SUP_IZQ)),
+                new Pieza(Parte.PIERNA_DER, Capa.MEDIA, texturaMedia(base, stack, Lado.DERECHA), dilatacion, filasDer[0], filasDer[1], VOLUMEN_MEDIAS,
+                        com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.INF_DER), com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.SUP_DER)));
     }
 
     /**
@@ -304,8 +306,11 @@ public final class PiezasDelMod {
         int[] filasDer = PantalonItem.filasVisibles(stack, Lado.DERECHA);
         int filasTiro = PantalonItem.tiro(stack).filas;
         List<Pieza> piezas = new ArrayList<>(3);
-        piezas.add(new Pieza(Parte.PIERNA_IZQ, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA), dilatacion, filasIzq[0], filasIzq[1]));
-        piezas.add(new Pieza(Parte.PIERNA_DER, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.DERECHA), dilatacion, filasDer[0], filasDer[1]));
+        // Ruedo de cada botamanga (2026-10-08, tanda 2): solo la geometría (ajustada aprieta, campana abre).
+        piezas.add(new Pieza(Parte.PIERNA_IZQ, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.IZQUIERDA), dilatacion, filasIzq[0], filasIzq[1],
+                false, com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.BOTA_IZQ)));
+        piezas.add(new Pieza(Parte.PIERNA_DER, Capa.PIERNA_EXTERIOR, texturaPantalon(base, stack, Lado.DERECHA), dilatacion, filasDer[0], filasDer[1],
+                false, com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.BOTA_DER)));
         // La banda de cintura pinta las últimas filasTiro filas del torso (ver pintarCintura); con tiro 0 (a la
         // cadera, 2026-10-04) no hay banda.
         if (filasTiro > 0) {
@@ -446,9 +451,11 @@ public final class PiezasDelMod {
         int[] filasDer = CalientabrazosItem.filasVisibles(stack, Lado.DERECHA);
         return List.of(
                 new Pieza(Parte.BRAZO_IZQ, Capa.MANGA_INTERIOR,
-                        texturaCalientabrazos(base, stack, Lado.IZQUIERDA), dilatacion, filasIzq[0], filasIzq[1]),
+                        texturaCalientabrazos(base, stack, Lado.IZQUIERDA), dilatacion, filasIzq[0], filasIzq[1], false,
+                        com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.INF_IZQ), com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.SUP_IZQ)),
                 new Pieza(Parte.BRAZO_DER, Capa.MANGA_INTERIOR,
-                        texturaCalientabrazos(base, stack, Lado.DERECHA), dilatacion, filasDer[0], filasDer[1]));
+                        texturaCalientabrazos(base, stack, Lado.DERECHA), dilatacion, filasDer[0], filasDer[1], false,
+                        com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.INF_DER), com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.SUP_DER)));
     }
 
     private static Identifier texturaBaseCalientabrazos(Variante.Manga cobertura) {
