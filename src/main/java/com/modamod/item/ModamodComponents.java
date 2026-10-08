@@ -461,6 +461,15 @@ public final class ModamodComponents {
                     .packetCodec(PacketCodecs.indexed(i -> PolleraLargo.values()[i], Enum::ordinal))
                     .build());
 
+    /** Cintura de la pollera (2026-10-08): nivel de rango 0..6 (altura de la cintura = 2 × nivel px bajo el hombro); ausente = cadera. */
+    public static final ComponentType<Integer> POLLERA_CINTURA = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of("modamod", "pollera_cintura"),
+            ComponentType.<Integer>builder()
+                    .codec(com.mojang.serialization.Codec.intRange(0, 6))
+                    .packetCodec(PacketCodecs.VAR_INT)
+                    .build());
+
     /** Volado del borde de abajo / de toda la pollera (2026-10-05); ausente = sin volado. */
     public static final ComponentType<PolleraVolado> POLLERA_VOLADO_RUEDO = Registry.register(
             Registries.DATA_COMPONENT_TYPE, Identifier.of("modamod", "pollera_volado_ruedo"),

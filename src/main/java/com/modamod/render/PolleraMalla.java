@@ -54,6 +54,8 @@ public final class PolleraMalla {
     private PolleraMalla() {}
 
     private static final float Y_CINTURA = 9f;
+    /** Cintura más alta posible (px bajo el hombro): pollera subida hasta el pecho (2026-10-08). */
+    public static final float CINTURA_MIN = 3f, CINTURA_MAX = 11f;
     private static final int COLUMNAS = 48;
     /** 24 filas (2026-10-05, volados): tres filas de volado necesitan resolución para que se lea el borde de cada una. */
     private static final int FILAS = 24;
@@ -111,7 +113,7 @@ public final class PolleraMalla {
     public static void dibujar(MatrixStack matrices, VertexConsumer vc, int luz, PolleraForma forma,
                                PolleraLargo largo, float dil, @Nullable Piernas piernas,
                                CapaMalla.Movimiento mov, float twirl) {
-        dibujar(matrices, vc, luz, forma, largo, null, null, null, dil, piernas, mov, twirl, 0f, 0f);
+        dibujar(matrices, vc, luz, forma, largo, null, null, null, dil, piernas, mov, twirl, 0f, 0f, Y_CINTURA);
     }
 
     /**
@@ -121,7 +123,7 @@ public final class PolleraMalla {
     public static void dibujar(MatrixStack matrices, VertexConsumer vc, int luz, PolleraForma forma,
                                PolleraLargo largo, @Nullable PolleraVolado voladoRuedo, @Nullable PolleraVolado voladoTodo,
                                com.modamod.item.Ruedo hem, float dil, @Nullable Piernas piernas,
-                               CapaMalla.Movimiento mov, float twirl, float cola, float inclinacion) {
+                               CapaMalla.Movimiento mov, float twirl, float cola, float inclinacion, float cintura) {
         float[][][] p = new float[FILAS + 1][COLUMNAS + 1][];
         PolleraBorde borde = hem.borde();
         float l = largo.pixeles;
@@ -158,7 +160,7 @@ public final class PolleraMalla {
         Perfil perfil = perfil(forma, largo, cola);
         for (int f = 0; f <= FILAS; f++) {
             float t = f / (float) FILAS;
-            float y = Y_CINTURA + t * l;
+            float y = cintura + t * l;
             float peso = (float) Math.pow(t, 1.6);
             float cosG = (float) Math.cos(giro * t), sinG = (float) Math.sin(giro * t);
             float[][] anillo = anillo(t, a0, b0, l, abrir, forma, voladoRuedo, voladoTodo);
@@ -193,7 +195,7 @@ public final class PolleraMalla {
         }
 
         if (cola > 0.05f) pasarPorFueraDeLaCola(p, cola);
-        if (Math.abs(inclinacion) > 1e-3f) colgar(p, inclinacion);
+        if (Math.abs(inclinacion) > 1e-3f) colgar(p, inclinacion, cintura);
         if (piernas != null) chocarConPiernas(p, piernas);
 
         MatrixStack.Entry e = matrices.peek();
@@ -241,10 +243,10 @@ public final class PolleraMalla {
      * "el hoodie se abre por fuera") para pasar por fuera de la pollera.
      */
     public static float holguraEn(PolleraForma forma, PolleraLargo largo, @Nullable PolleraVolado voladoRuedo,
-                                  @Nullable PolleraVolado voladoTodo, float dil, float y) {
+                                  @Nullable PolleraVolado voladoTodo, float dil, float y, float cintura) {
         float l = largo.pixeles;
-        if (y <= Y_CINTURA || y > Y_CINTURA + l + 0.5f) return -1f;
-        float t = Math.min(1f, (y - Y_CINTURA) / l);
+        if (y <= cintura || y > cintura + l + 0.5f) return -1f;
+        float t = Math.min(1f, (y - cintura) / l);
         float holgura = Math.max(dil, 0.25f);
         float a0 = 4f + holgura + 0.1f, b0 = 2f + holgura + 0.1f;
         float max = 0f;
@@ -263,7 +265,7 @@ public final class PolleraMalla {
      * bolsa. Ahora cada fila gira alrededor de la cintura lo contrario del
      * torso, de a poco desde la cintura (que sigue pegada) hasta el ruedo.
      */
-    private static void colgar(float[][][] p, float inclinacion) {
+    private static void colgar(float[][][] p, float inclinacion, float cintura) {
         for (int f = 1; f <= FILAS; f++) {
             float t = f / (float) FILAS;
             float peso = Math.min(1f, t * 2.5f);
@@ -271,8 +273,8 @@ public final class PolleraMalla {
             float co = (float) Math.cos(a), si = (float) Math.sin(a);
             for (float[] q : p[f]) {
                 // Como ModelPart.rotate (rotateX): y' = y·cos − z·sen, z' = y·sen + z·cos.
-                float y = q[1] - Y_CINTURA, z = q[2];
-                q[1] = Y_CINTURA + y * co - z * si;
+                float y = q[1] - cintura, z = q[2];
+                q[1] = cintura + y * co - z * si;
                 q[2] = y * si + z * co;
             }
         }

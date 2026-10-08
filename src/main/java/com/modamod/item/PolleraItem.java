@@ -34,6 +34,17 @@ public class PolleraItem extends ClothingTrinketItem {
         else stack.set(ModamodComponents.POLLERA_LARGO, largo);
     }
 
+    /** Altura de la cintura en px bajo el hombro (9 = cadera de siempre). */
+    public static float cintura(ItemStack stack) {
+        Integer n = stack.get(ModamodComponents.POLLERA_CINTURA);
+        if (n == null) return 9f;
+        return Math.max(3f, Math.min(11f, 2f * n));
+    }
+
+    public static void setCintura(ItemStack stack, int nivel) {
+        stack.set(ModamodComponents.POLLERA_CINTURA, Math.max(0, Math.min(6, nivel)));
+    }
+
     public static PolleraForma forma(ItemStack stack) {
         PolleraForma f = stack.get(ModamodComponents.POLLERA_FORMA);
         return f == null ? PolleraForma.CAMPANA : f;

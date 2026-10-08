@@ -932,6 +932,7 @@
   "modamod.pollera.molde_volado.ayuda": "Goes in the Skirt's Lower cut pin (hem only) or Whole skirt pin (three tiers).",
   "modamod.modelado.rol.volado_inferior": "Lower cut",
   "modamod.modelado.rol.volado_total": "Whole skirt",
+  "modamod.modelado.rol.cintura_pollera": "Waist",
   "modamod.pollera.tooltip.borde": "Hem edge: %s",
   "modamod.estilado.acabado.poner": "Finish: %s",
   "modamod.estilado.acabado.quitar": "Remove finish (%s)",

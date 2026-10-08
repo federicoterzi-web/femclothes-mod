@@ -331,7 +331,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
                 com.modamod.item.PolleraItem.forma(stack), com.modamod.item.PolleraItem.largo(stack),
                 com.modamod.item.PolleraItem.voladoRuedo(stack), com.modamod.item.PolleraItem.voladoTodo(stack),
                 com.modamod.item.Ruedos.get(stack, com.modamod.item.ZonaRuedo.POLLERA), dilatacion, new PolleraMalla.Piernas(biped.body, biped.rightLeg, biped.leftLeg), mov,
-                twirl, cola, delJugador.pitch));
+                twirl, cola, delJugador.pitch, com.modamod.item.PolleraItem.cintura(stack)));
         matrices.pop();
         if (malla != null) { ApliqueRenderer.dibujarEnMalla(stack, com.modamod.aplique.Aplique.Superficie.POLLERA, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix());
         CorreaRenderer.dibujarEnMalla(stack, com.modamod.correa.Correa.Superficie.POLLERA, malla, vertexConsumers, luz, matrices.peek().getNormalMatrix()); }
@@ -642,7 +642,7 @@ public class GarmentFeatureRenderer<T extends LivingEntity, M extends EntityMode
             ItemStack s = polleras.get(i);
             mejor = Math.max(mejor, PolleraMalla.holguraEn(com.modamod.item.PolleraItem.forma(s), com.modamod.item.PolleraItem.largo(s),
                     com.modamod.item.PolleraItem.voladoRuedo(s), com.modamod.item.PolleraItem.voladoTodo(s),
-                    Math.max(0F, com.modamod.item.Calce.dilatacionEfectiva(s)) + i * SEPARACION_POLLERAS, y));
+                    Math.max(0F, com.modamod.item.Calce.dilatacionEfectiva(s)) + i * SEPARACION_POLLERAS, y, com.modamod.item.PolleraItem.cintura(s)));
         }
         return mejor;
     }

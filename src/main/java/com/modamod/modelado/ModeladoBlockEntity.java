@@ -195,6 +195,8 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         FORMA_POLLERA, LARGO_POLLERA,
         /** Volados de la pollera (2026-10-05): del borde de abajo y de toda la pollera (MoldeVoladoItem). */
         VOLADO_INFERIOR, VOLADO_TOTAL,
+        /** Cintura de la pollera (2026-10-08): cajón del largo, acepta moldes de rango. */
+        CINTURA_POLLERA,
         /** Ruedo de cada borde libre (2026-10-07, MoldeRuedoItem): torso, puño de cada manga y ruedo de la pollera. */
         RUEDO_TORSO, RUEDO_PUNO_IZQ, RUEDO_PUNO_DER, RUEDO_POLLERA,
         /** Capa (2026-09-29): largo (molde de rango), ruedo, capucha y cuello alto (MoldeCapaItem). */
@@ -221,7 +223,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
             {Rol.SUP_IZQ, Rol.SUP_DER, Rol.INF_IZQ, Rol.INF_DER, Rol.CALCE, Rol.PERS_IZQ1, Rol.RUEDO_SUP_IZQ,
                     Rol.RUEDO_INF_IZQ, Rol.PERS_DER1, Rol.RUEDO_SUP_DER, Rol.RUEDO_INF_DER, Rol.NINGUNO},
             // Pollera (2026-09-29): Forma, Largo, Calce y los 3 materiales.
-            {Rol.FORMA_POLLERA, Rol.LARGO_POLLERA, Rol.CALCE, Rol.MAT1, Rol.NINGUNO, Rol.NINGUNO,
+            {Rol.FORMA_POLLERA, Rol.LARGO_POLLERA, Rol.CALCE, Rol.MAT1, Rol.CINTURA_POLLERA, Rol.NINGUNO,
                     Rol.VOLADO_INFERIOR, Rol.VOLADO_TOTAL, Rol.RUEDO_POLLERA},
             // Capa (2026-09-29, "podemos agregar todo eso como patrones de corte?"):
             // Largo, Ruedo, Capucha, Cuello y los 3 materiales.
@@ -892,7 +894,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
         // los dos tipos de molde; el tipo del molde decide qué se aplica.
         if (item instanceof MoldeRangoItem) {
             Rol par = parDeCajon(rol);
-            if (par != null && esRolRuedoDeCajon(rol) && rol != Rol.SOLAPA_CHAQUETA) rol = par;
+            if (par != null && esRolRuedoDeCajon(rol) && rol != Rol.SOLAPA_CHAQUETA && rol != Rol.CINTURA_POLLERA) rol = par;
         } else if (item instanceof MoldeRuedoItem) {
             Rol par = parDeCajon(rol);
             if (par != null && !esRolRuedoDeCajon(rol) && rol != Rol.CUELLO) rol = par;
@@ -956,6 +958,9 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
             }
             case FORMA_POLLERA -> {
                 if (item instanceof MoldePolleraItem m) c = ComboCorte.polleraForma(m.valor);
+            }
+            case CINTURA_POLLERA -> {
+                if (item instanceof MoldeRangoItem m) c = ComboCorte.polleraCintura(m.rango.nivel());
             }
             case LARGO_POLLERA -> {
                 // Los 6 rangos del pantalón, 1 a 1 (2026-09-29, "Los 6 rangos del pantalón").
@@ -1079,6 +1084,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
             case CUELLO -> Rol.SOLAPA_CHAQUETA; case SOLAPA_CHAQUETA -> Rol.CUELLO;
             case TORSO -> Rol.RUEDO_TORSO; case RUEDO_TORSO -> Rol.TORSO;
             case VOLADO_INFERIOR -> Rol.RUEDO_POLLERA; case RUEDO_POLLERA -> Rol.VOLADO_INFERIOR;
+            case LARGO_POLLERA -> Rol.CINTURA_POLLERA; case CINTURA_POLLERA -> Rol.LARGO_POLLERA;
             default -> null;
         };
     }
@@ -1087,7 +1093,7 @@ public class ModeladoBlockEntity extends BlockEntity implements SidedInventory, 
     static boolean esRolRuedoDeCajon(Rol r) {
         return switch (r) {
             case RUEDO_PUNO_IZQ, RUEDO_PUNO_DER, RUEDO_BOTA_IZQ, RUEDO_BOTA_DER, RUEDO_SUP_IZQ, RUEDO_SUP_DER,
-                 RUEDO_INF_IZQ, RUEDO_INF_DER, SOLAPA_CHAQUETA, RUEDO_TORSO, RUEDO_POLLERA -> true;
+                 RUEDO_INF_IZQ, RUEDO_INF_DER, SOLAPA_CHAQUETA, RUEDO_TORSO, RUEDO_POLLERA, CINTURA_POLLERA -> true;
             default -> false;
         };
     }

@@ -198,6 +198,10 @@ public final class PrendaModelado {
                 com.modamod.item.PolleraItem.setVoladoTodo(out, p.voladoTodo().get());
                 cambio = true;
             }
+            if (p.cintura().isPresent()) {
+                com.modamod.item.PolleraItem.setCintura(out, p.cintura().get());
+                cambio = true;
+            }
         }
 
         // Ruedo de un borde libre (2026-10-07, fusiona el borde de la pollera y el remate de la chaqueta): un pin por zona.

@@ -932,6 +932,7 @@
   "modamod.pollera.molde_volado.ayuda": "Va en el pin Corte inferior (solo el ruedo) o en el pin Toda la pollera (tres filas) de la Pollera.",
   "modamod.modelado.rol.volado_inferior": "Corte inferior",
   "modamod.modelado.rol.volado_total": "Toda la pollera",
+  "modamod.modelado.rol.cintura_pollera": "Cintura",
   "modamod.pollera.tooltip.borde": "Borde del ruedo: %s",
   "modamod.estilado.acabado.poner": "Acabado: %s",
   "modamod.estilado.acabado.quitar": "Quitar acabado (%s)",

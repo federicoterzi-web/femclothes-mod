@@ -113,7 +113,29 @@ public record ComboCorte(
                                // El ruedo de un borde libre (2026-10-07, fusiona el borde de la pollera y el remate de la chaqueta).
                                Optional<RuedoCorte> ruedo,
                                // La chaqueta (2026-10-07): frente, capucha y solapa en un solo campo (tope de 16 campos).
-                               Optional<ChaquetaCorte> chaqueta) {
+                               Optional<ChaquetaCorte> chaqueta,
+                               // La cintura de la pollera (2026-10-08): nivel de rango 0..6 — el 16.º y último campo.
+                               Optional<Integer> cintura) {
+
+        /** Los 15 campos de antes de la cintura. */
+        public PolleraCorte(Optional<com.modamod.item.PolleraLargo> largo,
+                            Optional<com.modamod.item.PolleraForma> forma,
+                            Optional<com.modamod.item.CapaLargo> capaLargo,
+                            Optional<com.modamod.item.CapaRuedo> capaRuedo,
+                            Optional<Boolean> capaCapucha,
+                            Optional<Boolean> capaCuello,
+                            Optional<com.modamod.item.SombreroAla> sombreroAla,
+                            Optional<com.modamod.item.SombreroPunta> sombreroPunta,
+                            Optional<com.modamod.item.BandaZona> bandaZona,
+                            Optional<com.modamod.item.BandaAncho> bandaAncho,
+                            Optional<com.modamod.item.BandaHerraje> bandaHerraje,
+                            Optional<com.modamod.item.PolleraVolado> voladoRuedo,
+                            Optional<com.modamod.item.PolleraVolado> voladoTodo,
+                            Optional<RuedoCorte> ruedo,
+                            Optional<ChaquetaCorte> chaqueta) {
+            this(largo, forma, capaLargo, capaRuedo, capaCapucha, capaCuello, sombreroAla, sombreroPunta, bandaZona,
+                    bandaAncho, bandaHerraje, voladoRuedo, voladoTodo, ruedo, chaqueta, Optional.empty());
+        }
 
         /** Los 14 campos de antes de la chaqueta. */
         public PolleraCorte(Optional<com.modamod.item.PolleraLargo> largo,
@@ -201,7 +223,7 @@ public record ComboCorte(
                     && capaCapucha.isEmpty() && capaCuello.isEmpty()
                     && sombreroAla.isEmpty() && sombreroPunta.isEmpty()
                     && bandaZona.isEmpty() && bandaAncho.isEmpty() && bandaHerraje.isEmpty()
-                    && voladoRuedo.isEmpty() && voladoTodo.isEmpty() && ruedo.isEmpty() && chaqueta.isEmpty();
+                    && voladoRuedo.isEmpty() && voladoTodo.isEmpty() && ruedo.isEmpty() && chaqueta.isEmpty() && cintura.isEmpty();
         }
 
         static final Codec<PolleraCorte> CODEC = RecordCodecBuilder.create(i -> i.group(
@@ -230,7 +252,8 @@ public record ComboCorte(
                 StringIdentifiable.createCodec(com.modamod.item.PolleraVolado::values).optionalFieldOf("volado_todo")
                         .forGetter(PolleraCorte::voladoTodo),
                 RuedoCorte.CODEC.optionalFieldOf("ruedo").forGetter(PolleraCorte::ruedo),
-                ChaquetaCorte.CODEC.optionalFieldOf("chaqueta").forGetter(PolleraCorte::chaqueta)
+                ChaquetaCorte.CODEC.optionalFieldOf("chaqueta").forGetter(PolleraCorte::chaqueta),
+                Codec.intRange(0, 6).optionalFieldOf("cintura").forGetter(PolleraCorte::cintura)
         ).apply(i, PolleraCorte::new));
     }
 
@@ -276,6 +299,13 @@ public record ComboCorte(
 
     public static ComboCorte polleraLargo(com.modamod.item.PolleraLargo v) {
         return VACIO.conPollera(new PolleraCorte(Optional.of(v), Optional.empty()));
+    }
+
+    public static ComboCorte polleraCintura(int nivel) {
+        return VACIO.conPollera(new PolleraCorte(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.of(nivel)));
     }
 
     public static ComboCorte polleraForma(com.modamod.item.PolleraForma v) {
@@ -623,6 +653,7 @@ public record ComboCorte(
                         writeOptBool(buf, c.capucha());
                         writeOptEnum(buf, c.solapa());
                     });
+                    buf.writeByte(p.cintura().isPresent() ? p.cintura().get() : -1);
                 });
             },
             buf -> new ComboCorte(
@@ -663,8 +694,14 @@ public record ComboCorte(
                             buf.readBoolean() ? Optional.of(new ChaquetaCorte(
                                     readOptEnum(buf, com.modamod.item.ChaquetaFrente.values()),
                                     readOptBool(buf),
-                                    readOptEnum(buf, com.modamod.item.ChaquetaSolapa.values()))) : Optional.empty()))
+                                    readOptEnum(buf, com.modamod.item.ChaquetaSolapa.values()))) : Optional.empty(),
+                            readCintura(buf)))
                             : Optional.empty()));
+
+    private static Optional<Integer> readCintura(ByteBuf buf) {
+        byte b = buf.readByte();
+        return b < 0 ? Optional.empty() : Optional.of((int) b);
+    }
 
     private static void writeOptBool(ByteBuf buf, Optional<Boolean> value) {
         buf.writeByte(value.isEmpty() ? 0 : value.get() ? 2 : 1);
