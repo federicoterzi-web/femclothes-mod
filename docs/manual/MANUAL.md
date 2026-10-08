@@ -690,3 +690,5 @@ Al componer, cada pixel parte del color base de la tela y cada capa se **funde**
 
 **Cantos de la apertura** (2026-10-08; sin probar en el juego): con el **frente abierto**, cada borde de la apertura lleva ahora una **tira de tela fina** de arriba abajo, hasta el ruedo, con la textura de la prenda. Le da grosor a la abertura y continúa a las solapas (que van encima). Vale con y sin solapas. Falta que la apertura se adapte al calce y al busto, y los frentes **Cruzado** y **Abierto hasta el pecho**.
 
+**Cuellos más bajos** (2026-10-08, "bajarle un poco mas el cuello cuadrado y el redondo"; sin probar en el juego): el cuello **cuadrado** baja de 1,75 a 2,75 texeles de hondo, y el **redondo** (el cuello de fábrica de toda remera) gana un escote de media elipse de 1,5 texeles de hondo; antes solo tenía la abertura de arriba y el frente entero. Las solapas y el cuello de camisa siguen el escote nuevo.
+
