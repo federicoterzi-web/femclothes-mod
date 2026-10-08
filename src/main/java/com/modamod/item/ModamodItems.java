@@ -71,10 +71,10 @@ public final class ModamodItems {
 
     /** Sombrero de bruja (2026-10-04), slot {@code head/sombrero}. */
     public static final SombreroBrujaItem SOMBRERO_BRUJA = register("sombrero_bruja",
-            new SombreroBrujaItem(new Item.Settings().maxCount(1)));
+            new SombreroBrujaItem(new Item.Settings().maxCount(16)));   // 2026-10-08: apilan 16 si son idénticas
 
     /** Banda: cinto o choker según su zona (2026-10-05), slots {@code torso/cinto} y {@code head/choker}. */
-    public static final BandaItem BANDA = register("banda", new BandaItem(new Item.Settings().maxCount(1)));
+    public static final BandaItem BANDA = register("banda", new BandaItem(new Item.Settings().maxCount(16)));   // 2026-10-08: idem
 
     // Moldes de correa (2026-10-05, Mesa de estilado): el estilo de la correa que se pone; no se gastan.
     public static final com.modamod.correa.MoldeCorreaItem MOLDE_CORREA_LISA = register("molde_correa_lisa",
