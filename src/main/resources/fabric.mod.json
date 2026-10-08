@@ -16,11 +16,11 @@
     ]
   },
   "depends": {
-    "fabricloader": ">=0.15.0",
-    "minecraft": "~1.21",
-    "fabric-api": "*",
-    "trinkets": "*",
-    "geckolib": ">=4.5.0"
+    "fabricloader": ">=0.16.10",
+    "minecraft": "1.21.1",
+    "fabric-api": ">=0.116.0",
+    "trinkets": ">=3.10.0",
+    "geckolib": ">=4.9.3"
   },
   "accessWidener": "modamod.accesswidener",
   "mixins": [
