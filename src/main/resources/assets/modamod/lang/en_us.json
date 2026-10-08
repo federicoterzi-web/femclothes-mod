@@ -29,6 +29,7 @@
   "modamod.sublimadora.remera.estampada": "Printed: %s",
   "modamod.sublimadora.aviso.prensando": "Already pressing",
   "modamod.sublimadora.aviso.retirar": "Take the finished garment out before starting another",
+  "modamod.sublimadora.aviso.capas_de_mas": "This garment already has %1$s layers: remove %2$s from the design to press (max 12)",
   "modamod.sublimadora.aviso.cargar": "To print you need a blank garment and a picture",
   "modamod.sublimadora.aviso.tinta": "Out of ink: %s",
   "modamod.sublimadora.aviso.papel": "Out of paper",

@@ -29,6 +29,7 @@
   "modamod.sublimadora.remera.estampada": "Estampada: %s",
   "modamod.sublimadora.aviso.prensando": "Ya está prensando",
   "modamod.sublimadora.aviso.retirar": "Sacá la prenda lista antes de empezar otra",
+  "modamod.sublimadora.aviso.capas_de_mas": "Esta prenda ya tiene %1$s capas: quitá %2$s del diseño para prensar (máximo 12)",
   "modamod.sublimadora.aviso.cargar": "Para sublimar tenés que poner una prenda en blanco y una foto",
   "modamod.sublimadora.aviso.tinta": "Falta tinta: %s",
   "modamod.sublimadora.aviso.papel": "Falta papel",

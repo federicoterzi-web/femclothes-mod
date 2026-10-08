@@ -1141,6 +1141,16 @@ public class SublimadoraBlockEntity extends BlockEntity
         return todas.size() > CapaEstampa.MAXIMO ? new java.util.ArrayList<>(todas.subList(0, CapaEstampa.MAXIMO)) : todas;
     }
 
+    /**
+     * Cuántas capas de la máquina NO entrarían en la prenda cargada (tope {@link CapaEstampa#MAXIMO} entre las que ya
+     * trae y las del diseño). 2026-10-08, hallazgo H04: antes {@link #sumarCapas} descartaba las nuevas en silencio
+     * después de gastar tinta y papel.
+     */
+    private int capasDeMas() {
+        if (remera.isEmpty() || capas.isEmpty()) return 0;
+        return Math.max(0, RemeraItem.capasDe(remera).size() + capas.size() - CapaEstampa.MAXIMO);
+    }
+
     /** Chincheta con máscara: agrega la capa en curso de esa cara. */
     private boolean fijarCapa(Estampa.Cara cara) {
         CapaEstampa capa = capaEnCurso(cara);
@@ -1484,6 +1494,8 @@ public class SublimadoraBlockEntity extends BlockEntity
     public boolean intentarPrensar() {
         if (estado != Estado.REPOSO) return false;
         if (remera.isEmpty()) return false;
+        // Hallazgo H04: si no entran todas las capas, no se prensa (antes se cobraba y se descartaban las nuevas).
+        if (capasDeMas() > 0) return false;
         // Las capas con máscara cuentan como una pasada más (2026-10-02).
         int caras = (caraActiva(0) ? 1 : 0) + (caraActiva(1) ? 1 : 0) + (capas.isEmpty() ? 0 : 1);
         if (caras == 0) return false;
@@ -1591,6 +1603,10 @@ public class SublimadoraBlockEntity extends BlockEntity
         if (estado == Estado.PRENSANDO) return Text.translatable("modamod.sublimadora.aviso.prensando");
         if (estado == Estado.LISTO) return Text.translatable("modamod.sublimadora.aviso.retirar");
 
+        if (capasDeMas() > 0) {
+            return Text.translatable("modamod.sublimadora.aviso.capas_de_mas",
+                    RemeraItem.capasDe(remera).size(), capasDeMas());
+        }
         if (remera.isEmpty() || (fotos[0].isEmpty() && fotos[1].isEmpty() && capas.isEmpty())) {
             return Text.translatable("modamod.sublimadora.aviso.cargar");
         }
